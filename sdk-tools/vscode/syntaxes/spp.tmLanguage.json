@@ -1,0 +1,56 @@
+{
+  "name": "S++",
+  "scopeName": "source.spp",
+  "patterns": [
+    { "include": "#comments" },
+    { "include": "#strings" },
+    { "include": "#declarations" },
+    { "include": "#literals" },
+    { "include": "#keywords" },
+    { "match": "(@)([\\p{L}_$][\\p{L}\\p{N}_$]*)", "captures": { "1": { "name": "punctuation.definition.annotation.spp" }, "2": { "name": "storage.type.annotation.spp" } } },
+    { "match": "(?:->|\\+\\+|--|[+*/%=!<>|&^~?:-])", "name": "keyword.operator.spp" },
+    { "match": "[{}()\\[\\]]", "name": "punctuation.section.spp" },
+    { "match": "[;,.]", "name": "punctuation.separator.spp" }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        { "name": "comment.line.double-slash.spp", "begin": "//", "end": "$" },
+        { "name": "comment.block.spp", "begin": "/\\*", "end": "\\*/" }
+      ]
+    },
+    "strings": {
+      "patterns": [
+        { "name": "string.quoted.double.spp", "begin": "\"", "end": "\"", "patterns": [{ "match": "\\\\(?:u[0-9a-fA-F]{4}|[0-7]{1,3}|[btnfr\"'\\\\])", "name": "constant.character.escape.spp" }] },
+        { "name": "string.quoted.single.spp", "begin": "'", "end": "'", "patterns": [{ "match": "\\\\(?:u[0-9a-fA-F]{4}|[0-7]{1,3}|[btnfr\"'\\\\])", "name": "constant.character.escape.spp" }] }
+      ]
+    },
+    "declarations": {
+      "patterns": [
+        { "match": "\\b(domain)\\s+([\\p{L}_$][\\p{L}\\p{N}_$]*)", "captures": { "1": { "name": "keyword.control.spp" }, "2": { "name": "entity.name.namespace.spp" } } },
+        { "match": "\\b(Entity|Reference|Role|Contract|Enum)\\s+([\\p{L}_$][\\p{L}\\p{N}_$]*)", "captures": { "1": { "name": "storage.type.spp" }, "2": { "name": "entity.name.type.spp" } } },
+        { "match": "\\b(Scenario)\\s+(?:(serial|parallel)\\s+)?([\\p{L}_$][\\p{L}\\p{N}_$]*)(?=\\s*\\()", "captures": { "1": { "name": "storage.type.spp" }, "2": { "name": "keyword.control.spp" }, "3": { "name": "entity.name.function.spp" } } },
+        { "match": "\\b(atomic)\\s+(query|check|calculate|update|insert|delete)\\s+([\\p{L}_$][\\p{L}\\p{N}_$]*)(?=\\s*\\()", "captures": { "1": { "name": "storage.type.spp" }, "2": { "name": "storage.modifier.spp" }, "3": { "name": "entity.name.function.spp" } } },
+        { "match": "\\b(quantum)\\s+(query|check|calculate|update|insert|delete)\\s+([\\p{L}_$][\\p{L}\\p{N}_$]*)(?=\\s*\\()", "captures": { "1": { "name": "storage.type.spp" }, "2": { "name": "storage.modifier.spp" }, "3": { "name": "entity.name.function.spp" } } }
+      ]
+    },
+    "literals": {
+      "patterns": [
+        { "match": "\\b(?:true|false|null)\\b", "name": "constant.language.spp" },
+        { "match": "(?<![\\p{L}\\p{N}_$])(?:0[xX][0-9a-fA-F_]+(?:\\.[0-9a-fA-F_]*)?[pP][+-]?[0-9_]+[fFdD]?|0[xX][0-9a-fA-F_]+[lL]?|0[bB][01_]+[lL]?|(?:[0-9][0-9_]*\\.[0-9_]*|\\.[0-9][0-9_]*|[0-9][0-9_]*)(?:[eE][+-]?[0-9_]+)?[fFdDlL]?)(?![\\p{L}\\p{N}_$])", "name": "constant.numeric.spp" }
+      ]
+    },
+    "keywords": {
+      "patterns": [
+        { "match": "\\b(?:boolean|char|String|DateTime|short|int|long|float|double|decimal|BigDecimal|BigInteger)\\b", "name": "storage.type.primitive.spp" },
+        { "match": "\\b(?:Entity|Reference|Role|Contract|Enum|Scenario|atomic|const)\\b", "name": "storage.type.spp" },
+        { "match": "\\b(?:domain|from|take|as|takeall|mapsame|serial|parallel|query|check|calculate|update|insert|delete|require|if|else|while|for|switch|case|default|break|continue|new|identify|transaction|REQUIRED|REQUIRES_NEW|NESTED|bounds|breakTransction|quantum|business)\\b", "name": "keyword.control.spp" },
+        { "match": "\\b(?:header|extends|primary|scope|phy|map|services|tables|table|examples|web|application|bind|to|participant|facts|identity|existing|requests|idempotency|retention|duplicateWindow|duplicateGuard|propertyTracking|optimisticConcurrency|transactions|mode|resource|ordinaryUpdates|i18n|defaultLocale|supportedLocales|primarykey|foreignkey|references|index|independent|performers|inline|in|current|snapshot|auto|prefix|notnull|unique|Default|local|remote|out|backend|adapter|config|at|xa|tcc|saga|repository|quantumStore|attribute|numeric|using|constants|numberType|minValue|maxValue|scale|replace|with|override|resources|deploy|environment|system|domainRoute|endpoint|timeoutMillis|async|asycn|reservation|compensate|remoteCompensate|duplicate|window|optional|persist|number|compareVersion|advanceVersion|insertIfAbsent|upsert|argument|platform|singleton|by|reserve|confirm|cancel|before|after|commit)\\b", "name": "keyword.other.configuration.spp" },
+        { "match": "\\b(key)(?=\\s*\\()", "name": "keyword.other.context.spp" },
+        { "match": "(?<=[(,])\\s*(key)\\b(?=\\s+[\\p{L}_$])", "captures": { "1": { "name": "keyword.other.context.spp" } } },
+        { "match": "(?<=\\})\\s*\\b(fail)\\b(?=\\s*(?:\\(|\\{))", "captures": { "1": { "name": "keyword.other.context.spp" } } },
+        { "match": "\\b(technical)(?=\\s+(?:services|service)\\b)|\\b(intercept)(?=\\s+[\\p{L}_$])", "name": "keyword.other.context.spp" }
+      ]
+    }
+  }
+}

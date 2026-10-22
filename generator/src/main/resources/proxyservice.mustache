@@ -1,0 +1,32 @@
+package {{basePackage}}.{{domainName}}.service;
+
+import com.servpp.service.runtime.GeneratedServiceKind;
+import com.servpp.service.runtime.GeneratedServiceKindProvider;
+import com.servpp.service.runtime.RemoteGeneratedService;
+import com.servpp.service.runtime.ScopeMetadataProvider;
+import {{basePackage}}.{{domainName}}.handler.{{name}};
+{{remoteCompensationImports}}
+{{atomicResponseImport}}
+{{#serviceBody.sppLocalVarList}}
+{{#type.type}}import {{basePackage}}.{{domainName}}.model.{{type.name}};{{/type.type}}
+{{/serviceBody.sppLocalVarList}}
+
+public class Simple{{name}} implements {{name}}, RemoteGeneratedService, ScopeMetadataProvider, GeneratedServiceKindProvider{{remoteCompensationInterface}} {
+{{scopeMetadataMethods}}
+{{generatedServiceKindMethods}}
+{{remoteCompensationServiceNamesMethod}}
+    @Override
+    public String getName() {
+        return "{{funcName}}";
+    }
+
+    @Override
+	public {{atomicReturnType}} {{funcName}}({{#serviceBody.sppLocalVarList}}{{^-first}},{{/-first}}{{serviceJavaType}} {{name}}{{/serviceBody.sppLocalVarList}}){
+        throw new UnsupportedOperationException("Remote service {{funcName}} requires an adapter implementation.");
+	}
+
+    @Override
+    public Object execute(Object... params) {
+        throw new UnsupportedOperationException("Remote service {{funcName}} requires an adapter implementation.");
+    }
+}

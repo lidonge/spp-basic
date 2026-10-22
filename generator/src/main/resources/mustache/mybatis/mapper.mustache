@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="{{packageName}}.{{mybatisClass.type}}Mapper">
+    <resultMap id="get{{mybatisClass.type}}" type="{{modelPackage}}.{{mybatisClass.type}}">
+        {{#table.primaryKeys.arrayList}}
+        <id property="{{field.name}}" column="{{name}}"/>
+        {{/table.primaryKeys.arrayList}}
+{{resultMapFieldsXml}}
+    </resultMap>
+    <select id="get{{mybatisClass.type}}" resultMap="get{{mybatisClass.type}}">
+        SELECT {{#table.objectBackedColumns.arrayList}}{{^-first}},{{/-first}}{{name}}{{/table.objectBackedColumns.arrayList}}
+        FROM {{table.appTable.name}}
+        WHERE {{#table.primaryKeys.arrayList}}{{^-first}} and {{/-first}}{{name}} = #{ {{field.qualifiedInstName}} }{{/table.primaryKeys.arrayList}}
+    </select>
+
+    <select id="search{{mybatisClass.type}}" resultMap="get{{mybatisClass.type}}">
+        SELECT {{#table.objectBackedColumns.arrayList}}{{^-first}},{{/-first}}{{name}}{{/table.objectBackedColumns.arrayList}}
+        FROM {{table.appTable.name}}
+        WHERE
+        <trim suffixOverrides="and ">
+{{searchConditionFieldsXml}}
+        </trim>
+    </select>
+    <update id="update{{mybatisClass.type}}">
+        UPDATE {{table.appTable.name}} SET
+        <trim suffixOverrides=",">
+{{updateSetFieldsXml}}
+        </trim>
+        WHERE {{#table.primaryKeys.arrayList}}{{^-first}} and {{/-first}}{{name}} = #{ {{field.qualifiedInstName}} }{{/table.primaryKeys.arrayList}}
+    </update>
+
+    <insert id="create{{mybatisClass.type}}">
+        INSERT INTO {{table.appTable.name}} (
+        <trim suffixOverrides=",">
+            {{#table.primaryKeys.arrayList}}{{name}}{{^-last}},{{/-last}}{{#-last}}{{#mybatisClass}},{{/mybatisClass}}{{/-last}}{{/table.primaryKeys.arrayList}}
+{{insertColumnFieldsXml}}
+        ) VALUES (
+            {{#table.primaryKeys.arrayList}}#{ {{field.qualifiedInstName}} }{{^-last}},{{/-last}}{{#-last}}{{#mybatisClass}},{{/mybatisClass}}{{/-last}}{{/table.primaryKeys.arrayList}}
+{{insertValueFieldsXml}}
+        </trim>
+    )</insert>
+{{#hasQuantum}}
+    <update id="increase{{mybatisClass.type}}">
+        UPDATE {{table.appTable.name}} SET <trim suffixOverrides=",">{{#quantum}}{{name}}={{name}} + #{ {{field.qualifiedInstName}} },{{/quantum}}</trim>
+        WHERE {{#table.primaryKeys.arrayList}}{{^-first}} and {{/-first}}{{name}} = #{ {{field.qualifiedInstName}} }{{/table.primaryKeys.arrayList}}{{#quantum}} and {{name}} + #{ {{field.qualifiedInstName}} } &lt; #{ {{field.qualifiedInstName}}Max }{{/quantum}}
+    </update>
+    <update id="decrease{{mybatisClass.type}}">
+        UPDATE {{table.appTable.name}} SET <trim suffixOverrides=",">{{#quantum}}{{name}}={{name}} - #{ {{field.qualifiedInstName}} },{{/quantum}}</trim>
+        WHERE {{#table.primaryKeys.arrayList}}{{^-first}} and {{/-first}}{{name}} = #{ {{field.qualifiedInstName}} }{{/table.primaryKeys.arrayList}}{{#quantum}} and {{name}} + #{ {{field.qualifiedInstName}} } > #{ {{field.qualifiedInstName}}Min }{{/quantum}}
+    </update>
+{{/hasQuantum}}
+</mapper>

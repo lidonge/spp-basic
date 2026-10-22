@@ -1,0 +1,5 @@
+This is a tree {{id}} test! The {{%id=obj_getVar("id");abc="id is "+id;(!(id != 1) && id != 2 )?abc:""}} tree is :
+{{>recursion}}
+The end of {{%abc}} test!{{%ttt}}
+{{% TEST=id!=1? "true":null;#""}}
+{{#$TEST}}Calculated id is : {{%TEST}}{{/TEST}}

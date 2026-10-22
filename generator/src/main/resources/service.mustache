@@ -1,0 +1,105 @@
+package {{basePackage}}.{{domainName}}.service;
+
+import {{basePackage}}.{{domainName}}.handler.{{name}};
+{{#idempotencyExecution}}import com.servpp.service.idempotency.BusinessIdempotencyManager;
+import com.servpp.service.runtime.InvocationContext;
+{{/idempotencyExecution}}
+import com.servpp.service.runtime.GeneratedRoleIdentityContextBinder;
+import com.servpp.service.runtime.GeneratedServiceKind;
+import com.servpp.service.runtime.GeneratedServiceKindProvider;
+import com.servpp.service.runtime.ScopeMetadataProvider;
+import com.servpp.service.transaction.TransactionMode;
+{{objectSnapshotImports}}
+{{compensationImports}}
+{{quantumConservationImports}}
+{{tccParticipantImports}}
+{{calculationMetadataImports}}
+{{responseHeaderImports}}
+{{#requestSuffix}}import {{basePackage}}.{{domainName}}.model.{{name}}{{requestSuffix}};{{/requestSuffix}}
+{{#responseSuffix}}import {{basePackage}}.{{domainName}}.model.{{name}}{{responseSuffix}};{{/responseSuffix}}
+{{#serviceBody.sppLocalVarList}}{{#type.type}}
+import {{basePackage}}.{{domainName}}.model.{{type.name}};{{/type.type}}
+{{/serviceBody.sppLocalVarList}}
+{{#defaultPersistenceClass}}import {{basePackage}}.{{domainName}}.mapper.{{defaultPersistenceClass.name}}Mapper;{{/defaultPersistenceClass}}
+{{#defaultPersistenceClass}}import org.springframework.beans.factory.annotation.Autowired;{{/defaultPersistenceClass}}
+
+public class Simple{{name}} implements {{name}}, ScopeMetadataProvider, GeneratedServiceKindProvider{{quantumServiceMetadataInterface}}{{objectSnapshotInterface}}{{calculationMetadataInterface}}{{tccLifecycleInterface}}{{compensationInterface}}{{persistenceInterface}}{{localDelegateMetadataInterface}} {
+    {{#requestSuffix}}//private {{name}}{{requestSuffix}} arg;{{/requestSuffix}}
+    {{^requestSuffix}}{{#serviceBody.sppLocalVarList}}private {{javaType}}{{toArrayString}} arg;{{/serviceBody.sppLocalVarList}}{{/requestSuffix}}
+    {{#responseSuffix}}//private {{name}}{{responseSuffix}} ret;{{/responseSuffix}}
+    {{^responseSuffix}}{{#returns.sppLocalVarList}}private {{javaType}}{{toArrayString}} ret;{{/returns.sppLocalVarList}}{{/responseSuffix}}
+    {{#defaultPersistenceClass}}
+    @Autowired
+    private {{defaultPersistenceClass.name}}Mapper mapper{{defaultPersistenceClass.name}};{{/defaultPersistenceClass}}
+
+    @Override
+    public String getName() {
+        return "{{deploymentServiceName}}";
+    }
+
+    @Override
+    public String getTransactionResourceId() {
+        return "{{transactionResourceIdLiteral}}";
+    }
+
+    @Override
+    public TransactionMode getTransactionMode() {
+        return TransactionMode.{{transactionModeName}};
+    }
+
+{{quantumConservationParticipantMethod}}
+{{quantumServiceMetadataMethod}}
+{{tccTransactionParticipantMethod}}
+{{tccLifecycleRuleMethods}}
+{{tccReservationRuleMethods}}
+{{generatedServiceKindMethods}}
+{{scopeMetadataMethods}}
+{{calculationAssignmentsMethod}}
+{{objectSnapshotRulesMethod}}
+{{compensationServiceNamesMethod}}
+{{persistenceRuleMethods}}
+{{localDelegateMetadataMethod}}
+    @Override
+	public void {{funcName}}({{#serviceBody.sppLocalVarList}}{{^-first}},{{/-first}}{{serviceJavaType}} {{name}}{{/serviceBody.sppLocalVarList}}){
+{{quantumExecutionRequirementStatement}}
+{{businessNumberAssignmentStatement}}
+{{persistencePreparationStatement}}
+{{localServiceBindingStatement}}
+        {{#physicalJavaStatements}}
+        {{javaStatement}}
+        {{/physicalJavaStatements}}
+{{defaultPersistenceStatement}}
+{{roleHydrationStatement}}
+{{roleBindingCompletionStatement}}
+{{persistenceCompletionStatement}}
+	}
+
+    @Override
+    public Object execute(Object... params) {
+        {{#requestSuffix}}{{name}}{{requestSuffix}} arg = ({{name}}{{requestSuffix}}) params[params.length - 1];
+        GeneratedRoleIdentityContextBinder.attach(arg);
+{{#entryExecution}}
+        java.util.function.Supplier<Object> action = () -> {
+{{/entryExecution}}
+        {{#entryExecution}}    {{/entryExecution}}{{checkExecutionPrefix}}{{funcName}}({{#serviceBody.sppLocalVarList}}{{^-first}},{{/-first}}{{requestArgumentCall}}{{/serviceBody.sppLocalVarList}}){{checkExecutionSuffix}};
+        {{#entryExecution}}    {{/entryExecution}}{{name}}{{responseSuffix}} ret = new {{name}}{{responseSuffix}}();
+{{responseHeaderInitialization}}
+        {{#entryExecution}}    {{/entryExecution}}return ret;
+{{#entryExecution}}
+        };
+{{#idempotencyExecution}}
+        InvocationContext.Header invocation = InvocationContext.current();
+        if ({{idempotencyInvocationCondition}}) {
+            return BusinessIdempotencyManager.execute(getName(), arg, this, action);
+        }
+{{/idempotencyExecution}}
+        return com.servpp.service.runtime.ServiceInvocationScope.execute(arg, action);
+{{/entryExecution}}
+{{/requestSuffix}}
+        {{^requestSuffix}}
+        {{checkExecutionPrefix}}{{funcName}}({{directArgumentCallJava}}){{checkExecutionSuffix}};
+        return null;
+        {{/requestSuffix}}
+    }
+
+}

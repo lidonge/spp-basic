@@ -1,0 +1,11 @@
+package {{packageName}};
+import com.servpp.service.AtomicService;
+import com.servpp.service.QuantumService;
+{{atomicResponseImport}}
+
+{{#serviceBody.sppLocalVarList}}
+{{#type.type}}import {{type.packageName}}.{{type.name}};{{/type.type}}
+{{/serviceBody.sppLocalVarList}}
+public interface {{name}} extends {{serviceInterfaceName}} {
+	public {{atomicReturnType}} {{funcName}}({{#serviceBody.sppLocalVarList}}{{^-first}},{{/-first}}{{serviceJavaType}} {{name}}{{/serviceBody.sppLocalVarList}});
+}

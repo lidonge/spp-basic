@@ -1,0 +1,82 @@
+domain invoice;
+
+Enum Sex{
+    Male, Female
+}
+
+Reference Customer{
+    String id;
+    String name;
+    int age;
+    Sex sex;
+}
+
+Reference Product{
+    String id;
+    String name;
+}
+
+Entity BaseAccount{
+    String id;
+    double balance;
+    double max;
+    double min;
+}
+Reference Stock{
+    String id;
+    int quantity;
+    int max;
+    int min;
+}
+
+Role Goods{
+    String goodsId;
+    double price;
+}
+Role GoodsStock{}
+Role Account{
+    double balance;
+}
+take BaseAccount as Account{takeall;}
+take Stock as GoodsStock{takeall;}
+take Product as Goods{
+    mapsame;
+    String goodsId = id;
+    takeall;
+}
+Role Amount{
+    int quantity;
+    double amount;
+}
+
+Contract Invoice{
+    Account buyer;
+    Account seller;
+    Goods goods;
+    GoodsStock stock;
+    Amount amount;
+}
+
+
+
+atomic query queryAccount(Account account);
+atomic calculate calculateAmount(Goods goods, Amount amount);
+atomic update decAccount(Account account, Amount amount);
+atomic update incAccount(Account account, Amount amount);
+atomic update decStock(GoodsStock stock, Amount amount);
+atomic check checkStock(GoodsStock stock);
+atomic update updateStocks(GoodsStock[] stock);
+
+Scenario parallel makeInvoice(Invoice invoice){
+    queryAccount(invoice.buyer);
+    queryAccount(invoice.seller);
+    serial{
+        calculateAmount(invoice.goods, invoice.amount);
+        checkStock(invoice.stock);
+    }
+    transaction{
+        decAccount(invoice.buyer, invoice.amount);
+        incAccount(invoice.seller, invoice.amount);
+        decStock(invoice.stock, invoice.amount);
+    }
+}

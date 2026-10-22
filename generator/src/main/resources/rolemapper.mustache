@@ -1,0 +1,27 @@
+package {{packageName}};
+import java.util.Map;
+public class {{name}} {
+	public void roleToEntity({{role.name}} role, Map<String, Object> entities) {
+    {{#hasPhysicalNumericMappings}}{{physicalRoleToEntity}}{{/hasPhysicalNumericMappings}}
+    {{^hasPhysicalNumericMappings}}
+	{{#serviceBody.sppLocalVarList}}
+        {{#entityName}}com.servpp.service.runtime.PropertyChanges.mapped(role, "{{name}}", entities.get("{{entityName}}"), "{{name}}", () -> (({{entityName}})entities.get("{{entityName}}")).set{{upperName}} (role.get{{upperName}}()));{{/entityName}}
+	{{/serviceBody.sppLocalVarList}}
+	{{#sppFieldList}}
+        {{#entityName}}com.servpp.service.runtime.PropertyChanges.mapped(role, "{{name}}", entities.get("{{entityName}}"), "{{entityName}}", () -> (({{entityName}})entities.get("{{entityName}}")).set{{upperEntityName}} (role.get{{upperName}}()));{{/entityName}}
+	{{/sppFieldList}}
+    {{/hasPhysicalNumericMappings}}
+	}
+	public void entityToRole(Map<String, Object> entities, {{role.name}} role) {
+    {{#hasPhysicalNumericMappings}}{{physicalEntityToRole}}{{/hasPhysicalNumericMappings}}
+    {{^hasPhysicalNumericMappings}}
+	{{#serviceBody.sppLocalVarList}}
+		{{#entityName}}com.servpp.service.runtime.PropertyChanges.mapped(entities.get("{{entityName}}"), "{{name}}", role, "{{name}}", () -> role.set{{upperName}} ((({{entityName}})entities.get("{{entityName}}")).get{{upperName}}()));{{/entityName}}
+	{{/serviceBody.sppLocalVarList}}
+	{{#sppFieldList}}
+		{{#entityName}}com.servpp.service.runtime.PropertyChanges.mapped(entities.get("{{entityName}}"), "{{entityName}}", role, "{{name}}", () -> role.set{{upperName}} ((({{entityName}})entities.get("{{entityName}}")).get{{upperEntityName}}()));{{/entityName}}
+	{{/sppFieldList}}
+    {{/hasPhysicalNumericMappings}}
+        com.servpp.service.runtime.RoleIdentityContext.attachPerformers(role, "{{role.name}}", entities.values().toArray());
+    }
+}

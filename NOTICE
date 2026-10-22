@@ -1,0 +1,19 @@
+S++ basic SDK
+
+The source distribution contains S++ language, generator, runtime and editor
+components. Third-party files and dependencies retain their original copyright
+and license notices; see THIRD-PARTY.md. The Apache-2.0 license of this source
+package does not grant rights to separately supplied commercial implementations
+or S++ trademarks.
+
+OpenAPI Generator template attribution:
+Copyright 2018 OpenAPI-Generator Contributors (https://openapi-generator.tech)
+Copyright 2018 SmartBear Software
+The JavaSpring method body template has been modified for S++ service dispatch.
+See licenses/OpenAPI-Generator-6.5.0.txt for the original license text.
+
+Template engine source:
+The included mustache and multiexpr modules are licensed under Apache-2.0 with
+the maintainer's authorization dated 2026-10-22. Their original author notices,
+fixed source revision and integration changes are retained under
+vendor/antlrmustache/.

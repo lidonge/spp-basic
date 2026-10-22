@@ -1,0 +1,194 @@
+{
+  "schema": 1,
+  "repository": "https://github.com/lidonge/antlrmustache",
+  "revision": "ef94a579d42cb2fde5c14fc8c1023d9f113bdee6",
+  "sourceLicense": "Apache-2.0",
+  "authorizationDate": "2026-10-22",
+  "authorization": "The maintainer confirmed ownership and authorized both mustache and multiexpr for Apache-2.0 distribution.",
+  "files": [
+    {
+      "path": "README.md",
+      "upstreamSha256": "3afba2ebf34df1d58833b8c1d76479d30d313486abc18810dd67a412333ce55c"
+    },
+    {
+      "path": "README.zh-CN.md",
+      "upstreamSha256": "0a30f99b8c88292adb314e27cf2d2acd05461d79c6a8de03d6de97996f19dba5"
+    },
+    {
+      "path": "multiexpr/pom.xml",
+      "upstreamSha256": "9d74d96303a9c52c402082b2b6595837f76b3d23abf9a6cd954d8af573cec3df"
+    },
+    {
+      "path": "multiexpr/src/main/antlr4/free/servpp/multiexpr/antlr/MultiExpr.g4",
+      "upstreamSha256": "ad6907ddc51c6c5b41a425bc0d52e91179df1d6f03d9d5bec990dd075e6b793f"
+    },
+    {
+      "path": "multiexpr/src/main/java/free/servpp/antlr4/AntlrCompiler.java",
+      "upstreamSha256": "744d8355486779889e3c1581792eec90b02f115ae179450a50b344fa474d2ef3"
+    },
+    {
+      "path": "multiexpr/src/main/java/free/servpp/antlr4/GeneratorErrorListener.java",
+      "upstreamSha256": "dd72c991a6cdc49742af329d0601bed2dd99fdeaff4cb38884890981ddf5ce47"
+    },
+    {
+      "path": "multiexpr/src/main/java/free/servpp/antlr4/IAntlrLexerFactory.java",
+      "upstreamSha256": "5bb133737d7f7c2b44d10dff75212aa98a559f719e079db86ed8dc5bae780bf2"
+    },
+    {
+      "path": "multiexpr/src/main/java/free/servpp/antlr4/IAntlrParserExecutor.java",
+      "upstreamSha256": "04c216b7b90de350705873bf79c2a0d4b0ba15e23172ff2edbdc8cc73217f3ef"
+    },
+    {
+      "path": "multiexpr/src/main/java/free/servpp/antlr4/IAntlrParserFactory.java",
+      "upstreamSha256": "4a9f348adeb048836003b2cb720cb21f4083ec98b2b72fd0e9a690f91bfa47be"
+    },
+    {
+      "path": "multiexpr/src/main/java/free/servpp/logger/ILogable.java",
+      "upstreamSha256": "91f1c76a572bc7a164d1d6b1d8f4533b6146d580323d174d74f02f08182c7c0e"
+    },
+    {
+      "path": "multiexpr/src/main/java/free/servpp/multiexpr/IEvaluatorEnvironment.java",
+      "upstreamSha256": "55676439bef9a13a6768eca9d828f0ecda5c56754161d7eab6f23f7df5e906a3"
+    },
+    {
+      "path": "multiexpr/src/main/java/free/servpp/multiexpr/MathAndLogicUtil.java",
+      "upstreamSha256": "1c63ba12c96f8516e4dd638669ddcc4bdbf8ce9f72ae2aa9295a217e4bd73b7c"
+    },
+    {
+      "path": "multiexpr/src/main/java/free/servpp/multiexpr/MultiExprCompiler.java",
+      "upstreamSha256": "0bf22926a16d09fec8b952e2a21bd3a35424e86009311d26d42de231a00664b9"
+    },
+    {
+      "path": "multiexpr/src/main/java/free/servpp/multiexpr/ReflectTool.java",
+      "upstreamSha256": "9737c42dc844da51ae74c99c07d0d334959fa95351292f4650585e0f9be2aab2"
+    },
+    {
+      "path": "multiexpr/src/main/java/free/servpp/multiexpr/handler/DefaultEnvironment.java",
+      "upstreamSha256": "99b62ebf624ab58ed3ee2ac8c3dd4d14f02151738cb7da74bebdaabe94366f7e"
+    },
+    {
+      "path": "multiexpr/src/main/java/free/servpp/multiexpr/handler/ExprEvaluator.java",
+      "upstreamSha256": "81c7764b4c25afc74a8fff6a33c332bb4641438849a1894fe69fe85d74e08260"
+    },
+    {
+      "path": "multiexpr/src/main/resources/log4j.properties",
+      "upstreamSha256": "b6850820579d596366e1154aaaea4b1ed95f85db09b27c31931bbb7c8f83e68f"
+    },
+    {
+      "path": "mustache/pom.xml",
+      "upstreamSha256": "3e3f64788e1a82d143c93a187ff7d9886aa3048a9d7ee19be43ce1c41be6f36e"
+    },
+    {
+      "path": "mustache/src/main/antlr4/free/servpp/mustache/antlr/Mustache.g4",
+      "upstreamSha256": "6fb8730f7f96a81afb093bcbbab93a78b9b19737f461f6269d86c23b9be9e85a"
+    },
+    {
+      "path": "mustache/src/main/java/free/servpp/mustache/CodeFormator.java",
+      "upstreamSha256": "96405d39f8061366060d6e4a4ed3a0bbdb90be9d8450593307c8380f9a0bbfc7"
+    },
+    {
+      "path": "mustache/src/main/java/free/servpp/mustache/Main.java",
+      "upstreamSha256": "4bf565d62104bffb81be57a767adacb635da0c168ab7db99d9f33eb07504ac71"
+    },
+    {
+      "path": "mustache/src/main/java/free/servpp/mustache/MustacheCompiler.java",
+      "upstreamSha256": "89e3a4ba1b43c6771c2044125097ee91326760c374de51b8ffccef28782dea92"
+    },
+    {
+      "path": "mustache/src/main/java/free/servpp/mustache/handler/IPartialFileHandler.java",
+      "upstreamSha256": "9c2931346ee94636dbebfc29cd24cb2b821ecf53fd6ae82844b4c590a56a057a"
+    },
+    {
+      "path": "mustache/src/main/java/free/servpp/mustache/handler/IRecursiveExecutor.java",
+      "upstreamSha256": "15c6e8f85a0132ac485625b78f660877fc031248242dce460b3ab6b2691c84de"
+    },
+    {
+      "path": "mustache/src/main/java/free/servpp/mustache/handler/MustacheListenerImpl.java",
+      "upstreamSha256": "512830c52ddf3842717a66aebde5bbbd175b0594fee015065d394a67f09815cb"
+    },
+    {
+      "path": "mustache/src/main/java/free/servpp/mustache/handler/MustacheWriter.java",
+      "upstreamSha256": "e3bcdc1f2ae2c996cd09dc54d856c7f928ee1b389d7066329b4fac8c3fce7174"
+    },
+    {
+      "path": "mustache/src/main/java/free/servpp/mustache/model/BaseSection.java",
+      "upstreamSha256": "39ba1ba0755f0b2f6d7e8e2cf0fc0cf746218cbef0dfa934d080c31f9082d4ff"
+    },
+    {
+      "path": "mustache/src/main/java/free/servpp/mustache/model/Comment.java",
+      "upstreamSha256": "01620b7699632d856c7ac65c24b276058ef12d4c5c8b9cc62f694780aac84cfc"
+    },
+    {
+      "path": "mustache/src/main/java/free/servpp/mustache/model/IMustacheBlock.java",
+      "upstreamSha256": "5883c9d0e9c247b85c31d586b41565933cbfccf534a3fcdf250740afc69ff781"
+    },
+    {
+      "path": "mustache/src/main/java/free/servpp/mustache/model/IStatement.java",
+      "upstreamSha256": "baf574968036e34d21ef663e291b4a8212a491ce2734647dce4a64d6d088b737"
+    },
+    {
+      "path": "mustache/src/main/java/free/servpp/mustache/model/InvertedSection.java",
+      "upstreamSha256": "799712a54153c31bfc705897d1a9a01f5b398d829ea2f902b2e016847d094821"
+    },
+    {
+      "path": "mustache/src/main/java/free/servpp/mustache/model/MultiExpr.java",
+      "upstreamSha256": "58cbb7cfc0cf4ad4e472ebad4f1974aa5bbf1c2ad2329fa530e8f631d28fa837"
+    },
+    {
+      "path": "mustache/src/main/java/free/servpp/mustache/model/Parameter.java",
+      "upstreamSha256": "f411f4586ce97422489eebb000048c1b1a9314910d946f68c01586158203e4c3"
+    },
+    {
+      "path": "mustache/src/main/java/free/servpp/mustache/model/Partial.java",
+      "upstreamSha256": "8b8f5ee6b2e534f5432d0ac9099cbe585c4bc2f542a60cb1ba89b46ae0e3dffc"
+    },
+    {
+      "path": "mustache/src/main/java/free/servpp/mustache/model/Recursive.java",
+      "upstreamSha256": "23ab55a39c949980830ea6ab526d99c46fe4513b4be07cdcf590603ef45364f3"
+    },
+    {
+      "path": "mustache/src/main/java/free/servpp/mustache/model/Section.java",
+      "upstreamSha256": "81f89b81f0c5dee730149c5cd1f9a47756de4dfb0f8427c4db0fe4e161fd3e4e"
+    },
+    {
+      "path": "mustache/src/main/java/free/servpp/mustache/model/SectionIndex.java",
+      "upstreamSha256": "8599dce5713fc40b2e87af1a376073298706e98f2cf92ee41211c01c863b4200"
+    },
+    {
+      "path": "mustache/src/main/java/free/servpp/mustache/model/Template.java",
+      "upstreamSha256": "8932038b2c451fd34cc8c8e73cae90a4e5fce0e0d8e6d541eb13e0f13cb6ab11"
+    },
+    {
+      "path": "mustache/src/main/java/free/servpp/mustache/model/Text.java",
+      "upstreamSha256": "3fd5fe44faa641083b6de41fff2c173a7199a4502483ceff947b6f58f63e236c"
+    },
+    {
+      "path": "mustache/src/main/java/free/servpp/mustache/model/Variable.java",
+      "upstreamSha256": "0557c4c0c9e6b2dcc2af551bb5bd828b817a036a0be11c208d6672e83e0dea8d"
+    },
+    {
+      "path": "mustache/src/main/resources/TestTree.mustache",
+      "upstreamSha256": "ba3188a566583c1f9dc54f96f0dcc85fe35de16a5f367825db36d74ee7615091"
+    },
+    {
+      "path": "mustache/src/main/resources/ddl.mustache",
+      "upstreamSha256": "3f74ffc0ab4eb373d64de162b5233b74e52728a73d49e14b80b14f5cdd951bbc"
+    },
+    {
+      "path": "mustache/src/main/resources/log4j.properties",
+      "upstreamSha256": "463fbfa6adccc2288f35e62bac4a70b533f3f68e3e53276cb1953cb94012585a"
+    },
+    {
+      "path": "mustache/src/main/resources/recursion.mustache",
+      "upstreamSha256": "02c9da4d9444e020485a13a2c3da116d16ab7a63419015cc0d3eb2f873ac8968"
+    },
+    {
+      "path": "mustache/src/test/java/TestRecursion.java",
+      "upstreamSha256": "292cf3a8027ffa8abe9bb20aa8ddfc26fc395a6c127842e4fbf3aff8c40889ad"
+    },
+    {
+      "path": "pom.xml",
+      "upstreamSha256": "11e8e63d8d0270162d3860cdd1b4e7b7501a9e0b47b7702eec1791727da6f454"
+    }
+  ]
+}

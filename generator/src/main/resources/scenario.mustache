@@ -1,0 +1,24 @@
+package {{packageName}};
+import com.servpp.service.Scenario;
+import com.servpp.service.SourceScenarioService;
+{{#responseSuffix}}import {{basePackage}}.{{domainName}}.model.{{name}}{{responseSuffix}};{{/responseSuffix}}
+{{responseHeaderImports}}
+import com.servpp.service.Service;
+import com.servpp.service.transaction.TransactionalService;
+import com.servpp.service.scenario.IExecutor;
+import com.servpp.service.scenario.IParallelExecuteGroup;
+import com.servpp.service.scenario.ISerialExecuteGroup;
+import com.servpp.service.scenario.ITransactionGroup;
+{{#serviceBody.sppLocalVarList}}
+import {{type.packageName}}.{{type.name}};
+{{/serviceBody.sppLocalVarList}}
+public abstract class {{name}} extends SourceScenarioService implements Scenario, TransactionalService{
+    {{#sppFieldList}}
+    {{#type.name}}
+    protected {{type.name}} {{name}};
+    {{/type.name}}
+    {{/sppFieldList}}
+    public void {{funcName}}({{#serviceBody.sppLocalVarList}}{{^-first}},{{/-first}}{{serviceJavaType}} {{name}}{{/serviceBody.sppLocalVarList}}){
+{{scenarioBodyJava}}
+    }
+}

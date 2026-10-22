@@ -1,0 +1,15 @@
+package {{packageName}};
+
+import java.util.List;
+import java.util.Map;
+
+import {{modelPackage}}.{{cls.name}};
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+
+@Mapper
+public interface {{cls.name}}Mapper {
+{{#methods}}
+    {{returnType}} {{funcName}}({{#serviceBody.sppLocalVarList}}{{^-first}},{{/-first}}@Param("{{name}}") {{javaType}} {{name}}{{/serviceBody.sppLocalVarList}});
+{{/methods}}
+}

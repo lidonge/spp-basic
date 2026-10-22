@@ -1,0 +1,21 @@
+# Maven and generated language sources
+target/
+lang/gen/
+**/src/main/antlr4/**/.antlr/
+**/src/main/antlr4/**/gen/
+
+# Editor dependencies and release artifacts
+node_modules/
+sdk-tools/vscode/client-dist/
+*.vsix
+
+# Local database and editor state
+*.mv.db
+*.trace.db
+.idea/
+.vscode/
+*.iml
+.classpath
+.project
+.settings/
+.DS_Store

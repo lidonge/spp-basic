@@ -1,0 +1,10 @@
+{
+  "Domain": { "prefix": "spp-domain", "body": ["domain ${1:example};", "", "$0"], "description": "S++ source domain" },
+  "Entity": { "prefix": "spp-entity", "body": ["Entity ${1:Item} {", "\t${2:String} ${3:name};", "\t$0", "}"], "description": "SPP entity" },
+  "Reference": { "prefix": "spp-reference", "body": ["Reference ${1:Item} from ${2:provider}.${3:Item} {", "\t${4:String} ${5:id};", "\t$0", "}"], "description": "SPP reference with explicit provider domain" },
+  "Role": { "prefix": "spp-role", "body": ["Role ${1:Facts} {", "\t${2:int} ${3:amount};", "\t$0", "}"], "description": "SPP role" },
+  "Enumeration": { "prefix": "spp-enum", "body": ["Enum ${1:State} {", "\t${2:Pending}, ${3:Complete}", "}"], "description": "SPP enumeration" },
+  "Atomic calculation": { "prefix": "spp-atomic", "body": ["atomic calculate ${1:calculateValue}(${2:Facts}) {", "\t$0", "}"], "description": "SPP atomic calculation service" },
+  "Scenario": { "prefix": "spp-scenario", "body": ["Scenario serial ${1:preview}(${2:Facts}) {", "\t${3:calculateValue};", "\t$0", "}"], "description": "SPP serial scenario" },
+  "Local service scope": { "prefix": "spp-local", "body": ["scope {", "\tlocal {", "\t\t${1:serviceName};", "\t}", "}"], "description": "APP local service scope" }
+}

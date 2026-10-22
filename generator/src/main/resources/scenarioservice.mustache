@@ -1,0 +1,106 @@
+package {{basePackage}}.{{domainName}}.service;
+
+{{#idempotencyExecution}}import com.servpp.service.idempotency.BusinessIdempotencyManager;
+import com.servpp.service.runtime.InvocationContext;
+{{/idempotencyExecution}}
+import com.servpp.service.runtime.GeneratedRoleIdentityContextBinder;
+import com.servpp.service.runtime.GeneratedServiceKind;
+import com.servpp.service.runtime.GeneratedServiceKindProvider;
+import com.servpp.service.runtime.ScopeMetadataProvider;
+import com.servpp.service.server.DefaultServiceContainer;
+import com.servpp.service.transaction.SagaLogManager;
+import com.servpp.service.transaction.SagaExecutionContext;
+import com.servpp.service.transaction.TransactionMode;
+import {{basePackage}}.{{domainName}}.handler.{{name}};
+{{compensationImports}}
+{{sagaTransactionCallImports}}
+{{responseHeaderImports}}
+{{#requestSuffix}}import {{basePackage}}.{{domainName}}.model.{{name}}{{requestSuffix}};{{/requestSuffix}}
+{{#responseSuffix}}import {{basePackage}}.{{domainName}}.model.{{name}}{{responseSuffix}};{{/responseSuffix}}
+{{#serviceBody.sppLocalVarList}}{{#type.type}}import {{basePackage}}.{{domainName}}.model.{{type.name}};{{/type.type}}{{/serviceBody.sppLocalVarList}}
+{{#sppFieldList}}
+{{#type.type}}import {{basePackage}}.{{domainName}}.handler.{{type.name}};{{/type.type}}
+{{/sppFieldList}}
+
+public class Simple{{name}} extends {{name}}{{scenarioServiceInterfaces}}{
+    {{#responseSuffix}}private {{name}}{{responseSuffix}} ret;{{/responseSuffix}}
+    {{^responseSuffix}}{{#returns.sppLocalVarList}}private {{javaType}}{{toArrayString}} ret;{{/returns.sppLocalVarList}}{{/responseSuffix}}
+    public Simple{{name}}() {
+    	{{#sppFieldList}}
+            {{#type.name}}
+            this.{{name}} = ({{type.name}})DefaultServiceContainer.getInstance().getService("{{domainName}}", "{{name}}");
+            {{/type.name}}
+    	{{/sppFieldList}}
+    }
+
+    @Override
+    public String getName() {
+        return "{{deploymentServiceName}}";
+    }
+
+    @Override
+    public String getTransactionResourceId() {
+        return getName();
+    }
+
+    @Override
+    public TransactionMode getTransactionMode() {
+        return TransactionMode.{{transactionModeName}};
+    }
+
+{{compensationServiceNamesMethod}}
+{{sagaTransactionCallMethods}}
+{{generatedServiceKindMethods}}
+{{scopeMetadataMethods}}
+    @Override
+    public Object execute(Object... params) {
+        return executeWithTechnicalInterceptors(params, () -> {
+        {{#requestSuffix}}{{name}}{{requestSuffix}} arg = ({{name}}{{requestSuffix}}) params[params.length -1];
+        GeneratedRoleIdentityContextBinder.attach(arg);
+        return com.servpp.service.runtime.BusinessChecks.executeScenario(() -> {
+        java.util.function.Supplier<Object> action = () -> {
+            {{#responseSuffix}}{{name}}{{responseSuffix}} ret;{{/responseSuffix}}
+            try {
+                {{#responseSuffix}}ret = {{/responseSuffix}}SagaExecutionContext.execute(getName(), () -> {
+                    {{funcName}}({{#serviceBody.sppLocalVarList}}{{^-first}},{{/-first}}{{requestArgumentCall}}{{/serviceBody.sppLocalVarList}});
+                    {{#responseSuffix}}{{name}}{{responseSuffix}} result = new {{name}}{{responseSuffix}}(); return result;{{/responseSuffix}}
+                    {{^responseSuffix}}return null;{{/responseSuffix}}
+                });
+                SagaLogManager.appendCurrentTrace(getName(), "DONE", getName() + " completed");
+            } catch (RuntimeException | Error e) {
+                try {
+                    SagaLogManager.appendCurrentTrace(getName(), "FAILED",
+                            e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage());
+                } catch (RuntimeException | Error logFailure) {
+                    if (logFailure != e) { e.addSuppressed(logFailure); }
+                }
+                throw e;
+            }
+            return ret;
+        };
+{{#idempotencyExecution}}
+        InvocationContext.Header invocation = InvocationContext.current();
+        if ({{idempotencyInvocationCondition}}) {
+            return BusinessIdempotencyManager.executeScenario(getName(), arg, this, {{businessManagedIdempotency}}, action);
+        }
+{{/idempotencyExecution}}
+        return com.servpp.service.runtime.ServiceInvocationScope.execute(arg, action);
+        }, () -> new {{name}}{{responseSuffix}}());{{/requestSuffix}}
+        {{^requestSuffix}}return com.servpp.service.runtime.BusinessChecks.executeScenario(() -> {
+            SagaExecutionContext.execute(getName(), () -> { {{funcName}}({{directArgumentCallJava}}); return null; });
+            return null;
+        }, () -> null);{{/requestSuffix}}
+        });
+    }
+
+
+    @Override
+    public String startTransaction() {
+        return null;
+    }
+
+    @Override
+    public void endTransaction(String id) {
+    }
+
+}

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent><groupId>com.servpp</groupId><artifactId>spplang</artifactId><version>1.0-SNAPSHOT</version><relativePath>../../../pom.xml</relativePath></parent>
+  <artifactId>spp-custom-services-example</artifactId>
+  <name>S++ basic custom technical service example</name>
+  <dependencies>
+    <dependency><groupId>com.servpp</groupId><artifactId>generator</artifactId><version>1.0-SNAPSHOT</version></dependency>
+    <dependency><groupId>com.servpp</groupId><artifactId>appframe</artifactId><version>1.0-SNAPSHOT</version></dependency>
+    <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-web</artifactId><version>3.1.5</version></dependency>
+    <dependency><groupId>org.openapitools</groupId><artifactId>jackson-databind-nullable</artifactId><version>0.2.6</version></dependency>
+    <dependency><groupId>io.swagger.core.v3</groupId><artifactId>swagger-annotations</artifactId><version>2.2.17</version></dependency>
+    <dependency><groupId>jakarta.validation</groupId><artifactId>jakarta.validation-api</artifactId><version>3.0.2</version></dependency>
+    <dependency><groupId>jakarta.annotation</groupId><artifactId>jakarta.annotation-api</artifactId><version>2.1.1</version></dependency>
+    <dependency><groupId>org.mybatis</groupId><artifactId>mybatis</artifactId><version>3.5.17</version></dependency>
+    <dependency><groupId>com.h2database</groupId><artifactId>h2</artifactId><version>2.2.224</version><scope>test</scope></dependency>
+    <dependency><groupId>junit</groupId><artifactId>junit</artifactId><version>4.13.2</version><scope>test</scope></dependency>
+  </dependencies>
+  <build>
+    <resources>
+      <resource><directory>src/main/resources</directory></resource>
+      <resource><directory>target/generated-sources/openapi/src/main/resources</directory><includes><include>META-INF/spp/**</include></includes></resource>
+    </resources>
+    <plugins>
+      <plugin>
+        <groupId>com.servpp</groupId><artifactId>generator</artifactId><version>1.0-SNAPSHOT</version>
+        <configuration>
+          <sppSourceDirectory>${project.basedir}/src/main/spp</sppSourceDirectory>
+          <yamlOutputDirectory>${project.build.directory}/spp/src/main/resources</yamlOutputDirectory>
+          <javaOutputDirectory>${project.build.directory}/generated-sources/openapi/src/main/java</javaOutputDirectory>
+          <basePackage>example.generated</basePackage>
+        </configuration>
+        <executions><execution><goals><goal>sppcompile</goal></goals></execution></executions>
+      </plugin>
+      <plugin>
+        <groupId>org.openapitools</groupId><artifactId>openapi-generator-maven-plugin</artifactId><version>7.1.0</version>
+        <executions><execution><goals><goal>generate</goal></goals><configuration>
+          <inputSpec>${project.build.directory}/spp/src/main/resources/ledger.spp.yaml</inputSpec>
+          <configurationFile>${project.build.directory}/spp/src/main/resources/ledger.numeric-codegen.json</configurationFile>
+          <generatorName>spring</generatorName><skipValidateSpec>true</skipValidateSpec>
+          <apiPackage>example.generated.ledger.handler</apiPackage>
+          <modelPackage>example.generated.ledger.model</modelPackage>
+          <invokerPackage>example.generated.ledger.handler</invokerPackage>
+          <templateDirectory>${project.build.directory}/spp/src/main/resources/JavaSpring</templateDirectory>
+          <configOptions><useSpringBoot3>true</useSpringBoot3></configOptions>
+          <addTestCompileSourceRoot>false</addTestCompileSourceRoot>
+        </configuration></execution></executions>
+      </plugin>
+      <plugin><artifactId>maven-compiler-plugin</artifactId><version>3.11.0</version></plugin>
+      <plugin><artifactId>maven-surefire-plugin</artifactId><version>3.2.5</version></plugin>
+
+    </plugins>
+  </build>
+</project>

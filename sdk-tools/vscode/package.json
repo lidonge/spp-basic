@@ -1,0 +1,159 @@
+{
+  "name": "spp-tools-basic",
+  "displayName": "S++ Tools (basic)",
+  "description": "Local S++ editing, offline compilation and Java generation without an account or scenario quota.",
+  "version": "0.1.2",
+  "publisher": "servpp",
+  "private": true,
+  "license": "Apache-2.0",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "main": "./src/extension.js",
+  "activationEvents": [
+    "onLanguage:spp"
+  ],
+  "extensionKind": [
+    "workspace"
+  ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": "limited",
+      "description": "Syntax highlighting and snippets work without trust. Java tools and semantic language features require workspace trust."
+    },
+    "virtualWorkspaces": {
+      "supported": false,
+      "description": "A local or remote filesystem and Java 17+ are required."
+    }
+  },
+  "contributes": {
+    "languages": [
+      {
+        "id": "spp",
+        "aliases": [
+          "S++",
+          "spp"
+        ],
+        "extensions": [
+          ".spp",
+          ".enum",
+          ".app",
+          ".phy",
+          ".rdb"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "spp",
+        "scopeName": "source.spp",
+        "path": "./syntaxes/spp.tmLanguage.json"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "spp",
+        "path": "./snippets/spp.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "spp.status",
+        "title": "S++: Compiler Edition"
+      },
+      {
+        "command": "spp.restartLanguageServer",
+        "title": "S++: Restart Language Server"
+      },
+      {
+        "command": "spp.languageStatus",
+        "title": "S++: Language Service Status"
+      },
+      {
+        "command": "spp.check",
+        "title": "S++: Check Project"
+      },
+      {
+        "command": "spp.generate",
+        "title": "S++: Generate Java Artifacts"
+      }
+    ],
+    "configuration": {
+      "title": "S++ Tools",
+      "properties": {
+        "spp.javaExecutable": {
+          "type": "string",
+          "default": "java",
+          "scope": "machine",
+          "description": "Trusted Java 17+ executable on the extension host."
+        },
+        "spp.cliJar": {
+          "type": "string",
+          "default": "",
+          "scope": "machine",
+          "description": "Absolute path to an SDK JAR from a trusted release. Empty uses the bundled server/spp-cli.jar."
+        },
+        "spp.languageServerJar": {
+          "type": "string",
+          "default": "",
+          "scope": "machine",
+          "description": "Absolute path to a trusted S++ language server JAR. Empty uses the bundled server/spp-language-server.jar."
+        },
+        "spp.sourceRoots": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "src/main/spp"
+          ],
+          "minItems": 1,
+          "maxItems": 16,
+          "description": "Separate, non-overlapping S++ project roots inside each workspace folder."
+        },
+        "spp.basePackage": {
+          "type": "string",
+          "default": "com.servpp.generated",
+          "description": "Java base package."
+        },
+        "spp.environment": {
+          "type": "string",
+          "default": "develop",
+          "description": "APP environment selected for SDK check/generate; independent of the physical profile."
+        },
+        "spp.physicalProfile": {
+          "type": "string",
+          "default": "",
+          "description": "Optional physical deployment profile."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "test": "node tools/build-client.js && node --test test/*.test.js",
+    "build:client": "node tools/build-client.js",
+    "check": "node --check src/extension.js && node --check src/runner.js && node --check src/language-client.js && node --check tools/build-client.js && node --check tools/package-vsix.js && node --check tools/test-host.js && node --check test/host-suite.js"
+  },
+  "files": [
+    "src/",
+    "client-dist/",
+    "server/",
+    "syntaxes/",
+    "snippets/",
+    "language-configuration.json",
+    "README.md",
+    "package.json"
+  ],
+  "dependencies": {
+    "vscode-languageclient": "9.0.1"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.12",
+    "vscode-oniguruma": "2.0.1",
+    "vscode-textmate": "9.2.0"
+  }
+}

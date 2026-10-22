@@ -1,0 +1,8 @@
+<resultMap id="get{{mybatisClass.type}}" type="{{modelPackage}}.{{mybatisClass.type}}">
+    {{#table.primaryKeys.arrayList}}
+        <id property="{{field.name}}" column="{{name}}"/>
+    {{/table.primaryKeys.arrayList}}
+    {{#mybatisClass}}
+    {{>resultmapFields}}
+    {{/mybatisClass}}
+</resultMap>

@@ -1,0 +1,48 @@
+domain ledger;
+
+Role Facts {
+    int amount;
+}
+
+Entity Entry {
+    String code;
+    String note;
+    int amount;
+}
+
+Contract Revision {
+    String note;
+    int amount;
+}
+
+atomic calculate twice(Facts) {
+    Facts.amount *= 2;
+}
+
+Scenario serial preview(Facts) {
+    twice;
+}
+
+atomic calculate applyRevision(Entry, Revision) {
+    Entry.note = Revision.note;
+    Entry.amount = Revision.amount;
+}
+
+Scenario serial createRecord(Entry, Revision) {
+    applyRevision;
+    transaction {
+        insertEntry;
+    }
+}
+
+Scenario serial readRecord(Entry) {
+    findEntry;
+}
+
+Scenario serial reviseRecord(Entry, Revision) {
+    findEntry;
+    applyRevision;
+    transaction {
+        updateEntry;
+    }
+}

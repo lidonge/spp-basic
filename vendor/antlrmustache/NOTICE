@@ -1,0 +1,8 @@
+antlrmustache
+
+The mustache and multiexpr modules are distributed under the Apache License,
+Version 2.0, with the maintainer's authorization dated 2026-10-22.
+Original author notices in the source files are retained.
+See ORIGIN.json for the fixed upstream revision and original file hashes,
+and SPP-INTEGRATION.md for changes made in this source distribution.
+External Maven dependencies retain their own licenses and notices.

@@ -1,0 +1,51 @@
+package {{basePackage}}.{{domainName}}.service;
+
+import com.servpp.service.runtime.GeneratedServiceKind;
+import com.servpp.service.runtime.GeneratedServiceKindProvider;
+import com.servpp.service.runtime.RemoteGeneratedService;
+import com.servpp.service.runtime.ScopeMetadataProvider;
+import com.servpp.service.transaction.TransactionMode;
+import {{basePackage}}.{{domainName}}.handler.{{name}};
+{{remoteCompensationImports}}
+{{#serviceBody.sppLocalVarList}}
+{{#type.type}}import {{type.packageName}}.{{type.name}};{{/type.type}}
+{{/serviceBody.sppLocalVarList}}
+
+public class Simple{{name}} extends {{name}} implements RemoteGeneratedService, ScopeMetadataProvider, GeneratedServiceKindProvider{{remoteCompensationInterface}} {
+    @Override
+    public String getName() {
+        return "{{funcName}}";
+    }
+
+    @Override
+    public String getTransactionResourceId() {
+        return getName();
+    }
+
+    @Override
+    public TransactionMode getTransactionMode() {
+        return TransactionMode.{{transactionModeName}};
+    }
+
+{{scopeMetadataMethods}}
+{{generatedServiceKindMethods}}
+{{remoteCompensationServiceNamesMethod}}
+    @Override
+    public void {{funcName}}({{#serviceBody.sppLocalVarList}}{{^-first}},{{/-first}}{{serviceJavaType}} {{name}}{{/serviceBody.sppLocalVarList}}) {
+        throw new UnsupportedOperationException("Remote scenario {{funcName}} requires an adapter implementation.");
+    }
+
+    @Override
+    public Object execute(Object... params) {
+        throw new UnsupportedOperationException("Remote scenario {{funcName}} requires an adapter implementation.");
+    }
+
+    @Override
+    public String startTransaction() {
+        return null;
+    }
+
+    @Override
+    public void endTransaction(String id) {
+    }
+}

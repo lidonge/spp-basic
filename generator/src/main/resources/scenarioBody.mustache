@@ -1,0 +1,35 @@
+{{#topLevelServiceCallList}}
+{{#callee}}
+{{funcName}}.{{funcName}}({{#sppParameterList}}{{^-first}},{{/-first}}{{nameCall}}{{/sppParameterList}});
+{{/callee}}
+{{#executeCall}}
+{{#-first}}
+new I{{parentUpperType}}ExecuteGroup() {
+    @Override
+    public IExecutor[] getServices() {
+        return new IExecutor[]{
+{{/-first}}
+{{^-first}},{{/-first}}
+{{>scenarioExecutor}}
+{{#-last}}
+        };
+    }
+}.execute();
+{{/-last}}
+{{/executeCall}}
+{{#transactionCall}}
+{{#-first}}
+new ITransactionGroup() {
+    @Override
+    public IExecutor[] getServices() {
+        return new IExecutor[]{
+{{/-first}}
+{{^-first}},{{/-first}}
+{{>scenarioExecutor}}
+{{#-last}}
+        };
+    }
+}.execute();
+{{/-last}}
+{{/transactionCall}}
+{{/topLevelServiceCallList}}

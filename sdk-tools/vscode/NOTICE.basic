@@ -1,0 +1,8 @@
+S++ Tools (basic)
+
+The S++ source components in this basic package use Apache-2.0.
+Third-party dependencies retain their original licenses and notices. Bundled
+Node dependency notices are in client-dist/licenses; Java dependency notices
+must accompany the corresponding basic CLI and language-server distribution.
+This notice grants no license to separately distributed commercial components
+or to the S++ trademarks.

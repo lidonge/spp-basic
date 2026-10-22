@@ -1,0 +1,18 @@
+{{#callee}}
+new IExecutor() {
+    @Override
+    public Service getService() {
+        return {{funcName}};
+    }
+
+    @Override
+    public Object[] getArguments() {
+        return new Object[]{ {{#sppParameterList}}{{^-first}}, {{/-first}}{{nameCall}}{{/sppParameterList}} };
+    }
+
+    @Override
+    public void execute() {
+        {{funcName}}.{{funcName}}({{#sppParameterList}}{{^-first}},{{/-first}}{{nameCall}}{{/sppParameterList}});
+    }
+}
+{{/callee}}

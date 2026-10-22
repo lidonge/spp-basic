@@ -1,0 +1,14 @@
+{{#tableList.arrayList}}
+    drop table {{appTable.name}};
+    create table {{appTable.name}} (
+    {{#columns.arrayList}}
+
+        {{name}} {{jdbcType}}{{#precisionScale}}{{precisionScale}}{{/precisionScale}} {{nullString}}{{^-last}},{{/-last}}{{/columns.arrayList}}{{#primaryKeys}},{{/primaryKeys}}{{^primaryKeys}}{{#dbForeigns}},{{/dbForeigns}}{{/primaryKeys}}
+    {{#primaryKeys}}
+        constraint pk_{{appTable.name}} primary key ({{#arrayList}}{{^-first}},{{/-first}}{{name}}{{/arrayList}}){{#dbForeigns}}{{#-first}},{{/-first}}{{/dbForeigns}}
+    {{/primaryKeys}}
+    {{#dbForeigns}}
+        constraint fk_{{appTable.name}}_{{-index}} foreign key ({{#foreignKeys.arrayList}}{{^-first}},{{/-first}}{{name}}{{/foreignKeys.arrayList}}) references {{reference.appTable.name}} ({{#foreignKeys.arrayList}}{{^-first}},{{/-first}}{{refName}}{{/foreignKeys.arrayList}}){{^-last}},{{/-last}}
+    {{/dbForeigns}}
+    );
+{{/tableList.arrayList}}

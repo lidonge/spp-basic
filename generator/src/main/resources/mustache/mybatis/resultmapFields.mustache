@@ -1,0 +1,11 @@
+    {{#fields}}
+        {{#column}}<result property="{{property}}" column="{{column}}"/>{{/column}}
+        {{^column}}
+            {{#refName}}<association property="{{property}}" column="{ {{#foreignKeys}}{{^-first}},{{/-first}}{{key}}={{value}}{{/foreignKeys}} }" javaType="{{modelPackage}}.{{refName}}"
+                select="{{packageName}}.{{refName}}Mapper.get{{refName}}">
+                </association>{{/refName}}
+            {{^refName}}<association property="{{property}}">
+                {{>resultmapFields}}
+                </association>{{/refName}}
+        {{/column}}
+    {{/fields}}

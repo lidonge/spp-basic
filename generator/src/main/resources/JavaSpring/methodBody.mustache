@@ -1,0 +1,20 @@
+{{! Modified for S++ generated service dispatch. Based on OpenAPI Generator 6.5.0 JavaSpring/methodBody.mustache (Apache-2.0); see distribution THIRD-PARTY.md. }}
+getRequest().ifPresent(request -> {
+            for (MediaType mediaType: MediaType.parseMediaTypes(request.getHeader("Accept"))) {
+                if (mediaType.isCompatibleWith(MediaType.valueOf("application/json"))) {
+                    Object ret =
+                    com.servpp.service.server.DefaultServiceContainer.getInstance().getService("{{operationId}}").execute({{#allParams}}{{^-first}},{{/-first}}{{paramName}}{{/allParams}});
+                    com.fasterxml.jackson.databind.ObjectWriter ow = new com.fasterxml.jackson.databind.ObjectMapper().
+                    registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule()).writer().withDefaultPrettyPrinter();
+                    try {
+                        //String json = ow.writeValueAsString({{#allParams}}{{#-last}}{{paramName}}{{/-last}}{{/allParams}});
+                        String json = ow.writeValueAsString(ret);
+                        ApiUtil.setExampleResponse(request,"application/json",json);
+                    } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+                        throw new IllegalStateException("Failed to serialize response for {{operationId}}.", e);
+                    }
+                    break;
+            }
+        }
+        });
+        return new ResponseEntity<>(HttpStatus.OK);

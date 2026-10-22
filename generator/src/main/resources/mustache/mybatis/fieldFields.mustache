@@ -1,0 +1,6 @@
+        {{#fields}}
+            {{#foreignKeys}}<if test="{{key}} != null">#{ {{key}} }{{^-last}},</if>{{/-last}}{{/foreignKeys}}{{#refName}}{{^-last}},</if>{{/-last}}{{#-last}}</if>{{/-last}}{{/refName}}
+            {{^foreignKeys}}{{#column}}{{^parent.property}}<if test="{{qualifiedName}} != null">#{ {{qualifiedName}} }{{^-last}},{{/-last}}</if>{{/parent.property}}{{/column}}{{/foreignKeys}}
+            {{^foreignKeys}}{{#column}}{{#parent.property}}<if test="{{qualifiedName}} != null">#{ {{qualifiedName}} }{{^-last}},</if>{{/-last}}{{/parent.property}}{{/column}}{{/foreignKeys}}
+            {{^foreignKeys}}{{^column}}{{>fieldFields}}{{#-last}}</if>{{/-last}}{{/column}}{{/foreignKeys}}
+        {{/fields}}

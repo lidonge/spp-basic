@@ -1,0 +1,79 @@
+openapi: 3.0.0
+servers:
+  - url: 'http://invoice.swagger.io/v3'
+info:
+  description: >-
+    This is a sample server Invoice server. For this sample, you can use the api key
+    `special-key` to test the authorization filters.
+  version: 1.0.0
+  title: OpenAPI Invoice
+  license:
+    name: Apache-2.0
+    url: 'https://www.apache.org/licenses/LICENSE-2.0.html'
+{{#tags}}
+{{#-first}}tags:{{/-first}}
+  - name: {{name}}
+    description: {{description}}
+{{/tags}}
+{{#paths}}
+{{#-first}}paths:{{/-first}}
+   /{{path}}:
+    {{#operations}}
+    {{method}}:
+      tags:
+      {{#tags}}
+        - {{.}}
+      {{/tags}}
+      {{#summary}}summary: {{summary}}{{/summary}}
+      {{#description}}description: {{description}}{{/description}}
+      operationId: {{operationId}}
+      {{#responses}}
+      {{#-first}}responses:{{/-first}}
+        {{code}}:
+          {{#description}}description: {{description}}{{/description}}
+          {{#content}}
+          {{#-first}}content:{{/-first}}
+            {{#encoding}}
+            {{contentType}}:
+              schema:
+                $ref: '{{{schema.$ref}}}'
+            {{/encoding}}
+          {{/content}}
+      {{/responses}}
+      {{#requestBody}}
+      {{#-first}}requestBody:{{/-first}}
+        $ref: '{{{$ref}}}'
+      {{/requestBody}}
+    {{/operations}}
+{{/paths}}
+{{#components}}
+components:
+{{#requestBodies}}
+    {{#-first}}requestBodies:{{/-first}}
+        {{name}}:
+          {{#content}}
+          {{#-first}}content:{{/-first}}
+            {{#encoding}}
+            {{contentType}}:
+              schema:
+                $ref: '{{{schema.$ref}}}'
+            {{/encoding}}
+          {{#description}}description: {{description}}{{/description}}
+          required: {{required}}
+          {{/content}}
+{{/requestBodies}}
+{{#schemas}}
+    {{#-first}}schemas:{{/-first}}
+     {{name}}:
+       title: {{title}}
+       {{#description}}description: {{description}}{{/description}}
+       type: {{type}}
+       {{#properties}}
+       {{#-first}}properties:{{/-first}}
+            {{name}}:
+                type: {{type}}
+                {{#format}}format: {{format}}{{/format}}
+                {{#$ref}}$ref: {{{$ref}}}{{/$ref}}
+       {{/properties}}
+{{/schemas}}
+{{/components}}
