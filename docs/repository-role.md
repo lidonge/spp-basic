@@ -50,3 +50,10 @@ Actual local checks for BASIC-DEPENDENCY-1:
 Downstream platform and commercial integration validation is recorded in the
 private integration workspace; it does not introduce a reverse build dependency
 or certify distributed recovery, production accounts or hosted CI execution.
+
+The shared VSIX verifier also exposes its CLI entry as a callable function with
+an explicit downstream default-public-key path. This preserves existing trusted
+key locations when only the implementation moves. Default keys still require
+local-test opt-in and cannot authenticate production releases. Three independent
+verifier tests passed, including these trust-boundary checks; no private signing
+key or production trust material is added.

@@ -13,19 +13,18 @@ async function boundedRead(path, maximum) {
   if (bytes.length > maximum) throw new Error('Release input exceeds size limit');
   return bytes;
 }
-async function main() {
+export async function main(argumentsList = process.argv.slice(2), { defaultKey = resolve(dirname(fileURLToPath(import.meta.url)), 'keys/vsix-local-test-public.pem') } = {}) {
   const options = {};
-  for (let i = 2; i < process.argv.length; i++) {
-    const name = process.argv[i];
+  for (let i = 0; i < argumentsList.length; i++) {
+    const name = argumentsList[i];
     if (name === '--allow-local-test') options[name] = true;
-    else if (['--artifact', '--manifest', '--signature', '--public-key', '--expected-version', '--expected-extension', '--install-with'].includes(name) && process.argv[i + 1] && !process.argv[i + 1].startsWith('--')) options[name] = process.argv[++i];
+    else if (['--artifact', '--manifest', '--signature', '--public-key', '--expected-version', '--expected-extension', '--install-with'].includes(name) && argumentsList[i + 1] && !argumentsList[i + 1].startsWith('--')) options[name] = argumentsList[++i];
     else throw new Error('Unknown or incomplete argument: ' + name);
   }
   for (const required of ['--artifact', '--manifest', '--signature', '--expected-version'])
     if (!options[required]) throw new Error('Required: ' + required);
   // The checked-in key is for local testing only. Production consumers must obtain
   // the production key through an independent trusted distribution channel.
-  const defaultKey = resolve(dirname(fileURLToPath(import.meta.url)), 'keys/vsix-local-test-public.pem');
   if (!options['--public-key'] && !options['--allow-local-test']) throw new Error('Supply an independently trusted production public key');
   const artifact = await boundedRead(options['--artifact'], 256 * 1024 * 1024);
   const manifest = verifyArtifact({ artifact,
@@ -48,4 +47,6 @@ async function main() {
     } finally { await rm(directory, { recursive: true, force: true }); }
   }
 }
-main().catch(error => { console.error(error.message); process.exitCode = 1; });
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main().catch(error => { console.error(error.message); process.exitCode = 1; });
+}
