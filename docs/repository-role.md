@@ -64,3 +64,17 @@ member descriptor's own terms do not replace those source-component notices.
 The original basic package layout and its commercial-component rejection checks
 are preserved. The editor suite was rerun after this packaging change: 56 passed,
 two member-JAR-specific skips, zero failures.
+
+## Shared editor account-status compatibility
+
+For BASIC-DEPENDENCY-1, the maintainer explicitly authorized publication of the
+shared editor account-status display, error guidance, corresponding regression
+test and documentation on 2026-10-23. This preserves optional protocol-2 client
+compatibility while Basic remains usable offline without membership. Only those
+reviewed client files were imported; private SDK/backend code and history were
+not imported. Basic edition metadata advances to 0.1.3.
+
+After this update, the built editor suite passed 57 tests with two member-JAR
+packaging cases skipped; all three independent integrity tests passed. The
+compiler/runtime Maven sources are unchanged from the previously validated
+1,238-test build. No signed release or production deployment was performed.

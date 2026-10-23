@@ -83,10 +83,11 @@ function runCli(executable, jar, argumentsList, token, options = {}) {
         stdout += decoder.end();
         const response = JSON.parse(stdout);
         if (code !== 0 || response.ok !== true) {
-          const allowed = new Set(['SCENARIO_LIMIT_EXCEEDED', 'TECHNICAL_SERVICE_LIMIT_EXCEEDED', 'DEPLOYMENT_NOT_INCLUDED', 'DEPLOYMENT_TARGET_UNRESOLVED', 'MEMBERSHIP_PROTOCOL_REQUIRED', 'SDK_RELEASE_UNAVAILABLE', 'AUTH_NOT_CONFIGURED', 'AUTH_DENIED', 'AUTH_UNAVAILABLE', 'INVALID_LEASE',
+          const allowed = new Set(['ENHANCED_GENERATION_UNAVAILABLE', 'SCENARIO_LIMIT_EXCEEDED', 'TECHNICAL_SERVICE_LIMIT_EXCEEDED', 'DEPLOYMENT_NOT_INCLUDED', 'DEPLOYMENT_TARGET_UNRESOLVED', 'MEMBERSHIP_PROTOCOL_REQUIRED', 'SDK_RELEASE_UNAVAILABLE', 'AUTH_NOT_CONFIGURED', 'AUTH_DENIED', 'AUTH_UNAVAILABLE', 'INVALID_LEASE',
             'AUTH_PROTOCOL', 'AUTH_LOGIN_EXPIRED', 'AUTH_CACHE', 'AUTH_CLOCK', 'CREDENTIAL_STORAGE', 'CANCELLED', 'LOGIN_REQUIRED', 'FEATURE_DENIED', 'OUTPUT_EXISTS', 'INVALID_SOURCE', 'INVALID_ARGUMENT', 'COMPILATION_FAILED', 'COMPILATION_TIMEOUT', 'OUTPUT_BUSY', 'ATOMIC_OUTPUT_UNSUPPORTED']);
           const errorCode = allowed.has(response.error?.code) ? response.error.code : 'CLI_FAILED';
           const guidance = {
+            ENHANCED_GENERATION_UNAVAILABLE: 'You are signed in, but official enhanced generation is not available yet. Free editing and the open-source basic compiler remain available.',
             SCENARIO_LIMIT_EXCEEDED: 'This project exceeds the scenario limit in your current signed authorization.',
             TECHNICAL_SERVICE_LIMIT_EXCEEDED: 'Review the APP technical service registrations; repeated hook references count once.',
             DEPLOYMENT_NOT_INCLUDED: 'Use a local application target or an authorization that includes distributed deployment. Remote databases are allowed locally.',

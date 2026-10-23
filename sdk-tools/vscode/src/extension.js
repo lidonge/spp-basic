@@ -125,12 +125,14 @@ function activate(context) {
         finally { subscription?.dispose(); }
         const polled = await invoke(['auth-poll'],{clientId:'spp-vscode',deviceCode:started.deviceCode},undefined,cancellation);
         if (polled.pending) { interval = Math.max(interval,polled.interval); continue; }
-        await invoke(['status'],polled.accessToken,undefined,cancellation);
+        const account = await invoke(['status'],polled.accessToken,undefined,cancellation);
         let previous;
         try { previous = savedCredential(await context.secrets.get(secretKey)); } catch { previous = null; }
         await context.secrets.store(secretKey,JSON.stringify(polled));
         if (previous) await invoke(['logout'],previous.accessToken,undefined,cancellation);
-        vscode.window.showInformationMessage('S++ client authorized.');
+        vscode.window.showInformationMessage(account.accountProtocol === 2
+          ? 'S++ signed in. Free evaluation membership has no expiry. Enhanced generation is not available yet.'
+          : 'S++ client authorized.');
         return;
       }
     });
@@ -158,7 +160,9 @@ function activate(context) {
   register('spp.status', async () => {
     if (await basicEdition()) { vscode.window.showInformationMessage('S++ basic edition: offline compilation, no account or scenario quota.'); return; }
     const result = await invoke(['status'], await token());
-    vscode.window.showInformationMessage(`S++ authorized until ${new Date(result.expiresAt * 1000).toISOString()}`);
+    vscode.window.showInformationMessage(result.accountProtocol === 2
+      ? 'S++ signed in. Free evaluation membership has no expiry. Enhanced generation is not available yet.'
+      : `S++ authorized until ${new Date(result.expiresAt * 1000).toISOString()}`);
   });
 
   for (const operation of ['check', 'generate']) register(`spp.${operation}`, async () => {

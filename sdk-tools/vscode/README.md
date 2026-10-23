@@ -1,5 +1,17 @@
 # S++ Tools (basic)
 
+## Current account sign-in (0.1.3)
+
+A trusted internally configured preview with `accountProtocol: 2` supports device-code
+sign-in, account status, credential refresh and revocation for the current free evaluation
+membership. Sign-in no longer requires an old compiler lease. Membership has no expiry;
+short-lived login credentials do not limit the runtime of generated programs.
+Official enhanced generation is still unavailable and is rejected by the platform and CLI.
+The open-source basic compiler and all free editing features remain independent of sign-in.
+Unconfigured development builds still fail closed with `AUTH_NOT_CONFIGURED`.
+The legacy compiler-lease workflows described below remain for compatibility tests only;
+upgrading the extension alone does not configure its bundled SDK for a production service.
+
 Local S++ syntax highlighting, diagnostics, formatting, completion, outline and
 definition navigation, plus an offline compiler with no account or scenario quota.
 The extension runs on the workspace host and needs Java 17 or newer. Remote SSH

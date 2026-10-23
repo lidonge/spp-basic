@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
 
-function harness({ basic = false, trusted = true, fail = false, sdkMissing = false, sdkDirectory = false, configuredJar = "/trusted/cli.jar", configureSdk = false, refreshFailure, usageConsent, workspaceUsageConsent, environment, physicalProfile, telemetryEnabled=true } = {}) {
+function harness({ basic = false, currentAccount = false, trusted = true, fail = false, sdkMissing = false, sdkDirectory = false, configuredJar = "/trusted/cli.jar", configureSdk = false, refreshFailure, usageConsent, workspaceUsageConsent, environment, physicalProfile, telemetryEnabled=true } = {}) {
   const commands = new Map();
   const secrets = new Map();
   const calls = [];
@@ -59,6 +59,7 @@ function harness({ basic = false, trusted = true, fail = false, sdkMissing = fal
         if (fail) throw new Error('Authorization rejected.');
         if(args[2][0]==='auth-start')return {deviceCode:'private-device',userCode:'ABCD-2345',verificationUri:'https://servpp.test/sdk/activate',expiresIn:600,interval:5};
         if(args[2][0]==='auth-poll')return fresh;
+        if(args[2][0]==='status' && currentAccount)return {accountProtocol:2,authenticated:true,membership:{unlimitedDuration:true,enhancedGenerationAvailable:false}};
         if(args[2][0]==='auth-refresh') {if(refreshFailure)throw Object.assign(new Error('refresh failed'),{code:refreshFailure});return {...fresh,accessToken:'c'.repeat(43),refreshToken:'r_'+'d'.repeat(43)};}
         return { expiresAt: 1800000000 };
       } };
@@ -88,6 +89,16 @@ test('failed sign-in does not save credentials', async () => {
   await host.commands.get('spp.signIn')();
   assert.equal(host.secrets.size, 0);
   assert.equal(host.errors.length, 1);
+});
+
+test('current account signs in without claiming a compiler lease or membership expiry', async () => {
+  const host = harness({ currentAccount: true });
+  await host.commands.get('spp.signIn')();
+  await host.commands.get('spp.status')();
+  assert.equal(JSON.parse(host.secrets.get('spp.accessToken')).accessToken, host.fresh.accessToken);
+  assert.match(host.visible.join(' '), /signed in.*no expiry.*not available yet/);
+  assert.doesNotMatch(host.visible.join(' '), /authorized until|Invalid Date/);
+  assert.deepEqual(host.errors, []);
 });
 
 test('untrusted workspace refuses execution even if command is called directly', async () => {

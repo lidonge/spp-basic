@@ -2,7 +2,7 @@
   "name": "spp-tools-basic",
   "displayName": "S++ Tools (basic)",
   "description": "Local S++ editing, offline compilation and Java generation without an account or scenario quota.",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "publisher": "servpp",
   "private": true,
   "license": "Apache-2.0",
