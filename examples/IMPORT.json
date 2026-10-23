@@ -3,12 +3,13 @@
   "requirement": "BASIC-EXAMPLES-20261023-v1",
   "repository": "https://github.com/lidonge/spp-examples",
   "baselineRevision": "417a41f272629a14ff004d8fd89cb369357e5a62",
-  "sourceState": "Working-tree basic-profile and English-documentation updates atop baseline; not an assertion that baseline contains these bytes.",
+  "sourceState": "Working-tree basic-profile and English-documentation updates atop baseline; not an assertion that baseline contains these bytes. Demo learning guides subsequently rewritten under DEMO-CAPABILITY-GUIDES-v1 against current source; updated documentation hashes describe working-tree revisions, not the baseline.",
   "scope": "Demo sources/tests/docs, Maven configuration, selected checks/install helper, license and book copyright notice. No Git history, book manuscripts, website, binaries or commercial implementation.",
   "adaptations": [
     "External links for unbundled book/site files",
     "Integrated build instructions and contribution paths",
-    "Original MIT scope and book reserved-rights retained"
+    "Original MIT scope and book reserved-rights retained",
+    "English A-E capability tutorials and source-checked excerpts; old document paths retained as navigation-only entries"
   ],
   "files": [
     {
@@ -55,110 +56,134 @@
     },
     {
       "path": "demos/bank-deposit/README.md",
-      "sourceSha256": "ae667d62610daa6adb7477e0a1503b4426a6392b0c97e5cd2f15936f6398fce8",
-      "importedSha256": "0a260c8c96d9d07c743f08637366dad5b3fac580b719dc2511f96d6481a23d41",
+      "sourceSha256": "05d127892fa913e5f4fb585b873219121e82f326514702305dd49f892dd0e084",
+      "importedSha256": "05d127892fa913e5f4fb585b873219121e82f326514702305dd49f892dd0e084",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/README.md",
+      "sourceSha256": "a33939027fc3be4b972aef1b7c1ac018b3be85676a154709c719121368c24550",
+      "importedSha256": "a33939027fc3be4b972aef1b7c1ac018b3be85676a154709c719121368c24550",
       "executable": false
     },
     {
       "path": "demos/bank-deposit/docs/acceptance-audit.md",
-      "sourceSha256": "28e7883e8c4c553d9d467474a090b26dc85d562511e6cb68af328e4768593e67",
-      "importedSha256": "28e7883e8c4c553d9d467474a090b26dc85d562511e6cb68af328e4768593e67",
+      "sourceSha256": "d5b64e2e0adb6e2a51ec437ec4fc2c69dd838e5c52a935804c5327716eefc5a6",
+      "importedSha256": "d5b64e2e0adb6e2a51ec437ec4fc2c69dd838e5c52a935804c5327716eefc5a6",
       "executable": false
     },
     {
       "path": "demos/bank-deposit/docs/acceptance-history.md",
-      "sourceSha256": "23f58016b54929ed94f1443c74fd9cd96d1aacd7f38dc48fd6fe1674da32173e",
-      "importedSha256": "23f58016b54929ed94f1443c74fd9cd96d1aacd7f38dc48fd6fe1674da32173e",
+      "sourceSha256": "d5b64e2e0adb6e2a51ec437ec4fc2c69dd838e5c52a935804c5327716eefc5a6",
+      "importedSha256": "d5b64e2e0adb6e2a51ec437ec4fc2c69dd838e5c52a935804c5327716eefc5a6",
       "executable": false
     },
     {
       "path": "demos/bank-deposit/docs/accrual-execution.md",
-      "sourceSha256": "4c832e39023c124edd16236bc11568c6b4f7148870d480401ec4b3afb8ab7f80",
-      "importedSha256": "4c832e39023c124edd16236bc11568c6b4f7148870d480401ec4b3afb8ab7f80",
+      "sourceSha256": "26a06e9016aafd3822d4f286f78c32f7c3390f96adb8c6aae2db23cfe4f0c1ed",
+      "importedSha256": "26a06e9016aafd3822d4f286f78c32f7c3390f96adb8c6aae2db23cfe4f0c1ed",
       "executable": false
     },
     {
       "path": "demos/bank-deposit/docs/audit-and-failure.md",
-      "sourceSha256": "0c4fa1255b4fa52201cd7b9359d94f4a9dbe6481543ce10e03dc770e24ea9395",
-      "importedSha256": "0c4fa1255b4fa52201cd7b9359d94f4a9dbe6481543ce10e03dc770e24ea9395",
+      "sourceSha256": "d5b64e2e0adb6e2a51ec437ec4fc2c69dd838e5c52a935804c5327716eefc5a6",
+      "importedSha256": "d5b64e2e0adb6e2a51ec437ec4fc2c69dd838e5c52a935804c5327716eefc5a6",
       "executable": false
     },
     {
       "path": "demos/bank-deposit/docs/bank-qualification.md",
-      "sourceSha256": "7e3966f0dbd15f4a2defd40675f2aefb2691cd86a007a74547523a2eb95b7281",
-      "importedSha256": "7e3966f0dbd15f4a2defd40675f2aefb2691cd86a007a74547523a2eb95b7281",
+      "sourceSha256": "26a06e9016aafd3822d4f286f78c32f7c3390f96adb8c6aae2db23cfe4f0c1ed",
+      "importedSha256": "26a06e9016aafd3822d4f286f78c32f7c3390f96adb8c6aae2db23cfe4f0c1ed",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/business-rules.md",
+      "sourceSha256": "e74020304778e8c5851a5d59029e7694b7076250ebe01f4102a2240e70f2161b",
+      "importedSha256": "e74020304778e8c5851a5d59029e7694b7076250ebe01f4102a2240e70f2161b",
       "executable": false
     },
     {
       "path": "demos/bank-deposit/docs/cash-execution-contract.md",
-      "sourceSha256": "c5db1289566ffab8f93ed62c289698656fe7117ac83c27c5b85e925f20536359",
-      "importedSha256": "c5db1289566ffab8f93ed62c289698656fe7117ac83c27c5b85e925f20536359",
+      "sourceSha256": "26a06e9016aafd3822d4f286f78c32f7c3390f96adb8c6aae2db23cfe4f0c1ed",
+      "importedSha256": "26a06e9016aafd3822d4f286f78c32f7c3390f96adb8c6aae2db23cfe4f0c1ed",
       "executable": false
     },
     {
       "path": "demos/bank-deposit/docs/cash-reversal-source.md",
-      "sourceSha256": "bcb95d0810e09d8c8a750468f63e3bd890e1c0098f8b75bf87c2a25558482346",
-      "importedSha256": "bcb95d0810e09d8c8a750468f63e3bd890e1c0098f8b75bf87c2a25558482346",
+      "sourceSha256": "26a06e9016aafd3822d4f286f78c32f7c3390f96adb8c6aae2db23cfe4f0c1ed",
+      "importedSha256": "26a06e9016aafd3822d4f286f78c32f7c3390f96adb8c6aae2db23cfe4f0c1ed",
       "executable": false
     },
     {
       "path": "demos/bank-deposit/docs/completion-audit.md",
-      "sourceSha256": "5ba06f4821734f6cc3106759d1df8038151b516ca586250da342c7c06cd87bbc",
-      "importedSha256": "5ba06f4821734f6cc3106759d1df8038151b516ca586250da342c7c06cd87bbc",
+      "sourceSha256": "d5b64e2e0adb6e2a51ec437ec4fc2c69dd838e5c52a935804c5327716eefc5a6",
+      "importedSha256": "d5b64e2e0adb6e2a51ec437ec4fc2c69dd838e5c52a935804c5327716eefc5a6",
       "executable": false
     },
     {
       "path": "demos/bank-deposit/docs/decisions.md",
-      "sourceSha256": "cc86176059f39cfa3d7b39b98f0598d61bedbee20728bf9d8cf0b717dab3e016",
-      "importedSha256": "cc86176059f39cfa3d7b39b98f0598d61bedbee20728bf9d8cf0b717dab3e016",
+      "sourceSha256": "689999e66e69af85c9f434cca75def040aedda713e9979f3bc575506de5a468b",
+      "importedSha256": "689999e66e69af85c9f434cca75def040aedda713e9979f3bc575506de5a468b",
       "executable": false
     },
     {
       "path": "demos/bank-deposit/docs/default-reversal-design.md",
-      "sourceSha256": "9698c4858dab743fbe6aa6c10ebb47d290b20c088a547c554e542891305154c2",
-      "importedSha256": "9698c4858dab743fbe6aa6c10ebb47d290b20c088a547c554e542891305154c2",
+      "sourceSha256": "26a06e9016aafd3822d4f286f78c32f7c3390f96adb8c6aae2db23cfe4f0c1ed",
+      "importedSha256": "26a06e9016aafd3822d4f286f78c32f7c3390f96adb8c6aae2db23cfe4f0c1ed",
       "executable": false
     },
     {
       "path": "demos/bank-deposit/docs/deposit-store-retirement.md",
-      "sourceSha256": "1e69e26ceae602bb552ddd07234143af41b9d58125463c43282992181cb6e55b",
-      "importedSha256": "1e69e26ceae602bb552ddd07234143af41b9d58125463c43282992181cb6e55b",
+      "sourceSha256": "4e6fb416c0796eeb75f99906410798296574d233951073d0b29c51697d431b64",
+      "importedSha256": "4e6fb416c0796eeb75f99906410798296574d233951073d0b29c51697d431b64",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/domain-and-layers.md",
+      "sourceSha256": "a8a4c120909a6144f8fb2014d7724049f7bddb501c115a0cc2e3c95047bfef5f",
+      "importedSha256": "a8a4c120909a6144f8fb2014d7724049f7bddb501c115a0cc2e3c95047bfef5f",
       "executable": false
     },
     {
       "path": "demos/bank-deposit/docs/implementation-path.md",
-      "sourceSha256": "3a6d1c04b1fe29c4e2401416708013c3daa4c5356c0b230a7dbe249365b1d546",
-      "importedSha256": "3a6d1c04b1fe29c4e2401416708013c3daa4c5356c0b230a7dbe249365b1d546",
+      "sourceSha256": "b9ed9f51597efe9eab5464f63952b47bd2ffa8f6f884cef744ac4eaf0dac3645",
+      "importedSha256": "b9ed9f51597efe9eab5464f63952b47bd2ffa8f6f884cef744ac4eaf0dac3645",
       "executable": false
     },
     {
       "path": "demos/bank-deposit/docs/known-issues-latest.md",
-      "sourceSha256": "1406d40684934520d8e82c58c6c1964ade6cd970fc7f8ed9b5e1af856809785a",
-      "importedSha256": "1406d40684934520d8e82c58c6c1964ade6cd970fc7f8ed9b5e1af856809785a",
+      "sourceSha256": "d5b64e2e0adb6e2a51ec437ec4fc2c69dd838e5c52a935804c5327716eefc5a6",
+      "importedSha256": "d5b64e2e0adb6e2a51ec437ec4fc2c69dd838e5c52a935804c5327716eefc5a6",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/language-tour.md",
+      "sourceSha256": "5b175dfdfa25d3b65afb42e1b567852ce5627050954b6099ad981723db5babff",
+      "importedSha256": "5b175dfdfa25d3b65afb42e1b567852ce5627050954b6099ad981723db5babff",
       "executable": false
     },
     {
       "path": "demos/bank-deposit/docs/latest-petstore-refactoring.md",
-      "sourceSha256": "979fdc3bee8391835c6ae8ff93373541b323cb5278a0f9ee3ba26f843b409ecc",
-      "importedSha256": "979fdc3bee8391835c6ae8ff93373541b323cb5278a0f9ee3ba26f843b409ecc",
+      "sourceSha256": "4e6fb416c0796eeb75f99906410798296574d233951073d0b29c51697d431b64",
+      "importedSha256": "4e6fb416c0796eeb75f99906410798296574d233951073d0b29c51697d431b64",
       "executable": false
     },
     {
       "path": "demos/bank-deposit/docs/latest-refactoring-verification.md",
-      "sourceSha256": "7ce8bdd91a4af4900825f2b8c4f2562059eed43795c55b1b5ab271fd79d6cd4a",
-      "importedSha256": "7ce8bdd91a4af4900825f2b8c4f2562059eed43795c55b1b5ab271fd79d6cd4a",
+      "sourceSha256": "d5b64e2e0adb6e2a51ec437ec4fc2c69dd838e5c52a935804c5327716eefc5a6",
+      "importedSha256": "d5b64e2e0adb6e2a51ec437ec4fc2c69dd838e5c52a935804c5327716eefc5a6",
       "executable": false
     },
     {
       "path": "demos/bank-deposit/docs/legacy-entry-migration.md",
-      "sourceSha256": "c29ba9ea3c574f6836d631f7f991481f2cc8158cfd0f52dce7305ebffb1078ce",
-      "importedSha256": "c29ba9ea3c574f6836d631f7f991481f2cc8158cfd0f52dce7305ebffb1078ce",
+      "sourceSha256": "4e6fb416c0796eeb75f99906410798296574d233951073d0b29c51697d431b64",
+      "importedSha256": "4e6fb416c0796eeb75f99906410798296574d233951073d0b29c51697d431b64",
       "executable": false
     },
     {
       "path": "demos/bank-deposit/docs/legacy-source/README.md",
       "sourceSha256": "f57854aa877ae9743c126a82c18f2540859e89d6eb87d5318c5ce33c33c9c967",
-      "importedSha256": "f57854aa877ae9743c126a82c18f2540859e89d6eb87d5318c5ce33c33c9c967",
+      "importedSha256": "bb6ebf3dde0e181c8a87ac930546cbb2bf44715606c4a7dce391113f60a6f494",
       "executable": false
     },
     {
@@ -775,116 +800,122 @@
     },
     {
       "path": "demos/bank-deposit/docs/participant-facts-and-locked-read.md",
-      "sourceSha256": "4afbd1db766d02b70b6687c9830dd07f1db465bbb1a7c5b52a814bc6b7720d93",
-      "importedSha256": "4afbd1db766d02b70b6687c9830dd07f1db465bbb1a7c5b52a814bc6b7720d93",
+      "sourceSha256": "7b44fd03851c8645e8595497e12873ed23f748687d46db4920baea4652087865",
+      "importedSha256": "7b44fd03851c8645e8595497e12873ed23f748687d46db4920baea4652087865",
       "executable": false
     },
     {
       "path": "demos/bank-deposit/docs/posting-plan-source.md",
-      "sourceSha256": "cb14b6945152aefa4a191ef32fb3fb5fc44b8d3aaa253b56c68442017ff83801",
-      "importedSha256": "cb14b6945152aefa4a191ef32fb3fb5fc44b8d3aaa253b56c68442017ff83801",
+      "sourceSha256": "26a06e9016aafd3822d4f286f78c32f7c3390f96adb8c6aae2db23cfe4f0c1ed",
+      "importedSha256": "26a06e9016aafd3822d4f286f78c32f7c3390f96adb8c6aae2db23cfe4f0c1ed",
       "executable": false
     },
     {
       "path": "demos/bank-deposit/docs/quantum-and-transactions.md",
-      "sourceSha256": "ead950a6284163afd1a348035e6456d3794a2bfc9a46f91ff4ff930eb9c43a4a",
-      "importedSha256": "ead950a6284163afd1a348035e6456d3794a2bfc9a46f91ff4ff930eb9c43a4a",
+      "sourceSha256": "26a06e9016aafd3822d4f286f78c32f7c3390f96adb8c6aae2db23cfe4f0c1ed",
+      "importedSha256": "26a06e9016aafd3822d4f286f78c32f7c3390f96adb8c6aae2db23cfe4f0c1ed",
       "executable": false
     },
     {
       "path": "demos/bank-deposit/docs/requirements-and-functions.md",
-      "sourceSha256": "edbbb5e1746fc66b97cfecee86fc8e16c1ccffab3b4d5ec2e0514d266d67ed9b",
-      "importedSha256": "edbbb5e1746fc66b97cfecee86fc8e16c1ccffab3b4d5ec2e0514d266d67ed9b",
+      "sourceSha256": "689999e66e69af85c9f434cca75def040aedda713e9979f3bc575506de5a468b",
+      "importedSha256": "689999e66e69af85c9f434cca75def040aedda713e9979f3bc575506de5a468b",
       "executable": false
     },
     {
       "path": "demos/bank-deposit/docs/reversal-financial-plan.md",
-      "sourceSha256": "a97361361c459115e3bae8c6cf485dca026a74641201718ade79b067a7fb20f1",
-      "importedSha256": "a97361361c459115e3bae8c6cf485dca026a74641201718ade79b067a7fb20f1",
+      "sourceSha256": "26a06e9016aafd3822d4f286f78c32f7c3390f96adb8c6aae2db23cfe4f0c1ed",
+      "importedSha256": "26a06e9016aafd3822d4f286f78c32f7c3390f96adb8c6aae2db23cfe4f0c1ed",
       "executable": false
     },
     {
       "path": "demos/bank-deposit/docs/reversal-store-retirement.md",
-      "sourceSha256": "dc9629180c66d1e10f033cfd391b906d368d7e96fdb01f212dfd3b557531116c",
-      "importedSha256": "dc9629180c66d1e10f033cfd391b906d368d7e96fdb01f212dfd3b557531116c",
+      "sourceSha256": "4e6fb416c0796eeb75f99906410798296574d233951073d0b29c51697d431b64",
+      "importedSha256": "4e6fb416c0796eeb75f99906410798296574d233951073d0b29c51697d431b64",
       "executable": false
     },
     {
       "path": "demos/bank-deposit/docs/reversal-submission.md",
-      "sourceSha256": "de62fc9bc8736a37d2583febda3c8cd3b20e73b8a2d3d8c41dab4b3ad465d834",
-      "importedSha256": "de62fc9bc8736a37d2583febda3c8cd3b20e73b8a2d3d8c41dab4b3ad465d834",
+      "sourceSha256": "26a06e9016aafd3822d4f286f78c32f7c3390f96adb8c6aae2db23cfe4f0c1ed",
+      "importedSha256": "26a06e9016aafd3822d4f286f78c32f7c3390f96adb8c6aae2db23cfe4f0c1ed",
       "executable": false
     },
     {
       "path": "demos/bank-deposit/docs/rollback-reversal-compensation.md",
-      "sourceSha256": "f7051580e728332da1ba59f73aaf0d2f76b0d2b2352148bd78fa819b72a7d545",
-      "importedSha256": "f7051580e728332da1ba59f73aaf0d2f76b0d2b2352148bd78fa819b72a7d545",
+      "sourceSha256": "26a06e9016aafd3822d4f286f78c32f7c3390f96adb8c6aae2db23cfe4f0c1ed",
+      "importedSha256": "26a06e9016aafd3822d4f286f78c32f7c3390f96adb8c6aae2db23cfe4f0c1ed",
       "executable": false
     },
     {
       "path": "demos/bank-deposit/docs/running-demo.md",
-      "sourceSha256": "e4ffa3dc1c72733e4b4f6d41a1c5769534ca5fe701b03fb321ff2c562e554158",
-      "importedSha256": "e4ffa3dc1c72733e4b4f6d41a1c5769534ca5fe701b03fb321ff2c562e554158",
+      "sourceSha256": "3abcf899c07ea54c2a8d9ee320fcd1da753a91c389db23693747929b9982ab16",
+      "importedSha256": "3abcf899c07ea54c2a8d9ee320fcd1da753a91c389db23693747929b9982ab16",
       "executable": false
     },
     {
       "path": "demos/bank-deposit/docs/saga-recovery.md",
-      "sourceSha256": "09b88fae6bf53f31014c6dbd59f2cb6a02663719012dd9da2978dae5df4db8f0",
-      "importedSha256": "09b88fae6bf53f31014c6dbd59f2cb6a02663719012dd9da2978dae5df4db8f0",
+      "sourceSha256": "26a06e9016aafd3822d4f286f78c32f7c3390f96adb8c6aae2db23cfe4f0c1ed",
+      "importedSha256": "26a06e9016aafd3822d4f286f78c32f7c3390f96adb8c6aae2db23cfe4f0c1ed",
       "executable": false
     },
     {
       "path": "demos/bank-deposit/docs/source-example-coverage.md",
-      "sourceSha256": "8fea6463e64e23c6228a16149b2420cf2264d4e1aa1d35a27db61c647d4753bf",
-      "importedSha256": "8fea6463e64e23c6228a16149b2420cf2264d4e1aa1d35a27db61c647d4753bf",
+      "sourceSha256": "d5b64e2e0adb6e2a51ec437ec4fc2c69dd838e5c52a935804c5327716eefc5a6",
+      "importedSha256": "d5b64e2e0adb6e2a51ec437ec4fc2c69dd838e5c52a935804c5327716eefc5a6",
       "executable": false
     },
     {
       "path": "demos/bank-deposit/docs/source-language-only.md",
-      "sourceSha256": "c24ebee988d1d3b0206101a210b44c95eea1c869acde1445c670ee7aacf8a385",
-      "importedSha256": "7bf4653bba790a5d6c917ba38450e83ad44e88b8b787ae1a7774aeb3aede51ae",
+      "sourceSha256": "689999e66e69af85c9f434cca75def040aedda713e9979f3bc575506de5a468b",
+      "importedSha256": "689999e66e69af85c9f434cca75def040aedda713e9979f3bc575506de5a468b",
       "executable": false
     },
     {
       "path": "demos/bank-deposit/docs/source-map.md",
-      "sourceSha256": "34fa3800af6d9dd8011f1d5bbe1c135ae02c45ff4e0af8999c212a7de46ea831",
-      "importedSha256": "34fa3800af6d9dd8011f1d5bbe1c135ae02c45ff4e0af8999c212a7de46ea831",
+      "sourceSha256": "7b44fd03851c8645e8595497e12873ed23f748687d46db4920baea4652087865",
+      "importedSha256": "7b44fd03851c8645e8595497e12873ed23f748687d46db4920baea4652087865",
       "executable": false
     },
     {
       "path": "demos/bank-deposit/docs/source-only-final-verification.md",
-      "sourceSha256": "7c1a9d3559a9c609c042da6eb869f1d980ba09f8414ecc393478fd8029e5da33",
-      "importedSha256": "7c1a9d3559a9c609c042da6eb869f1d980ba09f8414ecc393478fd8029e5da33",
+      "sourceSha256": "d5b64e2e0adb6e2a51ec437ec4fc2c69dd838e5c52a935804c5327716eefc5a6",
+      "importedSha256": "d5b64e2e0adb6e2a51ec437ec4fc2c69dd838e5c52a935804c5327716eefc5a6",
       "executable": false
     },
     {
       "path": "demos/bank-deposit/docs/source-only-refactoring.md",
-      "sourceSha256": "86ab0e9c4a664e4c2a27c7edae1ea174a113f9f93175ec004a282089b2ba0367",
-      "importedSha256": "fa3acc23d701b94cd747dfa61f08a090cfb2d4fa64c85672e3813926d26da4df",
+      "sourceSha256": "4e6fb416c0796eeb75f99906410798296574d233951073d0b29c51697d431b64",
+      "importedSha256": "4e6fb416c0796eeb75f99906410798296574d233951073d0b29c51697d431b64",
       "executable": false
     },
     {
       "path": "demos/bank-deposit/docs/source-report-migration.md",
-      "sourceSha256": "6e33babdfa73403674d544c37da9af060aff30bff931c01c84f9eb329c3f826b",
-      "importedSha256": "6e33babdfa73403674d544c37da9af060aff30bff931c01c84f9eb329c3f826b",
+      "sourceSha256": "4e6fb416c0796eeb75f99906410798296574d233951073d0b29c51697d431b64",
+      "importedSha256": "4e6fb416c0796eeb75f99906410798296574d233951073d0b29c51697d431b64",
       "executable": false
     },
     {
       "path": "demos/bank-deposit/docs/source-saga-migration.md",
-      "sourceSha256": "723cebfaad742660a554c5c2b23bf17078fdf49bf89b1aac2ccd21391b3bb10f",
-      "importedSha256": "723cebfaad742660a554c5c2b23bf17078fdf49bf89b1aac2ccd21391b3bb10f",
+      "sourceSha256": "4e6fb416c0796eeb75f99906410798296574d233951073d0b29c51697d431b64",
+      "importedSha256": "4e6fb416c0796eeb75f99906410798296574d233951073d0b29c51697d431b64",
       "executable": false
     },
     {
       "path": "demos/bank-deposit/docs/spp-vs-cobol-java.md",
-      "sourceSha256": "317161989f8c19ed03a1b276c21429934d3b6ee89c54fb47fdd71d4362b4e53e",
-      "importedSha256": "317161989f8c19ed03a1b276c21429934d3b6ee89c54fb47fdd71d4362b4e53e",
+      "sourceSha256": "7b44fd03851c8645e8595497e12873ed23f748687d46db4920baea4652087865",
+      "importedSha256": "7b44fd03851c8645e8595497e12873ed23f748687d46db4920baea4652087865",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/validation-guide.md",
+      "sourceSha256": "86283e5a24cb627276c3ce93870540bec0864d94c0cf0936238460e4f342b09f",
+      "importedSha256": "86283e5a24cb627276c3ce93870540bec0864d94c0cf0936238460e4f342b09f",
       "executable": false
     },
     {
       "path": "demos/bank-deposit/docs/web-workbench.md",
-      "sourceSha256": "849c6f5df3349e866c98fa117397741e77f9da1bb0943a17425f6e993fea9c98",
-      "importedSha256": "849c6f5df3349e866c98fa117397741e77f9da1bb0943a17425f6e993fea9c98",
+      "sourceSha256": "689999e66e69af85c9f434cca75def040aedda713e9979f3bc575506de5a468b",
+      "importedSha256": "689999e66e69af85c9f434cca75def040aedda713e9979f3bc575506de5a468b",
       "executable": false
     },
     {
@@ -1411,158 +1442,188 @@
     },
     {
       "path": "demos/petstore/README.md",
-      "sourceSha256": "91416efaac5e412a7bc4f26f18c39788c8201bccf247959ec12653d8adbb7a1f",
-      "importedSha256": "51704fc9479e7edffb800124c19eb607950312eed0f90d814c93cd102a0453a3",
+      "sourceSha256": "7b103034c7574cf355a2b17af8c8b981da5f93d95ccaa6218313c28da9a7b630",
+      "importedSha256": "7b103034c7574cf355a2b17af8c8b981da5f93d95ccaa6218313c28da9a7b630",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/docs/README.md",
+      "sourceSha256": "72dd58fa7184e214e3dd615537420d578132c67cfd43ab523a6b8aaa0b37fc1e",
+      "importedSha256": "72dd58fa7184e214e3dd615537420d578132c67cfd43ab523a6b8aaa0b37fc1e",
       "executable": false
     },
     {
       "path": "demos/petstore/docs/acceptance-audit.md",
-      "sourceSha256": "05c1f8761d243e2c1e9dbebce56a86ea4de61da7324cbc3db5bc0496ea0a5a04",
-      "importedSha256": "05c1f8761d243e2c1e9dbebce56a86ea4de61da7324cbc3db5bc0496ea0a5a04",
+      "sourceSha256": "d5b64e2e0adb6e2a51ec437ec4fc2c69dd838e5c52a935804c5327716eefc5a6",
+      "importedSha256": "d5b64e2e0adb6e2a51ec437ec4fc2c69dd838e5c52a935804c5327716eefc5a6",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/docs/business-rules.md",
+      "sourceSha256": "569ef21533e641f56c7317b61e7fec636e32bf174a3d7bd36ad056f51fca32a6",
+      "importedSha256": "569ef21533e641f56c7317b61e7fec636e32bf174a3d7bd36ad056f51fca32a6",
       "executable": false
     },
     {
       "path": "demos/petstore/docs/capability-matrix.md",
-      "sourceSha256": "f11e823e971908cd9971d25fd3a381a354252becf19649c7c4682bca81c14029",
-      "importedSha256": "6b22b6f0a5dbdf08cac1eb08e7a12b9a12e9966a2a2f084d7ab6ec421cb1456f",
+      "sourceSha256": "d5b64e2e0adb6e2a51ec437ec4fc2c69dd838e5c52a935804c5327716eefc5a6",
+      "importedSha256": "d5b64e2e0adb6e2a51ec437ec4fc2c69dd838e5c52a935804c5327716eefc5a6",
       "executable": false
     },
     {
       "path": "demos/petstore/docs/conserved-opening-and-transfers.md",
-      "sourceSha256": "6910b37b3ef8585868cb0a50bded6eb697efa972a71046711e0e6e6f1dfc18ee",
-      "importedSha256": "6910b37b3ef8585868cb0a50bded6eb697efa972a71046711e0e6e6f1dfc18ee",
+      "sourceSha256": "26a06e9016aafd3822d4f286f78c32f7c3390f96adb8c6aae2db23cfe4f0c1ed",
+      "importedSha256": "26a06e9016aafd3822d4f286f78c32f7c3390f96adb8c6aae2db23cfe4f0c1ed",
       "executable": false
     },
     {
       "path": "demos/petstore/docs/constants-and-localization.md",
-      "sourceSha256": "022a6c5ded1cfdab75c78688e4f042601b94ad045af0229c8f263330dddcff95",
-      "importedSha256": "022a6c5ded1cfdab75c78688e4f042601b94ad045af0229c8f263330dddcff95",
+      "sourceSha256": "7b44fd03851c8645e8595497e12873ed23f748687d46db4920baea4652087865",
+      "importedSha256": "7b44fd03851c8645e8595497e12873ed23f748687d46db4920baea4652087865",
       "executable": false
     },
     {
       "path": "demos/petstore/docs/demo-walkthrough.md",
-      "sourceSha256": "a15c34eb2bba4efd759325045ae6349a978733956f14cfcf631820407f37a36e",
-      "importedSha256": "a15c34eb2bba4efd759325045ae6349a978733956f14cfcf631820407f37a36e",
+      "sourceSha256": "689999e66e69af85c9f434cca75def040aedda713e9979f3bc575506de5a468b",
+      "importedSha256": "689999e66e69af85c9f434cca75def040aedda713e9979f3bc575506de5a468b",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/docs/domain-and-layers.md",
+      "sourceSha256": "650f1b66e18ed66b4c9cc9fe9716d613f9d5d2e6b893e7ea95d013e5d7e69005",
+      "importedSha256": "650f1b66e18ed66b4c9cc9fe9716d613f9d5d2e6b893e7ea95d013e5d7e69005",
       "executable": false
     },
     {
       "path": "demos/petstore/docs/domain-boundaries.md",
-      "sourceSha256": "5e54b44a0dd77d73c21b1fd2cb9029814f39fe934e7578c0dc9aebec79126d78",
-      "importedSha256": "2eb45aef6bd7209fd02903c334b4ca6067e01f53e1bc9aa1a34e825fac529a62",
+      "sourceSha256": "4e6fb416c0796eeb75f99906410798296574d233951073d0b29c51697d431b64",
+      "importedSha256": "4e6fb416c0796eeb75f99906410798296574d233951073d0b29c51697d431b64",
       "executable": false
     },
     {
       "path": "demos/petstore/docs/implementation-path.md",
-      "sourceSha256": "bf531ef28983c7a1ca901220bee9a35f97016a17cdfb867cc03198f5f953c656",
-      "importedSha256": "2d465827f2acc7c68c2ac6087eb448801ad6db09f369f44203ea29d766f00e98",
+      "sourceSha256": "0cb75586ee5f439bbe5f54af4ee4ce23255c737f43fb486720a0359d538e7786",
+      "importedSha256": "0cb75586ee5f439bbe5f54af4ee4ce23255c737f43fb486720a0359d538e7786",
       "executable": false
     },
     {
       "path": "demos/petstore/docs/java-tests.md",
-      "sourceSha256": "42f6ae9e09076052c08dac5943b7681f92ebdc92ce37635211aaf3fea9f3c224",
-      "importedSha256": "4ca0fe436f48e13f50630bd85ad484de52352de486948999c2691eae8a8167f4",
+      "sourceSha256": "d5b64e2e0adb6e2a51ec437ec4fc2c69dd838e5c52a935804c5327716eefc5a6",
+      "importedSha256": "d5b64e2e0adb6e2a51ec437ec4fc2c69dd838e5c52a935804c5327716eefc5a6",
       "executable": false
     },
     {
       "path": "demos/petstore/docs/known-issues.md",
-      "sourceSha256": "57669c1dff58cbe844c87655b1987bd8ad5bbe045038faaa02186a42af1aa9ec",
-      "importedSha256": "57669c1dff58cbe844c87655b1987bd8ad5bbe045038faaa02186a42af1aa9ec",
+      "sourceSha256": "d5b64e2e0adb6e2a51ec437ec4fc2c69dd838e5c52a935804c5327716eefc5a6",
+      "importedSha256": "d5b64e2e0adb6e2a51ec437ec4fc2c69dd838e5c52a935804c5327716eefc5a6",
       "executable": false
     },
     {
       "path": "demos/petstore/docs/language-gaps.md",
-      "sourceSha256": "1d40c7456832c9a4edfcf9a577491575b4cf981cefb0501540b30dd62774af9c",
-      "importedSha256": "1d40c7456832c9a4edfcf9a577491575b4cf981cefb0501540b30dd62774af9c",
+      "sourceSha256": "d5b64e2e0adb6e2a51ec437ec4fc2c69dd838e5c52a935804c5327716eefc5a6",
+      "importedSha256": "d5b64e2e0adb6e2a51ec437ec4fc2c69dd838e5c52a935804c5327716eefc5a6",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/docs/language-tour.md",
+      "sourceSha256": "5c75cd64fce4288d9f3d72fdc32ee3890d0d251bdab10b7b205a3b2306b1641e",
+      "importedSha256": "5c75cd64fce4288d9f3d72fdc32ee3890d0d251bdab10b7b205a3b2306b1641e",
       "executable": false
     },
     {
       "path": "demos/petstore/docs/local-domain-binding.md",
-      "sourceSha256": "90f73af7b1b201c9a8efd76c9fe27d0248bd5bf05d37b922e47ef7266ccec93b",
-      "importedSha256": "c6931d15db3cf7f1200a3a89457ad55fc4263f1f61ccf812b7badf125458afa0",
+      "sourceSha256": "4e6fb416c0796eeb75f99906410798296574d233951073d0b29c51697d431b64",
+      "importedSha256": "4e6fb416c0796eeb75f99906410798296574d233951073d0b29c51697d431b64",
       "executable": false
     },
     {
       "path": "demos/petstore/docs/multidomain-implementation.md",
-      "sourceSha256": "fc9a6817af003abab02998fb348ac8e61066a8fc891df98aaaeb1e381ecc7951",
-      "importedSha256": "81af0e3a9733fff3f079464ef66367b9a2bee06d5191bef071662ac9dc04c1af",
+      "sourceSha256": "4e6fb416c0796eeb75f99906410798296574d233951073d0b29c51697d431b64",
+      "importedSha256": "4e6fb416c0796eeb75f99906410798296574d233951073d0b29c51697d431b64",
       "executable": false
     },
     {
       "path": "demos/petstore/docs/quantum-caller-limits.md",
-      "sourceSha256": "8db820545211a87d6c9ce93268f3560ffa3883a482fa34245bf8ca4631487523",
-      "importedSha256": "974803122bb2f626e958826e242fcf7428431c45644369823b65466676ac3e02",
+      "sourceSha256": "26a06e9016aafd3822d4f286f78c32f7c3390f96adb8c6aae2db23cfe4f0c1ed",
+      "importedSha256": "26a06e9016aafd3822d4f286f78c32f7c3390f96adb8c6aae2db23cfe4f0c1ed",
       "executable": false
     },
     {
       "path": "demos/petstore/docs/quantum-opening-recovery.md",
-      "sourceSha256": "fe965eb9b36e0bfcff2ca35cd05c6ee70f51297db7b17900255b73e82c4f44e9",
-      "importedSha256": "fe965eb9b36e0bfcff2ca35cd05c6ee70f51297db7b17900255b73e82c4f44e9",
+      "sourceSha256": "26a06e9016aafd3822d4f286f78c32f7c3390f96adb8c6aae2db23cfe4f0c1ed",
+      "importedSha256": "26a06e9016aafd3822d4f286f78c32f7c3390f96adb8c6aae2db23cfe4f0c1ed",
       "executable": false
     },
     {
       "path": "demos/petstore/docs/regression-2026-10-11.md",
-      "sourceSha256": "e68cc067c4ea8ddebb6dae83b2dbcdc2790198ab3221321d8f303df55208c557",
-      "importedSha256": "e68cc067c4ea8ddebb6dae83b2dbcdc2790198ab3221321d8f303df55208c557",
+      "sourceSha256": "d5b64e2e0adb6e2a51ec437ec4fc2c69dd838e5c52a935804c5327716eefc5a6",
+      "importedSha256": "d5b64e2e0adb6e2a51ec437ec4fc2c69dd838e5c52a935804c5327716eefc5a6",
       "executable": false
     },
     {
       "path": "demos/petstore/docs/regression-2026-10-12-conserved-transfers.md",
-      "sourceSha256": "7ab4218044efc7c6cbb76870d58dddf38a40e518781927686ab99c13407bee48",
-      "importedSha256": "7ab4218044efc7c6cbb76870d58dddf38a40e518781927686ab99c13407bee48",
+      "sourceSha256": "d5b64e2e0adb6e2a51ec437ec4fc2c69dd838e5c52a935804c5327716eefc5a6",
+      "importedSha256": "d5b64e2e0adb6e2a51ec437ec4fc2c69dd838e5c52a935804c5327716eefc5a6",
       "executable": false
     },
     {
       "path": "demos/petstore/docs/requirements-and-functions.md",
-      "sourceSha256": "1f820bab5b3e6159a8b6d6116beda9e78c5bd1a595e8cdc9c7809e6cb05da8bb",
-      "importedSha256": "b27b6860e7b68013847eb1eccf158199637fa5ffb67a6aaff4f236657d9c7cea",
+      "sourceSha256": "689999e66e69af85c9f434cca75def040aedda713e9979f3bc575506de5a468b",
+      "importedSha256": "689999e66e69af85c9f434cca75def040aedda713e9979f3bc575506de5a468b",
       "executable": false
     },
     {
       "path": "demos/petstore/docs/reservation-failure-handling.md",
-      "sourceSha256": "e67ffe02553d8875c514326794a4ffe7c494ad60d886a58507a5e3552ecc1d9a",
-      "importedSha256": "153a8e0f2fa483f4924bf3de1a527e49e1205a91af34fb1f95700f4ee3db45ec",
+      "sourceSha256": "26a06e9016aafd3822d4f286f78c32f7c3390f96adb8c6aae2db23cfe4f0c1ed",
+      "importedSha256": "26a06e9016aafd3822d4f286f78c32f7c3390f96adb8c6aae2db23cfe4f0c1ed",
       "executable": false
     },
     {
       "path": "demos/petstore/docs/running-demo.md",
-      "sourceSha256": "d1297bdbc49ea352d7cd6190ae25d143aedee9d355c28ed80b46815a545f5502",
-      "importedSha256": "d1297bdbc49ea352d7cd6190ae25d143aedee9d355c28ed80b46815a545f5502",
+      "sourceSha256": "843ba4350497afffdd2e63dd8a83c16e0fdcea7f6da1f421a51d1e0d4e4da077",
+      "importedSha256": "843ba4350497afffdd2e63dd8a83c16e0fdcea7f6da1f421a51d1e0d4e4da077",
       "executable": false
     },
     {
       "path": "demos/petstore/docs/scenario-design.md",
-      "sourceSha256": "d4756ee6fca32cfc5ae8e2a2049b4bb4390d432e12d2a6545fe73788b4d17a77",
-      "importedSha256": "c6f5f6e01cbed5aee6073b4959569e2697d3d7dc5b01ef4710ae5ae4d4545c54",
+      "sourceSha256": "7b44fd03851c8645e8595497e12873ed23f748687d46db4920baea4652087865",
+      "importedSha256": "7b44fd03851c8645e8595497e12873ed23f748687d46db4920baea4652087865",
       "executable": false
     },
     {
       "path": "demos/petstore/docs/source-guide.md",
-      "sourceSha256": "22769b3e172d62ade0cb26f110123cef2436675b30bf619ce8f1aa2c6b3c327e",
-      "importedSha256": "49d1bec2e29127441913754a677336ecf8a1c0040e6f6e21a60aff34bd6754e5",
+      "sourceSha256": "7b44fd03851c8645e8595497e12873ed23f748687d46db4920baea4652087865",
+      "importedSha256": "7b44fd03851c8645e8595497e12873ed23f748687d46db4920baea4652087865",
       "executable": false
     },
     {
       "path": "demos/petstore/docs/spp-vs-java.md",
-      "sourceSha256": "86eaaca1b0f911ad8d2938b9bca0cbc1bc93bc753005e1e1df64698c46c15821",
-      "importedSha256": "8d4480e3fa74939b6c35ad44be9e621d4e61f259e57090f1ee80a73495e3df65",
+      "sourceSha256": "7b44fd03851c8645e8595497e12873ed23f748687d46db4920baea4652087865",
+      "importedSha256": "7b44fd03851c8645e8595497e12873ed23f748687d46db4920baea4652087865",
       "executable": false
     },
     {
       "path": "demos/petstore/docs/technical-services.md",
-      "sourceSha256": "3d4727591ed70158849a5027dac38c329e81e615b61d88cee0b884f8e640219f",
-      "importedSha256": "a2a21cd628b90060c95ed2d180f25768f5690b573525450029fb44dc2d3ab86e",
+      "sourceSha256": "4e6fb416c0796eeb75f99906410798296574d233951073d0b29c51697d431b64",
+      "importedSha256": "4e6fb416c0796eeb75f99906410798296574d233951073d0b29c51697d431b64",
       "executable": false
     },
     {
       "path": "demos/petstore/docs/transaction-boundary-audit.md",
-      "sourceSha256": "1838cead1d9093a9b29d27e4de1777fc2d7064126fd4f7b71c2639e4f3bf9afe",
-      "importedSha256": "8022c17bf5724139e666bef94e5f0c0e24acd9f993fbb6f664516ffc144b1dd7",
+      "sourceSha256": "d5b64e2e0adb6e2a51ec437ec4fc2c69dd838e5c52a935804c5327716eefc5a6",
+      "importedSha256": "d5b64e2e0adb6e2a51ec437ec4fc2c69dd838e5c52a935804c5327716eefc5a6",
       "executable": false
     },
     {
       "path": "demos/petstore/docs/transaction-evolution-plan.md",
-      "sourceSha256": "3bd944b2a05608de50630ce10c8224d55ad7f0bfb9d70f4998c3a238315acd7c",
-      "importedSha256": "216bda39a0456f7f8f675762622f64ac089bedb909e6a077347d62d9e6aa916d",
+      "sourceSha256": "26a06e9016aafd3822d4f286f78c32f7c3390f96adb8c6aae2db23cfe4f0c1ed",
+      "importedSha256": "26a06e9016aafd3822d4f286f78c32f7c3390f96adb8c6aae2db23cfe4f0c1ed",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/docs/validation-guide.md",
+      "sourceSha256": "7c61214e3885161b99d5cfd99348e82a7177fc8f2caff07ba1cf5a98bfa194de",
+      "importedSha256": "7c61214e3885161b99d5cfd99348e82a7177fc8f2caff07ba1cf5a98bfa194de",
       "executable": false
     },
     {
@@ -2159,5 +2220,6 @@
       "importedSha256": "228b7cedc221e34e1f36e53f3b84adf3701d0d6143c027dee0b31d0003f11417",
       "executable": false
     }
-  ]
+  ],
+  "documentationRequirement": "DEMO-CAPABILITY-GUIDES-v1"
 }
