@@ -1,0 +1,41 @@
+domain petshop;
+
+Role CartLine {
+    Buyer;
+    Goods;
+    int quantity;
+}
+
+Role Cart {
+    Buyer;
+    CartLine[] lines;
+}
+
+Contract CartAdditionAgreement {
+    Buyer buyer;
+    Cart cart;
+    Goods goods;
+    int quantity;
+    Receipt receipt;
+}
+
+Contract CartQuantityAgreement {
+    Buyer buyer;
+    Cart cart;
+    Goods goods;
+    int quantity;
+    Receipt receipt;
+}
+
+Contract CartRemovalAgreement {
+    Buyer buyer;
+    Cart cart;
+    Goods goods;
+    Receipt receipt;
+}
+
+Contract CartClearingAgreement {
+    Buyer;
+    Cart;
+    Receipt;
+}

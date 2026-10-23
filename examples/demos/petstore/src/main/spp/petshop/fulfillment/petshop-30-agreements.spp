@@ -1,0 +1,31 @@
+domain petshop;
+
+atomic calculate initializeShipmentAgreement(Buyer, ShopOrder, ShipmentAgreement) {
+    ShipmentAgreement.buyer = Buyer;
+    ShipmentAgreement.order = ShopOrder;
+
+    ShipmentAgreement.shippedQuantity = 0;
+}
+
+atomic calculate initializeDeliveryAgreement(Buyer, ShopOrder, DeliveryAgreement) {
+    DeliveryAgreement.buyer = Buyer;
+    DeliveryAgreement.order = ShopOrder;
+}
+
+atomic calculate prepareShipmentAgreementReceipt(ShopOrder, ShipmentAgreement) {
+    ShipmentAgreement.order = ShopOrder;
+    ShipmentAgreement.receipt = new Receipt();
+    ShipmentAgreement.receipt.order = ShopOrder;
+    ShipmentAgreement.receipt.buyer = ShopOrder.buyer;
+    ShipmentAgreement.receipt.status = ReceiptStatus.COMPLETED;
+    ShipmentAgreement.receipt.orderStatus = ShopOrder.status;
+}
+
+atomic calculate prepareDeliveryAgreementReceipt(ShopOrder, DeliveryAgreement) {
+    DeliveryAgreement.order = ShopOrder;
+    DeliveryAgreement.receipt = new Receipt();
+    DeliveryAgreement.receipt.order = ShopOrder;
+    DeliveryAgreement.receipt.buyer = ShopOrder.buyer;
+    DeliveryAgreement.receipt.status = ReceiptStatus.COMPLETED;
+    DeliveryAgreement.receipt.orderStatus = ShopOrder.status;
+}

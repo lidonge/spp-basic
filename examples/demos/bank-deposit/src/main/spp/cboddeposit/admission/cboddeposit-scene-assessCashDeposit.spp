@@ -1,0 +1,18 @@
+domain cboddeposit;
+
+Scenario serial assessCashDeposit(
+    DepositRequest,
+    AccountEligibility,
+    DepositProduct,
+    BusinessDay,
+    CashChannel,
+    CashAuthorizationPolicy,
+    AuthorizationEvidence,
+    AdmissionDecision,
+    CashAccountControl
+) {
+    checkCashInput;
+    checkCashControl;
+    checkDepositEligibility;
+    assessCashAdmission;
+}

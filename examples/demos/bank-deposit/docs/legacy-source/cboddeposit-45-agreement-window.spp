@@ -1,0 +1,33 @@
+domain cboddeposit;
+
+// Zero date encodes absent agreement dates; clipping is business policy, not APP routing.
+Role AgreementTerm { int effectiveDate; int cancelDate; }
+atomic calculate prepareAgreementWindow(BankDate normalStart, BankDate normalEnd, AgreementTerm term,
+    BankDate clippedStart, BankDate clippedEnd, InterestPeriod normal, InterestPeriod overlap, AgreementPolicy policy) {
+    clippedStart.encoded = normalStart.encoded;
+    clippedEnd.encoded = normalStart.encoded;
+    overlap.amount = normal.amount;
+    overlap.unit = normal.unit;
+    overlap.days = 0;
+    policy.enabled = policy.enabled && term.effectiveDate > 0;
+    if (policy.enabled) {
+        clippedStart.encoded = max(normalStart.encoded, term.effectiveDate);
+        clippedEnd.encoded = normalEnd.encoded;
+        if (term.cancelDate > 0) { clippedEnd.encoded = min(normalEnd.encoded, term.cancelDate); }
+        if (clippedStart.encoded >= clippedEnd.encoded) {
+            policy.enabled = false;
+            clippedStart.encoded = normalStart.encoded;
+            clippedEnd.encoded = normalStart.encoded;
+        }
+    }
+}
+Scenario serial calculateDatedAgreement(BankDate normalStart, BankDate normalEnd, AgreementTerm term,
+    BankDate clippedStart, BankDate clippedEnd, InterestCalendar calendar, InterestPeriod normal,
+    InterestPeriod overlap, AgreementPolicy policy, AgreementBand[] bands, context AgreementProduct result) {
+    decodeBankDate(normalStart);
+    decodeBankDate(normalEnd);
+    calculateBankDays(normalStart, normalEnd, calendar, normal);
+    prepareAgreementWindow(normalStart, normalEnd, term, clippedStart, clippedEnd, normal, overlap, policy);
+    calculateBankPeriod(clippedStart, clippedEnd, calendar, overlap);
+    calculateAgreementProduct(normal, overlap, policy, bands, result);
+}

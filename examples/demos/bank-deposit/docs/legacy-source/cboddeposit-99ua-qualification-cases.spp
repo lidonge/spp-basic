@@ -1,0 +1,110 @@
+domain cboddeposit;
+
+atomic calculate configureBankQualificationCase01(context BankQualificationExampleFacts example) {
+    example.profile.depositRange = "SameBranch";
+    example.expectedCode = "EN134";
+}
+atomic calculate configureBankQualificationCase02(context BankQualificationExampleFacts example) {
+    example.profile.depositRange = "SameBranch"; example.operator.branch = "001001001";
+    example.expectedCode = "";
+}
+atomic calculate configureBankQualificationCase03(context BankQualificationExampleFacts example) {
+    example.profile.depositRange = "Subbranch"; example.operator.subbranch = "SB002";
+    example.expectedCode = "EN470";
+}
+atomic calculate configureBankQualificationCase04(context BankQualificationExampleFacts example) {
+    example.profile.depositRange = "Subbranch";
+    example.expectedCode = "";
+}
+atomic calculate configureBankQualificationCase05(context BankQualificationExampleFacts example) {
+    example.profile.depositRange = "City"; example.operator.area = "0002";
+    example.expectedCode = "EN470";
+}
+atomic calculate configureBankQualificationCase06(context BankQualificationExampleFacts example) {
+    example.profile.depositRange = "Province"; example.operator.area = "0099";
+    example.expectedCode = "";
+}
+atomic calculate configureBankQualificationCase07(context BankQualificationExampleFacts example) {
+    example.profile.depositRange = "Province"; example.operator.areaProvince = "01";
+    example.expectedCode = "EN470";
+}
+atomic calculate configureBankQualificationCase08(context BankQualificationExampleFacts example) {
+    example.profile.depositRange = "All"; example.operator.area = "9999"; example.operator.areaProvince = "99";
+    example.expectedCode = "";
+}
+atomic calculate configureBankQualificationCase09(context BankQualificationExampleFacts example) {
+    example.profile.depositRange = "SameBranch"; example.profile.cardLinked = true;
+    example.expectedCode = "";
+}
+atomic calculate configureBankQualificationCase10(context BankQualificationExampleFacts example) {
+    example.profile.depositRange = "SameBranch"; example.operator.accountingCentre = true;
+    example.expectedCode = "";
+}
+atomic calculate configureBankQualificationCase11(context BankQualificationExampleFacts example) {
+    example.profile.depositRange = "SameBranch"; example.operator.accountingCentre = true; example.operator.province = "002";
+    example.expectedCode = "EN134";
+}
+atomic calculate configureBankQualificationCase12(context BankQualificationExampleFacts example) {
+    example.profile.depositRange = "SameBranch"; example.operator.transactionPrefix = "FL06002";
+    example.expectedCode = "";
+}
+atomic calculate configureBankQualificationCase13(context BankQualificationExampleFacts example) {
+    example.profile.depositRange = "SameBranch"; example.operator.transactionPrefix = "AG02891";
+    example.expectedCode = "";
+}
+atomic calculate configureBankQualificationCase14(context BankQualificationExampleFacts example) {
+    example.profile.depositRange = "SameBranch"; example.operator.transactionPrefix = "SA01120";
+    example.expectedCode = "";
+}
+atomic calculate configureBankQualificationCase15(context BankQualificationExampleFacts example) {
+    example.profile.depositRange = "SameBranch"; example.operator.transactionPrefix = "FL06615";
+    example.expectedCode = "";
+}
+atomic calculate configureBankQualificationCase16(context BankQualificationExampleFacts example) {
+    example.profile.depositRange = "SameBranch"; example.operator.transactionPrefix = "FL06618";
+    example.expectedCode = "";
+}
+atomic calculate configureBankQualificationCase17(context BankQualificationExampleFacts example) {
+    example.profile.depositRange = "SameBranch"; example.operator.transactionPrefix = "RE04001";
+    example.expectedCode = "";
+}
+atomic calculate configureBankQualificationCase18(context BankQualificationExampleFacts example) {
+    example.profile.depositRange = "SameBranch"; example.operator.transactionPrefix = "RE04013";
+    example.expectedCode = "";
+}
+atomic calculate configureBankQualificationCase19(context BankQualificationExampleFacts example) {
+    example.profile.depositRange = "SameBranch"; example.operator.transactionPrefix = "RE04047";
+    example.expectedCode = "";
+}
+atomic calculate configureBankQualificationCase20(context BankQualificationExampleFacts example) {
+    example.profile.depositRange = "SameBranch"; example.operator.transactionPrefix = "RE04057";
+    example.expectedCode = "";
+}
+atomic calculate configureBankQualificationCase21(context BankQualificationExampleFacts example) {
+    example.profile.depositRange = "SameBranch"; example.operator.transactionPrefix = "RE04067";
+    example.expectedCode = "";
+}
+atomic calculate configureBankQualificationCase22(context BankQualificationExampleFacts example) {
+    example.profile.depositRange = "SameBranch"; example.operator.transactionPrefix = "AG01765";
+    example.expectedCode = "";
+}
+atomic calculate configureBankQualificationCase23(context BankQualificationExampleFacts example) {
+    example.profile.depositRange = "SameBranch"; example.operator.transactionPrefix = "AG02899";
+    example.expectedCode = "";
+}
+atomic calculate configureBankQualificationCase24(context BankQualificationExampleFacts example) {
+    example.profile.depositRange = "SameBranch"; example.operator.transactionPrefix = "RE04066";
+    example.expectedCode = "";
+}
+atomic calculate configureBankQualificationCase25(context BankQualificationExampleFacts example) {
+    example.profile.depositRange = "SameBranch"; example.channel.businessCode = "FL0";
+    example.expectedCode = "";
+}
+atomic calculate configureBankQualificationCase26(context BankQualificationExampleFacts example) {
+    example.profile.depositRange = "SameBranch"; example.channel.businessCode = "RE0";
+    example.expectedCode = "";
+}
+atomic calculate configureBankQualificationCase27(context BankQualificationExampleFacts example) {
+    example.profile.depositRange = "SameBranch"; example.channel.businessCode = "AG0";
+    example.expectedCode = "";
+}

@@ -1,0 +1,22 @@
+domain petshop;
+
+atomic calculate initializeRegistrationAgreement(Buyer, Cart, RegistrationAgreement) {
+    RegistrationAgreement.buyer = Buyer;
+    RegistrationAgreement.cart = Cart;
+}
+
+atomic calculate initializeProfileAgreement(Buyer, ProfileAgreement) {
+    ProfileAgreement.buyer = Buyer;
+}
+
+atomic calculate prepareRegistrationAgreementReceipt(Buyer, RegistrationAgreement) {
+    RegistrationAgreement.receipt = new Receipt();
+    RegistrationAgreement.receipt.buyer = Buyer;
+    RegistrationAgreement.receipt.status = ReceiptStatus.COMPLETED;
+}
+
+atomic calculate prepareProfileAgreementReceipt(Buyer, ProfileAgreement) {
+    ProfileAgreement.receipt = new Receipt();
+    ProfileAgreement.receipt.buyer = Buyer;
+    ProfileAgreement.receipt.status = ReceiptStatus.COMPLETED;
+}

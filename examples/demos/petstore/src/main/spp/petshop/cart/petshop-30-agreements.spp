@@ -1,0 +1,48 @@
+domain petshop;
+
+atomic calculate initializeCartAdditionAgreement(Buyer, Cart, Goods, CartAdditionAgreement) {
+    CartAdditionAgreement.buyer = Buyer;
+    CartAdditionAgreement.cart = Cart;
+    CartAdditionAgreement.goods = Goods;
+}
+
+atomic calculate initializeCartQuantityAgreement(Buyer, Cart, Goods, CartQuantityAgreement) {
+    CartQuantityAgreement.buyer = Buyer;
+    CartQuantityAgreement.cart = Cart;
+    CartQuantityAgreement.goods = Goods;
+}
+
+atomic calculate initializeCartRemovalAgreement(Buyer, Cart, Goods, CartRemovalAgreement) {
+    CartRemovalAgreement.buyer = Buyer;
+    CartRemovalAgreement.cart = Cart;
+    CartRemovalAgreement.goods = Goods;
+}
+
+atomic calculate initializeCartClearingAgreement(Buyer, Cart, CartClearingAgreement) {
+    CartClearingAgreement.Buyer = Buyer;
+    CartClearingAgreement.Cart = Cart;
+}
+
+atomic calculate prepareCartAdditionAgreementReceipt(Buyer, CartAdditionAgreement) {
+    CartAdditionAgreement.receipt = new Receipt();
+    CartAdditionAgreement.receipt.buyer = Buyer;
+    CartAdditionAgreement.receipt.status = ReceiptStatus.COMPLETED;
+}
+
+atomic calculate prepareCartQuantityAgreementReceipt(Buyer, CartQuantityAgreement) {
+    CartQuantityAgreement.receipt = new Receipt();
+    CartQuantityAgreement.receipt.buyer = Buyer;
+    CartQuantityAgreement.receipt.status = ReceiptStatus.COMPLETED;
+}
+
+atomic calculate prepareCartRemovalAgreementReceipt(Buyer, CartRemovalAgreement) {
+    CartRemovalAgreement.receipt = new Receipt();
+    CartRemovalAgreement.receipt.buyer = Buyer;
+    CartRemovalAgreement.receipt.status = ReceiptStatus.COMPLETED;
+}
+
+atomic calculate prepareCartClearingAgreementReceipt(Buyer, CartClearingAgreement) {
+    CartClearingAgreement.Receipt = new Receipt();
+    CartClearingAgreement.Receipt.buyer = Buyer;
+    CartClearingAgreement.Receipt.status = ReceiptStatus.COMPLETED;
+}

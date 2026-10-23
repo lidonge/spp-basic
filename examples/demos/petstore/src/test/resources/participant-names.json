@@ -1,0 +1,618 @@
+{
+  "addCartItem": {
+    "customer": "Buyer",
+    "cart": "Cart",
+    "goods": "Goods",
+    "agreement": "CartAdditionAgreement",
+    "previousLines": "CartLineArray",
+    "CartLine": "CartLineArray"
+  },
+  "updateShopCustomer": {
+    "customer": "Buyer",
+    "agreement": "ProfileAgreement"
+  },
+  "priceLine": {},
+  "quoteOrder": {
+    "customer": "Buyer",
+    "cart": "Cart",
+    "products": "GoodsArray",
+    "order": "ShopOrder",
+    "Goods": "GoodsArray"
+  },
+  "reserveOrder": {
+    "cart": "Cart",
+    "order": "ShopOrder"
+  },
+  "checkOrderOwner": {
+    "customer": "Buyer",
+    "order": "ShopOrder"
+  },
+  "preparePayment": {
+    "order": "ShopOrder",
+    "agreement": "PaymentAgreement"
+  },
+  "prepareShipment": {
+    "order": "ShopOrder",
+    "agreement": "ShipmentAgreement"
+  },
+  "prepareUnpaidCancellation": {
+    "order": "ShopOrder",
+    "agreement": "UnpaidCancellationAgreement"
+  },
+  "preparePaidCancellation": {
+    "order": "ShopOrder",
+    "agreement": "PaidCancellationAgreement"
+  },
+  "prepareCancellationRefund": {
+    "order": "ShopOrder",
+    "agreement": "PaidCancellationAgreement"
+  },
+  "prepareReturnRefund": {
+    "order": "ShopOrder",
+    "agreement": "ReturnRefundAgreement"
+  },
+  "prepareDelivery": {
+    "order": "ShopOrder"
+  },
+  "prepareReturnRequest": {
+    "agreement": "ReturnRequestAgreement",
+    "order": "ShopOrder"
+  },
+  "prepareReturnApproval": {
+    "order": "ShopOrder",
+    "agreement": "ReturnRefundAgreement"
+  },
+  "deliverShopOrder": {
+    "customer": "Buyer",
+    "order": "ShopOrder",
+    "agreement": "DeliveryAgreement"
+  },
+  "clearShopCart": {
+    "previousLines": "CartLineArray",
+    "CartLine": "CartLineArray"
+  },
+  "initializeInventory": {
+    "products": "GoodsArray",
+    "inventory": "StockLineArray",
+    "Goods": "GoodsArray",
+    "StockLine": "StockLineArray"
+  },
+  "reserveInventory": {
+    "inventory": "StockLineArray",
+    "order": "ShopOrder",
+    "StockLine": "StockLineArray"
+  },
+  "shipInventory": {
+    "inventory": "StockLineArray",
+    "agreement": "ShipmentAgreement",
+    "StockLine": "StockLineArray"
+  },
+  "releaseUnpaidInventory": {
+    "inventory": "StockLineArray",
+    "agreement": "UnpaidCancellationAgreement",
+    "StockLine": "StockLineArray"
+  },
+  "releasePaidInventory": {
+    "inventory": "StockLineArray",
+    "agreement": "PaidCancellationAgreement",
+    "StockLine": "StockLineArray"
+  },
+  "returnInventory": {
+    "inventory": "StockLineArray",
+    "agreement": "ReturnRefundAgreement",
+    "StockLine": "StockLineArray"
+  },
+  "prepareInventoryOpening": {
+    "products": "GoodsArray",
+    "inventory": "StockLineArray",
+    "agreement": "InventoryOpeningAgreement",
+    "Goods": "GoodsArray",
+    "StockLine": "StockLineArray"
+  },
+  "openInventory": {
+    "products": "GoodsArray",
+    "inventory": "StockLineArray",
+    "agreement": "InventoryOpeningAgreement",
+    "Goods": "GoodsArray",
+    "StockLine": "StockLineArray"
+  },
+  "reserveRequestedInventory": {
+    "stock": "StockLineArray",
+    "agreement": "PetReservationAgreement",
+    "StockLine": "StockLineArray"
+  },
+  "reserveShopPet": {
+    "customer": "Buyer",
+    "goods": "Goods",
+    "stock": "StockLineArray",
+    "agreement": "PetReservationAgreement",
+    "StockLine": "StockLineArray"
+  },
+  "readShopReservation": {
+    "agreement": "PetReservationAgreement"
+  },
+  "readShopCustomer": {
+    "key": "Buyer"
+  },
+  "readShopCart": {
+    "key": "Cart"
+  },
+  "readShopOrders": {
+    "key": "Buyer",
+    "orders": "ShopOrderArray",
+    "ShopOrder": "ShopOrderArray"
+  },
+  "readShopInventory": {
+    "key": "StockLineArray",
+    "selection": "Goods",
+    "products": "GoodsArray",
+    "StockLine": "StockLineArray"
+  },
+  "readShopMerchant": {
+    "key": "Merchant"
+  },
+  "prepareProductSelection": {
+    "selection": "Goods"
+  },
+  "filterProducts": {
+    "selection": "Goods",
+    "products": "GoodsArray"
+  },
+  "browseShopProducts": {
+    "selection": "Goods",
+    "products": "GoodsArray"
+  },
+  "requestShopReturn": {},
+  "cancelPaidShopOrder": {
+    "customer": "Buyer",
+    "merchant": "Merchant",
+    "stock": "StockLineArray",
+    "order": "ShopOrder",
+    "agreement": "PaidCancellationAgreement",
+    "StockLine": "StockLineArray"
+  },
+  "localizeCatalog": {
+    "products": "GoodsArray",
+    "Goods": "GoodsArray"
+  },
+  "importCatalogue": {
+    "selection": "Goods",
+    "products": "GoodsArray"
+  },
+  "listOrders": {
+    "ShopOrder": "ShopOrderArray"
+  },
+  "listProducts": {
+    "selection": "Goods",
+    "products": "GoodsArray"
+  },
+  "captureCartLines": {
+    "cart": "Cart",
+    "previous": "CartLineArray",
+    "CartLine": "CartLineArray"
+  },
+  "payOrderFunds": {
+    "customer": "Buyer",
+    "merchant": "Merchant",
+    "agreement": "PaymentAgreement"
+  },
+  "refundCancellationFunds": {
+    "customer": "Buyer",
+    "merchant": "Merchant",
+    "agreement": "PaidCancellationAgreement"
+  },
+  "refundReturnFunds": {
+    "customer": "Buyer",
+    "merchant": "Merchant",
+    "agreement": "ReturnRefundAgreement"
+  },
+  "checkCustomerProfile": {
+    "customer": "Buyer"
+  },
+  "registerCustomer": {
+    "customer": "Buyer",
+    "cart": "Cart"
+  },
+  "updateProfile": {
+    "agreement": "ProfileAgreement",
+    "customer": "Buyer"
+  },
+  "checkNewCustomer": {
+    "existing": "Buyer"
+  },
+  "checkCart": {
+    "customer": "Buyer",
+    "cart": "Cart"
+  },
+  "addCartProduct": {
+    "goods": "Goods",
+    "cart": "Cart",
+    "agreement": "CartAdditionAgreement"
+  },
+  "setCartProductQuantity": {
+    "goods": "Goods",
+    "cart": "Cart",
+    "agreement": "CartQuantityAgreement"
+  },
+  "removeCartProduct": {
+    "goods": "Goods",
+    "cart": "Cart"
+  },
+  "clearCartProducts": {
+    "cart": "Cart"
+  },
+  "checkBuyerCredential": {
+    "buyer": "Buyer"
+  },
+  "locateBuyerCart": {
+    "buyer": "Buyer",
+    "cart": "Cart"
+  },
+  "checkGoodsCredential": {
+    "goods": "Goods"
+  },
+  "checkGoodsSale": {
+    "goods": "Goods"
+  },
+  "prepareInventorySelection": {
+    "products": "GoodsArray",
+    "inventory": "StockLineArray",
+    "Goods": "GoodsArray",
+    "StockLine": "StockLineArray"
+  },
+  "prepareOrderInventory": {
+    "order": "ShopOrder",
+    "inventory": "StockLineArray",
+    "StockLine": "StockLineArray"
+  },
+  "approveShopReturn": {
+    "customer": "Buyer",
+    "merchant": "Merchant",
+    "stock": "StockLineArray",
+    "order": "ShopOrder",
+    "agreement": "ReturnRefundAgreement",
+    "StockLine": "StockLineArray"
+  },
+  "checkReservationQuantity": {
+    "agreement": "PetReservationAgreement"
+  },
+  "preparePetReservation": {
+    "customer": "Buyer",
+    "goods": "Goods",
+    "agreement": "PetReservationAgreement"
+  },
+  "prepareReservationInventory": {
+    "goods": "Goods",
+    "stock": "StockLineArray",
+    "StockLine": "StockLineArray"
+  },
+  "confirmPetReservation": {
+    "agreement": "PetReservationAgreement"
+  },
+  "removeCartItem": {
+    "customer": "Buyer",
+    "cart": "Cart",
+    "goods": "Goods",
+    "agreement": "CartRemovalAgreement",
+    "previousLines": "CartLineArray",
+    "CartLine": "CartLineArray"
+  },
+  "shipShopOrder": {
+    "customer": "Buyer",
+    "stock": "StockLineArray",
+    "order": "ShopOrder",
+    "agreement": "ShipmentAgreement",
+    "StockLine": "StockLineArray"
+  },
+  "setCartQuantity": {
+    "customer": "Buyer",
+    "cart": "Cart",
+    "goods": "Goods",
+    "agreement": "CartQuantityAgreement",
+    "previousLines": "CartLineArray",
+    "CartLine": "CartLineArray"
+  },
+  "registerShopCustomer": {
+    "customer": "Buyer",
+    "cart": "Cart",
+    "agreement": "RegistrationAgreement"
+  },
+  "initializeCatalog": {
+    "products": "GoodsArray",
+    "stock": "StockLineArray",
+    "merchant": "Merchant",
+    "opening": "StoreOpeningAgreement",
+    "Goods": "GoodsArray",
+    "StockLine": "StockLineArray"
+  },
+  "initializeStore": {
+    "stock": "StockLineArray",
+    "merchant": "Merchant",
+    "opening": "StoreOpeningAgreement",
+    "selection": "Goods",
+    "products": "GoodsArray",
+    "StockLine": "StockLineArray"
+  },
+  "configureStoreOpening": {
+    "opening": "StoreOpeningAgreement"
+  },
+  "configureMerchantLookup": {
+    "merchant": "Merchant"
+  },
+  "cancelUnpaidShopOrder": {
+    "customer": "Buyer",
+    "stock": "StockLineArray",
+    "order": "ShopOrder",
+    "agreement": "UnpaidCancellationAgreement",
+    "StockLine": "StockLineArray"
+  },
+  "payShopOrder": {
+    "customer": "Buyer",
+    "merchant": "Merchant",
+    "order": "ShopOrder",
+    "agreement": "PaymentAgreement"
+  },
+  "initializeRegistrationAgreement": {
+    "buyer": "Buyer",
+    "cart": "Cart",
+    "agreement": "RegistrationAgreement"
+  },
+  "initializeProfileAgreement": {
+    "buyer": "Buyer",
+    "agreement": "ProfileAgreement"
+  },
+  "initializeCartAdditionAgreement": {
+    "buyer": "Buyer",
+    "cart": "Cart",
+    "goods": "Goods",
+    "agreement": "CartAdditionAgreement"
+  },
+  "initializeCartQuantityAgreement": {
+    "buyer": "Buyer",
+    "cart": "Cart",
+    "goods": "Goods",
+    "agreement": "CartQuantityAgreement"
+  },
+  "initializeCartRemovalAgreement": {
+    "buyer": "Buyer",
+    "cart": "Cart",
+    "goods": "Goods",
+    "agreement": "CartRemovalAgreement"
+  },
+  "initializeCartClearingAgreement": {},
+  "initializePaymentAgreement": {
+    "buyer": "Buyer",
+    "seller": "Merchant",
+    "order": "ShopOrder",
+    "agreement": "PaymentAgreement"
+  },
+  "initializeShipmentAgreement": {
+    "buyer": "Buyer",
+    "order": "ShopOrder",
+    "agreement": "ShipmentAgreement"
+  },
+  "initializeDeliveryAgreement": {
+    "buyer": "Buyer",
+    "order": "ShopOrder",
+    "agreement": "DeliveryAgreement"
+  },
+  "initializeUnpaidCancellationAgreement": {
+    "buyer": "Buyer",
+    "order": "ShopOrder",
+    "agreement": "UnpaidCancellationAgreement"
+  },
+  "initializePaidCancellationAgreement": {
+    "buyer": "Buyer",
+    "seller": "Merchant",
+    "order": "ShopOrder",
+    "agreement": "PaidCancellationAgreement"
+  },
+  "initializeReturnRequestAgreement": {},
+  "prepareReturnRequestReceipt": {
+    "order": "ShopOrder",
+    "agreement": "ReturnRequestAgreement"
+  },
+  "initializeReturnRefundAgreement": {
+    "buyer": "Buyer",
+    "seller": "Merchant",
+    "order": "ShopOrder",
+    "agreement": "ReturnRefundAgreement"
+  },
+  "preparePaymentAgreementReceipt": {
+    "order": "ShopOrder",
+    "agreement": "PaymentAgreement"
+  },
+  "prepareShipmentAgreementReceipt": {
+    "order": "ShopOrder",
+    "agreement": "ShipmentAgreement"
+  },
+  "prepareDeliveryAgreementReceipt": {
+    "order": "ShopOrder",
+    "agreement": "DeliveryAgreement"
+  },
+  "prepareUnpaidCancellationAgreementReceipt": {
+    "order": "ShopOrder",
+    "agreement": "UnpaidCancellationAgreement"
+  },
+  "preparePaidCancellationAgreementReceipt": {
+    "order": "ShopOrder",
+    "agreement": "PaidCancellationAgreement"
+  },
+  "prepareReturnRefundAgreementReceipt": {
+    "order": "ShopOrder",
+    "agreement": "ReturnRefundAgreement"
+  },
+  "prepareRegistrationAgreementReceipt": {
+    "buyer": "Buyer",
+    "agreement": "RegistrationAgreement"
+  },
+  "prepareProfileAgreementReceipt": {
+    "buyer": "Buyer",
+    "agreement": "ProfileAgreement"
+  },
+  "prepareCartAdditionAgreementReceipt": {
+    "buyer": "Buyer",
+    "agreement": "CartAdditionAgreement"
+  },
+  "prepareCartQuantityAgreementReceipt": {
+    "buyer": "Buyer",
+    "agreement": "CartQuantityAgreement"
+  },
+  "prepareCartRemovalAgreementReceipt": {
+    "buyer": "Buyer",
+    "agreement": "CartRemovalAgreement"
+  },
+  "prepareCartClearingAgreementReceipt": {},
+  "preparePurchaseReceipt": {
+    "order": "ShopOrder",
+    "receipt": "Receipt"
+  },
+  "readRegisteredSubject": {},
+  "checkSubjectFacts": {
+    "subject": "Person"
+  },
+  "checkSubjectAbsent": {
+    "subject": "Person"
+  },
+  "prepareSubjectRegistration": {
+    "subject": "Person",
+    "agreement": "SubjectRegistrationAgreement"
+  },
+  "applySubjectProfile": {
+    "subject": "Person",
+    "agreement": "SubjectProfileAgreement"
+  },
+  "registerSubject": {
+    "subject": "Person",
+    "agreement": "SubjectRegistrationAgreement"
+  },
+  "updateSubjectProfile": {
+    "subject": "Person",
+    "agreement": "SubjectProfileAgreement"
+  },
+  "configureMerchantSubject": {
+    "subject": "Person"
+  },
+  "initializeCustomerDomain": {
+    "subject": "Person",
+    "agreement": "SubjectRegistrationAgreement"
+  },
+  "placeShopOrder": {
+    "customer": "Buyer",
+    "cart": "Cart",
+    "stock": "StockLineArray",
+    "order": "ShopOrder",
+    "receipt": "Receipt",
+    "previousLines": "CartLineArray",
+    "StockLine": "StockLineArray",
+    "selection": "Goods",
+    "products": "GoodsArray",
+    "CartLine": "CartLineArray"
+  },
+  "previewShopOrder": {
+    "customer": "Buyer",
+    "cart": "Cart",
+    "order": "ShopOrder",
+    "selection": "Goods",
+    "products": "GoodsArray"
+  },
+  "listCatalogue": {
+    "selection": "CatalogProduct",
+    "products": "CatalogProductArray"
+  },
+  "localizeProductLabels": {
+    "products": "CatalogProductArray",
+    "CatalogProduct": "CatalogProductArray"
+  },
+  "configureCatalogueSelection": {
+    "selection": "CatalogProduct"
+  },
+  "initializeProductCatalogue": {
+    "products": "CatalogProductArray",
+    "roots": "ProductArray",
+    "agreement": "ProductCatalogueOpeningAgreement",
+    "CatalogProduct": "CatalogProductArray",
+    "Product": "ProductArray"
+  },
+  "initializeProductDomain": {
+    "roots": "ProductArray",
+    "agreement": "ProductCatalogueOpeningAgreement",
+    "selection": "CatalogProduct",
+    "products": "CatalogProductArray",
+    "Product": "ProductArray"
+  },
+  "applyProductRevision": {
+    "product": "Product",
+    "agreement": "ProductRevisionAgreement"
+  },
+  "checkProductFacts": {
+    "product": "Product"
+  },
+  "reviseProduct": {
+    "product": "Product",
+    "agreement": "ProductRevisionAgreement"
+  },
+  "checkQuotationInput": {
+    "cart": "Cart",
+    "products": "GoodsArray",
+    "Goods": "GoodsArray"
+  },
+  "checkPaymentEligibility": {
+    "customer": "Buyer",
+    "order": "ShopOrder"
+  },
+  "checkShipmentAgreementInput": {
+    "agreement": "ShipmentAgreement"
+  },
+  "checkShipmentEligibility": {
+    "order": "ShopOrder"
+  },
+  "checkUnpaidCancellationAgreementInput": {
+    "agreement": "UnpaidCancellationAgreement"
+  },
+  "checkUnpaidCancellation": {
+    "order": "ShopOrder"
+  },
+  "checkPaidCancellationAgreementInput": {
+    "agreement": "PaidCancellationAgreement"
+  },
+  "checkPaidCancellation": {
+    "order": "ShopOrder"
+  },
+  "checkDeliveryEligibility": {
+    "order": "ShopOrder"
+  },
+  "checkReturnRequest": {
+    "order": "ShopOrder"
+  },
+  "checkReturnApproval": {
+    "order": "ShopOrder"
+  },
+  "checkOrderReservation": {
+    "order": "ShopOrder",
+    "inventory": "StockLineArray",
+    "StockLine": "StockLineArray"
+  },
+  "checkReservedInventory": {
+    "order": "ShopOrder",
+    "inventory": "StockLineArray",
+    "StockLine": "StockLineArray"
+  },
+  "checkSoldInventory": {
+    "order": "ShopOrder",
+    "inventory": "StockLineArray",
+    "StockLine": "StockLineArray"
+  },
+  "checkProfileAgreementInput": {
+    "agreement": "ProfileAgreement"
+  },
+  "checkCartAdditionAgreementInput": {
+    "agreement": "CartAdditionAgreement"
+  },
+  "checkCartQuantityAgreementInput": {
+    "agreement": "CartQuantityAgreement"
+  },
+  "checkReturnRequestAgreementInput": {
+    "agreement": "ReturnRequestAgreement"
+  }
+}

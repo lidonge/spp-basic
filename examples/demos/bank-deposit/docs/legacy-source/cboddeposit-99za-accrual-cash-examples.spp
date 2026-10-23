@@ -1,0 +1,137 @@
+domain cboddeposit;
+
+Contract AccrualCashExampleFacts { CashExample cash; AccrualRuleExampleFacts rules; CashFailureFacts failure; CashDepositTrade first; }
+atomic calculate initializeAccrualCashExample(context AccrualCashExampleFacts example) {
+    example.cash = new CashExample(); example.rules = new AccrualRuleExampleFacts(); example.failure = null;
+}
+atomic calculate configureAccrualCashExample(context AccrualCashExampleFacts example) {
+    example.cash.seed.id = "SOURCE-ACCRUAL-CASH-A"; example.cash.seed.eligibility.accountId = example.cash.seed.id;
+    example.cash.seed.account = copy(example.rules.account); example.cash.seed.eligibility.accountBalance = 480;
+    example.cash.seed.eligibility.transferredToday = 0;
+    example.cash.seed.accrual = copy(example.rules.before); example.cash.seed.bands = copy(example.rules.beforeBands);
+    example.cash.command.id = "SOURCE-ACCRUAL-CASH-T1"; example.cash.command.attemptId = "SOURCE-ACCRUAL-CASH-COMMIT";
+    example.cash.command.accountId = example.cash.seed.id; example.cash.command.request.amount = 50;
+    example.cash.observed.id = example.cash.seed.id;
+    example.cash.tradeKey = new CashDepositTrade(); example.cash.tradeKey.id = example.cash.command.id;
+    example.cash.auditKey = new CashAuditRecord(); example.cash.auditKey.attemptId = example.cash.command.attemptId;
+    example.cash.postingKey.tradeId = example.cash.command.id;
+}
+Scenario serial prepareAccrualCashExample(context AccrualCashExampleFacts example) {
+    initializeAccrualCashExample(example); prepareOrdinaryCashExample(example.cash); initializeAccrualRuleExample(example.rules);
+    configureAccrualCashExample(example);
+}
+Scenario serial observeAccrualCashExample(context AccrualCashExampleFacts example) {
+    example.cash.observed = queryCashAccount(example.cash.observed);
+    example.cash.storedTrade = lookupCashDepositTrade(example.cash.tradeKey);
+    example.cash.audit = lookupCashExampleAudit(example.cash.auditKey);
+    example.cash.postings = queryCashPostingRecords(example.cash.postingKey);
+}
+atomic check verifyAccrualCashCommitExample(AccrualCashExampleFacts example) {
+    require(example.cash.lifecycle.execution.status == "Committed" && example.cash.observed.version == 1
+        && example.cash.observed.account.interestBase == 530 && example.cash.observed.eligibility.accountBalance == 530,
+        "EXAMPLE_ACCRUAL_CASH_COMMIT");
+    require(example.cash.storedTrade != null && example.cash.storedTrade.accrual != null
+        && example.cash.storedTrade.accrual.startDate == 20261001 && example.cash.storedTrade.accrual.normalDays == 6
+        && example.cash.storedTrade.accrual.normalIncrement == 1700 && example.cash.storedTrade.accrual.overdraftIncrement == 600,
+        "EXAMPLE_ACCRUAL_ORIGINAL_PERIOD");
+    require(example.cash.observed.accrual.state.normalProduct == 1712 && example.cash.observed.accrual.state.lastProductDate == 20261007,
+        "EXAMPLE_ACCRUAL_CASH_PRODUCT");
+    require(example.cash.storedTrade.original.account.interestBase == 650
+        && example.cash.storedTrade.original.accrual.state.normalProduct == 12
+        && example.cash.storedTrade.original.accrual.state.lastProductDate == 20261001, "EXAMPLE_ACCRUAL_ORIGINAL_IMMUTABLE");
+    require(example.cash.audit != null && example.cash.audit.event == "Committed", "EXAMPLE_ACCRUAL_COMMIT_AUDIT");
+    int count = 0; double debit = 0; double credit = 0;
+    for (CashPostingRecord posting : example.cash.postings) {
+        count++; if (posting.line.side == "Debit") { debit += posting.line.amount; } else { credit += posting.line.amount; }
+        if (posting.slot == 1) { require(posting.line.amount == 50, "EXAMPLE_ACCRUAL_CASH_FUNDING"); }
+        if (posting.slot == 2) { require(posting.line.amount == 120, "EXAMPLE_ACCRUAL_OLD_DEPOSIT_FUNDING"); }
+        if (posting.slot == 4) { require(posting.line.amount == 100, "EXAMPLE_ACCRUAL_PRINCIPAL_REPAID"); }
+        if (posting.slot == 5) { require(posting.line.amount == 30, "EXAMPLE_ACCRUAL_INTEREST_REPAID"); }
+        if (posting.slot == 6) { require(posting.line.amount == 40, "EXAMPLE_ACCRUAL_COLLECTION_REPAID"); }
+        if (posting.slot == 3 || posting.slot == 7 || posting.slot == 8) { require(posting.line.amount == 0, "EXAMPLE_ACCRUAL_ZERO_SLOTS"); }
+    }
+    require(count == 8 && debit == 170 && credit == 170, "EXAMPLE_ACCRUAL_COMMIT_LEDGER");
+}
+atomic calculate prepareAccrualCashReplayExample(context AccrualCashExampleFacts example) {
+    example.first = copy(example.cash.storedTrade); example.cash.command.attemptId = "SOURCE-ACCRUAL-CASH-REPLAY";
+    example.cash.auditKey.attemptId = example.cash.command.attemptId;
+}
+atomic check verifyAccrualCashReplayExample(AccrualCashExampleFacts example) {
+    require(example.cash.observed.version == 1 && example.cash.observed.accrual.state.normalProduct == 1712
+        && example.cash.lifecycle.execution.trade.id == example.first.id && example.cash.lifecycle.execution.status == "Committed",
+        "EXAMPLE_ACCRUAL_REPLAY_NO_SECOND_PRODUCT");
+    require(example.cash.storedTrade.accrual.normalIncrement == 1700 && example.cash.storedTrade.accrual.startDate == 20261001
+        && example.cash.audit.event == "Replayed", "EXAMPLE_ACCRUAL_REPLAY_ORIGINAL_FACTS");
+}
+atomic calculate prepareAccrualSameDayCashExample(context AccrualCashExampleFacts example) {
+    example.cash.command.id = "SOURCE-ACCRUAL-CASH-T2"; example.cash.command.attemptId = "SOURCE-ACCRUAL-CASH-SECOND";
+    example.cash.tradeKey.id = example.cash.command.id; example.cash.auditKey.attemptId = example.cash.command.attemptId;
+    example.cash.postingKey.tradeId = example.cash.command.id;
+}
+atomic check verifyAccrualSameDayCashExample(AccrualCashExampleFacts example) {
+    require(example.cash.observed.version == 2 && example.cash.observed.account.interestBase == 580
+        && example.cash.observed.accrual.state.normalProduct == 1712 && example.cash.storedTrade.accrual.normalIncrement == 0,
+        "EXAMPLE_ACCRUAL_SAME_DAY_ZERO_PERIOD");
+    require(example.cash.storedTrade.accrual.startDate == 20261007 && example.cash.storedTrade.accrual.normalDays == 0
+        && example.cash.storedTrade.accrual.overdraftIncrement == 0 && example.cash.audit.event == "Committed",
+        "EXAMPLE_ACCRUAL_SAME_DAY_ORIGINAL");
+}
+Scenario serial depositAccrualCashExampleRun(context AccrualCashExampleFacts example) {
+    prepareAccrualCashExample(example);
+    serial { transaction quantum { seedCashExampleAccount(example.cash.seed); } }
+    executeCashDeposit(example.cash.command, example.cash.lifecycle); observeAccrualCashExample(example); verifyAccrualCashCommitExample(example);
+    prepareAccrualCashReplayExample(example); executeCashDeposit(example.cash.command, example.cash.lifecycle);
+    observeAccrualCashExample(example); verifyAccrualCashReplayExample(example);
+    prepareAccrualSameDayCashExample(example); executeCashDeposit(example.cash.command, example.cash.lifecycle);
+    observeAccrualCashExample(example); verifyAccrualSameDayCashExample(example);
+}
+atomic calculate configureInvalidAccrualCashExample(context AccrualCashExampleFacts example) {
+    example.cash.seed.id = "SOURCE-ACCRUAL-INVALID-A"; example.cash.seed.eligibility.accountId = example.cash.seed.id;
+    example.cash.seed.accrual.policy.normalUnit = 0; example.cash.seed.accrual.agreement.enabled = false;
+    example.cash.command.id = "SOURCE-ACCRUAL-INVALID-T"; example.cash.command.attemptId = "SOURCE-ACCRUAL-INVALID-REJECT";
+    example.cash.command.accountId = example.cash.seed.id; example.cash.observed.id = example.cash.seed.id;
+    example.cash.tradeKey.id = example.cash.command.id; example.cash.auditKey.attemptId = example.cash.command.attemptId;
+    example.cash.postingKey.tradeId = example.cash.command.id;
+}
+atomic check verifyUnchangedAccrualCashExample(AccrualCashExampleFacts example) {
+    require(example.cash.observed.version == 0 && example.cash.observed.account.interestBase == 650
+        && example.cash.observed.eligibility.accountBalance == 480 && example.cash.observed.accrual.state.normalProduct == 12
+        && example.cash.observed.accrual.state.lastProductDate == 20261001, "EXAMPLE_ACCRUAL_FAILED_ACCOUNT_CHANGED");
+    require(example.cash.storedTrade == null, "EXAMPLE_ACCRUAL_FAILED_TRADE_STORED");
+    int count = 0; for (CashPostingRecord posting : example.cash.postings) { count++; }
+    require(count == 0, "EXAMPLE_ACCRUAL_FAILED_PARTIAL_LEDGER");
+}
+atomic check verifyInvalidAccrualCashExample(AccrualCashExampleFacts example) {
+    require(example.failure != null && example.failure.code == "INVALID_ACCRUAL_UNIT"
+        && example.cash.audit != null && example.cash.audit.event == "Rejected", "EXAMPLE_ACCRUAL_INVALID_CONFIGURATION");
+}
+Scenario serial depositAccrualInvalidExampleRun(context AccrualCashExampleFacts example) {
+    prepareAccrualCashExample(example); configureInvalidAccrualCashExample(example);
+    serial { transaction quantum { seedCashExampleAccount(example.cash.seed); } }
+    try { executeCashDeposit(example.cash.command, example.cash.lifecycle); } catch (CashFailureFacts example.failure) {}
+    observeAccrualCashExample(example); verifyUnchangedAccrualCashExample(example); verifyInvalidAccrualCashExample(example);
+}
+atomic calculate configureAccrualWriteFailureExample(context AccrualCashExampleFacts example) {
+    example.cash.seed.id = "SOURCE-ACCRUAL-FAILURE-A"; example.cash.seed.eligibility.accountId = example.cash.seed.id;
+    example.cash.command.id = "SOURCE-ACCRUAL-FAILURE-T"; example.cash.command.attemptId = "SOURCE-ACCRUAL-FAILURE-REJECT";
+    example.cash.command.accountId = example.cash.seed.id; example.cash.observed.id = example.cash.seed.id;
+    example.cash.tradeKey.id = example.cash.command.id; example.cash.auditKey.attemptId = example.cash.command.attemptId;
+    example.cash.postingKey.tradeId = example.cash.command.id;
+}
+atomic check verifyAccrualWriteFailureExample(AccrualCashExampleFacts example) {
+    require(example.failure != null && example.failure.code == "EXAMPLE_SERVICE_FAULT"
+        && example.failure.transactionOutcome == "ROLLED_BACK", "EXAMPLE_ACCRUAL_ROLLBACK_EVIDENCE");
+    require(example.cash.audit != null && example.cash.audit.event == "RolledBack"
+        && example.cash.audit.code == "EXAMPLE_SERVICE_FAULT", "EXAMPLE_ACCRUAL_ROLLBACK_AUDIT");
+}
+atomic calculate prepareAccrualWriteRetryExample(context AccrualCashExampleFacts example) {
+    example.cash.command.attemptId = "SOURCE-ACCRUAL-FAILURE-RETRY"; example.cash.auditKey.attemptId = example.cash.command.attemptId;
+}
+Scenario serial depositAccrualWriteFailureExampleRun(context AccrualCashExampleFacts example) {
+    prepareAccrualCashExample(example); configureAccrualWriteFailureExample(example);
+    serial { transaction quantum { seedCashExampleAccount(example.cash.seed); } }
+    try { executeCashDeposit(example.cash.command, example.cash.lifecycle); } catch (CashFailureFacts example.failure) {}
+    observeAccrualCashExample(example); verifyUnchangedAccrualCashExample(example); verifyAccrualWriteFailureExample(example);
+    prepareAccrualWriteRetryExample(example); executeCashDeposit(example.cash.command, example.cash.lifecycle);
+    observeAccrualCashExample(example); verifyAccrualCashCommitExample(example);
+}

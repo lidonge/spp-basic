@@ -1,0 +1,75 @@
+domain petshop;
+
+atomic calculate initializeCatalog(
+    Goods[],
+    StockLine[],
+    StockSupply[],
+    Merchant,
+    SettlementAccount,
+    StoreOpeningAgreement
+) {
+    for (Goods product : Goods[]) {
+        product.active = true;
+        switch (product.sku) {
+            case "CAT-001":
+                product.price = 1200;
+                break;
+            case "FOOD-001":
+                product.price = 29.90;
+                break;
+            case "TOY-001":
+                product.price = 12.35;
+                break;
+            case "DOG-001":
+                product.price = 1800;
+                break;
+        }
+    }
+    initializeInventory;
+    Merchant.tradingName = StoreOpeningAgreement.tradingName;
+    Merchant.shopName = StoreOpeningAgreement.shopName;
+    Merchant.cash = 0;
+    SettlementAccount.accountNumber = "EXTERNAL-SETTLEMENT";
+    SettlementAccount.balance = 0;
+}
+
+Scenario serial initializeStore(
+    Goods,
+    Goods[],
+    StockLine[],
+    StockSupply[],
+    Merchant,
+    SettlementAccount,
+    StoreOpeningAgreement
+) {
+    configureStoreOpening;
+    configureMerchantLookup;
+    findMerchant;
+    if (!Merchant) {
+        findPerson(Merchant);
+        identify(Merchant);
+        prepareProductSelection;
+        importCatalogue;
+        initializeCatalog;
+        transaction {
+            insertGoods(Goods[]);
+            insertStockLine;
+            insertStockSupply;
+            insertMerchant;
+            insertSettlementAccount;
+        }
+    }
+}
+
+atomic calculate configureStoreOpening(StoreOpeningAgreement) {
+    if (StoreOpeningAgreement.tradingName == null || StoreOpeningAgreement.tradingName == "") {
+        StoreOpeningAgreement.tradingName = MERCHANT_NAME;
+    }
+    if (StoreOpeningAgreement.shopName == null || StoreOpeningAgreement.shopName == "") {
+        StoreOpeningAgreement.shopName = SHOP_NAME;
+    }
+}
+
+atomic calculate configureMerchantLookup(Merchant) {
+    Merchant.customerNumber = "MERCHANT-001";
+}

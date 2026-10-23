@@ -1,0 +1,149 @@
+domain cboddeposit;
+
+Contract StoredReversalPreparationExample {
+    CoreReversalEligibilityExample core; String prefix; String originalId; String expectedCode;
+    double expectedRefund; int debtKind; CashExample rejected; CashFailureFacts rejection; CashFailureFacts failure; CashDepositTrade replacement; CashPostingRecord posting;
+}
+atomic calculate initializeStoredPreparationExample(context StoredReversalPreparationExample example) {
+    example.core = new CoreReversalEligibilityExample(); example.failure = null;
+}
+atomic calculate selectStoredPreparationIdentityExample(context StoredReversalPreparationExample example) {
+    example.core.fixture.cash.seed.id = example.prefix + "-A";
+    example.core.fixture.cash.seed.eligibility.accountId = example.core.fixture.cash.seed.id;
+    example.core.fixture.cash.seed.eligibility.lastTransactionDate = 20261007;
+    example.core.fixture.cash.seed.accrual.state.lastProductDate = 20261007;
+    example.core.fixture.cash.command.id = example.prefix + "-T";
+    example.core.fixture.cash.command.attemptId = example.prefix + "-COMMIT";
+    example.core.fixture.cash.command.accountId = example.core.fixture.cash.seed.id;
+    example.core.fixture.cash.observed.id = example.core.fixture.cash.seed.id;
+    example.core.fixture.cash.tariffRecord.customerId = example.prefix + "-CUSTOMER";
+    example.core.fixture.cash.seed.feeParty.customerId = example.core.fixture.cash.tariffRecord.customerId;
+    example.core.request.originalTradeId = example.core.fixture.cash.command.id;
+    example.originalId = example.core.request.originalTradeId;
+    example.core.fixture.cash.originalCommand = copy(example.core.fixture.cash.command);
+    example.core.request.feeDecision = new DepositReversalFeeDecision(); example.core.request.feeDecision.refundAmount = 0;
+}
+Scenario serial initializeStoredPreparationFixtureExample(context StoredReversalPreparationExample example) {
+    initializeStoredPreparationExample(example); initializeCoreReversalEligibilityExample(example.core);
+    initializeCashReversalExample(example.core.fixture); prepareOrdinaryCashExample(example.core.fixture.cash);
+    configureCrossBranchFeeExample(example.core.fixture.cash); configureCashReversalExample(example.core.fixture);
+    configureCoreReversalEligibilityExample(example.core); selectStoredPreparationIdentityExample(example);
+}
+atomic calculate prepareStoredPreparationAuthorizedDepositExample(context StoredReversalPreparationExample example) {
+    example.core.fixture.cash.command.id = example.prefix + "-AUTHORIZED";
+    example.core.fixture.cash.command.attemptId = example.prefix + "-AUTHORIZED-COMMIT";
+    example.core.fixture.cash.command.request.amount = 1500; example.core.fixture.cash.command.evidence.grantedLevel = "B";
+}
+atomic calculate prepareStoredPreparationOriginalReplayExample(context StoredReversalPreparationExample example) {
+    example.core.fixture.cash.command = copy(example.core.fixture.cash.originalCommand);
+    example.core.fixture.cash.command.attemptId = example.prefix + "-REPLAY";
+}
+atomic calculate prepareStoredPreparationNextDayExample(context StoredReversalPreparationExample example) {
+    example.core.fixture.cash.command.id = example.prefix + "-NEXT";
+    example.core.fixture.cash.command.attemptId = example.prefix + "-NEXT-COMMIT";
+    example.core.fixture.cash.command.request.amount = 100;
+    example.core.fixture.cash.command.request.valueDate = 20261008; example.core.fixture.cash.command.day.date = 20261008;
+}
+Scenario serial commitStoredPreparationFixtureExample(context StoredReversalPreparationExample example) {
+    initializeStoredPreparationFixtureExample(example);
+    serial { transaction quantum {
+        seedCashExampleAccount(example.core.fixture.cash.seed); seedCashExampleTariff(example.core.fixture.cash.tariffRecord);
+    } }
+    executeCashDeposit(example.core.fixture.cash.command, example.core.fixture.cash.lifecycle);
+    prepareStoredPreparationAuthorizedDepositExample(example); executeCashDeposit(example.core.fixture.cash.command, example.core.fixture.cash.lifecycle);
+    prepareStoredPreparationOriginalReplayExample(example); executeCashDeposit(example.core.fixture.cash.command, example.core.fixture.cash.lifecycle);
+    prepareStoredPreparationNextDayExample(example); executeCashDeposit(example.core.fixture.cash.command, example.core.fixture.cash.lifecycle);
+}
+atomic calculate restoreStoredPreparationQueryIdentityExample(context StoredReversalPreparationExample example) {
+    example.core.request.originalTradeId = example.originalId;
+}
+Scenario serial observeStoredPreparationExample(context StoredReversalPreparationExample example) {
+    restoreStoredPreparationQueryIdentityExample(example);
+    example.core.fixture.cash.observed = queryCashAccount(example.core.fixture.cash.observed);
+    observeCoreReversalEvidenceExample(example.core);
+}
+atomic check verifyStoredPreparationNoWriteExample(StoredReversalPreparationExample example) {
+    require(example.core.fixture.cash.observed.version == 3 && example.core.fixture.cash.observed.account.interestBase == 2300
+        && example.core.fixture.cash.observed.eligibility.accountBalance == 2300
+        && example.core.fixture.cash.observed.accrual.state.normalProduct == 2200, "EXAMPLE_STORED_PREPARATION_WROTE_ACCOUNT");
+    int audits = 0; int committed = 0; int replayed = 0;
+    for (CashAuditRecord audit : example.core.audits) {
+        audits++; if (audit.event == "Committed") { committed++; } if (audit.event == "Replayed") { replayed++; }
+    }
+    require(audits == 2 && committed == 1 && replayed == 1, "EXAMPLE_STORED_PREPARATION_WROTE_AUDIT");
+    require(example.core.link.version == 0 && example.core.link.reversalId == "", "EXAMPLE_STORED_PREPARATION_CREATED_REVERSAL");
+}
+atomic check verifyStoredPreparationOriginalLedgerExample(StoredReversalPreparationExample example) {
+    int count = 0; double debit = 0; double credit = 0;
+    for (CashPostingRecord posting : example.core.originalPostings) {
+        count++; if (posting.line.side == "Debit") { debit += posting.line.amount; } else { credit += posting.line.amount; }
+        if (posting.slot == 7 || posting.slot == 8) { require(posting.line.amount == 2, "EXAMPLE_STORED_PREPARATION_ORIGINAL_FEE"); }
+    }
+    require(count == 8 && debit == 602 && credit == 602, "EXAMPLE_STORED_PREPARATION_WROTE_LEDGER");
+}
+atomic check verifyStoredFinancialPreparationExample(StoredReversalPreparationExample example) {
+    require(example.core.facts.financial.originalTrade.id == example.originalId
+        && example.core.facts.financial.originalTrade.settled.version == 1
+        && example.core.facts.financial.current.version == 3 && example.core.facts.financial.current.account.interestBase == 2300
+        && example.core.facts.financial.movement.interestBaseDelta == 600
+        && example.core.facts.financial.amounts.accountBalance == 1700
+        && example.core.facts.financial.current.accrual.state.normalProduct == 2200, "EXAMPLE_STORED_FINANCIAL_CANDIDATE");
+}
+atomic calculate mutateStoredPreparationCapacityExample(context StoredReversalPreparationExample example) {
+    example.core.request.capacity.overdraftLimit = 0;
+}
+atomic check verifyStoredPreparationCapacityCopyExample(StoredReversalPreparationExample example) {
+    require(example.core.facts.financial.capacity.overdraftLimit == 1000, "EXAMPLE_STORED_PREPARATION_CAPACITY_ALIAS");
+}
+atomic calculate selectStoredFinancialPreparationExample(context StoredReversalPreparationExample example) { example.prefix = "SOURCE-PREP-FINANCIAL"; }
+Scenario serial storedFinancialPreparationExampleRun(context StoredReversalPreparationExample example) {
+    selectStoredFinancialPreparationExample(example); commitStoredPreparationFixtureExample(example);
+    prepareFinancialDepositReversal(example.core.request, example.core.facts); verifyStoredFinancialPreparationExample(example);
+    mutateStoredPreparationCapacityExample(example); verifyStoredPreparationCapacityCopyExample(example);
+    prepareFinancialDepositReversal(example.core.request, example.core.facts); verifyStoredFinancialPreparationExample(example);
+    observeStoredPreparationExample(example); verifyStoredPreparationNoWriteExample(example); verifyStoredPreparationOriginalLedgerExample(example);
+}
+atomic calculate selectStoredRefundPreparationExample(context StoredReversalPreparationExample example) { example.prefix = "SOURCE-PREP-REFUND"; }
+atomic calculate selectZeroStoredRefundExample(context StoredReversalPreparationExample example) {
+    example.core.request.feeDecision.refundAmount = 0; example.expectedRefund = 0;
+}
+atomic calculate selectPartialStoredRefundExample(context StoredReversalPreparationExample example) {
+    example.core.request.feeDecision.refundAmount = 1.25; example.expectedRefund = 1.25;
+}
+atomic calculate selectFullStoredRefundExample(context StoredReversalPreparationExample example) {
+    example.core.request.feeDecision.refundAmount = 2; example.expectedRefund = 2;
+}
+atomic check verifyStoredRefundPreparationExample(StoredReversalPreparationExample example) {
+    require(example.core.facts.financial.refund.refundAmount == example.expectedRefund
+        && example.core.facts.financial.totals.fee == example.expectedRefund
+        && example.core.facts.financial.totals.debit == 600 + example.expectedRefund
+        && example.core.facts.financial.totals.credit == 600 + example.expectedRefund, "EXAMPLE_STORED_REFUND_TOTALS");
+    int count = 0;
+    for (DepositPostingLine reversed : example.core.facts.financial.reversedLines) {
+        count++;
+        for (DepositPostingLine original : example.core.facts.financial.actualLines) {
+            if (original.slot == reversed.slot) {
+                require(original.subject == reversed.subject, "EXAMPLE_STORED_REFUND_SUBJECT");
+                if (original.side == "Debit") { require(reversed.side == "Credit", "EXAMPLE_STORED_REFUND_CREDIT"); }
+                else { require(reversed.side == "Debit", "EXAMPLE_STORED_REFUND_DEBIT"); }
+                if (reversed.slot <= 6) { require(reversed.amount == original.amount, "EXAMPLE_STORED_REFUND_ORIGINAL_COMPONENT"); }
+                else { require(reversed.amount == example.expectedRefund && original.amount == 2, "EXAMPLE_STORED_REFUND_FEE_LINES"); }
+            }
+        }
+    }
+    require(count == 8, "EXAMPLE_STORED_REFUND_SLOTS");
+}
+atomic calculate mutateStoredRefundDecisionExample(context StoredReversalPreparationExample example) {
+    example.core.request.feeDecision.refundAmount = 10;
+}
+Scenario serial calculateStoredRefundPreparationExample(context StoredReversalPreparationExample example) {
+    prepareFinancialDepositReversalPostings(example.core.request, example.core.facts);
+    mutateStoredRefundDecisionExample(example); verifyStoredRefundPreparationExample(example);
+}
+Scenario serial storedRefundPreparationExampleRun(context StoredReversalPreparationExample example) {
+    selectStoredRefundPreparationExample(example); commitStoredPreparationFixtureExample(example);
+    selectZeroStoredRefundExample(example); calculateStoredRefundPreparationExample(example);
+    selectPartialStoredRefundExample(example); calculateStoredRefundPreparationExample(example);
+    selectFullStoredRefundExample(example); calculateStoredRefundPreparationExample(example);
+    observeStoredPreparationExample(example); verifyStoredPreparationNoWriteExample(example); verifyStoredPreparationOriginalLedgerExample(example);
+}

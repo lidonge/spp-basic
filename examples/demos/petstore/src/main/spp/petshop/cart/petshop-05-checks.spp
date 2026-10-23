@@ -1,0 +1,9 @@
+domain petshop;
+
+atomic check checkCartAdditionAgreementInput(CartAdditionAgreement) {
+    require(CartAdditionAgreement.quantity != null && CartAdditionAgreement.quantity > 0, "INVALID_QUANTITY");
+}
+
+atomic check checkCartQuantityAgreementInput(CartQuantityAgreement) {
+    require(CartQuantityAgreement.quantity != null && CartQuantityAgreement.quantity > 0, "INVALID_QUANTITY");
+}

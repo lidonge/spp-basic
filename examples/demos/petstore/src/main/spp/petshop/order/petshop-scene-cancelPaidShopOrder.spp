@@ -1,0 +1,39 @@
+domain petshop;
+
+Scenario serial cancelPaidShopOrder(Buyer, Merchant, StockLine[], ShopOrder, PaidCancellationAgreement) {
+    checkBuyerCredential;
+    initializePaidCancellationAgreement;
+    checkPaidCancellationAgreementInput;
+
+    configureMerchantLookup;
+    parallel {
+        findBuyer;
+        findMerchant;
+        findShopOrder;
+    }
+    identify(Buyer);
+    identify(Merchant);
+    identify(ShopOrder);
+    checkOrderOwner;
+    prepareOrderInventory;
+    findStockLine;
+    identify(StockLine[]);
+    checkPaidCancellation;
+    checkReservedInventory;
+    preparePaidCancellation;
+    prepareCancellationRefund;
+    preparePaidCancellationAgreementReceipt;
+    transaction {
+        releasePaidInventory bounds {
+            StockLine[].available: [0, null];
+            StockLine[].reserved: [0, null];
+        };
+        refundCancellationFunds bounds {
+            Buyer.wallet: [0, null];
+            Merchant.cash: [0, null];
+        };
+        updateShopOrder;
+
+        insertReceipt(PaidCancellationAgreement.receipt);
+    }
+}

@@ -1,0 +1,60 @@
+domain cboddeposit;
+
+atomic calculate configurePendingAccountChangeExample(context CashExample example) {
+    example.seed.id = "SOURCE-PENDING-CHANGED-A";
+    example.seed.eligibility.accountId = example.seed.id;
+    example.seed.product.maximumBalance = 2000;
+    example.command.id = "SOURCE-PENDING-CHANGED-T";
+    example.command.attemptId = "SOURCE-PENDING-CHANGED-PENDING";
+    example.command.accountId = example.seed.id;
+    example.command.request.amount = 1500;
+    example.originalCommand = copy(example.command);
+    example.observed.id = example.seed.id;
+    example.postingKey.tradeId = example.command.id;
+    example.tradeKey = new CashDepositTrade();
+    example.tradeKey.id = example.command.id;
+    example.auditKey = new CashAuditRecord();
+}
+atomic check verifyAccountChangeInitiallyPendingExample(CashExample example) {
+    require(example.lifecycle.execution.status == "PendingAuthorization", "EXAMPLE_ACCOUNT_CHANGE_NOT_PENDING");
+}
+atomic calculate prepareInterveningCashExample(context CashExample example) {
+    example.command.id = "SOURCE-PENDING-INTERVENING-T";
+    example.command.attemptId = "SOURCE-PENDING-INTERVENING-COMMIT";
+    example.command.request.amount = 1000;
+}
+atomic calculate prepareAccountChangedResumeExample(context CashExample example) {
+    example.command = copy(example.originalCommand);
+    example.command.attemptId = "SOURCE-PENDING-CHANGED-RESUME";
+    example.command.evidence.grantedLevel = "B";
+    example.auditKey.attemptId = example.command.attemptId;
+    example.failure = null;
+}
+atomic check verifyAccountChangedResumeExample(CashExample example) {
+    require(example.failure != null && example.failure.code == "EN175", "EXAMPLE_RESUME_IGNORED_CURRENT_BALANCE");
+    require(example.observed.version == 1 && example.observed.eligibility.accountBalance == 1100
+        && example.observed.eligibility.cashDepositedToday == 1000, "EXAMPLE_RESUME_CHANGED_INTERVENING_RESULT");
+    require(example.storedTrade == null, "EXAMPLE_REJECTED_RESUME_HAS_TRADE");
+    int count = 0;
+    for (CashPostingRecord posting : example.postings) { count++; }
+    require(count == 0, "EXAMPLE_REJECTED_RESUME_HAS_POSTINGS");
+    require(example.audit != null && example.audit.event == "Rejected" && example.audit.code == "EN175",
+        "EXAMPLE_REJECTED_RESUME_AUDIT");
+}
+Scenario serial pendingCurrentAccountCashExample(context CashExample example) {
+    prepareOrdinaryCashExample(example);
+    configurePendingAccountChangeExample(example);
+    serial { transaction quantum { seedCashExampleAccount(example.seed); } }
+    executeCashDeposit(example.command, example.lifecycle);
+    verifyAccountChangeInitiallyPendingExample(example);
+    prepareInterveningCashExample(example);
+    executeCashDeposit(example.command, example.lifecycle);
+    prepareAccountChangedResumeExample(example);
+    try { executeCashDeposit(example.command, example.lifecycle); }
+    catch (CashFailureFacts example.failure) {}
+    example.observed = queryCashAccount(example.observed);
+    example.storedTrade = lookupCashDepositTrade(example.tradeKey);
+    example.postings = queryCashPostingRecords(example.postingKey);
+    example.audit = lookupCashExampleAudit(example.auditKey);
+    verifyAccountChangedResumeExample(example);
+}

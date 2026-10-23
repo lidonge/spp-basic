@@ -1,0 +1,107 @@
+domain cboddeposit;
+
+// Independent five-slot CSAPRD2 expectations migrated from AgreementProductTest.
+Contract AgreementProductExampleFacts {
+    InterestPeriod normal;
+    InterestPeriod overlap;
+    AgreementPolicy policy;
+    AgreementBand[] bands;
+    AgreementProduct result;
+    AgreementProduct expected;
+    CashFailureFacts failure;
+    double band0;
+    double band1;
+    double band2;
+    double band3;
+    double band4;
+    int expectedCount;
+    String expectedCode;
+}
+atomic check verifyAgreementProductExample(AgreementProductExampleFacts example) {
+    require(example.result.normalProduct == example.expected.normalProduct, "EXAMPLE_AGREEMENT_NORMALPRODUCT");
+    require(example.result.bandProduct == example.expected.bandProduct, "EXAMPLE_AGREEMENT_BANDPRODUCT");
+    require(example.result.remainingAmount == example.expected.remainingAmount, "EXAMPLE_AGREEMENT_REMAININGAMOUNT");
+    require(example.result.selectedSlot == example.expected.selectedSlot, "EXAMPLE_AGREEMENT_SELECTEDSLOT");
+    require(example.result.appliedMode == example.expected.appliedMode, "EXAMPLE_AGREEMENT_APPLIEDMODE");
+    int index = 0;
+    for (AgreementBand band : example.bands) {
+        switch (index) {
+            case 0: require(band.product == example.band0, "EXAMPLE_AGREEMENT_BAND5"); break;
+            case 1: require(band.product == example.band1, "EXAMPLE_AGREEMENT_BAND4"); break;
+            case 2: require(band.product == example.band2, "EXAMPLE_AGREEMENT_BAND3"); break;
+            case 3: require(band.product == example.band3, "EXAMPLE_AGREEMENT_BAND2"); break;
+            case 4: require(band.product == example.band4, "EXAMPLE_AGREEMENT_BAND1"); break;
+        }
+        index++;
+    }
+    require(index == 5, "EXAMPLE_AGREEMENT_OUTPUT_COUNT");
+}
+atomic check verifyAgreementProductRejectionExample(AgreementProductExampleFacts example) {
+    require(example.failure != null && example.failure.code == example.expectedCode,
+        "EXAMPLE_AGREEMENT_EXPECTED_REJECTION");
+    require(example.result.normalProduct == null, "EXAMPLE_AGREEMENT_REJECTED_OUTPUT_MUTATED");
+    int count = 0;
+    for (AgreementBand band : example.bands) {
+        require(band.product == 999, "EXAMPLE_AGREEMENT_REJECTED_BAND_MUTATED");
+        count++;
+    }
+    require(count == example.expectedCount, "EXAMPLE_AGREEMENT_REJECTED_BAND_COUNT");
+}
+
+Scenario serial agreementProductExampleRun(context AgreementProductExampleFacts example) {
+    prepareAgreementProductCase01(example);
+    calculateAgreementProduct(example.normal, example.overlap, example.policy, example.bands, example.result);
+    verifyAgreementProductExample(example);
+    prepareAgreementProductCase02(example);
+    calculateAgreementProduct(example.normal, example.overlap, example.policy, example.bands, example.result);
+    verifyAgreementProductExample(example);
+    prepareAgreementProductCase03(example);
+    calculateAgreementProduct(example.normal, example.overlap, example.policy, example.bands, example.result);
+    verifyAgreementProductExample(example);
+    prepareAgreementProductCase04(example);
+    calculateAgreementProduct(example.normal, example.overlap, example.policy, example.bands, example.result);
+    verifyAgreementProductExample(example);
+    prepareAgreementProductCase05(example);
+    calculateAgreementProduct(example.normal, example.overlap, example.policy, example.bands, example.result);
+    verifyAgreementProductExample(example);
+    prepareAgreementProductCase06(example);
+    calculateAgreementProduct(example.normal, example.overlap, example.policy, example.bands, example.result);
+    verifyAgreementProductExample(example);
+    prepareAgreementProductCase07(example);
+    calculateAgreementProduct(example.normal, example.overlap, example.policy, example.bands, example.result);
+    verifyAgreementProductExample(example);
+    prepareAgreementProductCase08(example);
+    calculateAgreementProduct(example.normal, example.overlap, example.policy, example.bands, example.result);
+    verifyAgreementProductExample(example);
+    prepareAgreementProductCase09(example);
+    calculateAgreementProduct(example.normal, example.overlap, example.policy, example.bands, example.result);
+    verifyAgreementProductExample(example);
+    prepareAgreementProductCase10(example);
+    calculateAgreementProduct(example.normal, example.overlap, example.policy, example.bands, example.result);
+    verifyAgreementProductExample(example);
+    prepareAgreementProductCase11(example);
+    calculateAgreementProduct(example.normal, example.overlap, example.policy, example.bands, example.result);
+    verifyAgreementProductExample(example);
+    prepareAgreementProductCase12(example);
+    calculateAgreementProduct(example.normal, example.overlap, example.policy, example.bands, example.result);
+    verifyAgreementProductExample(example);
+    prepareAgreementProductCase13(example);
+    calculateAgreementProduct(example.normal, example.overlap, example.policy, example.bands, example.result);
+    verifyAgreementProductExample(example);
+    prepareAgreementProductCase14(example);
+    try { calculateAgreementProduct(example.normal, example.overlap, example.policy, example.bands, example.result); }
+    catch (CashFailureFacts example.failure) {}
+    verifyAgreementProductRejectionExample(example);
+    prepareAgreementProductCase15(example);
+    try { calculateAgreementProduct(example.normal, example.overlap, example.policy, example.bands, example.result); }
+    catch (CashFailureFacts example.failure) {}
+    verifyAgreementProductRejectionExample(example);
+    prepareAgreementProductCase16(example);
+    try { calculateAgreementProduct(example.normal, example.overlap, example.policy, example.bands, example.result); }
+    catch (CashFailureFacts example.failure) {}
+    verifyAgreementProductRejectionExample(example);
+    prepareAgreementProductCase17(example);
+    try { calculateAgreementProduct(example.normal, example.overlap, example.policy, example.bands, example.result); }
+    catch (CashFailureFacts example.failure) {}
+    verifyAgreementProductRejectionExample(example);
+}

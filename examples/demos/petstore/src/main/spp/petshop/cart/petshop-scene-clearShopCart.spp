@@ -1,0 +1,21 @@
+domain petshop;
+
+Scenario serial clearShopCart(Buyer, Cart, CartClearingAgreement, CartLine[]) {
+    checkBuyerCredential;
+    initializeCartClearingAgreement;
+    findBuyer;
+    identify(Buyer);
+    locateBuyerCart;
+    prepareCartClearingAgreementReceipt;
+    findCart;
+    identify(Cart);
+    checkCart;
+    captureCartLines;
+    clearCartProducts;
+    transaction {
+        deleteCartLine;
+        insertCartLine(Cart.lines);
+        updateCart;
+        insertReceipt(CartClearingAgreement.Receipt);
+    }
+}

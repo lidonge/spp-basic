@@ -1,0 +1,164 @@
+domain cboddeposit;
+
+Role DepositAccrualPlan {
+    int endDate;
+    int normalDays;
+    int overdraftDays;
+    BigDecimal(25, 2) normalIncrement;
+    BigDecimal(25, 2) agreementIncrement;
+    int principalDays;
+    int interestDays;
+    BigDecimal(25, 2) overdraftIncrement;
+    BigDecimal(25, 2) overdraftInterestIncrement;
+}
+
+atomic check checkAccrualPolicy(DepositAccount, DepositInterestPolicy) {
+    require(
+        DepositInterestPolicy.normalUnit > 0 && DepositInterestPolicy.overdraftUnit > 0,
+        "INVALID_ACCRUAL_UNIT"
+    );
+    require(DepositAccount.overdraftPrincipal >= 0, "E1155");
+}
+
+atomic calculate prepareAccrualDates(DepositAccrualState, BusinessDay, BankDate start, BankDate end) {
+    start.encoded = DepositAccrualState.lastProductDate;
+    end.encoded = BusinessDay.date;
+}
+
+atomic calculate prepareNormalAccrualPeriod(DepositAccount, DepositInterestPolicy, InterestPeriod) {
+    InterestPeriod.amount = 0;
+    if (DepositInterestPolicy.normalEnabled) {
+        InterestPeriod.amount = DepositAccount.interestBase;
+    }
+    InterestPeriod.unit = DepositInterestPolicy.normalUnit;
+}
+
+// CSAPRD4 uses ACT days for overdraft independently of the normal interest calendar.
+
+atomic calculate calculateAccrual(
+    DepositAccount,
+    DepositInterestPolicy,
+    InterestPeriod,
+    InterestProduct,
+    BankDate start,
+    BankDate end,
+    DepositAccrualPlan
+) {
+    DepositAccrualPlan.endDate = end.encoded;
+    DepositAccrualPlan.normalDays = InterestPeriod.days;
+    DepositAccrualPlan.overdraftDays = end.epochDay - start.epochDay;
+    DepositAccrualPlan.normalIncrement = InterestProduct.product;
+    DepositAccrualPlan.overdraftIncrement = roundDown(
+        DepositAccount.overdraftPrincipal / DepositInterestPolicy.overdraftUnit,
+        0
+    ) * DepositInterestPolicy.overdraftUnit * DepositAccrualPlan.overdraftDays;
+    DepositAccrualPlan.overdraftInterestIncrement = roundDown(
+        (DepositAccount.overdraftInterest
+            + DepositAccount.collectionInterest)
+            / DepositInterestPolicy.overdraftUnit,
+        0
+    ) * DepositInterestPolicy.overdraftUnit * DepositAccrualPlan.overdraftDays;
+}
+
+atomic calculate accumulateAccrual(DepositAccrualState, DepositAccrualPlan) {
+    DepositAccrualState.lastProductDate = DepositAccrualPlan.endDate;
+    DepositAccrualState.normalProduct += DepositAccrualPlan.normalIncrement;
+    DepositAccrualState.overdraftProduct += DepositAccrualPlan.overdraftIncrement;
+    DepositAccrualState.overdraftInterestProduct += DepositAccrualPlan.overdraftInterestIncrement;
+    DepositAccrualState.actualProduct = DepositAccrualState.normalProduct
+        - DepositAccrualState.overdraftProduct;
+    DepositAccrualState.overdraftDays += DepositAccrualPlan.principalDays;
+    DepositAccrualState.overdraftInterestDays += DepositAccrualPlan.interestDays;
+    DepositAccrualState.agreementProduct += DepositAccrualPlan.agreementIncrement;
+}
+
+atomic check checkAccrualDates(
+    DepositAccrualState,
+    BusinessDay,
+    InterestCalendar,
+    AgreementTerm,
+    AgreementBand[]
+) {
+    require(
+        isGregorianDate(DepositAccrualState.lastProductDate) && isGregorianDate(BusinessDay.date),
+        "EE374"
+    );
+    require(DepositAccrualState.lastProductDate <= BusinessDay.date, "E1175");
+    require(
+        InterestCalendar.convention == "ACT"
+            || InterestCalendar.convention == "360365"
+            || InterestCalendar.convention == "360360",
+        "EEC28"
+    );
+    require(AgreementTerm.effectiveDate == 0 || isGregorianDate(AgreementTerm.effectiveDate), "EE374");
+    require(AgreementTerm.cancelDate == 0 || isGregorianDate(AgreementTerm.cancelDate), "EE374");
+    int expected = 5;
+    for (AgreementBand band : AgreementBand[]) {
+        require(band.slot == expected && band.threshold >= 0, "INVALID_AGREEMENT_BANDS");
+        expected--;
+    }
+    require(expected == 0, "INVALID_AGREEMENT_BANDS");
+}
+
+// All local mathematical intermediate participants are created in a calculation atom.
+
+atomic calculate calculateDepositAccrual(
+    DepositAccount,
+    BusinessDay,
+    DepositAccrualState,
+    DepositInterestPolicy,
+    InterestCalendar,
+    AgreementTerm,
+    AgreementPolicy,
+    AgreementBand[],
+    DepositAccrualPlan
+) {
+    BankDate start = new BankDate();
+    BankDate end = new BankDate();
+    BankDate clippedStart = new BankDate();
+    BankDate clippedEnd = new BankDate();
+    InterestPeriod normal = new InterestPeriod();
+    InterestPeriod overlap = new InterestPeriod();
+    InterestProduct normalProduct = new InterestProduct();
+    AgreementProduct products = new AgreementProduct();
+    prepareAccrualDates(DepositAccrualState, BusinessDay, start, end);
+    decodeBankDate(start);
+    decodeBankDate(end);
+    prepareNormalAccrualPeriod(DepositAccount, DepositInterestPolicy, normal);
+    calculateBankDays(start, end, InterestCalendar, normal);
+    AgreementPolicy.enabled = DepositInterestPolicy.normalEnabled && AgreementPolicy.enabled;
+    prepareAgreementWindow(
+        start,
+        end,
+        AgreementTerm,
+        clippedStart,
+        clippedEnd,
+        normal,
+        overlap,
+        AgreementPolicy
+    );
+    decodeBankDate(clippedStart);
+    decodeBankDate(clippedEnd);
+    calculateBankDays(clippedStart, clippedEnd, InterestCalendar, overlap);
+    calculateAgreementProduct(normal, overlap, AgreementPolicy, AgreementBand[], products);
+    calculateInterestProduct(normal, normalProduct);
+    calculateAccrual(
+        DepositAccount,
+        DepositInterestPolicy,
+        normal,
+        normalProduct,
+        start,
+        end,
+        DepositAccrualPlan
+    );
+    DepositAccrualPlan.normalIncrement = products.normalProduct;
+    DepositAccrualPlan.agreementIncrement = products.bandProduct;
+    DepositAccrualPlan.principalDays = 0;
+    DepositAccrualPlan.interestDays = 0;
+    if (DepositAccount.overdraftPrincipal > 0) {
+        DepositAccrualPlan.principalDays = DepositAccrualPlan.overdraftDays;
+    }
+    if (DepositAccount.overdraftInterest > 0) {
+        DepositAccrualPlan.interestDays = DepositAccrualPlan.overdraftDays;
+    }
+}

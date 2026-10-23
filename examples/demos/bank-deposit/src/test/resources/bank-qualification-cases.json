@@ -1,0 +1,2780 @@
+[
+  {
+    "name": "01",
+    "source": "cboddeposit-99ua-qualification-cases.spp",
+    "service": "assessBankQualification",
+    "input": {
+      "DepositBankProfile": {
+        "normalSavings": true,
+        "restrictedSubtype": false,
+        "openingBranch": "001001001",
+        "openingProvince": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "depositRange": "SameBranch",
+        "proprietaryRange": "Open",
+        "cardLinked": false,
+        "accountSeries": "General",
+        "cardRecordFound": false,
+        "cardLoss": "None",
+        "cardStatus": "Normal",
+        "passbookLoss": "None",
+        "groupSubaccount": false
+      },
+      "DepositOperatorFacts": {
+        "branch": "001001002",
+        "province": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "accountingCentre": false,
+        "transactionPrefix": "SA01102",
+        "operationCode": "1102",
+        "tellerFamily": "Ordinary",
+        "tellerNumber": 0,
+        "numericTeller": true,
+        "mode": "Online",
+        "agencySigned": false,
+        "corporateTransfer": false,
+        "settlementChannel": "Teller"
+      },
+      "CashChannel": {
+        "teller": true,
+        "channel": "Teller",
+        "transactionId": "GSA01102",
+        "transactionFamily": "GSA0110",
+        "businessCode": "SA0"
+      }
+    },
+    "code": "EN134",
+    "expected": {}
+  },
+  {
+    "name": "02",
+    "source": "cboddeposit-99ua-qualification-cases.spp",
+    "service": "assessBankQualification",
+    "input": {
+      "DepositBankProfile": {
+        "normalSavings": true,
+        "restrictedSubtype": false,
+        "openingBranch": "001001001",
+        "openingProvince": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "depositRange": "SameBranch",
+        "proprietaryRange": "Open",
+        "cardLinked": false,
+        "accountSeries": "General",
+        "cardRecordFound": false,
+        "cardLoss": "None",
+        "cardStatus": "Normal",
+        "passbookLoss": "None",
+        "groupSubaccount": false
+      },
+      "DepositOperatorFacts": {
+        "branch": "001001001",
+        "province": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "accountingCentre": false,
+        "transactionPrefix": "SA01102",
+        "operationCode": "1102",
+        "tellerFamily": "Ordinary",
+        "tellerNumber": 0,
+        "numericTeller": true,
+        "mode": "Online",
+        "agencySigned": false,
+        "corporateTransfer": false,
+        "settlementChannel": "Teller"
+      },
+      "CashChannel": {
+        "teller": true,
+        "channel": "Teller",
+        "transactionId": "GSA01102",
+        "transactionFamily": "GSA0110",
+        "businessCode": "SA0"
+      }
+    },
+    "code": "",
+    "expected": {}
+  },
+  {
+    "name": "03",
+    "source": "cboddeposit-99ua-qualification-cases.spp",
+    "service": "assessBankQualification",
+    "input": {
+      "DepositBankProfile": {
+        "normalSavings": true,
+        "restrictedSubtype": false,
+        "openingBranch": "001001001",
+        "openingProvince": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "depositRange": "Subbranch",
+        "proprietaryRange": "Open",
+        "cardLinked": false,
+        "accountSeries": "General",
+        "cardRecordFound": false,
+        "cardLoss": "None",
+        "cardStatus": "Normal",
+        "passbookLoss": "None",
+        "groupSubaccount": false
+      },
+      "DepositOperatorFacts": {
+        "branch": "001001002",
+        "province": "001",
+        "subbranch": "SB002",
+        "area": "0001",
+        "areaProvince": "00",
+        "accountingCentre": false,
+        "transactionPrefix": "SA01102",
+        "operationCode": "1102",
+        "tellerFamily": "Ordinary",
+        "tellerNumber": 0,
+        "numericTeller": true,
+        "mode": "Online",
+        "agencySigned": false,
+        "corporateTransfer": false,
+        "settlementChannel": "Teller"
+      },
+      "CashChannel": {
+        "teller": true,
+        "channel": "Teller",
+        "transactionId": "GSA01102",
+        "transactionFamily": "GSA0110",
+        "businessCode": "SA0"
+      }
+    },
+    "code": "EN470",
+    "expected": {}
+  },
+  {
+    "name": "04",
+    "source": "cboddeposit-99ua-qualification-cases.spp",
+    "service": "assessBankQualification",
+    "input": {
+      "DepositBankProfile": {
+        "normalSavings": true,
+        "restrictedSubtype": false,
+        "openingBranch": "001001001",
+        "openingProvince": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "depositRange": "Subbranch",
+        "proprietaryRange": "Open",
+        "cardLinked": false,
+        "accountSeries": "General",
+        "cardRecordFound": false,
+        "cardLoss": "None",
+        "cardStatus": "Normal",
+        "passbookLoss": "None",
+        "groupSubaccount": false
+      },
+      "DepositOperatorFacts": {
+        "branch": "001001002",
+        "province": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "accountingCentre": false,
+        "transactionPrefix": "SA01102",
+        "operationCode": "1102",
+        "tellerFamily": "Ordinary",
+        "tellerNumber": 0,
+        "numericTeller": true,
+        "mode": "Online",
+        "agencySigned": false,
+        "corporateTransfer": false,
+        "settlementChannel": "Teller"
+      },
+      "CashChannel": {
+        "teller": true,
+        "channel": "Teller",
+        "transactionId": "GSA01102",
+        "transactionFamily": "GSA0110",
+        "businessCode": "SA0"
+      }
+    },
+    "code": "",
+    "expected": {}
+  },
+  {
+    "name": "05",
+    "source": "cboddeposit-99ua-qualification-cases.spp",
+    "service": "assessBankQualification",
+    "input": {
+      "DepositBankProfile": {
+        "normalSavings": true,
+        "restrictedSubtype": false,
+        "openingBranch": "001001001",
+        "openingProvince": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "depositRange": "City",
+        "proprietaryRange": "Open",
+        "cardLinked": false,
+        "accountSeries": "General",
+        "cardRecordFound": false,
+        "cardLoss": "None",
+        "cardStatus": "Normal",
+        "passbookLoss": "None",
+        "groupSubaccount": false
+      },
+      "DepositOperatorFacts": {
+        "branch": "001001002",
+        "province": "001",
+        "subbranch": "SB001",
+        "area": "0002",
+        "areaProvince": "00",
+        "accountingCentre": false,
+        "transactionPrefix": "SA01102",
+        "operationCode": "1102",
+        "tellerFamily": "Ordinary",
+        "tellerNumber": 0,
+        "numericTeller": true,
+        "mode": "Online",
+        "agencySigned": false,
+        "corporateTransfer": false,
+        "settlementChannel": "Teller"
+      },
+      "CashChannel": {
+        "teller": true,
+        "channel": "Teller",
+        "transactionId": "GSA01102",
+        "transactionFamily": "GSA0110",
+        "businessCode": "SA0"
+      }
+    },
+    "code": "EN470",
+    "expected": {}
+  },
+  {
+    "name": "06",
+    "source": "cboddeposit-99ua-qualification-cases.spp",
+    "service": "assessBankQualification",
+    "input": {
+      "DepositBankProfile": {
+        "normalSavings": true,
+        "restrictedSubtype": false,
+        "openingBranch": "001001001",
+        "openingProvince": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "depositRange": "Province",
+        "proprietaryRange": "Open",
+        "cardLinked": false,
+        "accountSeries": "General",
+        "cardRecordFound": false,
+        "cardLoss": "None",
+        "cardStatus": "Normal",
+        "passbookLoss": "None",
+        "groupSubaccount": false
+      },
+      "DepositOperatorFacts": {
+        "branch": "001001002",
+        "province": "001",
+        "subbranch": "SB001",
+        "area": "0099",
+        "areaProvince": "00",
+        "accountingCentre": false,
+        "transactionPrefix": "SA01102",
+        "operationCode": "1102",
+        "tellerFamily": "Ordinary",
+        "tellerNumber": 0,
+        "numericTeller": true,
+        "mode": "Online",
+        "agencySigned": false,
+        "corporateTransfer": false,
+        "settlementChannel": "Teller"
+      },
+      "CashChannel": {
+        "teller": true,
+        "channel": "Teller",
+        "transactionId": "GSA01102",
+        "transactionFamily": "GSA0110",
+        "businessCode": "SA0"
+      }
+    },
+    "code": "",
+    "expected": {}
+  },
+  {
+    "name": "07",
+    "source": "cboddeposit-99ua-qualification-cases.spp",
+    "service": "assessBankQualification",
+    "input": {
+      "DepositBankProfile": {
+        "normalSavings": true,
+        "restrictedSubtype": false,
+        "openingBranch": "001001001",
+        "openingProvince": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "depositRange": "Province",
+        "proprietaryRange": "Open",
+        "cardLinked": false,
+        "accountSeries": "General",
+        "cardRecordFound": false,
+        "cardLoss": "None",
+        "cardStatus": "Normal",
+        "passbookLoss": "None",
+        "groupSubaccount": false
+      },
+      "DepositOperatorFacts": {
+        "branch": "001001002",
+        "province": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "01",
+        "accountingCentre": false,
+        "transactionPrefix": "SA01102",
+        "operationCode": "1102",
+        "tellerFamily": "Ordinary",
+        "tellerNumber": 0,
+        "numericTeller": true,
+        "mode": "Online",
+        "agencySigned": false,
+        "corporateTransfer": false,
+        "settlementChannel": "Teller"
+      },
+      "CashChannel": {
+        "teller": true,
+        "channel": "Teller",
+        "transactionId": "GSA01102",
+        "transactionFamily": "GSA0110",
+        "businessCode": "SA0"
+      }
+    },
+    "code": "EN470",
+    "expected": {}
+  },
+  {
+    "name": "08",
+    "source": "cboddeposit-99ua-qualification-cases.spp",
+    "service": "assessBankQualification",
+    "input": {
+      "DepositBankProfile": {
+        "normalSavings": true,
+        "restrictedSubtype": false,
+        "openingBranch": "001001001",
+        "openingProvince": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "depositRange": "All",
+        "proprietaryRange": "Open",
+        "cardLinked": false,
+        "accountSeries": "General",
+        "cardRecordFound": false,
+        "cardLoss": "None",
+        "cardStatus": "Normal",
+        "passbookLoss": "None",
+        "groupSubaccount": false
+      },
+      "DepositOperatorFacts": {
+        "branch": "001001002",
+        "province": "001",
+        "subbranch": "SB001",
+        "area": "9999",
+        "areaProvince": "99",
+        "accountingCentre": false,
+        "transactionPrefix": "SA01102",
+        "operationCode": "1102",
+        "tellerFamily": "Ordinary",
+        "tellerNumber": 0,
+        "numericTeller": true,
+        "mode": "Online",
+        "agencySigned": false,
+        "corporateTransfer": false,
+        "settlementChannel": "Teller"
+      },
+      "CashChannel": {
+        "teller": true,
+        "channel": "Teller",
+        "transactionId": "GSA01102",
+        "transactionFamily": "GSA0110",
+        "businessCode": "SA0"
+      }
+    },
+    "code": "",
+    "expected": {}
+  },
+  {
+    "name": "09",
+    "source": "cboddeposit-99ua-qualification-cases.spp",
+    "service": "assessBankQualification",
+    "input": {
+      "DepositBankProfile": {
+        "normalSavings": true,
+        "restrictedSubtype": false,
+        "openingBranch": "001001001",
+        "openingProvince": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "depositRange": "SameBranch",
+        "proprietaryRange": "Open",
+        "cardLinked": true,
+        "accountSeries": "General",
+        "cardRecordFound": false,
+        "cardLoss": "None",
+        "cardStatus": "Normal",
+        "passbookLoss": "None",
+        "groupSubaccount": false
+      },
+      "DepositOperatorFacts": {
+        "branch": "001001002",
+        "province": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "accountingCentre": false,
+        "transactionPrefix": "SA01102",
+        "operationCode": "1102",
+        "tellerFamily": "Ordinary",
+        "tellerNumber": 0,
+        "numericTeller": true,
+        "mode": "Online",
+        "agencySigned": false,
+        "corporateTransfer": false,
+        "settlementChannel": "Teller"
+      },
+      "CashChannel": {
+        "teller": true,
+        "channel": "Teller",
+        "transactionId": "GSA01102",
+        "transactionFamily": "GSA0110",
+        "businessCode": "SA0"
+      }
+    },
+    "code": "",
+    "expected": {}
+  },
+  {
+    "name": "10",
+    "source": "cboddeposit-99ua-qualification-cases.spp",
+    "service": "assessBankQualification",
+    "input": {
+      "DepositBankProfile": {
+        "normalSavings": true,
+        "restrictedSubtype": false,
+        "openingBranch": "001001001",
+        "openingProvince": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "depositRange": "SameBranch",
+        "proprietaryRange": "Open",
+        "cardLinked": false,
+        "accountSeries": "General",
+        "cardRecordFound": false,
+        "cardLoss": "None",
+        "cardStatus": "Normal",
+        "passbookLoss": "None",
+        "groupSubaccount": false
+      },
+      "DepositOperatorFacts": {
+        "branch": "001001002",
+        "province": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "accountingCentre": true,
+        "transactionPrefix": "SA01102",
+        "operationCode": "1102",
+        "tellerFamily": "Ordinary",
+        "tellerNumber": 0,
+        "numericTeller": true,
+        "mode": "Online",
+        "agencySigned": false,
+        "corporateTransfer": false,
+        "settlementChannel": "Teller"
+      },
+      "CashChannel": {
+        "teller": true,
+        "channel": "Teller",
+        "transactionId": "GSA01102",
+        "transactionFamily": "GSA0110",
+        "businessCode": "SA0"
+      }
+    },
+    "code": "",
+    "expected": {}
+  },
+  {
+    "name": "11",
+    "source": "cboddeposit-99ua-qualification-cases.spp",
+    "service": "assessBankQualification",
+    "input": {
+      "DepositBankProfile": {
+        "normalSavings": true,
+        "restrictedSubtype": false,
+        "openingBranch": "001001001",
+        "openingProvince": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "depositRange": "SameBranch",
+        "proprietaryRange": "Open",
+        "cardLinked": false,
+        "accountSeries": "General",
+        "cardRecordFound": false,
+        "cardLoss": "None",
+        "cardStatus": "Normal",
+        "passbookLoss": "None",
+        "groupSubaccount": false
+      },
+      "DepositOperatorFacts": {
+        "branch": "001001002",
+        "province": "002",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "accountingCentre": true,
+        "transactionPrefix": "SA01102",
+        "operationCode": "1102",
+        "tellerFamily": "Ordinary",
+        "tellerNumber": 0,
+        "numericTeller": true,
+        "mode": "Online",
+        "agencySigned": false,
+        "corporateTransfer": false,
+        "settlementChannel": "Teller"
+      },
+      "CashChannel": {
+        "teller": true,
+        "channel": "Teller",
+        "transactionId": "GSA01102",
+        "transactionFamily": "GSA0110",
+        "businessCode": "SA0"
+      }
+    },
+    "code": "EN134",
+    "expected": {}
+  },
+  {
+    "name": "12",
+    "source": "cboddeposit-99ua-qualification-cases.spp",
+    "service": "assessBankQualification",
+    "input": {
+      "DepositBankProfile": {
+        "normalSavings": true,
+        "restrictedSubtype": false,
+        "openingBranch": "001001001",
+        "openingProvince": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "depositRange": "SameBranch",
+        "proprietaryRange": "Open",
+        "cardLinked": false,
+        "accountSeries": "General",
+        "cardRecordFound": false,
+        "cardLoss": "None",
+        "cardStatus": "Normal",
+        "passbookLoss": "None",
+        "groupSubaccount": false
+      },
+      "DepositOperatorFacts": {
+        "branch": "001001002",
+        "province": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "accountingCentre": false,
+        "transactionPrefix": "FL06002",
+        "operationCode": "1102",
+        "tellerFamily": "Ordinary",
+        "tellerNumber": 0,
+        "numericTeller": true,
+        "mode": "Online",
+        "agencySigned": false,
+        "corporateTransfer": false,
+        "settlementChannel": "Teller"
+      },
+      "CashChannel": {
+        "teller": true,
+        "channel": "Teller",
+        "transactionId": "GSA01102",
+        "transactionFamily": "GSA0110",
+        "businessCode": "SA0"
+      }
+    },
+    "code": "",
+    "expected": {}
+  },
+  {
+    "name": "13",
+    "source": "cboddeposit-99ua-qualification-cases.spp",
+    "service": "assessBankQualification",
+    "input": {
+      "DepositBankProfile": {
+        "normalSavings": true,
+        "restrictedSubtype": false,
+        "openingBranch": "001001001",
+        "openingProvince": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "depositRange": "SameBranch",
+        "proprietaryRange": "Open",
+        "cardLinked": false,
+        "accountSeries": "General",
+        "cardRecordFound": false,
+        "cardLoss": "None",
+        "cardStatus": "Normal",
+        "passbookLoss": "None",
+        "groupSubaccount": false
+      },
+      "DepositOperatorFacts": {
+        "branch": "001001002",
+        "province": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "accountingCentre": false,
+        "transactionPrefix": "AG02891",
+        "operationCode": "1102",
+        "tellerFamily": "Ordinary",
+        "tellerNumber": 0,
+        "numericTeller": true,
+        "mode": "Online",
+        "agencySigned": false,
+        "corporateTransfer": false,
+        "settlementChannel": "Teller"
+      },
+      "CashChannel": {
+        "teller": true,
+        "channel": "Teller",
+        "transactionId": "GSA01102",
+        "transactionFamily": "GSA0110",
+        "businessCode": "SA0"
+      }
+    },
+    "code": "",
+    "expected": {}
+  },
+  {
+    "name": "14",
+    "source": "cboddeposit-99ua-qualification-cases.spp",
+    "service": "assessBankQualification",
+    "input": {
+      "DepositBankProfile": {
+        "normalSavings": true,
+        "restrictedSubtype": false,
+        "openingBranch": "001001001",
+        "openingProvince": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "depositRange": "SameBranch",
+        "proprietaryRange": "Open",
+        "cardLinked": false,
+        "accountSeries": "General",
+        "cardRecordFound": false,
+        "cardLoss": "None",
+        "cardStatus": "Normal",
+        "passbookLoss": "None",
+        "groupSubaccount": false
+      },
+      "DepositOperatorFacts": {
+        "branch": "001001002",
+        "province": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "accountingCentre": false,
+        "transactionPrefix": "SA01120",
+        "operationCode": "1102",
+        "tellerFamily": "Ordinary",
+        "tellerNumber": 0,
+        "numericTeller": true,
+        "mode": "Online",
+        "agencySigned": false,
+        "corporateTransfer": false,
+        "settlementChannel": "Teller"
+      },
+      "CashChannel": {
+        "teller": true,
+        "channel": "Teller",
+        "transactionId": "GSA01102",
+        "transactionFamily": "GSA0110",
+        "businessCode": "SA0"
+      }
+    },
+    "code": "",
+    "expected": {}
+  },
+  {
+    "name": "15",
+    "source": "cboddeposit-99ua-qualification-cases.spp",
+    "service": "assessBankQualification",
+    "input": {
+      "DepositBankProfile": {
+        "normalSavings": true,
+        "restrictedSubtype": false,
+        "openingBranch": "001001001",
+        "openingProvince": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "depositRange": "SameBranch",
+        "proprietaryRange": "Open",
+        "cardLinked": false,
+        "accountSeries": "General",
+        "cardRecordFound": false,
+        "cardLoss": "None",
+        "cardStatus": "Normal",
+        "passbookLoss": "None",
+        "groupSubaccount": false
+      },
+      "DepositOperatorFacts": {
+        "branch": "001001002",
+        "province": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "accountingCentre": false,
+        "transactionPrefix": "FL06615",
+        "operationCode": "1102",
+        "tellerFamily": "Ordinary",
+        "tellerNumber": 0,
+        "numericTeller": true,
+        "mode": "Online",
+        "agencySigned": false,
+        "corporateTransfer": false,
+        "settlementChannel": "Teller"
+      },
+      "CashChannel": {
+        "teller": true,
+        "channel": "Teller",
+        "transactionId": "GSA01102",
+        "transactionFamily": "GSA0110",
+        "businessCode": "SA0"
+      }
+    },
+    "code": "",
+    "expected": {}
+  },
+  {
+    "name": "16",
+    "source": "cboddeposit-99ua-qualification-cases.spp",
+    "service": "assessBankQualification",
+    "input": {
+      "DepositBankProfile": {
+        "normalSavings": true,
+        "restrictedSubtype": false,
+        "openingBranch": "001001001",
+        "openingProvince": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "depositRange": "SameBranch",
+        "proprietaryRange": "Open",
+        "cardLinked": false,
+        "accountSeries": "General",
+        "cardRecordFound": false,
+        "cardLoss": "None",
+        "cardStatus": "Normal",
+        "passbookLoss": "None",
+        "groupSubaccount": false
+      },
+      "DepositOperatorFacts": {
+        "branch": "001001002",
+        "province": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "accountingCentre": false,
+        "transactionPrefix": "FL06618",
+        "operationCode": "1102",
+        "tellerFamily": "Ordinary",
+        "tellerNumber": 0,
+        "numericTeller": true,
+        "mode": "Online",
+        "agencySigned": false,
+        "corporateTransfer": false,
+        "settlementChannel": "Teller"
+      },
+      "CashChannel": {
+        "teller": true,
+        "channel": "Teller",
+        "transactionId": "GSA01102",
+        "transactionFamily": "GSA0110",
+        "businessCode": "SA0"
+      }
+    },
+    "code": "",
+    "expected": {}
+  },
+  {
+    "name": "17",
+    "source": "cboddeposit-99ua-qualification-cases.spp",
+    "service": "assessBankQualification",
+    "input": {
+      "DepositBankProfile": {
+        "normalSavings": true,
+        "restrictedSubtype": false,
+        "openingBranch": "001001001",
+        "openingProvince": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "depositRange": "SameBranch",
+        "proprietaryRange": "Open",
+        "cardLinked": false,
+        "accountSeries": "General",
+        "cardRecordFound": false,
+        "cardLoss": "None",
+        "cardStatus": "Normal",
+        "passbookLoss": "None",
+        "groupSubaccount": false
+      },
+      "DepositOperatorFacts": {
+        "branch": "001001002",
+        "province": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "accountingCentre": false,
+        "transactionPrefix": "RE04001",
+        "operationCode": "1102",
+        "tellerFamily": "Ordinary",
+        "tellerNumber": 0,
+        "numericTeller": true,
+        "mode": "Online",
+        "agencySigned": false,
+        "corporateTransfer": false,
+        "settlementChannel": "Teller"
+      },
+      "CashChannel": {
+        "teller": true,
+        "channel": "Teller",
+        "transactionId": "GSA01102",
+        "transactionFamily": "GSA0110",
+        "businessCode": "SA0"
+      }
+    },
+    "code": "",
+    "expected": {}
+  },
+  {
+    "name": "18",
+    "source": "cboddeposit-99ua-qualification-cases.spp",
+    "service": "assessBankQualification",
+    "input": {
+      "DepositBankProfile": {
+        "normalSavings": true,
+        "restrictedSubtype": false,
+        "openingBranch": "001001001",
+        "openingProvince": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "depositRange": "SameBranch",
+        "proprietaryRange": "Open",
+        "cardLinked": false,
+        "accountSeries": "General",
+        "cardRecordFound": false,
+        "cardLoss": "None",
+        "cardStatus": "Normal",
+        "passbookLoss": "None",
+        "groupSubaccount": false
+      },
+      "DepositOperatorFacts": {
+        "branch": "001001002",
+        "province": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "accountingCentre": false,
+        "transactionPrefix": "RE04013",
+        "operationCode": "1102",
+        "tellerFamily": "Ordinary",
+        "tellerNumber": 0,
+        "numericTeller": true,
+        "mode": "Online",
+        "agencySigned": false,
+        "corporateTransfer": false,
+        "settlementChannel": "Teller"
+      },
+      "CashChannel": {
+        "teller": true,
+        "channel": "Teller",
+        "transactionId": "GSA01102",
+        "transactionFamily": "GSA0110",
+        "businessCode": "SA0"
+      }
+    },
+    "code": "",
+    "expected": {}
+  },
+  {
+    "name": "19",
+    "source": "cboddeposit-99ua-qualification-cases.spp",
+    "service": "assessBankQualification",
+    "input": {
+      "DepositBankProfile": {
+        "normalSavings": true,
+        "restrictedSubtype": false,
+        "openingBranch": "001001001",
+        "openingProvince": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "depositRange": "SameBranch",
+        "proprietaryRange": "Open",
+        "cardLinked": false,
+        "accountSeries": "General",
+        "cardRecordFound": false,
+        "cardLoss": "None",
+        "cardStatus": "Normal",
+        "passbookLoss": "None",
+        "groupSubaccount": false
+      },
+      "DepositOperatorFacts": {
+        "branch": "001001002",
+        "province": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "accountingCentre": false,
+        "transactionPrefix": "RE04047",
+        "operationCode": "1102",
+        "tellerFamily": "Ordinary",
+        "tellerNumber": 0,
+        "numericTeller": true,
+        "mode": "Online",
+        "agencySigned": false,
+        "corporateTransfer": false,
+        "settlementChannel": "Teller"
+      },
+      "CashChannel": {
+        "teller": true,
+        "channel": "Teller",
+        "transactionId": "GSA01102",
+        "transactionFamily": "GSA0110",
+        "businessCode": "SA0"
+      }
+    },
+    "code": "",
+    "expected": {}
+  },
+  {
+    "name": "20",
+    "source": "cboddeposit-99ua-qualification-cases.spp",
+    "service": "assessBankQualification",
+    "input": {
+      "DepositBankProfile": {
+        "normalSavings": true,
+        "restrictedSubtype": false,
+        "openingBranch": "001001001",
+        "openingProvince": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "depositRange": "SameBranch",
+        "proprietaryRange": "Open",
+        "cardLinked": false,
+        "accountSeries": "General",
+        "cardRecordFound": false,
+        "cardLoss": "None",
+        "cardStatus": "Normal",
+        "passbookLoss": "None",
+        "groupSubaccount": false
+      },
+      "DepositOperatorFacts": {
+        "branch": "001001002",
+        "province": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "accountingCentre": false,
+        "transactionPrefix": "RE04057",
+        "operationCode": "1102",
+        "tellerFamily": "Ordinary",
+        "tellerNumber": 0,
+        "numericTeller": true,
+        "mode": "Online",
+        "agencySigned": false,
+        "corporateTransfer": false,
+        "settlementChannel": "Teller"
+      },
+      "CashChannel": {
+        "teller": true,
+        "channel": "Teller",
+        "transactionId": "GSA01102",
+        "transactionFamily": "GSA0110",
+        "businessCode": "SA0"
+      }
+    },
+    "code": "",
+    "expected": {}
+  },
+  {
+    "name": "21",
+    "source": "cboddeposit-99ua-qualification-cases.spp",
+    "service": "assessBankQualification",
+    "input": {
+      "DepositBankProfile": {
+        "normalSavings": true,
+        "restrictedSubtype": false,
+        "openingBranch": "001001001",
+        "openingProvince": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "depositRange": "SameBranch",
+        "proprietaryRange": "Open",
+        "cardLinked": false,
+        "accountSeries": "General",
+        "cardRecordFound": false,
+        "cardLoss": "None",
+        "cardStatus": "Normal",
+        "passbookLoss": "None",
+        "groupSubaccount": false
+      },
+      "DepositOperatorFacts": {
+        "branch": "001001002",
+        "province": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "accountingCentre": false,
+        "transactionPrefix": "RE04067",
+        "operationCode": "1102",
+        "tellerFamily": "Ordinary",
+        "tellerNumber": 0,
+        "numericTeller": true,
+        "mode": "Online",
+        "agencySigned": false,
+        "corporateTransfer": false,
+        "settlementChannel": "Teller"
+      },
+      "CashChannel": {
+        "teller": true,
+        "channel": "Teller",
+        "transactionId": "GSA01102",
+        "transactionFamily": "GSA0110",
+        "businessCode": "SA0"
+      }
+    },
+    "code": "",
+    "expected": {}
+  },
+  {
+    "name": "22",
+    "source": "cboddeposit-99ua-qualification-cases.spp",
+    "service": "assessBankQualification",
+    "input": {
+      "DepositBankProfile": {
+        "normalSavings": true,
+        "restrictedSubtype": false,
+        "openingBranch": "001001001",
+        "openingProvince": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "depositRange": "SameBranch",
+        "proprietaryRange": "Open",
+        "cardLinked": false,
+        "accountSeries": "General",
+        "cardRecordFound": false,
+        "cardLoss": "None",
+        "cardStatus": "Normal",
+        "passbookLoss": "None",
+        "groupSubaccount": false
+      },
+      "DepositOperatorFacts": {
+        "branch": "001001002",
+        "province": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "accountingCentre": false,
+        "transactionPrefix": "AG01765",
+        "operationCode": "1102",
+        "tellerFamily": "Ordinary",
+        "tellerNumber": 0,
+        "numericTeller": true,
+        "mode": "Online",
+        "agencySigned": false,
+        "corporateTransfer": false,
+        "settlementChannel": "Teller"
+      },
+      "CashChannel": {
+        "teller": true,
+        "channel": "Teller",
+        "transactionId": "GSA01102",
+        "transactionFamily": "GSA0110",
+        "businessCode": "SA0"
+      }
+    },
+    "code": "",
+    "expected": {}
+  },
+  {
+    "name": "23",
+    "source": "cboddeposit-99ua-qualification-cases.spp",
+    "service": "assessBankQualification",
+    "input": {
+      "DepositBankProfile": {
+        "normalSavings": true,
+        "restrictedSubtype": false,
+        "openingBranch": "001001001",
+        "openingProvince": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "depositRange": "SameBranch",
+        "proprietaryRange": "Open",
+        "cardLinked": false,
+        "accountSeries": "General",
+        "cardRecordFound": false,
+        "cardLoss": "None",
+        "cardStatus": "Normal",
+        "passbookLoss": "None",
+        "groupSubaccount": false
+      },
+      "DepositOperatorFacts": {
+        "branch": "001001002",
+        "province": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "accountingCentre": false,
+        "transactionPrefix": "AG02899",
+        "operationCode": "1102",
+        "tellerFamily": "Ordinary",
+        "tellerNumber": 0,
+        "numericTeller": true,
+        "mode": "Online",
+        "agencySigned": false,
+        "corporateTransfer": false,
+        "settlementChannel": "Teller"
+      },
+      "CashChannel": {
+        "teller": true,
+        "channel": "Teller",
+        "transactionId": "GSA01102",
+        "transactionFamily": "GSA0110",
+        "businessCode": "SA0"
+      }
+    },
+    "code": "",
+    "expected": {}
+  },
+  {
+    "name": "24",
+    "source": "cboddeposit-99ua-qualification-cases.spp",
+    "service": "assessBankQualification",
+    "input": {
+      "DepositBankProfile": {
+        "normalSavings": true,
+        "restrictedSubtype": false,
+        "openingBranch": "001001001",
+        "openingProvince": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "depositRange": "SameBranch",
+        "proprietaryRange": "Open",
+        "cardLinked": false,
+        "accountSeries": "General",
+        "cardRecordFound": false,
+        "cardLoss": "None",
+        "cardStatus": "Normal",
+        "passbookLoss": "None",
+        "groupSubaccount": false
+      },
+      "DepositOperatorFacts": {
+        "branch": "001001002",
+        "province": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "accountingCentre": false,
+        "transactionPrefix": "RE04066",
+        "operationCode": "1102",
+        "tellerFamily": "Ordinary",
+        "tellerNumber": 0,
+        "numericTeller": true,
+        "mode": "Online",
+        "agencySigned": false,
+        "corporateTransfer": false,
+        "settlementChannel": "Teller"
+      },
+      "CashChannel": {
+        "teller": true,
+        "channel": "Teller",
+        "transactionId": "GSA01102",
+        "transactionFamily": "GSA0110",
+        "businessCode": "SA0"
+      }
+    },
+    "code": "",
+    "expected": {}
+  },
+  {
+    "name": "25",
+    "source": "cboddeposit-99ua-qualification-cases.spp",
+    "service": "assessBankQualification",
+    "input": {
+      "DepositBankProfile": {
+        "normalSavings": true,
+        "restrictedSubtype": false,
+        "openingBranch": "001001001",
+        "openingProvince": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "depositRange": "SameBranch",
+        "proprietaryRange": "Open",
+        "cardLinked": false,
+        "accountSeries": "General",
+        "cardRecordFound": false,
+        "cardLoss": "None",
+        "cardStatus": "Normal",
+        "passbookLoss": "None",
+        "groupSubaccount": false
+      },
+      "DepositOperatorFacts": {
+        "branch": "001001002",
+        "province": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "accountingCentre": false,
+        "transactionPrefix": "SA01102",
+        "operationCode": "1102",
+        "tellerFamily": "Ordinary",
+        "tellerNumber": 0,
+        "numericTeller": true,
+        "mode": "Online",
+        "agencySigned": false,
+        "corporateTransfer": false,
+        "settlementChannel": "Teller"
+      },
+      "CashChannel": {
+        "teller": true,
+        "channel": "Teller",
+        "transactionId": "GSA01102",
+        "transactionFamily": "GSA0110",
+        "businessCode": "FL0"
+      }
+    },
+    "code": "",
+    "expected": {}
+  },
+  {
+    "name": "26",
+    "source": "cboddeposit-99ua-qualification-cases.spp",
+    "service": "assessBankQualification",
+    "input": {
+      "DepositBankProfile": {
+        "normalSavings": true,
+        "restrictedSubtype": false,
+        "openingBranch": "001001001",
+        "openingProvince": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "depositRange": "SameBranch",
+        "proprietaryRange": "Open",
+        "cardLinked": false,
+        "accountSeries": "General",
+        "cardRecordFound": false,
+        "cardLoss": "None",
+        "cardStatus": "Normal",
+        "passbookLoss": "None",
+        "groupSubaccount": false
+      },
+      "DepositOperatorFacts": {
+        "branch": "001001002",
+        "province": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "accountingCentre": false,
+        "transactionPrefix": "SA01102",
+        "operationCode": "1102",
+        "tellerFamily": "Ordinary",
+        "tellerNumber": 0,
+        "numericTeller": true,
+        "mode": "Online",
+        "agencySigned": false,
+        "corporateTransfer": false,
+        "settlementChannel": "Teller"
+      },
+      "CashChannel": {
+        "teller": true,
+        "channel": "Teller",
+        "transactionId": "GSA01102",
+        "transactionFamily": "GSA0110",
+        "businessCode": "RE0"
+      }
+    },
+    "code": "",
+    "expected": {}
+  },
+  {
+    "name": "27",
+    "source": "cboddeposit-99ua-qualification-cases.spp",
+    "service": "assessBankQualification",
+    "input": {
+      "DepositBankProfile": {
+        "normalSavings": true,
+        "restrictedSubtype": false,
+        "openingBranch": "001001001",
+        "openingProvince": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "depositRange": "SameBranch",
+        "proprietaryRange": "Open",
+        "cardLinked": false,
+        "accountSeries": "General",
+        "cardRecordFound": false,
+        "cardLoss": "None",
+        "cardStatus": "Normal",
+        "passbookLoss": "None",
+        "groupSubaccount": false
+      },
+      "DepositOperatorFacts": {
+        "branch": "001001002",
+        "province": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "accountingCentre": false,
+        "transactionPrefix": "SA01102",
+        "operationCode": "1102",
+        "tellerFamily": "Ordinary",
+        "tellerNumber": 0,
+        "numericTeller": true,
+        "mode": "Online",
+        "agencySigned": false,
+        "corporateTransfer": false,
+        "settlementChannel": "Teller"
+      },
+      "CashChannel": {
+        "teller": true,
+        "channel": "Teller",
+        "transactionId": "GSA01102",
+        "transactionFamily": "GSA0110",
+        "businessCode": "AG0"
+      }
+    },
+    "code": "",
+    "expected": {}
+  },
+  {
+    "name": "28",
+    "source": "cboddeposit-99ub-qualification-cases.spp",
+    "service": "assessBankQualification",
+    "input": {
+      "DepositBankProfile": {
+        "normalSavings": true,
+        "restrictedSubtype": false,
+        "openingBranch": "001001001",
+        "openingProvince": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "depositRange": "SameBranch",
+        "proprietaryRange": "Open",
+        "cardLinked": false,
+        "accountSeries": "General",
+        "cardRecordFound": false,
+        "cardLoss": "None",
+        "cardStatus": "Normal",
+        "passbookLoss": "None",
+        "groupSubaccount": false
+      },
+      "DepositOperatorFacts": {
+        "branch": "001001002",
+        "province": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "accountingCentre": false,
+        "transactionPrefix": "SA01102",
+        "operationCode": "1102",
+        "tellerFamily": "UH",
+        "tellerNumber": 0,
+        "numericTeller": true,
+        "mode": "Online",
+        "agencySigned": false,
+        "corporateTransfer": false,
+        "settlementChannel": "Teller"
+      },
+      "CashChannel": {
+        "teller": true,
+        "channel": "Teller",
+        "transactionId": "GSA01102",
+        "transactionFamily": "GSA0110",
+        "businessCode": "SA0"
+      }
+    },
+    "code": "",
+    "expected": {}
+  },
+  {
+    "name": "29",
+    "source": "cboddeposit-99ub-qualification-cases.spp",
+    "service": "assessBankQualification",
+    "input": {
+      "DepositBankProfile": {
+        "normalSavings": true,
+        "restrictedSubtype": false,
+        "openingBranch": "001001001",
+        "openingProvince": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "depositRange": "SameBranch",
+        "proprietaryRange": "Open",
+        "cardLinked": false,
+        "accountSeries": "General",
+        "cardRecordFound": false,
+        "cardLoss": "None",
+        "cardStatus": "Normal",
+        "passbookLoss": "None",
+        "groupSubaccount": false
+      },
+      "DepositOperatorFacts": {
+        "branch": "001001002",
+        "province": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "accountingCentre": false,
+        "transactionPrefix": "SA01102",
+        "operationCode": "1102",
+        "tellerFamily": "UH",
+        "tellerNumber": 9,
+        "numericTeller": true,
+        "mode": "Online",
+        "agencySigned": false,
+        "corporateTransfer": false,
+        "settlementChannel": "Teller"
+      },
+      "CashChannel": {
+        "teller": true,
+        "channel": "Teller",
+        "transactionId": "GSA01102",
+        "transactionFamily": "GSA0110",
+        "businessCode": "SA0"
+      }
+    },
+    "code": "",
+    "expected": {}
+  },
+  {
+    "name": "30",
+    "source": "cboddeposit-99ub-qualification-cases.spp",
+    "service": "assessBankQualification",
+    "input": {
+      "DepositBankProfile": {
+        "normalSavings": true,
+        "restrictedSubtype": false,
+        "openingBranch": "001001001",
+        "openingProvince": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "depositRange": "SameBranch",
+        "proprietaryRange": "Open",
+        "cardLinked": false,
+        "accountSeries": "General",
+        "cardRecordFound": false,
+        "cardLoss": "None",
+        "cardStatus": "Normal",
+        "passbookLoss": "None",
+        "groupSubaccount": false
+      },
+      "DepositOperatorFacts": {
+        "branch": "001001002",
+        "province": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "accountingCentre": false,
+        "transactionPrefix": "SA01102",
+        "operationCode": "1102",
+        "tellerFamily": "UH",
+        "tellerNumber": 10,
+        "numericTeller": true,
+        "mode": "Online",
+        "agencySigned": false,
+        "corporateTransfer": false,
+        "settlementChannel": "Teller"
+      },
+      "CashChannel": {
+        "teller": true,
+        "channel": "Teller",
+        "transactionId": "GSA01102",
+        "transactionFamily": "GSA0110",
+        "businessCode": "SA0"
+      }
+    },
+    "code": "EN134",
+    "expected": {}
+  },
+  {
+    "name": "31",
+    "source": "cboddeposit-99ub-qualification-cases.spp",
+    "service": "assessBankQualification",
+    "input": {
+      "DepositBankProfile": {
+        "normalSavings": true,
+        "restrictedSubtype": false,
+        "openingBranch": "001001001",
+        "openingProvince": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "depositRange": "SameBranch",
+        "proprietaryRange": "Open",
+        "cardLinked": false,
+        "accountSeries": "General",
+        "cardRecordFound": false,
+        "cardLoss": "None",
+        "cardStatus": "Normal",
+        "passbookLoss": "None",
+        "groupSubaccount": false
+      },
+      "DepositOperatorFacts": {
+        "branch": "001001002",
+        "province": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "accountingCentre": false,
+        "transactionPrefix": "SA01102",
+        "operationCode": "1751",
+        "tellerFamily": "O",
+        "tellerNumber": 56,
+        "numericTeller": true,
+        "mode": "Online",
+        "agencySigned": false,
+        "corporateTransfer": false,
+        "settlementChannel": "Teller"
+      },
+      "CashChannel": {
+        "teller": true,
+        "channel": "Teller",
+        "transactionId": "GSA01102",
+        "transactionFamily": "GSA0110",
+        "businessCode": "SA0"
+      }
+    },
+    "code": "",
+    "expected": {}
+  },
+  {
+    "name": "32",
+    "source": "cboddeposit-99ub-qualification-cases.spp",
+    "service": "assessBankQualification",
+    "input": {
+      "DepositBankProfile": {
+        "normalSavings": true,
+        "restrictedSubtype": false,
+        "openingBranch": "001001001",
+        "openingProvince": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "depositRange": "SameBranch",
+        "proprietaryRange": "Open",
+        "cardLinked": false,
+        "accountSeries": "General",
+        "cardRecordFound": false,
+        "cardLoss": "None",
+        "cardStatus": "Normal",
+        "passbookLoss": "None",
+        "groupSubaccount": false
+      },
+      "DepositOperatorFacts": {
+        "branch": "001001002",
+        "province": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "accountingCentre": false,
+        "transactionPrefix": "SA01102",
+        "operationCode": "1176",
+        "tellerFamily": "O",
+        "tellerNumber": 99,
+        "numericTeller": true,
+        "mode": "Online",
+        "agencySigned": false,
+        "corporateTransfer": false,
+        "settlementChannel": "Teller"
+      },
+      "CashChannel": {
+        "teller": true,
+        "channel": "Teller",
+        "transactionId": "GSA01102",
+        "transactionFamily": "GSA0110",
+        "businessCode": "SA0"
+      }
+    },
+    "code": "",
+    "expected": {}
+  },
+  {
+    "name": "33",
+    "source": "cboddeposit-99ub-qualification-cases.spp",
+    "service": "assessBankQualification",
+    "input": {
+      "DepositBankProfile": {
+        "normalSavings": true,
+        "restrictedSubtype": false,
+        "openingBranch": "001001001",
+        "openingProvince": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "depositRange": "SameBranch",
+        "proprietaryRange": "Open",
+        "cardLinked": false,
+        "accountSeries": "General",
+        "cardRecordFound": false,
+        "cardLoss": "None",
+        "cardStatus": "Normal",
+        "passbookLoss": "None",
+        "groupSubaccount": false
+      },
+      "DepositOperatorFacts": {
+        "branch": "001001002",
+        "province": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "accountingCentre": false,
+        "transactionPrefix": "SA01102",
+        "operationCode": "1751",
+        "tellerFamily": "O",
+        "tellerNumber": 55,
+        "numericTeller": true,
+        "mode": "Online",
+        "agencySigned": false,
+        "corporateTransfer": false,
+        "settlementChannel": "Teller"
+      },
+      "CashChannel": {
+        "teller": true,
+        "channel": "Teller",
+        "transactionId": "GSA01102",
+        "transactionFamily": "GSA0110",
+        "businessCode": "SA0"
+      }
+    },
+    "code": "EN134",
+    "expected": {}
+  },
+  {
+    "name": "34",
+    "source": "cboddeposit-99ub-qualification-cases.spp",
+    "service": "assessBankQualification",
+    "input": {
+      "DepositBankProfile": {
+        "normalSavings": true,
+        "restrictedSubtype": false,
+        "openingBranch": "001001001",
+        "openingProvince": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "depositRange": "SameBranch",
+        "proprietaryRange": "Open",
+        "cardLinked": false,
+        "accountSeries": "General",
+        "cardRecordFound": false,
+        "cardLoss": "None",
+        "cardStatus": "Normal",
+        "passbookLoss": "None",
+        "groupSubaccount": false
+      },
+      "DepositOperatorFacts": {
+        "branch": "001001002",
+        "province": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "accountingCentre": false,
+        "transactionPrefix": "SA01102",
+        "operationCode": "1102",
+        "tellerFamily": "O",
+        "tellerNumber": 56,
+        "numericTeller": true,
+        "mode": "Online",
+        "agencySigned": false,
+        "corporateTransfer": false,
+        "settlementChannel": "Teller"
+      },
+      "CashChannel": {
+        "teller": true,
+        "channel": "Teller",
+        "transactionId": "GSA01102",
+        "transactionFamily": "GSA0110",
+        "businessCode": "SA0"
+      }
+    },
+    "code": "EN134",
+    "expected": {}
+  },
+  {
+    "name": "35",
+    "source": "cboddeposit-99ub-qualification-cases.spp",
+    "service": "assessBankQualification",
+    "input": {
+      "DepositBankProfile": {
+        "normalSavings": true,
+        "restrictedSubtype": false,
+        "openingBranch": "001001001",
+        "openingProvince": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "depositRange": "SameBranch",
+        "proprietaryRange": "Open",
+        "cardLinked": false,
+        "accountSeries": "General",
+        "cardRecordFound": false,
+        "cardLoss": "None",
+        "cardStatus": "Normal",
+        "passbookLoss": "None",
+        "groupSubaccount": false
+      },
+      "DepositOperatorFacts": {
+        "branch": "001001002",
+        "province": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "accountingCentre": false,
+        "transactionPrefix": "SA01102",
+        "operationCode": "1751",
+        "tellerFamily": "ZD",
+        "tellerNumber": 0,
+        "numericTeller": true,
+        "mode": "Online",
+        "agencySigned": false,
+        "corporateTransfer": false,
+        "settlementChannel": "Teller"
+      },
+      "CashChannel": {
+        "teller": true,
+        "channel": "Teller",
+        "transactionId": "GSA01102",
+        "transactionFamily": "GSA0110",
+        "businessCode": "SA0"
+      }
+    },
+    "code": "",
+    "expected": {}
+  },
+  {
+    "name": "36",
+    "source": "cboddeposit-99ub-qualification-cases.spp",
+    "service": "assessBankQualification",
+    "input": {
+      "DepositBankProfile": {
+        "normalSavings": true,
+        "restrictedSubtype": false,
+        "openingBranch": "001001001",
+        "openingProvince": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "depositRange": "SameBranch",
+        "proprietaryRange": "Open",
+        "cardLinked": false,
+        "accountSeries": "General",
+        "cardRecordFound": false,
+        "cardLoss": "None",
+        "cardStatus": "Normal",
+        "passbookLoss": "None",
+        "groupSubaccount": false
+      },
+      "DepositOperatorFacts": {
+        "branch": "001001002",
+        "province": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "accountingCentre": false,
+        "transactionPrefix": "SA01102",
+        "operationCode": "1176",
+        "tellerFamily": "ZD",
+        "tellerNumber": 0,
+        "numericTeller": true,
+        "mode": "Online",
+        "agencySigned": false,
+        "corporateTransfer": false,
+        "settlementChannel": "Teller"
+      },
+      "CashChannel": {
+        "teller": true,
+        "channel": "Teller",
+        "transactionId": "GSA01102",
+        "transactionFamily": "GSA0110",
+        "businessCode": "SA0"
+      }
+    },
+    "code": "EN134",
+    "expected": {}
+  },
+  {
+    "name": "37",
+    "source": "cboddeposit-99ub-qualification-cases.spp",
+    "service": "assessBankQualification",
+    "input": {
+      "DepositBankProfile": {
+        "normalSavings": true,
+        "restrictedSubtype": false,
+        "openingBranch": "001001001",
+        "openingProvince": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "depositRange": "SameBranch",
+        "proprietaryRange": "Open",
+        "cardLinked": false,
+        "accountSeries": "General",
+        "cardRecordFound": false,
+        "cardLoss": "None",
+        "cardStatus": "Normal",
+        "passbookLoss": "None",
+        "groupSubaccount": false
+      },
+      "DepositOperatorFacts": {
+        "branch": "001001002",
+        "province": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "accountingCentre": false,
+        "transactionPrefix": "SA01102",
+        "operationCode": "1102",
+        "tellerFamily": "Ordinary",
+        "tellerNumber": 0,
+        "numericTeller": true,
+        "mode": "Online",
+        "agencySigned": false,
+        "corporateTransfer": true,
+        "settlementChannel": "Teller"
+      },
+      "CashChannel": {
+        "teller": true,
+        "channel": "Teller",
+        "transactionId": "GSA01102",
+        "transactionFamily": "GSA0110",
+        "businessCode": "SA0"
+      }
+    },
+    "code": "",
+    "expected": {}
+  },
+  {
+    "name": "38",
+    "source": "cboddeposit-99ub-qualification-cases.spp",
+    "service": "assessBankQualification",
+    "input": {
+      "DepositBankProfile": {
+        "normalSavings": true,
+        "restrictedSubtype": false,
+        "openingBranch": "001001001",
+        "openingProvince": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "depositRange": "SameBranch",
+        "proprietaryRange": "Open",
+        "cardLinked": false,
+        "accountSeries": "General",
+        "cardRecordFound": false,
+        "cardLoss": "None",
+        "cardStatus": "Normal",
+        "passbookLoss": "None",
+        "groupSubaccount": false
+      },
+      "DepositOperatorFacts": {
+        "branch": "001001002",
+        "province": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "accountingCentre": false,
+        "transactionPrefix": "SA01102",
+        "operationCode": "1102",
+        "tellerFamily": "Ordinary",
+        "tellerNumber": 0,
+        "numericTeller": true,
+        "mode": "CentralBatch",
+        "agencySigned": false,
+        "corporateTransfer": false,
+        "settlementChannel": "Teller"
+      },
+      "CashChannel": {
+        "teller": true,
+        "channel": "Teller",
+        "transactionId": "GSA01102",
+        "transactionFamily": "GSA0110",
+        "businessCode": "SA0"
+      }
+    },
+    "code": "",
+    "expected": {}
+  },
+  {
+    "name": "39",
+    "source": "cboddeposit-99ub-qualification-cases.spp",
+    "service": "assessBankQualification",
+    "input": {
+      "DepositBankProfile": {
+        "normalSavings": true,
+        "restrictedSubtype": false,
+        "openingBranch": "001001001",
+        "openingProvince": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "depositRange": "SameBranch",
+        "proprietaryRange": "Open",
+        "cardLinked": false,
+        "accountSeries": "General",
+        "cardRecordFound": false,
+        "cardLoss": "None",
+        "cardStatus": "Normal",
+        "passbookLoss": "None",
+        "groupSubaccount": true
+      },
+      "DepositOperatorFacts": {
+        "branch": "001001002",
+        "province": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "accountingCentre": false,
+        "transactionPrefix": "SA01102",
+        "operationCode": "1102",
+        "tellerFamily": "Ordinary",
+        "tellerNumber": 0,
+        "numericTeller": true,
+        "mode": "Online",
+        "agencySigned": false,
+        "corporateTransfer": false,
+        "settlementChannel": "HVP"
+      },
+      "CashChannel": {
+        "teller": true,
+        "channel": "Teller",
+        "transactionId": "GSA01102",
+        "transactionFamily": "GSA0110",
+        "businessCode": "SA0"
+      }
+    },
+    "code": "",
+    "expected": {}
+  },
+  {
+    "name": "40",
+    "source": "cboddeposit-99ub-qualification-cases.spp",
+    "service": "assessBankQualification",
+    "input": {
+      "DepositBankProfile": {
+        "normalSavings": true,
+        "restrictedSubtype": false,
+        "openingBranch": "001001001",
+        "openingProvince": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "depositRange": "SameBranch",
+        "proprietaryRange": "Open",
+        "cardLinked": false,
+        "accountSeries": "General",
+        "cardRecordFound": false,
+        "cardLoss": "None",
+        "cardStatus": "Normal",
+        "passbookLoss": "None",
+        "groupSubaccount": true
+      },
+      "DepositOperatorFacts": {
+        "branch": "001001002",
+        "province": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "accountingCentre": false,
+        "transactionPrefix": "SA01102",
+        "operationCode": "1102",
+        "tellerFamily": "Ordinary",
+        "tellerNumber": 0,
+        "numericTeller": true,
+        "mode": "Online",
+        "agencySigned": false,
+        "corporateTransfer": false,
+        "settlementChannel": "BEP"
+      },
+      "CashChannel": {
+        "teller": true,
+        "channel": "Teller",
+        "transactionId": "GSA01102",
+        "transactionFamily": "GSA0110",
+        "businessCode": "SA0"
+      }
+    },
+    "code": "",
+    "expected": {}
+  },
+  {
+    "name": "41",
+    "source": "cboddeposit-99ub-qualification-cases.spp",
+    "service": "assessBankQualification",
+    "input": {
+      "DepositBankProfile": {
+        "normalSavings": true,
+        "restrictedSubtype": false,
+        "openingBranch": "001001001",
+        "openingProvince": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "depositRange": "SameBranch",
+        "proprietaryRange": "Open",
+        "cardLinked": false,
+        "accountSeries": "General",
+        "cardRecordFound": false,
+        "cardLoss": "None",
+        "cardStatus": "Normal",
+        "passbookLoss": "None",
+        "groupSubaccount": true
+      },
+      "DepositOperatorFacts": {
+        "branch": "001001002",
+        "province": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "accountingCentre": false,
+        "transactionPrefix": "SA01102",
+        "operationCode": "1102",
+        "tellerFamily": "Ordinary",
+        "tellerNumber": 0,
+        "numericTeller": true,
+        "mode": "Online",
+        "agencySigned": false,
+        "corporateTransfer": false,
+        "settlementChannel": "NXY"
+      },
+      "CashChannel": {
+        "teller": true,
+        "channel": "Teller",
+        "transactionId": "GSA01102",
+        "transactionFamily": "GSA0110",
+        "businessCode": "SA0"
+      }
+    },
+    "code": "",
+    "expected": {}
+  },
+  {
+    "name": "42",
+    "source": "cboddeposit-99ub-qualification-cases.spp",
+    "service": "assessBankQualification",
+    "input": {
+      "DepositBankProfile": {
+        "normalSavings": true,
+        "restrictedSubtype": true,
+        "openingBranch": "001001001",
+        "openingProvince": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "depositRange": "SameBranch",
+        "proprietaryRange": "Open",
+        "cardLinked": true,
+        "accountSeries": "General",
+        "cardRecordFound": false,
+        "cardLoss": "None",
+        "cardStatus": "Normal",
+        "passbookLoss": "None",
+        "groupSubaccount": false
+      },
+      "DepositOperatorFacts": {
+        "branch": "001001002",
+        "province": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "accountingCentre": false,
+        "transactionPrefix": "SA01102",
+        "operationCode": "1102",
+        "tellerFamily": "Ordinary",
+        "tellerNumber": 0,
+        "numericTeller": true,
+        "mode": "CentralBatch",
+        "agencySigned": false,
+        "corporateTransfer": true,
+        "settlementChannel": "Teller"
+      },
+      "CashChannel": {
+        "teller": true,
+        "channel": "Teller",
+        "transactionId": "GSA01102",
+        "transactionFamily": "GSA0110",
+        "businessCode": "SA0"
+      }
+    },
+    "code": "EN134",
+    "expected": {}
+  },
+  {
+    "name": "43",
+    "source": "cboddeposit-99ub-qualification-cases.spp",
+    "service": "assessBankQualification",
+    "input": {
+      "DepositBankProfile": {
+        "normalSavings": true,
+        "restrictedSubtype": true,
+        "openingBranch": "001001001",
+        "openingProvince": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "depositRange": "City",
+        "proprietaryRange": "Open",
+        "cardLinked": false,
+        "accountSeries": "General",
+        "cardRecordFound": false,
+        "cardLoss": "None",
+        "cardStatus": "Normal",
+        "passbookLoss": "None",
+        "groupSubaccount": false
+      },
+      "DepositOperatorFacts": {
+        "branch": "001001002",
+        "province": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "accountingCentre": false,
+        "transactionPrefix": "RE04035",
+        "operationCode": "1102",
+        "tellerFamily": "Ordinary",
+        "tellerNumber": 0,
+        "numericTeller": true,
+        "mode": "Online",
+        "agencySigned": false,
+        "corporateTransfer": false,
+        "settlementChannel": "Teller"
+      },
+      "CashChannel": {
+        "teller": true,
+        "channel": "Teller",
+        "transactionId": "GSA01102",
+        "transactionFamily": "GSA0110",
+        "businessCode": "SA0"
+      }
+    },
+    "code": "",
+    "expected": {}
+  },
+  {
+    "name": "44",
+    "source": "cboddeposit-99ub-qualification-cases.spp",
+    "service": "assessBankQualification",
+    "input": {
+      "DepositBankProfile": {
+        "normalSavings": false,
+        "restrictedSubtype": false,
+        "openingBranch": "001001001",
+        "openingProvince": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "depositRange": "City",
+        "proprietaryRange": "WithdrawOnly",
+        "cardLinked": false,
+        "accountSeries": "General",
+        "cardRecordFound": false,
+        "cardLoss": "None",
+        "cardStatus": "Normal",
+        "passbookLoss": "None",
+        "groupSubaccount": true
+      },
+      "DepositOperatorFacts": {
+        "branch": "001001002",
+        "province": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "accountingCentre": false,
+        "transactionPrefix": "SA01102",
+        "operationCode": "1102",
+        "tellerFamily": "Ordinary",
+        "tellerNumber": 0,
+        "numericTeller": true,
+        "mode": "Online",
+        "agencySigned": false,
+        "corporateTransfer": false,
+        "settlementChannel": "HVP"
+      },
+      "CashChannel": {
+        "teller": true,
+        "channel": "Teller",
+        "transactionId": "GSA01102",
+        "transactionFamily": "GSA0110",
+        "businessCode": "SA0"
+      }
+    },
+    "code": "EN134",
+    "expected": {}
+  },
+  {
+    "name": "45",
+    "source": "cboddeposit-99uc-qualification-cases.spp",
+    "service": "assessBankQualification",
+    "input": {
+      "DepositBankProfile": {
+        "normalSavings": true,
+        "restrictedSubtype": false,
+        "openingBranch": "001001001",
+        "openingProvince": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "depositRange": "City",
+        "proprietaryRange": "Open",
+        "cardLinked": true,
+        "accountSeries": "49927",
+        "cardRecordFound": true,
+        "cardLoss": "Oral",
+        "cardStatus": "Normal",
+        "passbookLoss": "Written",
+        "groupSubaccount": false
+      },
+      "DepositOperatorFacts": {
+        "branch": "001001002",
+        "province": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "accountingCentre": false,
+        "transactionPrefix": "SA01102",
+        "operationCode": "1102",
+        "tellerFamily": "Ordinary",
+        "tellerNumber": 0,
+        "numericTeller": true,
+        "mode": "Online",
+        "agencySigned": false,
+        "corporateTransfer": false,
+        "settlementChannel": "Teller"
+      },
+      "CashChannel": {
+        "teller": true,
+        "channel": "Teller",
+        "transactionId": "GSA01102",
+        "transactionFamily": "GSA0110",
+        "businessCode": "SA0"
+      }
+    },
+    "code": "",
+    "expected": {
+      "cardWarning": "WN200",
+      "passbookWarning": "WN201"
+    }
+  },
+  {
+    "name": "46",
+    "source": "cboddeposit-99uc-qualification-cases.spp",
+    "service": "assessBankQualification",
+    "input": {
+      "DepositBankProfile": {
+        "normalSavings": true,
+        "restrictedSubtype": false,
+        "openingBranch": "001001001",
+        "openingProvince": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "depositRange": "City",
+        "proprietaryRange": "Open",
+        "cardLinked": true,
+        "accountSeries": "49927",
+        "cardRecordFound": true,
+        "cardLoss": "Oral",
+        "cardStatus": "Cancelled",
+        "passbookLoss": "Written",
+        "groupSubaccount": false
+      },
+      "DepositOperatorFacts": {
+        "branch": "001001002",
+        "province": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "accountingCentre": false,
+        "transactionPrefix": "SA01102",
+        "operationCode": "1102",
+        "tellerFamily": "Ordinary",
+        "tellerNumber": 0,
+        "numericTeller": true,
+        "mode": "Online",
+        "agencySigned": false,
+        "corporateTransfer": false,
+        "settlementChannel": "Teller"
+      },
+      "CashChannel": {
+        "teller": true,
+        "channel": "Teller",
+        "transactionId": "GSA01102",
+        "transactionFamily": "GSA0110",
+        "businessCode": "SA0"
+      }
+    },
+    "code": "",
+    "expected": {
+      "cardWarning": "",
+      "passbookWarning": "WN201"
+    }
+  },
+  {
+    "name": "47",
+    "source": "cboddeposit-99uc-qualification-cases.spp",
+    "service": "assessBankQualification",
+    "input": {
+      "DepositBankProfile": {
+        "normalSavings": true,
+        "restrictedSubtype": false,
+        "openingBranch": "001001001",
+        "openingProvince": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "depositRange": "City",
+        "proprietaryRange": "Open",
+        "cardLinked": true,
+        "accountSeries": "49927",
+        "cardRecordFound": false,
+        "cardLoss": "Oral",
+        "cardStatus": "Normal",
+        "passbookLoss": "Written",
+        "groupSubaccount": false
+      },
+      "DepositOperatorFacts": {
+        "branch": "001001002",
+        "province": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "accountingCentre": false,
+        "transactionPrefix": "SA01102",
+        "operationCode": "1102",
+        "tellerFamily": "Ordinary",
+        "tellerNumber": 0,
+        "numericTeller": true,
+        "mode": "Online",
+        "agencySigned": false,
+        "corporateTransfer": false,
+        "settlementChannel": "Teller"
+      },
+      "CashChannel": {
+        "teller": true,
+        "channel": "Teller",
+        "transactionId": "GSA01102",
+        "transactionFamily": "GSA0110",
+        "businessCode": "SA0"
+      }
+    },
+    "code": "",
+    "expected": {
+      "cardWarning": "",
+      "passbookWarning": "WN201"
+    }
+  },
+  {
+    "name": "48",
+    "source": "cboddeposit-99uc-qualification-cases.spp",
+    "service": "assessBankQualification",
+    "input": {
+      "DepositBankProfile": {
+        "normalSavings": true,
+        "restrictedSubtype": false,
+        "openingBranch": "001001001",
+        "openingProvince": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "depositRange": "City",
+        "proprietaryRange": "Open",
+        "cardLinked": true,
+        "accountSeries": "49927",
+        "cardRecordFound": true,
+        "cardLoss": "Oral",
+        "cardStatus": "Normal",
+        "passbookLoss": "Written",
+        "groupSubaccount": false
+      },
+      "DepositOperatorFacts": {
+        "branch": "001001002",
+        "province": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "accountingCentre": false,
+        "transactionPrefix": "SA01102",
+        "operationCode": "1102",
+        "tellerFamily": "Ordinary",
+        "tellerNumber": 0,
+        "numericTeller": true,
+        "mode": "Online",
+        "agencySigned": false,
+        "corporateTransfer": false,
+        "settlementChannel": "Teller"
+      },
+      "CashChannel": {
+        "teller": true,
+        "channel": "Teller",
+        "transactionId": "GSA01102",
+        "transactionFamily": "GSA0110",
+        "businessCode": "CR0"
+      }
+    },
+    "code": "",
+    "expected": {
+      "cardWarning": "",
+      "passbookWarning": "WN201"
+    }
+  },
+  {
+    "name": "49",
+    "source": "cboddeposit-99uc-qualification-cases.spp",
+    "service": "assessBankQualification",
+    "input": {
+      "DepositBankProfile": {
+        "normalSavings": true,
+        "restrictedSubtype": false,
+        "openingBranch": "001001001",
+        "openingProvince": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "depositRange": "City",
+        "proprietaryRange": "Open",
+        "cardLinked": true,
+        "accountSeries": "49927",
+        "cardRecordFound": true,
+        "cardLoss": "Oral",
+        "cardStatus": "Normal",
+        "passbookLoss": "Written",
+        "groupSubaccount": false
+      },
+      "DepositOperatorFacts": {
+        "branch": "001001002",
+        "province": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "accountingCentre": false,
+        "transactionPrefix": "SA01102",
+        "operationCode": "1102",
+        "tellerFamily": "Ordinary",
+        "tellerNumber": 0,
+        "numericTeller": true,
+        "mode": "Online",
+        "agencySigned": true,
+        "corporateTransfer": false,
+        "settlementChannel": "Teller"
+      },
+      "CashChannel": {
+        "teller": true,
+        "channel": "Teller",
+        "transactionId": "GSA01102",
+        "transactionFamily": "GSA0110",
+        "businessCode": "SA0"
+      }
+    },
+    "code": "",
+    "expected": {
+      "cardWarning": "",
+      "passbookWarning": ""
+    }
+  },
+  {
+    "name": "50",
+    "source": "cboddeposit-99uc-qualification-cases.spp",
+    "service": "assessBankQualification",
+    "input": {
+      "DepositBankProfile": {
+        "normalSavings": true,
+        "restrictedSubtype": false,
+        "openingBranch": "001001001",
+        "openingProvince": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "depositRange": "City",
+        "proprietaryRange": "Open",
+        "cardLinked": true,
+        "accountSeries": "49927",
+        "cardRecordFound": true,
+        "cardLoss": "Oral",
+        "cardStatus": "Normal",
+        "passbookLoss": "Written",
+        "groupSubaccount": false
+      },
+      "DepositOperatorFacts": {
+        "branch": "001001002",
+        "province": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "accountingCentre": false,
+        "transactionPrefix": "SA01102",
+        "operationCode": "1102",
+        "tellerFamily": "Ordinary",
+        "tellerNumber": 0,
+        "numericTeller": false,
+        "mode": "Online",
+        "agencySigned": false,
+        "corporateTransfer": false,
+        "settlementChannel": "Teller"
+      },
+      "CashChannel": {
+        "teller": true,
+        "channel": "Teller",
+        "transactionId": "GSA01102",
+        "transactionFamily": "GSA0110",
+        "businessCode": "SA0"
+      }
+    },
+    "code": "",
+    "expected": {
+      "cardWarning": "",
+      "passbookWarning": ""
+    }
+  },
+  {
+    "name": "51",
+    "source": "cboddeposit-99uc-qualification-cases.spp",
+    "service": "assessBankQualification",
+    "input": {
+      "DepositBankProfile": {
+        "normalSavings": true,
+        "restrictedSubtype": false,
+        "openingBranch": "001001001",
+        "openingProvince": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "depositRange": "City",
+        "proprietaryRange": "Open",
+        "cardLinked": true,
+        "accountSeries": "49927",
+        "cardRecordFound": true,
+        "cardLoss": "Oral",
+        "cardStatus": "Normal",
+        "passbookLoss": "Written",
+        "groupSubaccount": false
+      },
+      "DepositOperatorFacts": {
+        "branch": "001001002",
+        "province": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "accountingCentre": false,
+        "transactionPrefix": "SA01102",
+        "operationCode": "1102",
+        "tellerFamily": "Ordinary",
+        "tellerNumber": 0,
+        "numericTeller": true,
+        "mode": "CentralBatch",
+        "agencySigned": false,
+        "corporateTransfer": false,
+        "settlementChannel": "Teller"
+      },
+      "CashChannel": {
+        "teller": true,
+        "channel": "Teller",
+        "transactionId": "GSA01102",
+        "transactionFamily": "GSA0110",
+        "businessCode": "SA0"
+      }
+    },
+    "code": "",
+    "expected": {
+      "cardWarning": "",
+      "passbookWarning": ""
+    }
+  },
+  {
+    "name": "52",
+    "source": "cboddeposit-99uc-qualification-cases.spp",
+    "service": "assessBankQualification",
+    "input": {
+      "DepositBankProfile": {
+        "normalSavings": true,
+        "restrictedSubtype": false,
+        "openingBranch": "001001001",
+        "openingProvince": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "depositRange": "City",
+        "proprietaryRange": "Open",
+        "cardLinked": true,
+        "accountSeries": "49927",
+        "cardRecordFound": true,
+        "cardLoss": "Oral",
+        "cardStatus": "Normal",
+        "passbookLoss": "Written",
+        "groupSubaccount": false
+      },
+      "DepositOperatorFacts": {
+        "branch": "001001002",
+        "province": "001",
+        "subbranch": "SB001",
+        "area": "0001",
+        "areaProvince": "00",
+        "accountingCentre": false,
+        "transactionPrefix": "SA01102",
+        "operationCode": "1102",
+        "tellerFamily": "Ordinary",
+        "tellerNumber": 0,
+        "numericTeller": true,
+        "mode": "Mode8",
+        "agencySigned": false,
+        "corporateTransfer": false,
+        "settlementChannel": "Teller"
+      },
+      "CashChannel": {
+        "teller": true,
+        "channel": "Teller",
+        "transactionId": "GSA01102",
+        "transactionFamily": "GSA0110",
+        "businessCode": "SA0"
+      }
+    },
+    "code": "",
+    "expected": {
+      "cardWarning": "WN200",
+      "passbookWarning": "WN201"
+    }
+  },
+  {
+    "name": "53",
+    "source": "cboddeposit-99uc-qualification-cases.spp",
+    "service": "assessBankQualification",
+    "input": {
+      "DepositBankProfile": {
+        "normalSavings": true,
+        "restrictedSubtype": false,
+        "openingBranch": "001001001",
+        "openingProvince": "001",
+        "subbranch": "",
+        "area": "0001",
+        "areaProvince": "00",
+        "depositRange": "Subbranch",
+        "proprietaryRange": "Open",
+        "cardLinked": false,
+        "accountSeries": "General",
+        "cardRecordFound": false,
+        "cardLoss": "None",
+        "cardStatus": "Normal",
+        "passbookLoss": "None",
+        "groupSubaccount": false
+      },
+      "DepositOperatorFacts": {
+        "branch": "001001002",
+        "province": "001",
+        "subbranch": "",
+        "area": "0001",
+        "areaProvince": "00",
+        "accountingCentre": false,
+        "transactionPrefix": "SA01102",
+        "operationCode": "1102",
+        "tellerFamily": "Ordinary",
+        "tellerNumber": 0,
+        "numericTeller": true,
+        "mode": "Online",
+        "agencySigned": false,
+        "corporateTransfer": false,
+        "settlementChannel": "Teller"
+      },
+      "CashChannel": {
+        "teller": true,
+        "channel": "Teller",
+        "transactionId": "GSA01102",
+        "transactionFamily": "GSA0110",
+        "businessCode": "SA0"
+      }
+    },
+    "code": "DEPOSIT_SUBBRANCH_RELATION_NOT_FOUND",
+    "expected": {}
+  },
+  {
+    "name": "54",
+    "source": "cboddeposit-99uc-qualification-cases.spp",
+    "service": "assessBankQualification",
+    "input": {
+      "DepositBankProfile": {
+        "normalSavings": true,
+        "restrictedSubtype": false,
+        "openingBranch": "001001001",
+        "openingProvince": "001",
+        "subbranch": "SB001",
+        "area": null,
+        "areaProvince": "00",
+        "depositRange": "City",
+        "proprietaryRange": "Open",
+        "cardLinked": false,
+        "accountSeries": "General",
+        "cardRecordFound": false,
+        "cardLoss": "None",
+        "cardStatus": "Normal",
+        "passbookLoss": "None",
+        "groupSubaccount": false
+      },
+      "DepositOperatorFacts": {
+        "branch": "001001002",
+        "province": "001",
+        "subbranch": "SB001",
+        "area": null,
+        "areaProvince": "00",
+        "accountingCentre": false,
+        "transactionPrefix": "SA01102",
+        "operationCode": "1102",
+        "tellerFamily": "Ordinary",
+        "tellerNumber": 0,
+        "numericTeller": true,
+        "mode": "Online",
+        "agencySigned": false,
+        "corporateTransfer": false,
+        "settlementChannel": "Teller"
+      },
+      "CashChannel": {
+        "teller": true,
+        "channel": "Teller",
+        "transactionId": "GSA01102",
+        "transactionFamily": "GSA0110",
+        "businessCode": "SA0"
+      }
+    },
+    "code": "DEPOSIT_AREA_NOT_FOUND",
+    "expected": {}
+  }
+]

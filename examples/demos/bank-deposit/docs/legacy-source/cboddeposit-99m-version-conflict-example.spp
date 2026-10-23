@@ -1,0 +1,96 @@
+domain cboddeposit;
+
+Contract CashVersionConflictExample {
+    CashExample cash;
+    CashDepositCommand candidate;
+    CashDepositLifecycle stale;
+    CashTradeReversalLink linkKey;
+    CashTradeReversalLink candidateLink;
+}
+atomic query <CashTradeReversalLink link> lookupCashExampleLink(CashTradeReversalLink key);
+atomic calculate initializeCashVersionConflictExample(context CashVersionConflictExample example) {
+    example.cash = new CashExample();
+}
+atomic calculate configureCashVersionConflictExample(context CashVersionConflictExample example) {
+    example.cash.seed.id = "SOURCE-VERSION-CONFLICT-A";
+    example.cash.seed.eligibility.accountId = example.cash.seed.id;
+    example.cash.command.id = "SOURCE-VERSION-CONFLICT-FIRST";
+    example.cash.command.attemptId = "SOURCE-VERSION-CONFLICT-FIRST-COMMIT";
+    example.cash.command.accountId = example.cash.seed.id;
+    example.cash.observed.id = example.cash.seed.id;
+    example.candidate = copy(example.cash.command);
+    example.candidate.id = "SOURCE-VERSION-CONFLICT-CANDIDATE";
+    example.candidate.attemptId = "SOURCE-VERSION-CONFLICT-REJECT";
+    example.candidate.request.amount = 100;
+    example.stale = new CashDepositLifecycle();
+    example.stale.execution = new CashDepositExecution();
+    example.cash.tradeKey = new CashDepositTrade();
+    example.cash.tradeKey.id = example.candidate.id;
+    example.cash.postingKey.tradeId = example.candidate.id;
+    example.linkKey = new CashTradeReversalLink();
+    example.linkKey.id = example.candidate.id;
+    example.cash.auditKey = new CashAuditRecord();
+    example.cash.auditKey.attemptId = example.candidate.attemptId;
+}
+atomic check verifyPreparedVersionConflictExample(CashVersionConflictExample example) {
+    require(example.stale.execution.original.version == 1 && example.stale.execution.proposed.version == 2
+        && example.stale.execution.proposed.eligibility.accountBalance == 800, "EXAMPLE_STALE_CANDIDATE_NOT_PREPARED");
+}
+atomic calculate prepareInterveningVersionConflictExample(context CashVersionConflictExample example) {
+    example.cash.command.id = "SOURCE-VERSION-CONFLICT-INTERVENING";
+    example.cash.command.attemptId = "SOURCE-VERSION-CONFLICT-INTERVENING-COMMIT";
+    example.cash.command.request.amount = 200;
+}
+atomic check verifyCashVersionConflictExample(CashVersionConflictExample example) {
+    require(example.stale.failure != null && example.stale.failure.code == "PERSISTENCE_VERSION_CONFLICT",
+        "EXAMPLE_STALE_CANDIDATE_NOT_REJECTED");
+    require(example.cash.observed.version == 2 && example.cash.observed.eligibility.accountBalance == 900
+        && example.cash.observed.eligibility.cashDepositedToday == 800, "EXAMPLE_CONFLICT_OVERWROTE_INTERVENING_TRADE");
+    require(example.cash.storedTrade == null && example.candidateLink == null, "EXAMPLE_CONFLICT_PARTIAL_RECORDS");
+    int count = 0;
+    for (CashPostingRecord posting : example.cash.postings) { count++; }
+    require(count == 0, "EXAMPLE_CONFLICT_PARTIAL_POSTINGS");
+    require(example.cash.audit != null && example.cash.audit.event == "RolledBack"
+        && example.cash.audit.code == "PERSISTENCE_VERSION_CONFLICT", "EXAMPLE_CONFLICT_FAILURE_AUDIT");
+}
+atomic calculate preparePostConflictCashExample(context CashVersionConflictExample example) {
+    example.cash.command.id = "SOURCE-VERSION-CONFLICT-AFTER";
+    example.cash.command.attemptId = "SOURCE-VERSION-CONFLICT-AFTER-COMMIT";
+    example.cash.command.request.amount = 50;
+}
+atomic check verifyPostConflictCashExample(CashVersionConflictExample example) {
+    require(example.cash.lifecycle.execution.status == "Committed"
+        && example.cash.observed.version == 3 && example.cash.observed.eligibility.accountBalance == 950
+        && example.cash.observed.eligibility.cashDepositedToday == 850, "EXAMPLE_CONFLICT_LEFT_UNUSABLE_LEDGER");
+}
+Scenario serial cashVersionConflictExampleRun(context CashVersionConflictExample example) {
+    initializeCashVersionConflictExample(example);
+    prepareOrdinaryCashExample(example.cash);
+    configureCashVersionConflictExample(example);
+    serial { transaction quantum { seedCashExampleAccount(example.cash.seed); } }
+    executeCashDeposit(example.cash.command, example.cash.lifecycle);
+    prepareCashDepositAttempt(example.candidate, example.stale.execution);
+    verifyPreparedVersionConflictExample(example);
+    prepareInterveningVersionConflictExample(example);
+    executeCashDeposit(example.cash.command, example.cash.lifecycle);
+    try {
+        markCashDepositCommitting(example.stale.execution);
+        commitCashDepositRecords(example.stale.execution.original, example.stale.execution.proposed,
+            example.stale.execution.trade, example.stale.execution.postings, example.stale.execution.reversalLink,
+            example.stale.execution.audit, example.stale.execution.quantumAccount,
+            example.stale.execution.clearing, example.stale.execution.movement);
+    } catch (CashFailureFacts example.stale.failure) {
+        prepareCashDepositFailureAudit(example.candidate, example.stale);
+        transaction quantum { storeCashAudit(example.stale.failureAudit); }
+    }
+    example.cash.observed = queryCashAccount(example.cash.observed);
+    example.cash.storedTrade = lookupCashDepositTrade(example.cash.tradeKey);
+    example.candidateLink = lookupCashExampleLink(example.linkKey);
+    example.cash.postings = queryCashPostingRecords(example.cash.postingKey);
+    example.cash.audit = lookupCashExampleAudit(example.cash.auditKey);
+    verifyCashVersionConflictExample(example);
+    preparePostConflictCashExample(example);
+    executeCashDeposit(example.cash.command, example.cash.lifecycle);
+    example.cash.observed = queryCashAccount(example.cash.observed);
+    verifyPostConflictCashExample(example);
+}

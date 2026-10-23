@@ -1,0 +1,81 @@
+domain cboddeposit;
+
+Contract CashWriteFailureExample {
+    CashExample cash;
+    CashTradeReversalLink linkKey;
+    CashTradeReversalLink link;
+    CashFailureFacts failure;
+}
+atomic calculate initializeCashWriteFailureExample(context CashWriteFailureExample example) {
+    example.cash = new CashExample();
+}
+atomic calculate configureCashWriteFailureExample(context CashWriteFailureExample example) {
+    example.cash.seed.id = "SOURCE-WRITE-FAILURE-A";
+    example.cash.seed.eligibility.accountId = example.cash.seed.id;
+    example.cash.command.id = "SOURCE-WRITE-FAILURE-T";
+    example.cash.command.attemptId = "SOURCE-WRITE-FAILURE-REJECT";
+    example.cash.command.accountId = example.cash.seed.id;
+    example.cash.observed.id = example.cash.seed.id;
+    example.cash.tradeKey = new CashDepositTrade();
+    example.cash.tradeKey.id = example.cash.command.id;
+    example.cash.postingKey.tradeId = example.cash.command.id;
+    example.cash.auditKey = new CashAuditRecord();
+    example.cash.auditKey.attemptId = example.cash.command.attemptId;
+    example.linkKey = new CashTradeReversalLink();
+    example.linkKey.id = example.cash.command.id;
+    example.failure = null;
+}
+atomic check verifyCashWriteFailureExample(CashWriteFailureExample example) {
+    require(example.failure != null && example.failure.code == "EXAMPLE_SERVICE_FAULT", "EXAMPLE_WRITE_FAILURE_NOT_OBSERVED");
+    require(example.cash.observed.version == 0 && example.cash.observed.eligibility.accountBalance == 100
+        && example.cash.observed.account.interestBase == 100 && example.cash.observed.eligibility.cashDepositedToday == 0,
+        "EXAMPLE_WRITE_FAILURE_CHANGED_ACCOUNT");
+    require(example.cash.storedTrade == null && example.link == null, "EXAMPLE_WRITE_FAILURE_PARTIAL_RECORDS");
+    int count = 0;
+    for (CashPostingRecord posting : example.cash.postings) { count++; }
+    require(count == 0, "EXAMPLE_WRITE_FAILURE_PARTIAL_POSTINGS");
+    require(example.cash.audit != null && example.cash.audit.event == "RolledBack"
+        && example.cash.audit.code == "EXAMPLE_SERVICE_FAULT", "EXAMPLE_WRITE_FAILURE_AUDIT");
+}
+atomic calculate prepareCashWriteFailureRetryExample(context CashWriteFailureExample example) {
+    example.cash.command.attemptId = "SOURCE-WRITE-FAILURE-RETRY";
+    example.cash.auditKey.attemptId = example.cash.command.attemptId;
+}
+atomic check verifyCashWriteFailureRetryExample(CashWriteFailureExample example) {
+    require(example.cash.lifecycle.execution.status == "Committed" && example.cash.observed.version == 1
+        && example.cash.observed.eligibility.accountBalance == 700
+        && example.cash.observed.eligibility.cashDepositedToday == 600, "EXAMPLE_WRITE_FAILURE_RETRY_BALANCE");
+    require(example.link != null && example.link.version == 0 && example.link.reversalId == "",
+        "EXAMPLE_WRITE_FAILURE_RETRY_LINK");
+    int count = 0;
+    double debit = 0;
+    double credit = 0;
+    for (CashPostingRecord posting : example.cash.postings) {
+        count++;
+        if (posting.line.side == "Debit") { debit += posting.line.amount; }
+        else { credit += posting.line.amount; }
+    }
+    require(count == 8 && debit == 600 && credit == 600, "EXAMPLE_WRITE_FAILURE_RETRY_LEDGER");
+    require(example.cash.audit != null && example.cash.audit.event == "Committed", "EXAMPLE_WRITE_FAILURE_RETRY_AUDIT");
+}
+Scenario serial observeCashWriteFailureExample(context CashWriteFailureExample example) {
+    example.cash.observed = queryCashAccount(example.cash.observed);
+    example.cash.storedTrade = lookupCashDepositTrade(example.cash.tradeKey);
+    example.cash.postings = queryCashPostingRecords(example.cash.postingKey);
+    example.link = lookupCashExampleLink(example.linkKey);
+    example.cash.audit = lookupCashExampleAudit(example.cash.auditKey);
+}
+Scenario serial cashWriteFailureExampleRun(context CashWriteFailureExample example) {
+    initializeCashWriteFailureExample(example);
+    prepareOrdinaryCashExample(example.cash);
+    configureCashWriteFailureExample(example);
+    serial { transaction quantum { seedCashExampleAccount(example.cash.seed); } }
+    try { executeCashDeposit(example.cash.command, example.cash.lifecycle); }
+    catch (CashFailureFacts example.failure) {}
+    observeCashWriteFailureExample(example);
+    verifyCashWriteFailureExample(example);
+    prepareCashWriteFailureRetryExample(example);
+    executeCashDeposit(example.cash.command, example.cash.lifecycle);
+    observeCashWriteFailureExample(example);
+    verifyCashWriteFailureRetryExample(example);
+}

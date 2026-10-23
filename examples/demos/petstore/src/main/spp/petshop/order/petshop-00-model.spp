@@ -1,0 +1,48 @@
+domain petshop;
+
+Role OrderLine {
+    business("Order-line reference used to verify individual items during delivery and returns") String lineNumber;
+    Goods;
+    String name;
+    int quantity;
+    BigDecimal(19, 2) unitPrice;
+    BigDecimal(19, 2) amount;
+}
+
+take Goods as OrderLine {
+    String name = name;
+    BigDecimal unitPrice = price;
+}
+
+Contract ShopOrder {
+    business("Order reference presented to the buyer") String orderNumber;
+    Buyer buyer;
+    OrderStatus status;
+    OrderLine[] lines;
+    int reservedQuantity;
+    BigDecimal(19, 2) subtotal;
+    BigDecimal(19, 2) discount;
+    BigDecimal(19, 2) shipping;
+    BigDecimal(19, 2) total;
+    String address;
+    String tracking;
+    String reason;
+}
+
+Contract UnpaidCancellationAgreement {
+    Buyer buyer;
+    ShopOrder order;
+    String reason;
+    Receipt receipt;
+    int releasedQuantity;
+}
+
+Contract PaidCancellationAgreement {
+    Buyer buyer;
+    Merchant seller;
+    ShopOrder order;
+    String reason;
+    Receipt receipt;
+    int releasedQuantity;
+    BigDecimal(19, 2) refundAmount;
+}

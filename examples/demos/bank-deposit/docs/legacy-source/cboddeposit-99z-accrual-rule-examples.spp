@@ -1,0 +1,95 @@
+domain cboddeposit;
+
+Contract AccrualRuleExampleFacts {
+    DepositAccount account; BusinessDay day; DepositAccrualInput before; DepositAccrualInput after;
+    AgreementBand[] beforeBands; AgreementBand[] afterBands; AgreementBand[] increments;
+    DepositAccrualWork work; DepositAccrualPlan plan;
+}
+atomic calculate initializeAccrualRuleExample(context AccrualRuleExampleFacts example) {
+    example.account = new DepositAccount();
+    example.account.interestBase = 650; example.account.frozenAmount = 0; example.account.authorizedAmount = 0;
+    example.account.overdraftPrincipal = 100; example.account.overdraftExposure = 100;
+    example.account.overdraftInterest = 30; example.account.collectionInterest = 40; example.account.loanState = "Normal";
+    example.day = new BusinessDay(); example.day.date = 20261011;
+    example.before = new DepositAccrualInput(); example.before.state = new DepositAccrualState();
+    example.before.state.lastProductDate = 20261001;
+    example.before.state.normalProduct = 12; example.before.state.overdraftProduct = 7;
+    example.before.state.overdraftInterestProduct = 9; example.before.state.actualProduct = 5;
+    example.before.state.overdraftDays = 2; example.before.state.overdraftInterestDays = 3;
+    example.before.policy = new DepositInterestPolicy(); example.before.policy.normalEnabled = true;
+    example.before.policy.normalUnit = 1; example.before.policy.overdraftUnit = 0.01;
+    example.before.calendar = new InterestCalendar(); example.before.calendar.convention = "ACT";
+    example.before.term = new AgreementTerm(); example.before.term.effectiveDate = 20261003; example.before.term.cancelDate = 20261007;
+    example.before.agreement = new AgreementPolicy(); example.before.agreement.enabled = true;
+    example.before.agreement.mode = "2"; example.before.agreement.currency = "CNY";
+    example.beforeBands = new AgreementBand[] { new AgreementBand(), new AgreementBand(), new AgreementBand(), new AgreementBand(), new AgreementBand() };
+    int slot = 5;
+    for (AgreementBand band : example.beforeBands) { band.slot = slot; band.threshold = slot * 100; band.product = slot * 10; slot--; }
+}
+atomic calculate prepareAccrualRuleWorkExample(context AccrualRuleExampleFacts example) {
+    example.after = copy(example.before); example.afterBands = copy(example.beforeBands); example.increments = copy(example.beforeBands);
+    example.plan = new DepositAccrualPlan(); example.work = new DepositAccrualWork();
+    example.work.start = new BankDate(); example.work.end = new BankDate();
+    example.work.clippedStart = new BankDate(); example.work.clippedEnd = new BankDate();
+    example.work.normal = new InterestPeriod(); example.work.overlap = new InterestPeriod(); example.work.overdraft = new InterestPeriod();
+    example.work.overdraftCalendar = new InterestCalendar(); example.work.agreement = new AgreementPolicy(); example.work.products = new AgreementProduct();
+}
+atomic check verifyAgreementAccrualRuleExample(AccrualRuleExampleFacts example) {
+    require(example.plan.normalIncrement == 4300 && example.plan.agreementIncrement == 2200
+        && example.plan.overdraftIncrement == 1000 && example.plan.overdraftInterestIncrement == 700, "EXAMPLE_ACCRUAL_AGREEMENT_INCREMENTS");
+    require(example.after.state.normalProduct == 4312 && example.after.state.overdraftProduct == 1007
+        && example.after.state.overdraftInterestProduct == 709 && example.after.state.actualProduct == 3305, "EXAMPLE_ACCRUAL_ACCUMULATION");
+    require(example.after.state.overdraftDays == 12 && example.after.state.overdraftInterestDays == 13
+        && example.after.state.lastProductDate == 20261011, "EXAMPLE_ACCRUAL_DATES_COUNTERS");
+    int count = 0;
+    for (AgreementBand band : example.afterBands) {
+        count++;
+        if (band.slot == 5) { require(band.product == 650, "EXAMPLE_ACCRUAL_BAND5"); }
+        if (band.slot == 4) { require(band.product == 440, "EXAMPLE_ACCRUAL_BAND4"); }
+        if (band.slot == 3) { require(band.product == 430, "EXAMPLE_ACCRUAL_BAND3"); }
+        if (band.slot == 2) { require(band.product == 420, "EXAMPLE_ACCRUAL_BAND2"); }
+        if (band.slot == 1) { require(band.product == 410, "EXAMPLE_ACCRUAL_BAND1"); }
+    }
+    require(count == 5 && example.before.state.normalProduct == 12 && example.before.agreement.enabled, "EXAMPLE_ACCRUAL_ORIGINAL_INPUT");
+    for (AgreementBand band : example.beforeBands) { require(band.product == band.slot * 10 && band.threshold == band.slot * 100, "EXAMPLE_ACCRUAL_ORIGINAL_BANDS"); }
+}
+atomic calculate configureCalendarAccrualRuleExample(context AccrualRuleExampleFacts example) {
+    example.account.interestBase = 100; example.account.overdraftPrincipal = 10; example.account.overdraftExposure = 10;
+    example.account.overdraftInterest = 0; example.account.collectionInterest = 0;
+    example.before.state.lastProductDate = 20260228; example.before.agreement.enabled = false;
+    example.before.calendar.convention = "360360"; example.day.date = 20260301;
+}
+atomic check verifyCalendarAccrualRuleExample(AccrualRuleExampleFacts example) {
+    require(example.plan.normalDays == 3 && example.plan.overdraftPeriodDays == 1
+        && example.plan.normalIncrement == 300 && example.plan.overdraftIncrement == 10, "EXAMPLE_ACCRUAL_SEPARATE_CALENDARS");
+}
+atomic calculate configureUnitsAccrualRuleExample(context AccrualRuleExampleFacts example) {
+    example.account.interestBase = 100; example.account.overdraftPrincipal = 0.019; example.account.overdraftExposure = 0.019;
+    example.account.overdraftInterest = 0.005; example.account.collectionInterest = 0.009;
+    example.before.agreement.enabled = false; example.before.policy.normalUnit = 3; example.day.date = 20261003;
+}
+atomic check verifyUnitsAccrualRuleExample(AccrualRuleExampleFacts example) {
+    require(example.plan.normalIncrement == 198 && example.plan.overdraftIncrement == 0.02
+        && example.plan.overdraftInterestIncrement == 0.02, "EXAMPLE_ACCRUAL_EXPLICIT_QUANTIZATION");
+}
+atomic calculate configureCollectionAccrualRuleExample(context AccrualRuleExampleFacts example) {
+    example.before.policy.normalEnabled = false; example.account.overdraftPrincipal = 0; example.account.overdraftExposure = 0;
+    example.account.overdraftInterest = 0; example.account.collectionInterest = 0.02;
+}
+atomic check verifyCollectionAccrualRuleExample(AccrualRuleExampleFacts example) {
+    require(example.plan.normalIncrement == 0 && example.plan.overdraftInterestIncrement == 0.04
+        && example.after.state.overdraftInterestDays == 3 && example.after.state.normalProduct == 12, "EXAMPLE_ACCRUAL_COLLECTION_COUNTER");
+}
+Scenario serial calculateAccrualRuleExample(context AccrualRuleExampleFacts example) {
+    prepareAccrualRuleWorkExample(example);
+    prepareDepositAccrual(example.account, example.day, example.before, example.beforeBands,
+        example.work, example.increments, example.after, example.afterBands, example.plan);
+}
+Scenario serial depositAccrualRulesExampleRun(context AccrualRuleExampleFacts example) {
+    initializeAccrualRuleExample(example); calculateAccrualRuleExample(example); verifyAgreementAccrualRuleExample(example);
+    initializeAccrualRuleExample(example); configureCalendarAccrualRuleExample(example);
+    calculateAccrualRuleExample(example); verifyCalendarAccrualRuleExample(example);
+    initializeAccrualRuleExample(example); configureUnitsAccrualRuleExample(example);
+    calculateAccrualRuleExample(example); verifyUnitsAccrualRuleExample(example);
+    configureCollectionAccrualRuleExample(example); calculateAccrualRuleExample(example); verifyCollectionAccrualRuleExample(example);
+}

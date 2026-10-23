@@ -1,0 +1,152 @@
+domain cboddeposit;
+
+atomic check verifyStoredPreparationFailureExample(StoredReversalPreparationExample example) {
+    require(example.failure != null && example.failure.code == example.expectedCode, "EXAMPLE_STORED_PREPARATION_REJECTION");
+}
+Scenario serial rejectStoredFinancialPreparationExample(context StoredReversalPreparationExample example) {
+    try { prepareFinancialDepositReversal(example.core.request, example.core.facts); } catch (CashFailureFacts example.failure) {}
+    verifyStoredPreparationFailureExample(example);
+}
+Scenario serial rejectStoredPostingPreparationExample(context StoredReversalPreparationExample example) {
+    try { prepareFinancialDepositReversalPostings(example.core.request, example.core.facts); } catch (CashFailureFacts example.failure) {}
+    verifyStoredPreparationFailureExample(example);
+}
+atomic calculate selectStoredPreparationRejectionExample(context StoredReversalPreparationExample example) { example.prefix = "SOURCE-PREP-REJECTION"; }
+atomic calculate selectMissingOriginalPreparationExample(context StoredReversalPreparationExample example) {
+    example.core.request.originalTradeId = example.prefix + "-MISSING"; example.expectedCode = "ORIGINAL_DEPOSIT_TRADE_NOT_FOUND"; example.failure = null;
+}
+atomic calculate selectMissingRefundPreparationExample(context StoredReversalPreparationExample example) {
+    example.core.request.originalTradeId = example.originalId; example.core.request.feeDecision = null;
+    example.expectedCode = "MISSING_REVERSAL_FEE_DECISION"; example.failure = null;
+}
+atomic calculate selectNegativeRefundPreparationExample(context StoredReversalPreparationExample example) {
+    example.core.request.feeDecision = new DepositReversalFeeDecision(); example.core.request.feeDecision.refundAmount = -1;
+    example.expectedCode = "INVALID_DEPOSIT_FEE_REFUND"; example.failure = null;
+}
+atomic calculate selectExcessRefundPreparationExample(context StoredReversalPreparationExample example) {
+    example.core.request.feeDecision.refundAmount = 2.001; example.expectedCode = "INVALID_DEPOSIT_FEE_REFUND"; example.failure = null;
+}
+atomic calculate initializeRejectedStoredPreparationExample(context StoredReversalPreparationExample example) {
+    example.rejected = new CashExample(); example.rejection = null;
+}
+atomic calculate configureRejectedStoredPreparationExample(context StoredReversalPreparationExample example) {
+    example.rejected.seed.id = example.prefix + "-LOCKED-A"; example.rejected.seed.eligibility.accountId = example.rejected.seed.id;
+    example.rejected.seed.control.controlStatus = "Locked";
+    example.rejected.command.id = example.prefix + "-LOCKED-T"; example.rejected.command.attemptId = example.prefix + "-LOCKED-REJECT";
+    example.rejected.command.accountId = example.rejected.seed.id; example.rejected.observed.id = example.rejected.seed.id;
+    example.rejected.auditKey = new CashAuditRecord(); example.rejected.auditKey.attemptId = example.rejected.command.attemptId;
+    example.core.request.originalTradeId = example.rejected.command.id; example.failure = null;
+    example.expectedCode = "ORIGINAL_DEPOSIT_TRADE_NOT_FOUND";
+}
+atomic check verifyRejectedStoredPreparationExample(StoredReversalPreparationExample example) {
+    require(example.rejection != null && example.rejection.code == "EN432"
+        && example.rejected.observed.version == 0 && example.rejected.observed.eligibility.accountBalance == 100,
+        "EXAMPLE_PREPARATION_REJECTED_TRADE_COMMITTED");
+    require(example.rejected.audit != null && example.rejected.audit.event == "Rejected", "EXAMPLE_PREPARATION_REJECTED_TRADE_AUDIT");
+    require(example.rejected.lifecycle.requestRecord != null && example.rejected.lifecycle.requestRecord.id == example.rejected.command.id
+        && example.rejected.lifecycle.requestRecord.command.request.amount == 600, "EXAMPLE_PREPARATION_REJECTED_IDENTITY_LOST");
+}
+Scenario serial rejectUncommittedStoredPreparationExample(context StoredReversalPreparationExample example) {
+    initializeRejectedStoredPreparationExample(example); prepareOrdinaryCashExample(example.rejected);
+    configureRejectedStoredPreparationExample(example);
+    serial { transaction quantum { seedCashExampleAccount(example.rejected.seed); } }
+    try { executeCashDeposit(example.rejected.command, example.rejected.lifecycle); } catch (CashFailureFacts example.rejection) {}
+    example.rejected.observed = queryCashAccount(example.rejected.observed);
+    example.rejected.audit = lookupCashExampleAudit(example.rejected.auditKey);
+    example.rejected.lifecycle.requestRecord = queryCashDepositRequest(example.rejected.lifecycle.requestRecord);
+    verifyRejectedStoredPreparationExample(example); rejectStoredFinancialPreparationExample(example);
+}
+Scenario serial storedPreparationRejectionExampleRun(context StoredReversalPreparationExample example) {
+    selectStoredPreparationRejectionExample(example); commitStoredPreparationFixtureExample(example);
+    selectMissingOriginalPreparationExample(example); rejectStoredFinancialPreparationExample(example);
+    rejectUncommittedStoredPreparationExample(example);
+    selectMissingRefundPreparationExample(example); rejectStoredPostingPreparationExample(example);
+    selectNegativeRefundPreparationExample(example); rejectStoredPostingPreparationExample(example);
+    selectExcessRefundPreparationExample(example); rejectStoredPostingPreparationExample(example);
+    observeStoredPreparationExample(example); verifyStoredPreparationNoWriteExample(example); verifyStoredPreparationOriginalLedgerExample(example);
+}
+atomic calculate selectStoredNormalDebtPreparationExample(context StoredReversalPreparationExample example) {
+    example.prefix = "SOURCE-PREP-DEBT-NORMAL"; example.debtKind = 1;
+}
+atomic calculate selectStoredBadDebtPreparationExample(context StoredReversalPreparationExample example) {
+    example.prefix = "SOURCE-PREP-DEBT-BAD"; example.debtKind = 2;
+}
+atomic calculate selectStoredFractionalPreparationExample(context StoredReversalPreparationExample example) {
+    example.prefix = "SOURCE-PREP-FRACTIONAL"; example.debtKind = 3;
+}
+atomic calculate configureStoredDebtPreparationExample(context StoredReversalPreparationExample example) {
+    example.core.fixture.cash.seed.account.interestBase = 0;
+    example.core.fixture.cash.seed.account.overdraftPrincipal = 100; example.core.fixture.cash.seed.account.overdraftExposure = 100;
+    example.core.fixture.cash.seed.account.overdraftInterest = 30; example.core.fixture.cash.seed.account.collectionInterest = 40;
+    example.core.fixture.cash.seed.eligibility.accountBalance = -170; example.core.fixture.cash.command.request.amount = 50;
+    if (example.debtKind == 2) { example.core.fixture.cash.seed.account.loanState = "BadDebt"; }
+    if (example.debtKind == 3) {
+        example.core.fixture.cash.seed.account.overdraftPrincipal = 0.01; example.core.fixture.cash.seed.account.overdraftExposure = 0.01;
+        example.core.fixture.cash.seed.account.overdraftInterest = 0.005; example.core.fixture.cash.seed.account.collectionInterest = 0.004;
+        example.core.fixture.cash.seed.eligibility.accountBalance = -0.019; example.core.fixture.cash.command.request.amount = 0.01;
+    }
+    example.core.fixture.cash.command.operator.branch = example.core.fixture.cash.seed.feeParty.branchId;
+    example.core.fixture.cash.command.feeContext.branchId = example.core.fixture.cash.seed.feeParty.branchId;
+    example.core.request.operator = copy(example.core.fixture.cash.command.operator);
+    example.core.request.capacity.overdraftPermitted = true;
+    example.core.fixture.cash.originalCommand = copy(example.core.fixture.cash.command);
+}
+atomic check verifyStoredDebtPreparationExample(StoredReversalPreparationExample example) {
+    require(example.core.facts.financial.current.version == 1 && example.core.facts.financial.totals.debit == example.core.facts.financial.totals.credit,
+        "EXAMPLE_STORED_DEBT_CANDIDATE_VERSION");
+    if (example.debtKind == 3) {
+        require(example.core.facts.financial.movement.principalPaid == 0.001
+            && example.core.facts.financial.amounts.overdraftPrincipal == 0.01
+            && example.core.facts.financial.amounts.overdraftInterest == 0.005
+            && example.core.facts.financial.amounts.collectionInterest == 0.004
+            && example.core.facts.financial.amounts.accountBalance == -0.019, "EXAMPLE_STORED_FRACTIONAL_CANDIDATE");
+    } else {
+        require(example.core.facts.financial.amounts.overdraftPrincipal == 100
+            && example.core.facts.financial.amounts.overdraftInterest == 30
+            && example.core.facts.financial.amounts.collectionInterest == 40
+            && example.core.facts.financial.amounts.accountBalance == -170, "EXAMPLE_STORED_DEBT_COMPONENTS");
+    }
+    int count = 0;
+    for (DepositPostingLine reversed : example.core.facts.financial.reversedLines) {
+        count++;
+        for (DepositPostingLine original : example.core.facts.financial.actualLines) {
+            if (original.slot == reversed.slot) { require(reversed.amount == original.amount, "EXAMPLE_STORED_DEBT_REVERSE_AMOUNT"); }
+        }
+        if (example.debtKind == 3) {
+            if (reversed.slot == 4) { require(reversed.amount == 0.001, "EXAMPLE_STORED_FRACTIONAL_PRINCIPAL_LINE"); }
+            if (reversed.slot == 5) { require(reversed.amount == 0.005, "EXAMPLE_STORED_FRACTIONAL_INTEREST_LINE"); }
+            if (reversed.slot == 6) { require(reversed.amount == 0.004, "EXAMPLE_STORED_FRACTIONAL_COLLECTION_LINE"); }
+        }
+    }
+    require(count == 8, "EXAMPLE_STORED_DEBT_REVERSE_SLOTS");
+}
+atomic calculate selectInsufficientStoredDebtCapacityExample(context StoredReversalPreparationExample example) {
+    example.core.request.capacity.overdraftPermitted = false; example.expectedCode = "ES020"; example.failure = null;
+}
+atomic check verifyStoredDebtPreparationNoWriteExample(StoredReversalPreparationExample example) {
+    require(example.core.fixture.cash.observed.version == 1 && example.core.link.version == 0 && example.core.link.reversalId == "",
+        "EXAMPLE_STORED_DEBT_PREPARATION_WROTE");
+    if (example.debtKind == 3) { require(example.core.fixture.cash.observed.eligibility.accountBalance == -0.009, "EXAMPLE_STORED_FRACTIONAL_PREPARATION_WROTE"); }
+    else { require(example.core.fixture.cash.observed.eligibility.accountBalance == -120, "EXAMPLE_STORED_DEBT_PREPARATION_BALANCE"); }
+    int audits = 0; int postings = 0;
+    for (CashAuditRecord audit : example.core.audits) { audits++; require(audit.event == "Committed", "EXAMPLE_STORED_DEBT_PREPARATION_AUDIT"); }
+    for (CashPostingRecord posting : example.core.originalPostings) { postings++; }
+    require(audits == 1 && postings == 8, "EXAMPLE_STORED_DEBT_PREPARATION_COUNTS");
+}
+Scenario serial runStoredDebtPreparationExample(context StoredReversalPreparationExample example) {
+    initializeStoredPreparationFixtureExample(example); configureStoredDebtPreparationExample(example);
+    serial { transaction quantum { seedCashExampleAccount(example.core.fixture.cash.seed); } }
+    executeCashDeposit(example.core.fixture.cash.command, example.core.fixture.cash.lifecycle);
+    prepareFinancialDepositReversalPostings(example.core.request, example.core.facts); verifyStoredDebtPreparationExample(example);
+    selectInsufficientStoredDebtCapacityExample(example); rejectStoredFinancialPreparationExample(example);
+    observeStoredPreparationExample(example); verifyStoredDebtPreparationNoWriteExample(example);
+}
+Scenario serial storedNormalDebtPreparationExampleRun(context StoredReversalPreparationExample example) {
+    selectStoredNormalDebtPreparationExample(example); runStoredDebtPreparationExample(example);
+}
+Scenario serial storedBadDebtPreparationExampleRun(context StoredReversalPreparationExample example) {
+    selectStoredBadDebtPreparationExample(example); runStoredDebtPreparationExample(example);
+}
+Scenario serial storedFractionalPreparationExampleRun(context StoredReversalPreparationExample example) {
+    selectStoredFractionalPreparationExample(example); runStoredDebtPreparationExample(example);
+}

@@ -1,0 +1,72 @@
+domain cboddeposit;
+
+atomic calculate selectStalePreparedReversalExample(context PreparedReversalExample example) {
+    example.facts.business.prefix = "SOURCE-PREP-STALE";
+    example.expectedCode = "PERSISTENCE_VERSION_CONFLICT";
+    example.expectedVersion = 3; example.expectedBalance = 805; example.expectedClearing = -705; example.expectedQuantumRows = 6;
+}
+atomic calculate configureInterveningPreparedDeposit(context PreparedReversalExample example) {
+    example.facts.business.reversal.cash.command.id = example.extraKey.id;
+    example.facts.business.reversal.cash.command.attemptId = example.facts.business.prefix + "-AFTER-COMMIT";
+    example.facts.business.reversal.cash.command.request.amount = 5;
+}
+atomic calculate expectStalePreparedReversalCommitted(context PreparedReversalExample example) {
+    example.expectedVersion = 4; example.expectedBalance = 205; example.expectedClearing = -105; example.expectedQuantumRows = 8;
+}
+atomic check verifyInterveningPreparedDeposit(PreparedReversalExample example) {
+    require(example.extra.id == example.extraKey.id && example.extra.request.amount == 5
+        && example.extra.original.version == 2 && example.extra.original.eligibility.accountBalance == 800
+        && example.extra.settled.version == 3 && example.extra.settled.eligibility.accountBalance == 805
+        && example.extra.fee.fee == 2 && example.extra.accrual.normalDays == 0
+        && example.extra.accrual.normalIncrement == 0 && example.extra.settled.accrual.state.normalProduct == 800,
+        "EXAMPLE_PREPARED_INTERVENING_TRADE");
+    int rows = 0; double debit = 0; double credit = 0;
+    for (CashPostingRecord posting : example.extraPostings) {
+        rows++; require(posting.tradeId == example.extraKey.id, "EXAMPLE_PREPARED_INTERVENING_POSTING_ID");
+        if (posting.line.side == "Debit") { debit += posting.line.amount; } else { credit += posting.line.amount; }
+        for (DepositPostingLine line : example.extra.lines) {
+            if (posting.slot == line.slot) { require(sameFacts(posting.line, line), "EXAMPLE_PREPARED_INTERVENING_POSTING_CHANGED"); }
+        }
+    }
+    require(rows == 8 && debit == 7 && credit == 7, "EXAMPLE_PREPARED_INTERVENING_POSTINGS");
+}
+atomic check verifyStalePreparedReversalCommitted(PreparedReversalExample example) {
+    require(example.facts.business.reversal.cash.observed.version == 4
+        && example.facts.business.reversal.cash.observed.account.interestBase == 205
+        && example.facts.business.reversal.cash.observed.eligibility.accountBalance == 205,
+        "EXAMPLE_STALE_PREPARED_OVERWROTE_LATER_DEPOSIT");
+    require(example.facts.business.reversal.cash.observed.eligibility.detailCount == 14, "EXAMPLE_STALE_PREPARED_DETAIL_COUNT");
+    require(example.facts.business.reversal.cash.observed.accrual.state.normalProduct == 800
+        && example.facts.business.reversal.cash.observed.accrual.state.actualProduct == 800, "EXAMPLE_STALE_PREPARED_ACCRUAL");
+    require(example.facts.business.reversal.record != null && example.facts.business.reversal.record.original.version == 3
+        && example.facts.business.reversal.record.original.eligibility.accountBalance == 805
+        && example.facts.business.reversal.record.settled.version == 4
+        && example.facts.business.reversal.record.settled.eligibility.accountBalance == 205
+        && sameFacts(example.facts.business.reversal.record.originalDeposit, example.archived)
+        && example.facts.business.reversal.link.version == 1
+        && example.facts.business.reversal.link.reversalId == example.facts.business.reversal.command.id,
+        "EXAMPLE_STALE_PREPARED_RECEIPT_LINK");
+    int rows = 0; double debit = 0; double credit = 0;
+    for (CashPostingRecord posting : example.facts.business.reversal.cash.postings) {
+        rows++; if (posting.line.side == "Debit") { debit += posting.line.amount; } else { credit += posting.line.amount; }
+    }
+    require(rows == 8 && debit == 602 && credit == 602, "EXAMPLE_STALE_PREPARED_REVERSAL_POSTINGS");
+}
+Scenario serial observeInterveningPreparedDeposit(context PreparedReversalExample example) {
+    example.extra = queryCashDepositTrade(example.extraKey);
+    example.extraPostings = queryCashPostingRecords(example.extraPostingKey);
+    verifyInterveningPreparedDeposit(example);
+}
+Scenario serial stalePreparedReversalExampleRun(context PreparedReversalExample example) {
+    initializePreparedReversalExample(example); selectStalePreparedReversalExample(example); prepareReversalCandidateExample(example);
+    configureInterveningPreparedDeposit(example);
+    executeCashDeposit(example.facts.business.reversal.cash.command, example.facts.business.reversal.cash.lifecycle);
+    try { executePreparedCashReversal(example.facts.business.reversal.command, example.facts.business.reversal.lifecycle); }
+    catch (CashFailureFacts example.facts.business.reversal.failure) {}
+    observePreparedReversalExample(example); observeInterveningPreparedDeposit(example);
+    verifyReversalFaultIndependentBusiness(example.facts.business);
+    verifyPreparedReversalRollback(example); verifyPreparedReversalQuantum(example);
+    retryFreshPreparedReversalExample(example); expectStalePreparedReversalCommitted(example);
+    observeInterveningPreparedDeposit(example); verifyStalePreparedReversalCommitted(example);
+    verifyPartialReversalRetryHistory(example.facts.business); verifyPreparedReversalQuantum(example);
+}

@@ -1,0 +1,127 @@
+domain cboddeposit;
+Contract XbodCashPolicyExampleFacts {
+    DepositRequest original; CashReversalJournal journal; CashReversalContext execution;
+    AccountEligibility current; AccountEligibility snapshot; DepositAccrualState accrual; CashReversalMetadataPlan result;
+    CashReversalMetadataPlan expected; CashFailureFacts failure; DepositFeePlan fee; DepositReversalFeeDecision refund; double expectedRefund;
+}
+atomic calculate initializeXbodCashPolicyExample(context XbodCashPolicyExampleFacts example) {
+    example.original = new DepositRequest(); example.original.amount = 600;
+    example.journal = new CashReversalJournal(); example.journal.transactionDate = 20261007;
+    example.journal.previousTransactionDate = 20261006; example.journal.settledDetailCount = 1;
+    example.execution = new CashReversalContext(); example.execution.newDetailItems = 2;
+    example.current = new AccountEligibility(); example.accrual = new DepositAccrualState();
+    example.accrual.normalProduct = 2200; example.accrual.overdraftProduct = 100;
+    example.result = new CashReversalMetadataPlan(); example.expected = new CashReversalMetadataPlan(); example.failure = null;
+    example.fee = new DepositFeePlan(); example.refund = new DepositReversalFeeDecision();
+}
+atomic check verifyXbodCashPolicyExample(XbodCashPolicyExampleFacts example) {
+    require(example.result.detailCount == example.expected.detailCount, "EXAMPLE_XBOD_POLICY_DETAILCOUNT");
+    require(example.result.lastTransactionDate == example.expected.lastTransactionDate, "EXAMPLE_XBOD_POLICY_LASTTRANSACTIONDATE");
+    require(example.result.cashDepositedToday == example.expected.cashDepositedToday, "EXAMPLE_XBOD_POLICY_CASHDEPOSITEDTODAY");
+    require(example.result.normalProduct == example.expected.normalProduct, "EXAMPLE_XBOD_POLICY_NORMALPRODUCT");
+    require(example.result.actualProduct == example.expected.actualProduct, "EXAMPLE_XBOD_POLICY_ACTUALPRODUCT");
+    require(example.result.reverseInstitutionLimit == example.expected.reverseInstitutionLimit, "EXAMPLE_XBOD_POLICY_REVERSEINSTITUTIONLIMIT");
+}
+atomic check verifyXbodCashPolicyInputExample(XbodCashPolicyExampleFacts example) {
+    require(example.accrual.normalProduct == 2200 && example.accrual.overdraftProduct == 100
+        && example.current.detailCount == example.snapshot.detailCount
+        && example.current.cashDepositedToday == example.snapshot.cashDepositedToday, "EXAMPLE_XBOD_POLICY_INPUT_MUTATED");
+}
+atomic check verifyXbodCashPolicyFailureExample(XbodCashPolicyExampleFacts example) {
+    require(example.failure != null && example.failure.code == "EN097", "EXAMPLE_XBOD_POLICY_PRODUCT_CAPACITY");
+}
+atomic check verifyXbodCashPolicyRefundExample(XbodCashPolicyExampleFacts example) {
+    require(example.refund.refundAmount == example.expectedRefund && example.fee.fee == example.expectedRefund, "EXAMPLE_XBOD_ACTUAL_FEE_REFUND");
+}
+atomic calculate configureXbodCashPolicyCase01(context XbodCashPolicyExampleFacts example) {
+    example.current.detailCount = 3; example.current.cashDepositedToday = 100;
+    example.snapshot = copy(example.current); example.execution.businessDate = 20261008; example.execution.overnightMode2 = false;
+    example.journal.addedBackdatedProduct = 0;
+    example.expected.detailCount = 5;
+    example.expected.lastTransactionDate = 20261008;
+    example.expected.cashDepositedToday = 0;
+    example.expected.normalProduct = 2200;
+    example.expected.actualProduct = 2100;
+    example.expected.reverseInstitutionLimit = false;
+}
+atomic calculate configureXbodCashPolicyCase02(context XbodCashPolicyExampleFacts example) {
+    example.current.detailCount = 1; example.current.cashDepositedToday = 900;
+    example.snapshot = copy(example.current); example.execution.businessDate = 20261008; example.execution.overnightMode2 = false;
+    example.journal.addedBackdatedProduct = 50;
+    example.expected.detailCount = 3;
+    example.expected.lastTransactionDate = 20261006;
+    example.expected.cashDepositedToday = 300;
+    example.expected.normalProduct = 2150;
+    example.expected.actualProduct = 2050;
+    example.expected.reverseInstitutionLimit = false;
+}
+atomic calculate configureXbodCashPolicyCase03(context XbodCashPolicyExampleFacts example) {
+    example.current.detailCount = 1; example.current.cashDepositedToday = 600;
+    example.snapshot = copy(example.current); example.execution.businessDate = 20261007; example.execution.overnightMode2 = true;
+    example.journal.addedBackdatedProduct = 0;
+    example.expected.detailCount = 3;
+    example.expected.lastTransactionDate = 20261007;
+    example.expected.cashDepositedToday = 0;
+    example.expected.normalProduct = 2200;
+    example.expected.actualProduct = 2100;
+    example.expected.reverseInstitutionLimit = true;
+}
+atomic calculate configureXbodCashPolicyCase04(context XbodCashPolicyExampleFacts example) {
+    example.current.detailCount = 2; example.current.cashDepositedToday = 600;
+    example.snapshot = copy(example.current); example.execution.businessDate = 20261007; example.execution.overnightMode2 = false;
+    example.journal.addedBackdatedProduct = 0;
+    example.expected.detailCount = 4;
+    example.expected.lastTransactionDate = 20261007;
+    example.expected.cashDepositedToday = 0;
+    example.expected.normalProduct = 2200;
+    example.expected.actualProduct = 2100;
+    example.expected.reverseInstitutionLimit = false;
+}
+atomic calculate configureXbodCashPolicyCase05(context XbodCashPolicyExampleFacts example) {
+    example.current.detailCount = 1; example.current.cashDepositedToday = 0;
+    example.snapshot = copy(example.current); example.execution.businessDate = 20261008; example.execution.overnightMode2 = false;
+    example.journal.addedBackdatedProduct = 2200.001;
+}
+atomic calculate configureXbodCashRefundCase01(context XbodCashPolicyExampleFacts example) { example.fee.fee = 0; example.expectedRefund = 0; }
+atomic calculate configureXbodCashRefundCase02(context XbodCashPolicyExampleFacts example) { example.fee.fee = 2; example.expectedRefund = 2; }
+atomic calculate configureXbodCashRefundCase03(context XbodCashPolicyExampleFacts example) { example.fee.fee = 1.005; example.expectedRefund = 1.005; }
+Scenario serial xbodCashPolicyExampleRun(context XbodCashPolicyExampleFacts example) {
+    initializeXbodCashPolicyExample(example);
+    configureXbodCashPolicyCase01(example);
+    calculateXbodCashReversalMetadata(example.original, example.journal, example.execution, example.current, example.accrual, example.result);
+    verifyXbodCashPolicyExample(example);
+    verifyXbodCashPolicyInputExample(example);
+    initializeXbodCashPolicyExample(example);
+    configureXbodCashPolicyCase02(example);
+    calculateXbodCashReversalMetadata(example.original, example.journal, example.execution, example.current, example.accrual, example.result);
+    verifyXbodCashPolicyExample(example);
+    verifyXbodCashPolicyInputExample(example);
+    initializeXbodCashPolicyExample(example);
+    configureXbodCashPolicyCase03(example);
+    calculateXbodCashReversalMetadata(example.original, example.journal, example.execution, example.current, example.accrual, example.result);
+    verifyXbodCashPolicyExample(example);
+    verifyXbodCashPolicyInputExample(example);
+    initializeXbodCashPolicyExample(example);
+    configureXbodCashPolicyCase04(example);
+    calculateXbodCashReversalMetadata(example.original, example.journal, example.execution, example.current, example.accrual, example.result);
+    verifyXbodCashPolicyExample(example);
+    verifyXbodCashPolicyInputExample(example);
+    initializeXbodCashPolicyExample(example);
+    configureXbodCashPolicyCase05(example);
+    try { calculateXbodCashReversalMetadata(example.original, example.journal, example.execution, example.current, example.accrual, example.result); }
+    catch (CashFailureFacts example.failure) {}
+    verifyXbodCashPolicyFailureExample(example);
+    verifyXbodCashPolicyInputExample(example);
+    initializeXbodCashPolicyExample(example);
+    configureXbodCashRefundCase01(example);
+    selectXbodCashReversalFee(example.fee, example.refund);
+    verifyXbodCashPolicyRefundExample(example);
+    initializeXbodCashPolicyExample(example);
+    configureXbodCashRefundCase02(example);
+    selectXbodCashReversalFee(example.fee, example.refund);
+    verifyXbodCashPolicyRefundExample(example);
+    initializeXbodCashPolicyExample(example);
+    configureXbodCashRefundCase03(example);
+    selectXbodCashReversalFee(example.fee, example.refund);
+    verifyXbodCashPolicyRefundExample(example);
+}

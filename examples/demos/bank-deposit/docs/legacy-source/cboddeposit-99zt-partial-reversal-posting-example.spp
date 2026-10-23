@@ -1,0 +1,71 @@
+domain cboddeposit;
+
+atomic calculate selectPartialReversalPostingExample(context ReversalFaultExample example) {
+    example.prefix = "SOURCE-PARTIAL-REV";
+}
+atomic calculate configurePartialReversalPostingCollision(context ReversalFaultExample example) {
+    example.reversal.cash.postings = new CashPostingRecord[] { new CashPostingRecord() };
+    for (CashPostingRecord posting : example.reversal.cash.postings) {
+        posting.tradeId = example.reversal.command.id; posting.slot = 4; posting.line = new DepositPostingLine();
+        posting.line.slot = 4; posting.line.amount = 777; posting.line.side = "Credit"; posting.line.subject = "DEMO.EXISTING";
+    }
+}
+atomic check verifyPartialReversalPostingRollback(ReversalFaultExample example) {
+    require(example.reversal.failure != null && example.reversal.failure.code == "PERSISTENCE_ALREADY_EXISTS"
+        && example.reversal.failure.transactionOutcome == "ROLLED_BACK", "EXAMPLE_PARTIAL_REV_FAILURE");
+    require(example.reversal.cash.observed.version == 2 && example.reversal.cash.observed.account.interestBase == 800
+        && example.reversal.cash.observed.eligibility.accountBalance == 800
+        && example.reversal.cash.observed.eligibility.cashDepositedToday == 100
+        && example.reversal.cash.observed.eligibility.detailCount == 12
+        && example.reversal.cash.observed.accrual.state.normalProduct == 800
+        && example.reversal.record == null && example.reversal.link.version == 0 && example.reversal.link.reversalId == "",
+        "EXAMPLE_PARTIAL_REV_ACCOUNT_RECEIPT_LINK");
+    int rows = 0; int audits = 0;
+    for (CashPostingRecord posting : example.reversal.cash.postings) {
+        rows++; require(posting.tradeId == example.reversal.command.id && posting.slot == 4 && posting.line.amount == 777
+            && posting.line.subject == "DEMO.EXISTING" && posting.line.side == "Credit", "EXAMPLE_PARTIAL_REV_FIXTURE_CHANGED");
+    }
+    for (CashAuditRecord audit : example.history) {
+        audits++; require(audit.event == "ReversalRolledBack" && audit.code == "PERSISTENCE_ALREADY_EXISTS"
+            && audit.attemptId == example.reversal.command.attemptId, "EXAMPLE_PARTIAL_REV_AUDIT");
+    }
+    require(rows == 1 && audits == 1, "EXAMPLE_PARTIAL_REV_LEFT_BATCH_ROWS");
+}
+atomic check verifyPartialReversalQuantumRollback(ReversalAuditEvidenceExample example) {
+    int rows = 0; int values = 0; int balances = 0; int clearings = 0; double deltas = 0;
+    for (QuantumJournalEvidence row : example.evidence.journal) {
+        rows++; deltas += row.deltaValue; require(row.status == "COMMITTED" && row.objectId == example.business.reversal.cash.seed.id,
+            "EXAMPLE_PARTIAL_REV_QUANTUM_RECORD");
+    }
+    for (QuantumValueEvidence value : example.evidence.values) {
+        values++; require(value.objectId == example.business.reversal.cash.seed.id, "EXAMPLE_PARTIAL_REV_QUANTUM_OBJECT");
+        if (value.attributeId == "AccountEligibility.accountBalance") { balances++; require(value.currentValue == 800, "EXAMPLE_PARTIAL_REV_QUANTUM_BALANCE"); }
+        else if (value.attributeId == "CashQuantumClearing.amount") { clearings++; require(value.currentValue == -700, "EXAMPLE_PARTIAL_REV_QUANTUM_CLEARING"); }
+        else { require(false, "EXAMPLE_PARTIAL_REV_QUANTUM_ATTRIBUTE"); }
+    }
+    require(rows == 4 && deltas == 0 && values == 2 && balances == 1 && clearings == 1, "EXAMPLE_PARTIAL_REV_QUANTUM_RESIDUE");
+}
+atomic check verifyPartialReversalRetryHistory(ReversalFaultExample example) {
+    int rows = 0; int failed = 0; int committed = 0;
+    for (CashAuditRecord audit : example.history) {
+        rows++; if (audit.event == "ReversalRolledBack") { failed++; }
+        else if (audit.event == "ReversalCommitted") { committed++; }
+        else { require(false, "EXAMPLE_PARTIAL_REV_RETRY_UNEXPECTED_EVENT"); }
+    }
+    require(rows == 2 && failed == 1 && committed == 1, "EXAMPLE_PARTIAL_REV_RETRY_HISTORY");
+}
+Scenario serial partialReversalPostingExampleRun(context ReversalAuditEvidenceExample example) {
+    initializeReplayedAuditUnavailableExample(example); selectPartialReversalPostingExample(example.business); seedReversalFaultBusiness(example.business);
+    initializeQuantumEvidenceExample(example.evidence); configureReversalAuditQuantumEvidence(example);
+    configurePartialReversalPostingCollision(example.business);
+    serial { transaction quantum { storeCashPostingRecords(example.business.reversal.cash.postings); } }
+    try { executeCashReversal(example.business.reversal.command, example.business.reversal.lifecycle); }
+    catch (CashFailureFacts example.business.reversal.failure) {}
+    observeReversalFaultBusiness(example.business); verifyReversalFaultIndependentBusiness(example.business); verifyPartialReversalPostingRollback(example.business);
+    observeQuantumEvidenceExample(example.evidence); verifyPartialReversalQuantumRollback(example);
+    serial { transaction quantum { deletePartialPostingFixture(example.business.reversal.cash.postings); } }
+    selectReversalFaultRetry(example.business); executeCashReversal(example.business.reversal.command, example.business.reversal.lifecycle);
+    observeReversalFaultBusiness(example.business); verifyReversalFaultIndependentBusiness(example.business);
+    verifyReversalFaultCommitted(example.business); verifyPartialReversalRetryHistory(example.business);
+    observeQuantumEvidenceExample(example.evidence); verifyReversalAuditQuantumEvidence(example);
+}

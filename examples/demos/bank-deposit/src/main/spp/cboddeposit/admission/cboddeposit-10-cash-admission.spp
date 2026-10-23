@@ -1,0 +1,175 @@
+domain cboddeposit;
+
+// GSA01102 normal cash entry, distinct from the zero-amount kernel.
+
+Role BusinessDay {
+    int date;
+}
+
+Role AccountEligibility {
+    String accountNumber;
+    AccountStatus status;
+    boolean temporary;
+    int expiresOn;
+    boolean temporaryOpen;
+    int detailCount;
+    int lastTransactionDate;
+    int openedOn;
+    BigDecimal(19, 2) cashDepositedToday;
+    BigDecimal(19, 2) transferredToday;
+    BigDecimal(19, 2) accountBalance;
+}
+
+Role DepositProduct {
+    BigDecimal(19, 2) minimumOpeningAmount;
+    BigDecimal(19, 2) maximumOpeningAmount;
+    BigDecimal(19, 2) maximumBalance;
+}
+
+atomic check checkCashInput(DepositRequest, BusinessDay) {
+    require(DepositRequest.amount > 0, "E1155");
+    require(DepositRequest.valueDate <= BusinessDay.date, "E1044");
+    require(DepositRequest.valueDate >= BusinessDay.date, "E1043");
+}
+
+atomic check checkDepositEligibility(DepositRequest, AccountEligibility, DepositProduct, BusinessDay) {
+    require(
+        !AccountEligibility.temporary
+            || AccountEligibility.expiresOn >= BusinessDay.date
+            || AccountEligibility.temporaryOpen,
+        "EDF19"
+    );
+    require(AccountEligibility.status != AccountStatus.CLOSED, "EO082");
+    boolean opening = AccountEligibility.detailCount == 0
+        || (AccountEligibility.detailCount > 0
+        && AccountEligibility.detailCount < 10
+        && AccountEligibility.accountBalance == 0
+        && AccountEligibility.lastTransactionDate == AccountEligibility.openedOn
+        && AccountEligibility.cashDepositedToday == 0
+        && AccountEligibility.transferredToday == 0);
+    if (opening) {
+        require(
+            DepositProduct.minimumOpeningAmount <= 0
+                || DepositRequest.amount >= DepositProduct.minimumOpeningAmount,
+            "EN173"
+        );
+        require(
+            DepositProduct.maximumOpeningAmount <= 0
+                || DepositRequest.amount <= DepositProduct.maximumOpeningAmount,
+            "EN174"
+        );
+    }
+    require(
+        DepositProduct.maximumBalance <= 0
+            || DepositRequest.amount
+            + AccountEligibility.accountBalance <= DepositProduct.maximumBalance,
+        "EN175"
+    );
+}
+
+// Cash-only subset of KSADEP0 warning/authorization. Parameter values are queried facts.
+
+Role CashAuthorizationPolicy {
+    BigDecimal(19, 2) warningThreshold;
+    BigDecimal(19, 2) tellerLimit;
+    BigDecimal(19, 2) levelAMultiplier;
+    BigDecimal(19, 2) specialUsdLevelB;
+    BigDecimal(19, 2) specialUsdLevelA;
+}
+
+Role CashChannel {
+    boolean teller;
+    String channel;
+    business("Legacy bank transaction business code") String transactionId;
+    String transactionFamily;
+    String businessCode;
+}
+
+Role AuthorizationEvidence {
+    AuthorizationLevel grantedLevel;
+}
+
+Role AdmissionDecision {
+    String warningCode;
+    String authorizationCode;
+    AuthorizationLevel requiredLevel;
+    AdmissionStatus status;
+    boolean executable;
+    BigDecimal(19, 2) dayCashTotal;
+}
+
+atomic calculate assessCashAdmission(
+    DepositRequest,
+    AccountEligibility,
+    BusinessDay,
+    CashChannel,
+    CashAuthorizationPolicy,
+    AuthorizationEvidence,
+    AdmissionDecision
+) {
+    AdmissionDecision.warningCode = "";
+    AdmissionDecision.authorizationCode = "";
+    AdmissionDecision.requiredLevel = AuthorizationLevel.NONE;
+    AdmissionDecision.dayCashTotal = DepositRequest.amount;
+    if (AccountEligibility.lastTransactionDate == BusinessDay.date) {
+        AdmissionDecision.dayCashTotal += AccountEligibility.cashDepositedToday;
+    }
+    boolean applies = CashChannel.teller
+        && CashChannel.channel != "AGS"
+        && CashChannel.transactionId != "FL0658000"
+        && CashChannel.transactionId != "FL0655400"
+        && CashChannel.transactionId != "FL0659302"
+        && CashChannel.transactionId != "FL0659304"
+        && CashChannel.transactionId != "FL0659306"
+        && CashChannel.transactionId != "FL0659308";
+    if (applies) {
+        boolean warningBusiness = CashChannel.businessCode == "SA0"
+            || CashChannel.businessCode == "TD0"
+            || CashChannel.businessCode == "CR0"
+            || CashChannel.businessCode == "FS0";
+        if (warningBusiness
+            && CashAuthorizationPolicy.warningThreshold > 0
+            && AdmissionDecision.dayCashTotal > CashAuthorizationPolicy.warningThreshold) {
+            AdmissionDecision.warningCode = "F0554";
+        }
+        if (DepositRequest.amount > CashAuthorizationPolicy.tellerLimit) {
+            if (CashChannel.transactionFamily == "XT01821" && DepositRequest.currency == "USD") {
+                if (DepositRequest.amount > CashAuthorizationPolicy.specialUsdLevelB) {
+                    if (DepositRequest.amount > CashAuthorizationPolicy.specialUsdLevelA) {
+                        AdmissionDecision.requiredLevel = AuthorizationLevel.A;
+                        AdmissionDecision.authorizationCode = "A8147";
+                    } else {
+                        AdmissionDecision.requiredLevel = AuthorizationLevel.B;
+                        AdmissionDecision.authorizationCode = "B7006";
+                    }
+                }
+            } else {
+                if (DepositRequest.amount > CashAuthorizationPolicy.levelAMultiplier
+                    * CashAuthorizationPolicy.tellerLimit) {
+                    AdmissionDecision.requiredLevel = AuthorizationLevel.A;
+                    AdmissionDecision.authorizationCode = "A8147";
+                } else {
+                    AdmissionDecision.requiredLevel = AuthorizationLevel.B;
+                    AdmissionDecision.authorizationCode = "B7000";
+                }
+            }
+        }
+    }
+    AdmissionDecision.executable = AdmissionDecision.requiredLevel == AuthorizationLevel.NONE
+        || AuthorizationEvidence.grantedLevel == AuthorizationLevel.A
+        || (AdmissionDecision.requiredLevel == AuthorizationLevel.B
+        && AuthorizationEvidence.grantedLevel == AuthorizationLevel.B);
+    if (!AdmissionDecision.executable) {
+        AdmissionDecision.status = AdmissionStatus.PENDING_AUTHORIZATION;
+    } else {
+        if (AdmissionDecision.warningCode != "") {
+            AdmissionDecision.status = AdmissionStatus.WARNING;
+        } else {
+            AdmissionDecision.status = AdmissionStatus.READY;
+        }
+    }
+}
+
+atomic check checkCashAuthorization(AdmissionDecision) {
+    require(AdmissionDecision.executable, "PENDING_AUTHORIZATION");
+}

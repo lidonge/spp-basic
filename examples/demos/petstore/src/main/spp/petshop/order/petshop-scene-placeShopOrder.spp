@@ -1,0 +1,36 @@
+domain petshop;
+
+Scenario serial placeShopOrder(Buyer, Cart, StockLine[], ShopOrder, Goods, Goods[], Receipt, CartLine[]) {
+    checkBuyerCredential;
+    prepareProductSelection;
+    parallel {
+        findBuyer;
+        listProducts;
+    }
+    identify(Buyer);
+    locateBuyerCart;
+    findCart;
+    identify(Cart);
+    checkCart;
+    checkQuotationInput;
+    quoteOrder;
+    prepareOrderInventory;
+    findStockLine;
+    identify(StockLine[]);
+    checkOrderReservation;
+    captureCartLines;
+    reserveOrder;
+    transaction {
+        deleteCartLine;
+        insertOrderLine(ShopOrder.lines);
+        insertShopOrder;
+        reserveInventory bounds {
+            StockLine[].available: [0, null];
+            StockLine[].reserved: [0, null];
+        };
+        updateCart;
+
+        preparePurchaseReceipt;
+        insertReceipt;
+    }
+}

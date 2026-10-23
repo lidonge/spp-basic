@@ -1,0 +1,84 @@
+domain cboddeposit;
+
+Scenario serial reverseCash(
+    DepositAccount,
+    CashSettlementAccount,
+    InterestIncomeAccount,
+    CollectionInterestIncomeAccount,
+    PrincipalRecoveryAccount,
+    AccountEligibility,
+    CashAccountControl,
+    CashDepositAgreement,
+    CashReversalAgreement,
+    DepositReversalCapacity,
+    DepositAccrualState,
+    CashReversalMetadataPlan,
+    DepositOperatorFacts,
+    CashChannel,
+    CashFailureRecord,
+    DepositPostingLine[],
+    CashReversalPostingLine[],
+    DepositPostingTotals
+) {
+    parallel {
+        findDepositAccount;
+        findCashSettlementAccount;
+        findInterestIncomeAccount;
+        findCollectionInterestIncomeAccount;
+        findPrincipalRecoveryAccount;
+        findAccountEligibility;
+        findCashDepositAgreement;
+        findDepositAccrualState;
+    }
+    identify(DepositAccount);
+    identify(CashSettlementAccount);
+    identify(InterestIncomeAccount);
+    identify(CollectionInterestIncomeAccount);
+    identify(PrincipalRecoveryAccount);
+    identify(AccountEligibility);
+    identify(CashDepositAgreement);
+    identify(DepositAccrualState);
+    checkAccountParticipants;
+    checkOriginalDepositAccount;
+    checkOriginalSettlementAccounts;
+    checkXbodCashReversalPath;
+    checkCoreDepositReversalEligibility;
+    checkOriginalCashMovement;
+    listDepositPostings;
+    checkOriginalDepositPostings;
+    checkCashReversalCapacity;
+    checkCashReversalFacts;
+    calculateXbodCashReversalMetadata;
+    prepareCashReversalAgreement;
+    prepareCashReversalPostings;
+    checkDepositPostings;
+    transaction {
+        reverseCashDeposit bounds {
+            DepositAccount.interestBase: [0, null];
+            DepositAccount.overdraftInterest: [0, null];
+            DepositAccount.collectionInterest: [0, null];
+            DepositAccount.overdraftPrincipal: [0, null];
+            DepositAccount.overdraftExposure: [0, null];
+            CashSettlementAccount.balance: [null, null];
+            InterestIncomeAccount.balance: [0, null];
+            CollectionInterestIncomeAccount.balance: [0, null];
+            PrincipalRecoveryAccount.balance: [0, null];
+        };
+        completeCashReversal;
+        updateDepositAccrualState;
+        updateAccountEligibility;
+        updateCashDepositAgreement;
+        insertCashReversalAgreement;
+        attachCashReversalPostings;
+        insertCashReversalPostingLine;
+    } fail(CashReversalAgreement) {
+        recordReversalFailure;
+        if (ResultInfo.failure.recoveryStatus == "ROLLED_BACK"
+            || ResultInfo.failure.recoveryStatus == "REVERSED") {
+            confirmNoCashMovement;
+        }
+        transaction {
+            insertCashFailureRecord;
+        }
+    }
+}

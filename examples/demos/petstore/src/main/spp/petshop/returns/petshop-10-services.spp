@@ -1,0 +1,7 @@
+domain petshop;
+
+atomic update returnInventory(StockLine[], ReturnRefundAgreement);
+quantum update refundReturnFunds(Buyer, Merchant, ReturnRefundAgreement) {
+    Buyer.wallet += ReturnRefundAgreement.refundAmount;
+    Merchant.cash -= ReturnRefundAgreement.refundAmount;
+}

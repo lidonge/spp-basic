@@ -1,0 +1,142 @@
+domain cboddeposit;
+
+Contract CashDepositAgreement {
+    DepositPostingLine[] postingEvidence;
+    DepositNotices notices;
+    DepositOperatorFacts operator;
+    DepositBankProfile bankProfile;
+    AdmissionDecision admission;
+    CashSettlementAccount settlement;
+    InterestIncomeAccount interestIncome;
+    CollectionInterestIncomeAccount collectionIncome;
+    PrincipalRecoveryAccount principalRecovery;
+    business("Cash deposit receipt number used for transaction enquiry") String depositNumber;
+    DepositAccount account;
+    BigDecimal(19, 2) amount;
+    String currency;
+    int valueDate;
+    BigDecimal(19, 2) interestBaseDelta;
+    BigDecimal(19, 2) interestPaid;
+    BigDecimal(19, 2) collectionPaid;
+    BigDecimal(19, 2) principalPaid;
+    BigDecimal(19, 2) exposureDelta;
+    BigDecimal(19, 2) fee;
+    int transactionDate;
+    int previousTransactionDate;
+    int settledDetailCount;
+    BigDecimal(25, 2) addedBackdatedProduct;
+    boolean reversed;
+}
+
+Contract CashReversalAgreement {
+    business("Cash reversal receipt number used for business enquiry") String reversalNumber;
+    CashDepositAgreement original;
+    int businessDate;
+    int newDetailItems;
+    boolean overnightMode2;
+    BigDecimal(19, 2) refundAmount;
+    boolean reverseInstitutionLimit;
+}
+
+Role CashFailureRecord {
+    business("Business failure handling receipt number") String handlingNumber;
+    CashDepositAgreement deposit;
+    CashReversalAgreement reversal;
+    CashHandlingState handlingState;
+}
+
+atomic calculate prepareDepositAgreement(
+    DepositRequest,
+    DepositAccount,
+    CashSettlementAccount,
+    InterestIncomeAccount,
+    CollectionInterestIncomeAccount,
+    PrincipalRecoveryAccount,
+    DepositPlan,
+    DepositFeePlan,
+    AccountEligibility,
+    BusinessDay,
+    DepositDetailPolicy,
+    DepositNotices,
+    DepositOperatorFacts,
+    DepositBankProfile,
+    AdmissionDecision,
+    CashDepositAgreement
+) {
+    CashDepositAgreement.notices = DepositNotices;
+    CashDepositAgreement.operator = DepositOperatorFacts;
+    CashDepositAgreement.bankProfile = DepositBankProfile;
+    CashDepositAgreement.admission = AdmissionDecision;
+    CashDepositAgreement.settlement = CashSettlementAccount;
+    CashDepositAgreement.interestIncome = InterestIncomeAccount;
+    CashDepositAgreement.collectionIncome = CollectionInterestIncomeAccount;
+    CashDepositAgreement.principalRecovery = PrincipalRecoveryAccount;
+    CashDepositAgreement.account = DepositAccount;
+    CashDepositAgreement.amount = DepositRequest.amount;
+    CashDepositAgreement.currency = DepositRequest.currency;
+    CashDepositAgreement.valueDate = DepositRequest.valueDate;
+    CashDepositAgreement.interestBaseDelta = DepositPlan.newInterestBase - DepositAccount.interestBase;
+    CashDepositAgreement.interestPaid = DepositPlan.interestPaid;
+    CashDepositAgreement.collectionPaid = DepositPlan.collectionInterestPaid;
+    CashDepositAgreement.principalPaid = DepositPlan.principalPaid;
+    CashDepositAgreement.exposureDelta = DepositPlan.newOverdraftExposure - DepositAccount.overdraftExposure;
+    CashDepositAgreement.fee = DepositFeePlan.fee;
+    CashDepositAgreement.transactionDate = BusinessDay.date;
+    CashDepositAgreement.previousTransactionDate = AccountEligibility.lastTransactionDate;
+    CashDepositAgreement.settledDetailCount = AccountEligibility.detailCount + DepositDetailPolicy.itemCount;
+    CashDepositAgreement.addedBackdatedProduct = 0;
+    CashDepositAgreement.reversed = false;
+}
+
+atomic check checkDetailPolicy(DepositDetailPolicy) {
+    require(DepositDetailPolicy.itemCount > 0, "INVALID_DETAIL_COUNT");
+}
+
+atomic calculate completeDepositMetadata(
+    AccountEligibility,
+    BusinessDay,
+    DepositDetailPolicy,
+    AdmissionDecision,
+    DepositPlan
+) {
+    AccountEligibility.cashDepositedToday = AdmissionDecision.dayCashTotal;
+    AccountEligibility.accountBalance = DepositPlan.newAccountBalance;
+    if (AccountEligibility.lastTransactionDate != BusinessDay.date) {
+        AccountEligibility.transferredToday = 0;
+    }
+    AccountEligibility.detailCount += DepositDetailPolicy.itemCount;
+    AccountEligibility.lastTransactionDate = BusinessDay.date;
+}
+
+quantum update settleCashDeposit(
+    DepositAccount,
+    CashSettlementAccount,
+    InterestIncomeAccount,
+    CollectionInterestIncomeAccount,
+    PrincipalRecoveryAccount,
+    CashDepositAgreement
+) {
+    DepositAccount.interestBase += CashDepositAgreement.interestBaseDelta;
+    DepositAccount.overdraftInterest -= CashDepositAgreement.interestPaid;
+    DepositAccount.collectionInterest -= CashDepositAgreement.collectionPaid;
+    DepositAccount.overdraftPrincipal -= CashDepositAgreement.principalPaid;
+    DepositAccount.overdraftExposure += CashDepositAgreement.exposureDelta;
+    CashSettlementAccount.balance -= CashDepositAgreement.amount;
+    InterestIncomeAccount.balance += CashDepositAgreement.interestPaid;
+    CollectionInterestIncomeAccount.balance += CashDepositAgreement.collectionPaid;
+    PrincipalRecoveryAccount.balance += CashDepositAgreement.principalPaid;
+}
+
+atomic calculate recordDepositFailure(CashDepositAgreement, CashFailureRecord) {
+    CashFailureRecord.deposit = CashDepositAgreement;
+    CashFailureRecord.handlingState = CashHandlingState.RECONCILIATION_REQUIRED;
+}
+
+atomic calculate recordReversalFailure(CashReversalAgreement, CashFailureRecord) {
+    CashFailureRecord.reversal = CashReversalAgreement;
+    CashFailureRecord.handlingState = CashHandlingState.RECONCILIATION_REQUIRED;
+}
+
+atomic calculate confirmNoCashMovement(CashFailureRecord) {
+    CashFailureRecord.handlingState = CashHandlingState.NOT_COMPLETED;
+}

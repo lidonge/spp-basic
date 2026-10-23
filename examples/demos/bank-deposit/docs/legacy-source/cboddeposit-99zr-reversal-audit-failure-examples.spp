@@ -1,0 +1,96 @@
+domain cboddeposit;
+
+Contract ReversalAuditEvidenceExample { ReversalFaultExample business; QuantumEvidenceExample evidence; }
+atomic calculate selectUnavailableReversalAuditExample(context ReversalFaultExample example) {
+    example.prefix = "SOURCE-AUDIT-REV";
+}
+atomic calculate initializeReplayedAuditUnavailableExample(context ReversalAuditEvidenceExample example) {
+    example.business = new ReversalFaultExample(); example.evidence = new QuantumEvidenceExample();
+    example.business.prefix = "SOURCE-AUDIT-REPLAY";
+}
+atomic check verifyReversalAuditFailure(ReversalFaultExample example) {
+    require(example.reversal.failure != null && example.reversal.failure.code == "EXAMPLE_SERVICE_FAULT"
+        && example.reversal.failure.transactionOutcome == "ROLLED_BACK", "EXAMPLE_AUDIT_REV_OUTCOME");
+    int secondary = 0;
+    for (String code : example.reversal.failure.suppressedCodes) {
+        secondary++; require(code == "EXAMPLE_SERVICE_FAULT", "EXAMPLE_AUDIT_REV_SECONDARY_CODE");
+    }
+    require(secondary == 1, "EXAMPLE_AUDIT_REV_PRIMARY_MASKED");
+}
+atomic check verifyUnavailableReversalAuditHistory(ReversalFaultExample example) {
+    int history = 0; for (CashAuditRecord audit : example.history) { history++; }
+    require(history == 0, "EXAMPLE_AUDIT_REV_UNEXPECTED_HISTORY");
+}
+atomic check verifyResolvedReversalAuditHistory(ReversalFaultExample example) {
+    int history = 0; int committed = 0; int replayed = 0;
+    for (CashAuditRecord audit : example.history) {
+        history++; if (audit.event == "ReversalCommitted") { committed++; }
+        else if (audit.event == "ReversalReplayed") { replayed++; }
+        else { require(false, "EXAMPLE_AUDIT_REV_UNEXPECTED_EVENT"); }
+    }
+    require(history == 2 && committed == 1 && replayed == 1, "EXAMPLE_AUDIT_REV_RESOLVED_HISTORY");
+}
+atomic calculate configureReversalAuditQuantumEvidence(context ReversalAuditEvidenceExample example) {
+    example.evidence.journalKey.objectId = example.business.reversal.cash.seed.id;
+    example.evidence.valueKey.objectId = example.business.reversal.cash.seed.id;
+}
+atomic calculate armReversalReplayAuditExample(context ReversalAuditEvidenceExample example) {
+    example.business.reversal.command.attemptId = "SOURCE-AUDIT-REPLAY-FAILED";
+    example.business.reversal.command.day.date = 20261009;
+}
+atomic check verifyKnownCommittedReversalAfterAuditFailure(ReversalAuditEvidenceExample example) {
+    require(example.business.reversal.lifecycle.work.status == "Committed"
+        && example.business.reversal.lifecycle.work.proposed.version == 3
+        && example.business.reversal.lifecycle.work.proposed.eligibility.accountBalance == 200
+        && example.business.reversal.lifecycle.recorded != null
+        && example.business.reversal.lifecycle.recorded.id == example.business.reversal.command.id,
+        "EXAMPLE_AUDIT_REPLAY_LOST_KNOWN_COMMIT");
+    int history = 0;
+    for (CashAuditRecord audit : example.business.history) {
+        history++; require(audit.event == "ReversalCommitted", "EXAMPLE_AUDIT_REPLAY_FAILED_EVENT_PERSISTED");
+    }
+    require(history == 1, "EXAMPLE_AUDIT_REPLAY_ORIGINAL_AUDIT_CHANGED");
+}
+atomic check verifyReversalAuditQuantumEvidence(ReversalAuditEvidenceExample example) {
+    int rows = 0; int balances = 0; int clearings = 0; int values = 0; double deltas = 0;
+    for (QuantumJournalEvidence row : example.evidence.journal) {
+        rows++; deltas += row.deltaValue;
+        require(row.objectId == example.business.reversal.cash.seed.id && row.status == "COMMITTED"
+            && row.beforeValue + row.deltaValue == row.afterValue, "EXAMPLE_AUDIT_REPLAY_QUANTUM_RECORD");
+    }
+    for (QuantumValueEvidence value : example.evidence.values) {
+        values++; require(value.objectId == example.business.reversal.cash.seed.id, "EXAMPLE_AUDIT_REPLAY_QUANTUM_OBJECT");
+        if (value.attributeId == "AccountEligibility.accountBalance") {
+            balances++; require(value.currentValue == 200, "EXAMPLE_AUDIT_REPLAY_QUANTUM_BALANCE");
+        } else if (value.attributeId == "CashQuantumClearing.amount") {
+            clearings++; require(value.currentValue == -100, "EXAMPLE_AUDIT_REPLAY_QUANTUM_CLEARING");
+        } else { require(false, "EXAMPLE_AUDIT_REPLAY_QUANTUM_ATTRIBUTE"); }
+    }
+    require(rows == 6 && deltas == 0 && values == 2 && balances == 1 && clearings == 1,
+        "EXAMPLE_AUDIT_REPLAY_REPEATED_QUANTUM");
+}
+Scenario serial reversalAuditUnavailableExampleRun(context ReversalFaultExample example) {
+    selectUnavailableReversalAuditExample(example); seedReversalFaultBusiness(example);
+    try { executeCashReversal(example.reversal.command, example.reversal.lifecycle); } catch (CashFailureFacts example.reversal.failure) {}
+    verifyReversalAuditFailure(example); observeReversalFaultBusiness(example);
+    verifyReversalFaultIndependentBusiness(example); verifyReversalFaultUncommitted(example); verifyUnavailableReversalAuditHistory(example);
+    selectReversalFaultRetry(example); executeCashReversal(example.reversal.command, example.reversal.lifecycle);
+    selectReversalFaultReplay(example); executeCashReversal(example.reversal.command, example.reversal.lifecycle);
+    observeReversalFaultBusiness(example); verifyReversalFaultIndependentBusiness(example);
+    verifyReversalFaultCommitted(example); verifyResolvedReversalAuditHistory(example);
+}
+Scenario serial replayedReversalAuditUnavailableExampleRun(context ReversalAuditEvidenceExample example) {
+    initializeReplayedAuditUnavailableExample(example); seedReversalFaultBusiness(example.business);
+    initializeQuantumEvidenceExample(example.evidence); configureReversalAuditQuantumEvidence(example);
+    executeCashReversal(example.business.reversal.command, example.business.reversal.lifecycle);
+    armReversalReplayAuditExample(example);
+    try { executeCashReversal(example.business.reversal.command, example.business.reversal.lifecycle); }
+    catch (CashFailureFacts example.business.reversal.failure) {}
+    verifyReversalAuditFailure(example.business); observeReversalFaultBusiness(example.business);
+    verifyReversalFaultIndependentBusiness(example.business); verifyReversalFaultCommitted(example.business);
+    verifyKnownCommittedReversalAfterAuditFailure(example); observeQuantumEvidenceExample(example.evidence); verifyReversalAuditQuantumEvidence(example);
+    selectReversalFaultRetry(example.business); executeCashReversal(example.business.reversal.command, example.business.reversal.lifecycle);
+    observeReversalFaultBusiness(example.business); verifyReversalFaultIndependentBusiness(example.business);
+    verifyReversalFaultCommitted(example.business); verifyResolvedReversalAuditHistory(example.business);
+    observeQuantumEvidenceExample(example.evidence); verifyReversalAuditQuantumEvidence(example);
+}

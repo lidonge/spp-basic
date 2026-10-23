@@ -1,0 +1,274 @@
+domain cboddeposit;
+
+// Recovery decisions and evidence belong to business source, not a transaction callback.
+Role CashSagaRecoveryRecord {
+    String id; String originalTradeId; String reversalTradeId;
+    String status; String code; int attempts;
+}
+Contract CashSagaExample {
+    ReversalFaultExample facts; CashDepositCommand originalCommand;
+    CashDepositTrade original; CashReversalTrade reversal;
+    CashSagaRecoveryRecord recovery; CashSagaRecoveryRecord recoveryKey; CashSagaRecoveryRecord observedRecovery;
+    CashAccountRecord prior; CashAccountRecord changed;
+    CashFailureFacts failure; CashFailureFacts recoveryFailure;
+    String prefix; int mode; int expectedVersion; double expectedBalance;
+}
+atomic update storeCashSagaRecoveryRequested(CashSagaRecoveryRecord record);
+atomic update storeCashSagaRecoveryDone(CashSagaRecoveryRecord record);
+atomic update storeCashSagaRecoveryFailure(CashSagaRecoveryRecord record);
+atomic query <CashSagaRecoveryRecord record> lookupCashSagaRecovery(CashSagaRecoveryRecord key);
+atomic calculate initializeCashSagaRecovery(context CashSagaExample example) {
+    if (example.recovery == null) {
+        example.recovery = new CashSagaRecoveryRecord();
+        example.recovery.id = example.prefix;
+        example.recovery.originalTradeId = example.originalCommand.id;
+        example.recovery.reversalTradeId = example.facts.reversal.command.id;
+        example.recovery.attempts = 0;
+    }
+    example.recovery.attempts++;
+    example.recovery.status = "Requested"; example.recovery.code = "";
+    example.recoveryFailure = null;
+    example.original = new CashDepositTrade(); example.original.id = example.originalCommand.id;
+    example.reversal = new CashReversalTrade(); example.reversal.id = example.facts.reversal.command.id;
+    example.facts.reversal.command.attemptId = example.prefix + "-RECOVER";
+}
+atomic calculate markCashSagaNoCommit(context CashSagaExample example) {
+    example.recovery.status = "NotCommitted";
+}
+atomic calculate markCashSagaRecovered(context CashSagaExample example) {
+    example.recovery.status = "Done";
+}
+atomic calculate markCashSagaConfirmed(context CashSagaExample example) {
+    example.recovery.status = "Confirmed";
+}
+atomic calculate markCashSagaRecoveryFailure(context CashSagaExample example) {
+    example.recovery.code = example.recoveryFailure.code;
+    if (example.facts.reversal.lifecycle.work != null && example.facts.reversal.lifecycle.work.status == "Committed") {
+        example.recovery.status = "QueryRequired";
+    } else { example.recovery.status = "Failed"; }
+}
+Scenario serial recoverCashSagaDeposit(context CashSagaExample example) {
+    initializeCashSagaRecovery(example);
+    serial { transaction quantum { storeCashSagaRecoveryRequested(example.recovery); } }
+    try {
+        example.original = lookupCashDepositTrade(example.original);
+        if (example.original == null) { markCashSagaNoCommit(example); }
+        else {
+            example.reversal = lookupCashReversalTrade(example.reversal);
+            if (example.reversal == null) {
+                executeCashReversal(example.facts.reversal.command, example.facts.reversal.lifecycle);
+                markCashSagaRecovered(example);
+            } else {
+                checkCashReversalReplayIdentity(example.facts.reversal.command, example.reversal);
+                markCashSagaConfirmed(example);
+            }
+        }
+        serial { transaction quantum { storeCashSagaRecoveryDone(example.recovery); } }
+    } catch (CashFailureFacts example.recoveryFailure) {
+        markCashSagaRecoveryFailure(example);
+        serial { transaction quantum { storeCashSagaRecoveryFailure(example.recovery); } }
+        throw example.recoveryFailure;
+    }
+}
+Scenario serial cashSagaDepositNode(context CashSagaExample example) {
+    executeCashDeposit(example.originalCommand, example.facts.reversal.cash.lifecycle);
+}
+atomic calculate prepareCashSagaFrozenAccount(context CashSagaExample example) {
+    example.prior = copy(example.facts.reversal.cash.observed); example.changed = copy(example.prior);
+    example.changed.version = example.prior.version + 1;
+    example.changed.account.frozenAmount = example.prior.account.interestBase;
+}
+atomic calculate prepareCashSagaThawedAccount(context CashSagaExample example) {
+    example.prior = copy(example.facts.reversal.cash.observed); example.changed = copy(example.prior);
+    example.changed.version = example.prior.version + 1; example.changed.account.frozenAmount = 0;
+}
+atomic check failCashSagaLaterNode(CashSagaExample example) { require(false, "EXAMPLE_SAGA_LATER_FAILURE"); }
+Scenario serial cashSagaLaterNode(context CashSagaExample example) {
+    if (example.mode == 2) {
+        prepareCashReversalLaterTradeExample(example.facts.reversal);
+        selectReversalFaultLaterDeposit(example.facts);
+        executeCashDeposit(example.facts.reversal.cash.command, example.facts.reversal.cash.lifecycle);
+    }
+    if (example.mode == 4 || example.mode == 5) {
+        example.facts.reversal.cash.observed = queryCashAccount(example.facts.reversal.cash.observed);
+        prepareCashSagaFrozenAccount(example);
+        serial { transaction quantum { storeCashAccount(example.prior, example.changed); } }
+    }
+    failCashSagaLaterNode(example);
+}
+Scenario serial cashSagaWorkflow(context CashSagaExample example) {
+    if (example.mode == 1 || example.mode == 3) {
+        serial { transaction saga { cashSagaDepositNode(example); } }
+    } else {
+        serial { transaction saga { cashSagaDepositNode(example); cashSagaLaterNode(example); } }
+    }
+}
+atomic calculate initializeCashSagaExample(context CashSagaExample example) {
+    example.facts = new ReversalFaultExample(); example.facts.prefix = example.prefix;
+    example.failure = null; example.recovery = null;
+    example.recoveryKey = new CashSagaRecoveryRecord(); example.recoveryKey.id = example.prefix;
+}
+atomic calculate configureCashSagaExample(context CashSagaExample example) {
+    example.originalCommand = copy(example.facts.reversal.cash.command);
+    example.facts.reversal.command.capacity.overdraftPermitted = false;
+    example.facts.reversal.command.capacity.overdraftLimit = 0;
+    if (example.mode == 3) { example.originalCommand.request.amount = -1; }
+}
+Scenario serial prepareCashSagaExample(context CashSagaExample example) {
+    initializeCashSagaExample(example); prepareReversalFaultFacts(example.facts); configureCashSagaExample(example);
+    serial { transaction quantum {
+        seedCashExampleAccount(example.facts.reversal.cash.seed); seedCashExampleTariff(example.facts.reversal.cash.tariffRecord);
+    } }
+}
+Scenario serial observeCashSagaExample(context CashSagaExample example) {
+    example.facts.reversal.cash.observed = queryCashAccount(example.facts.reversal.cash.observed);
+    example.facts.reversal.cash.storedTrade = lookupCashDepositTrade(example.facts.reversal.cash.tradeKey);
+    example.facts.reversal.record = lookupCashReversalTrade(example.facts.reversal.recordKey);
+    example.facts.reversal.link = lookupCashReversalLink(example.facts.reversal.linkKey);
+    example.facts.reversal.cash.postings = queryCashPostingRecords(example.facts.reversal.cash.postingKey);
+    example.facts.originalPostings = queryCashPostingRecords(example.facts.originalPostingKey);
+    example.facts.later = lookupCashDepositTrade(example.facts.laterKey);
+    example.facts.laterPostings = queryCashPostingRecords(example.facts.laterPostingKey);
+    example.facts.history = queryCashExampleHistory(example.facts.historyKey);
+    example.observedRecovery = lookupCashSagaRecovery(example.recoveryKey);
+}
+Scenario serial executeCashSagaExample(context CashSagaExample example) {
+    prepareCashSagaExample(example);
+    try { cashSagaWorkflow(example); } catch (CashFailureFacts example.failure) {}
+    observeCashSagaExample(example);
+}
+atomic check verifyCashSagaAccount(CashSagaExample example) {
+    require(example.facts.reversal.cash.observed.version == example.expectedVersion
+        && example.facts.reversal.cash.observed.account.interestBase == example.expectedBalance
+        && example.facts.reversal.cash.observed.eligibility.accountBalance == example.expectedBalance,
+        "EXAMPLE_SAGA_ACCOUNT");
+}
+atomic check verifyCashSagaOriginal(CashSagaExample example) {
+    require(example.facts.reversal.cash.storedTrade != null
+        && example.facts.reversal.cash.storedTrade.request.amount == 600
+        && example.facts.reversal.cash.storedTrade.settled.version == 1
+        && example.facts.reversal.cash.storedTrade.settled.account.interestBase == 700,
+        "EXAMPLE_SAGA_ORIGINAL_LOST");
+    int count = 0; double debit = 0; double credit = 0;
+    for (CashPostingRecord posting : example.facts.originalPostings) {
+        count++; if (posting.line.side == "Debit") { debit += posting.line.amount; } else { credit += posting.line.amount; }
+    }
+    require(count == 8 && debit == 602 && credit == 602, "EXAMPLE_SAGA_ORIGINAL_LEDGER");
+}
+atomic check verifyCashSagaInverse(CashSagaExample example) {
+    require(example.facts.reversal.record != null && example.facts.reversal.record.id == example.facts.reversal.command.id
+        && example.facts.reversal.record.originalTradeId == example.originalCommand.id
+        && example.facts.reversal.record.fee.refundAmount == 2
+        && example.facts.reversal.link.version == 1 && example.facts.reversal.link.reversalId == example.facts.reversal.command.id,
+        "EXAMPLE_SAGA_INVERSE_RECEIPT");
+    int count = 0; double debit = 0; double credit = 0;
+    for (CashPostingRecord posting : example.facts.reversal.cash.postings) {
+        count++; if (posting.line.side == "Debit") { debit += posting.line.amount; } else { credit += posting.line.amount; }
+    }
+    require(count == 8 && debit == 602 && credit == 602, "EXAMPLE_SAGA_INVERSE_LEDGER");
+}
+atomic check verifyCashSagaPrimaryFailure(CashSagaExample example) {
+    require(example.failure != null && example.failure.code == "EXAMPLE_SAGA_LATER_FAILURE", "EXAMPLE_SAGA_PRIMARY_FAILURE");
+}
+atomic check verifyCashSagaRejectedRecovery(CashSagaExample example) {
+    int failures = 0;
+    for (String code : example.failure.suppressedCodes) { if (code == "ES020") { failures++; } }
+    require(failures == 1 && example.observedRecovery != null
+        && example.observedRecovery.status == "Failed" && example.observedRecovery.code == "ES020"
+        && example.observedRecovery.originalTradeId == example.originalCommand.id
+        && example.observedRecovery.reversalTradeId == example.facts.reversal.command.id,
+        "EXAMPLE_SAGA_RECOVERY_REJECTION");
+    require(example.facts.reversal.record == null && (example.facts.reversal.link == null || example.facts.reversal.link.reversalId == ""),
+        "EXAMPLE_SAGA_REJECTED_INVERSE");
+    int lines = 0; for (CashPostingRecord posting : example.facts.reversal.cash.postings) { lines++; }
+    require(lines == 0, "EXAMPLE_SAGA_REJECTION_LEDGER");
+}
+atomic calculate selectCashSagaSuccess(context CashSagaExample example) {
+    example.prefix = "SOURCE-SAGA-SUCCESS"; example.mode = 1; example.expectedVersion = 1; example.expectedBalance = 700;
+}
+atomic check verifyCashSagaSuccess(CashSagaExample example) {
+    require(example.failure == null && example.observedRecovery == null && example.facts.reversal.record == null,
+        "EXAMPLE_SAGA_UNEXPECTED_RECOVERY");
+}
+Scenario serial cashSagaSuccessExampleRun(context CashSagaExample example) {
+    selectCashSagaSuccess(example); executeCashSagaExample(example);
+    verifyCashSagaAccount(example); verifyCashSagaOriginal(example); verifyCashSagaSuccess(example);
+}
+atomic calculate selectCashSagaLaterFailure(context CashSagaExample example) {
+    example.prefix = "SOURCE-SAGA-LATER"; example.mode = 2; example.expectedVersion = 3; example.expectedBalance = 200;
+}
+atomic check verifyCashSagaLaterRecovery(CashSagaExample example) {
+    require(example.observedRecovery.status == "Done" && example.observedRecovery.attempts == 1
+        && example.facts.later != null && example.facts.later.request.amount == 100
+        && example.facts.later.settled.account.interestBase == 800, "EXAMPLE_SAGA_LATER_LOST");
+    int lines = 0; double debit = 0; double credit = 0;
+    for (CashPostingRecord posting : example.facts.laterPostings) {
+        lines++; if (posting.line.side == "Debit") { debit += posting.line.amount; } else { credit += posting.line.amount; }
+    }
+    require(lines == 8 && debit == 102 && credit == 102, "EXAMPLE_SAGA_LATER_LEDGER");
+}
+Scenario serial cashSagaLaterFailureExampleRun(context CashSagaExample example) {
+    selectCashSagaLaterFailure(example); executeCashSagaExample(example); verifyCashSagaPrimaryFailure(example);
+    verifyCashSagaAccount(example); verifyCashSagaOriginal(example); verifyCashSagaInverse(example); verifyCashSagaLaterRecovery(example);
+}
+atomic calculate selectCashSagaAbsentCommit(context CashSagaExample example) {
+    example.prefix = "SOURCE-SAGA-ABSENT"; example.mode = 3; example.expectedVersion = 0; example.expectedBalance = 100;
+}
+atomic check verifyCashSagaAbsentCommit(CashSagaExample example) {
+    require(example.failure != null && example.failure.code == "E1155" && example.observedRecovery.status == "NotCommitted"
+        && example.facts.reversal.cash.storedTrade == null && example.facts.reversal.record == null,
+        "EXAMPLE_SAGA_INVENTED_INVERSE");
+    int lines = 0; for (CashPostingRecord posting : example.facts.reversal.cash.postings) { lines++; }
+    for (CashPostingRecord posting : example.facts.originalPostings) { lines++; }
+    require(lines == 0, "EXAMPLE_SAGA_ABSENT_LEDGER");
+}
+Scenario serial cashSagaAbsentCommitExampleRun(context CashSagaExample example) {
+    selectCashSagaAbsentCommit(example); executeCashSagaExample(example); verifyCashSagaAccount(example); verifyCashSagaAbsentCommit(example);
+}
+atomic calculate selectCashSagaRejectedRecovery(context CashSagaExample example) {
+    example.prefix = "SOURCE-SAGA-REJECTED"; example.mode = 4; example.expectedVersion = 2; example.expectedBalance = 700;
+}
+Scenario serial cashSagaRejectedRecoveryExampleRun(context CashSagaExample example) {
+    selectCashSagaRejectedRecovery(example); executeCashSagaExample(example); verifyCashSagaPrimaryFailure(example);
+    verifyCashSagaAccount(example); verifyCashSagaOriginal(example); verifyCashSagaRejectedRecovery(example);
+}
+atomic calculate selectCashSagaRetry(context CashSagaExample example) {
+    example.prefix = "SOURCE-SAGA-RETRY"; example.mode = 5; example.expectedVersion = 2; example.expectedBalance = 700;
+}
+atomic calculate expectCashSagaRetry(context CashSagaExample example) { example.expectedVersion = 4; example.expectedBalance = 100; }
+atomic check verifyCashSagaConfirmed(CashSagaExample example) {
+    require(example.observedRecovery.status == "Confirmed" && example.observedRecovery.attempts == 3,
+        "EXAMPLE_SAGA_RETRY_IDENTITY");
+}
+Scenario serial cashSagaRetryExampleRun(context CashSagaExample example) {
+    selectCashSagaRetry(example); executeCashSagaExample(example); verifyCashSagaPrimaryFailure(example);
+    verifyCashSagaRejectedRecovery(example); verifyCashSagaOriginal(example);
+    prepareCashSagaThawedAccount(example);
+    serial { transaction quantum { storeCashAccount(example.prior, example.changed); } }
+    recoverCashSagaDeposit(example); observeCashSagaExample(example); expectCashSagaRetry(example);
+    verifyCashSagaAccount(example); verifyCashSagaInverse(example);
+    recoverCashSagaDeposit(example); observeCashSagaExample(example);
+    verifyCashSagaAccount(example); verifyCashSagaOriginal(example); verifyCashSagaInverse(example); verifyCashSagaConfirmed(example);
+}
+atomic calculate selectCashSagaCompletionFault(context CashSagaExample example) {
+    example.prefix = "SOURCE-SAGA-COMPLETION"; example.mode = 6; example.expectedVersion = 2; example.expectedBalance = 100;
+}
+atomic check verifyCashSagaQueryRequired(CashSagaExample example) {
+    int failures = 0;
+    for (String code : example.failure.suppressedCodes) { if (code == "EXAMPLE_SERVICE_FAULT") { failures++; } }
+    require(failures == 1 && example.observedRecovery.status == "QueryRequired"
+        && example.observedRecovery.code == "EXAMPLE_SERVICE_FAULT", "EXAMPLE_SAGA_COMPLETION_UNCERTAINTY");
+}
+atomic check verifyCashSagaCompletionConfirmed(CashSagaExample example) {
+    require(example.observedRecovery.status == "Confirmed" && example.observedRecovery.attempts == 2,
+        "EXAMPLE_SAGA_COMPLETION_CONFIRMATION");
+    int commits = 0;
+    for (CashAuditRecord audit : example.facts.history) { if (audit.event == "ReversalCommitted") { commits++; } }
+    require(commits == 1, "EXAMPLE_SAGA_SECOND_INVERSE");
+}
+Scenario serial cashSagaCompletionFaultExampleRun(context CashSagaExample example) {
+    selectCashSagaCompletionFault(example); executeCashSagaExample(example); verifyCashSagaPrimaryFailure(example);
+    verifyCashSagaAccount(example); verifyCashSagaOriginal(example); verifyCashSagaInverse(example); verifyCashSagaQueryRequired(example);
+    recoverCashSagaDeposit(example); observeCashSagaExample(example);
+    verifyCashSagaAccount(example); verifyCashSagaInverse(example); verifyCashSagaOriginal(example); verifyCashSagaCompletionConfirmed(example);
+}

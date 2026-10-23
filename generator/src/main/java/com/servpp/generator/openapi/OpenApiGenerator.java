@@ -85,11 +85,22 @@ public class OpenApiGenerator extends BaseClassGenerator implements ILogable {
     private final com.servpp.generator.spi.ModelGenerationExtension trackingExtension =
             com.servpp.generator.spi.ModelGenerationExtension.find("propertyTracking");
     private boolean propertyTracking;
+    private final OptionalEnhancements optionalEnhancements = new OptionalEnhancements();
 
     public OpenAPI generate(SppDomain sppDomain, File domainPath, String basePackage)
             throws IOException, URISyntaxException {
         String domainName = sppDomain.getName();
         propertyTracking = sppDomain.getRuleBlock().isPropertyTracking() && trackingExtension != null;
+        Set<String> omittedTechnicalServices = optionalEnhancements.omittedServices(sppDomain);
+        for (var unit : sppDomain.getMapsOfClass().values()) {
+            if (unit instanceof SppService service) {
+                service.setTechnicalBindings(service.getTechnicalBindings().stream()
+                        .filter(binding -> !omittedTechnicalServices.contains(binding.name())).toList());
+            }
+        }
+        for (String warning : optionalEnhancementWarnings(sppDomain)) {
+            new org.apache.maven.plugin.logging.SystemStreamLog().warn(warning);
+        }
         roleStoragePlan = sppDomain.getRuleBlock().hasTransactionPolicy();
         exampleFaults = java.util.Map.copyOf(sppDomain.getRuleBlock().getExampleFaults());
         exampleServiceNames = List.copyOf(sppDomain.getRuleBlock().getExampleServiceNames());
@@ -332,8 +343,10 @@ public class OpenApiGenerator extends BaseClassGenerator implements ILogable {
         // Interception remains a separate, read-only protocol.
         java.util.Properties technical = new java.util.Properties();
         var technicalModel = sppDomain.getRuleBlock().getTechnicalServices();
-        technical.setProperty("services", String.join(",", technicalModel.names()));
-        for (String name : technicalModel.names()) {
+        Set<String> omittedServices = optionalEnhancements.omittedServices(sppDomain);
+        List<String> technicalNames = technicalModel.names().stream().filter(name -> !omittedServices.contains(name)).toList();
+        technical.setProperty("services", String.join(",", technicalNames));
+        for (String name : technicalNames) {
             var implementation = technicalModel.implementations().get(name);
             technical.setProperty("service." + name + ".implementation", implementation.className());
             implementation.configuration().forEach((key, value) -> technical.setProperty("service." + name + ".config." + key, value));
@@ -365,7 +378,9 @@ public class OpenApiGenerator extends BaseClassGenerator implements ILogable {
             out.println("physicalProfileExplicit=" + (!normalizedProfile.isBlank()));
             out.println("physicalSourceFiles=" + String.join(",", sourceFiles));
             for (Map.Entry<String, String> entry : sppDomain.getRuleBlock().getPhysicalConfiguration().entrySet()) {
-                out.println("config." + entry.getKey() + "=" + escapePhysicalPropertyValue(entry.getValue()));
+                String configured = "requestIdempotencyAdapter".equals(entry.getKey())
+                        ? optionalEnhancements.requestAdapter(entry.getValue()) : entry.getValue();
+                out.println("config." + entry.getKey() + "=" + escapePhysicalPropertyValue(configured));
             }
             for (var binding : sppDomain.getRuleBlock().getNumericBindings()) {
                 out.println("numeric." + binding.target() + "=" + binding.javaType());
@@ -453,6 +468,16 @@ public class OpenApiGenerator extends BaseClassGenerator implements ILogable {
                 }
             }
         }
+    }
+
+    public List<String> optionalEnhancementWarnings(SppDomain domain) {
+        var warnings = new ArrayList<String>(optionalEnhancements.warnings(domain));
+        if (domain.getRuleBlock().isPropertyTracking() && trackingExtension == null) {
+            warnings.add("SPP_OPTIONAL_ENHANCEMENT_UNAVAILABLE: domain=" + domain.getName()
+                    + " feature=propertyTracking; using plain models and full ordinary-fact updates."
+                    + " Basic optimistic concurrency is unchanged.");
+        }
+        return List.copyOf(warnings);
     }
 
     public void createAppDdlProperties(DDLGenerator ddlGenerator, File genRoot) throws IOException {

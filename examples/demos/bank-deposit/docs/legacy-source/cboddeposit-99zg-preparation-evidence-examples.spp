@@ -1,0 +1,60 @@
+domain cboddeposit;
+
+// Explicit fixture writes exercise actual stored evidence, not substituted query results.
+atomic update replaceStoredPreparationTrade(CashDepositTrade trade);
+atomic update replaceStoredPreparationPosting(CashPostingRecord posting);
+atomic update deleteStoredPreparationPosting(CashPostingRecord posting);
+atomic calculate selectStoredSettlementEvidenceExample(context StoredReversalPreparationExample example) { example.prefix = "SOURCE-PREP-SETTLEMENT"; }
+atomic calculate corruptStoredSettlementEvidenceExample(context StoredReversalPreparationExample example) {
+    example.replacement = copy(example.core.facts.financial.originalTrade); example.replacement.settled.account.interestBase = 999;
+    example.expectedCode = "ORIGINAL_DEPOSIT_SETTLEMENT_MISMATCH"; example.failure = null;
+}
+atomic calculate corruptStoredAccountEvidenceExample(context StoredReversalPreparationExample example) {
+    example.replacement = copy(example.core.facts.financial.originalTrade);
+    example.replacement.settled.account.interestBase = 700;
+    example.replacement.original.id = example.prefix + "-OTHER-A";
+    example.expectedCode = "INVALID_ORIGINAL_DEPOSIT_ACCOUNT"; example.failure = null;
+}
+Scenario serial storedSettlementEvidenceExampleRun(context StoredReversalPreparationExample example) {
+    selectStoredSettlementEvidenceExample(example); commitStoredPreparationFixtureExample(example);
+    prepareFinancialDepositReversal(example.core.request, example.core.facts);
+    corruptStoredSettlementEvidenceExample(example);
+    serial { transaction quantum { replaceStoredPreparationTrade(example.replacement); } }
+    rejectStoredFinancialPreparationExample(example);
+    observeStoredPreparationExample(example); verifyStoredPreparationNoWriteExample(example); verifyStoredPreparationOriginalLedgerExample(example);
+    corruptStoredAccountEvidenceExample(example);
+    serial { transaction quantum { replaceStoredPreparationTrade(example.replacement); } }
+    rejectStoredFinancialPreparationExample(example);
+    observeStoredPreparationExample(example); verifyStoredPreparationNoWriteExample(example); verifyStoredPreparationOriginalLedgerExample(example);
+}
+atomic calculate selectStoredLedgerEvidenceExample(context StoredReversalPreparationExample example) { example.prefix = "SOURCE-PREP-LEDGER"; }
+atomic calculate corruptStoredLedgerEvidenceExample(context StoredReversalPreparationExample example) {
+    example.posting = null;
+    for (CashPostingRecord posting : example.core.originalPostings) {
+        if (posting.slot == 1) { example.posting = copy(posting); example.posting.line.subject = "DEMO.WRONG_CASH"; }
+    }
+    require(example.posting != null, "EXAMPLE_STORED_EVIDENCE_SLOT_NOT_FOUND");
+    example.expectedCode = "ORIGINAL_DEPOSIT_LEDGER_EVIDENCE_MISMATCH"; example.failure = null;
+}
+atomic calculate prepareMissingStoredLedgerEvidenceExample(context StoredReversalPreparationExample example) {
+    example.posting = new CashPostingRecord(); example.posting.tradeId = example.originalId; example.posting.slot = 8;
+    example.expectedCode = "INVALID_ORIGINAL_DEPOSIT_POSTINGS"; example.failure = null;
+}
+atomic check verifyMissingStoredLedgerEvidenceExample(StoredReversalPreparationExample example) {
+    int count = 0;
+    for (CashPostingRecord posting : example.core.originalPostings) {
+        count++; require(posting.slot != 8, "EXAMPLE_STORED_EVIDENCE_DELETE_NOT_APPLIED");
+    }
+    require(count == 7, "EXAMPLE_STORED_EVIDENCE_NOT_ACTUALLY_MISSING");
+}
+Scenario serial storedLedgerEvidenceExampleRun(context StoredReversalPreparationExample example) {
+    selectStoredLedgerEvidenceExample(example); commitStoredPreparationFixtureExample(example);
+    observeStoredPreparationExample(example); corruptStoredLedgerEvidenceExample(example);
+    serial { transaction quantum { replaceStoredPreparationPosting(example.posting); } }
+    rejectStoredPostingPreparationExample(example);
+    observeStoredPreparationExample(example); verifyStoredPreparationNoWriteExample(example); verifyStoredPreparationOriginalLedgerExample(example);
+    prepareMissingStoredLedgerEvidenceExample(example);
+    serial { transaction quantum { deleteStoredPreparationPosting(example.posting); } }
+    rejectStoredPostingPreparationExample(example);
+    observeStoredPreparationExample(example); verifyStoredPreparationNoWriteExample(example); verifyMissingStoredLedgerEvidenceExample(example);
+}

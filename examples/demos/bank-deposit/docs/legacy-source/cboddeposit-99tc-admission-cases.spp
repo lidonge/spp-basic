@@ -1,0 +1,86 @@
+domain cboddeposit;
+
+atomic calculate configureAdmissionRuleCase39(context AdmissionRuleExampleFacts example) {
+    example.request.amount = 1500; example.request.currency = "USD"; example.channel.transactionFamily = "XT01821";
+    example.expectedCode = "";
+}
+atomic check verifyAdmissionRuleCase39(AdmissionRuleExampleFacts example) {
+    require(example.decision.requiredLevel == "None", "EXAMPLE_ADMISSION_RULE_39_1");
+    require(example.decision.authorizationCode == "", "EXAMPLE_ADMISSION_RULE_39_2");
+}
+atomic calculate configureAdmissionRuleCase40(context AdmissionRuleExampleFacts example) {
+    example.request.amount = 1500.01; example.request.currency = "USD"; example.channel.transactionFamily = "XT01821";
+    example.expectedCode = "";
+}
+atomic check verifyAdmissionRuleCase40(AdmissionRuleExampleFacts example) {
+    require(example.decision.requiredLevel == "B", "EXAMPLE_ADMISSION_RULE_40_1");
+    require(example.decision.authorizationCode == "B7006", "EXAMPLE_ADMISSION_RULE_40_2");
+}
+atomic calculate configureAdmissionRuleCase41(context AdmissionRuleExampleFacts example) {
+    example.request.amount = 3000; example.request.currency = "USD"; example.channel.transactionFamily = "XT01821";
+    example.expectedCode = "";
+}
+atomic check verifyAdmissionRuleCase41(AdmissionRuleExampleFacts example) {
+    require(example.decision.requiredLevel == "B", "EXAMPLE_ADMISSION_RULE_41_1");
+    require(example.decision.authorizationCode == "B7006", "EXAMPLE_ADMISSION_RULE_41_2");
+}
+atomic calculate configureAdmissionRuleCase42(context AdmissionRuleExampleFacts example) {
+    example.request.amount = 3000.01; example.request.currency = "USD"; example.channel.transactionFamily = "XT01821";
+    example.expectedCode = "";
+}
+atomic check verifyAdmissionRuleCase42(AdmissionRuleExampleFacts example) {
+    require(example.decision.requiredLevel == "A", "EXAMPLE_ADMISSION_RULE_42_1");
+    require(example.decision.authorizationCode == "A8147", "EXAMPLE_ADMISSION_RULE_42_2");
+}
+atomic calculate configureAdmissionRuleCase43(context AdmissionRuleExampleFacts example) {
+
+    example.expectedCode = "";
+}
+atomic check verifyAdmissionRuleCase43(AdmissionRuleExampleFacts example) {
+    require(example.interest.qualifiedAmount == 100, "EXAMPLE_ADMISSION_RULE_43_1");
+    require(example.interest.product == 300, "EXAMPLE_ADMISSION_RULE_43_2");
+}
+atomic calculate configureAdmissionRuleCase44(context AdmissionRuleExampleFacts example) {
+    example.period.amount = 200; example.period.days = 0;
+    example.expectedCode = "";
+}
+atomic check verifyAdmissionRuleCase44(AdmissionRuleExampleFacts example) {
+    require(example.interest.product == 0, "EXAMPLE_ADMISSION_RULE_44_1");
+}
+atomic calculate configureAdmissionRuleCase45(context AdmissionRuleExampleFacts example) {
+    example.period.amount = 1; example.period.unit = 0;
+    example.expectedCode = "INVALID_INTEREST_PERIOD";
+}
+atomic calculate configureAdmissionRuleCase46(context AdmissionRuleExampleFacts example) {
+    example.request.amount = 600;
+    example.expectedCode = "";
+}
+atomic check verifyAdmissionRuleCase46(AdmissionRuleExampleFacts example) {
+    require(example.decision.status == "Warning", "EXAMPLE_ADMISSION_RULE_46_1");
+    require(example.decision.executable, "EXAMPLE_ADMISSION_RULE_46_2");
+    require(example.decision.warningCode == "F0554", "EXAMPLE_ADMISSION_RULE_46_3");
+}
+atomic calculate configureAdmissionRuleCase47(context AdmissionRuleExampleFacts example) {
+    example.request.amount = 600;example.control.controlStatus = "Locked";
+    example.expectedCode = "EN432";
+}
+atomic check verifyAdmissionRuleCase47(AdmissionRuleExampleFacts example) {
+    require(example.decision.status == null, "EXAMPLE_ADMISSION_RULE_47_1");
+    require(example.decision.dayCashTotal == null, "EXAMPLE_ADMISSION_RULE_47_2");
+}
+atomic calculate configureAdmissionRuleCase48(context AdmissionRuleExampleFacts example) {
+    example.request.amount = 600;example.control.cancelledOn = 20261007;
+    example.expectedCode = "EN113";
+}
+atomic check verifyAdmissionRuleCase48(AdmissionRuleExampleFacts example) {
+    require(example.decision.status == null, "EXAMPLE_ADMISSION_RULE_48_1");
+    require(example.decision.dayCashTotal == null, "EXAMPLE_ADMISSION_RULE_48_2");
+}
+atomic calculate configureAdmissionRuleCase49(context AdmissionRuleExampleFacts example) {
+    example.request.amount = 600;example.control.productKind = "RealEstate";
+    example.expectedCode = "EI090";
+}
+atomic check verifyAdmissionRuleCase49(AdmissionRuleExampleFacts example) {
+    require(example.decision.status == null, "EXAMPLE_ADMISSION_RULE_49_1");
+    require(example.decision.dayCashTotal == null, "EXAMPLE_ADMISSION_RULE_49_2");
+}

@@ -1,0 +1,141 @@
+domain cboddeposit;
+
+Role CashReversalPostingLine {
+    CashReversalAgreement reversal;
+    int slot;
+    String subject;
+    String side;
+    BigDecimal(19, 2) amount;
+}
+
+atomic query listDepositPostings(key CashDepositAgreement, DepositPostingLine[]);
+
+atomic check checkOriginalDepositPostings(CashDepositAgreement, DepositPostingLine[]) {
+    int count = 0;
+    for (DepositPostingLine line : DepositPostingLine[]) {
+        count++;
+        require(
+            line.deposit.depositNumber == CashDepositAgreement.depositNumber,
+            "ORIGINAL_DEPOSIT_POSTING_OWNER_MISMATCH"
+        );
+        require(
+            line.slot >= 1
+                && line.slot <= 8
+                && line.subject != null
+                && line.subject != ""
+                && line.amount >= 0,
+            "INVALID_ORIGINAL_DEPOSIT_POSTINGS"
+        );
+        int matching = 0;
+        for (DepositPostingLine other : DepositPostingLine[]) {
+            if (other.slot == line.slot) {
+                matching++;
+            }
+        }
+        require(matching == 1, "INVALID_ORIGINAL_DEPOSIT_POSTINGS");
+        if (line.slot == 1 || line.slot == 2 || line.slot == 7) {
+            require(line.side == "Debit", "INVALID_ORIGINAL_DEPOSIT_POSTINGS");
+        } else {
+            require(line.side == "Credit", "INVALID_ORIGINAL_DEPOSIT_POSTINGS");
+        }
+        int evidenceMatches = 0;
+        for (DepositPostingLine evidence : CashDepositAgreement.postingEvidence) {
+            if (evidence.slot == line.slot) {
+                require(
+                    evidence.subject == line.subject
+                        && evidence.side == line.side
+                        && evidence.amount == line.amount,
+                    "ORIGINAL_DEPOSIT_LEDGER_EVIDENCE_MISMATCH"
+                );
+                evidenceMatches++;
+            }
+        }
+        require(evidenceMatches == 1, "ORIGINAL_DEPOSIT_LEDGER_EVIDENCE_MISMATCH");
+        switch (line.slot) {
+            case 1:
+                require(
+                    line.amount == CashDepositAgreement.amount,
+                    "ORIGINAL_DEPOSIT_POSTING_AMOUNT_MISMATCH"
+                );
+                break;
+            case 2:
+                require(
+                    line.amount == max(0, -CashDepositAgreement.interestBaseDelta),
+                    "ORIGINAL_DEPOSIT_POSTING_AMOUNT_MISMATCH"
+                );
+                break;
+            case 3:
+                require(
+                    line.amount == max(0, CashDepositAgreement.interestBaseDelta),
+                    "ORIGINAL_DEPOSIT_POSTING_AMOUNT_MISMATCH"
+                );
+                break;
+            case 4:
+                require(
+                    line.amount == CashDepositAgreement.principalPaid,
+                    "ORIGINAL_DEPOSIT_POSTING_AMOUNT_MISMATCH"
+                );
+                break;
+            case 5:
+                require(
+                    line.amount == CashDepositAgreement.interestPaid,
+                    "ORIGINAL_DEPOSIT_POSTING_AMOUNT_MISMATCH"
+                );
+                break;
+            case 6:
+                require(
+                    line.amount == CashDepositAgreement.collectionPaid,
+                    "ORIGINAL_DEPOSIT_POSTING_AMOUNT_MISMATCH"
+                );
+                break;
+            case 7:
+                require(line.amount == CashDepositAgreement.fee, "ORIGINAL_DEPOSIT_POSTING_AMOUNT_MISMATCH");
+                break;
+            case 8:
+                require(line.amount == CashDepositAgreement.fee, "ORIGINAL_DEPOSIT_POSTING_AMOUNT_MISMATCH");
+                break;
+        }
+    }
+    require(count == 8, "INVALID_ORIGINAL_DEPOSIT_POSTINGS");
+}
+
+atomic calculate prepareCashReversalPostings(
+    DepositPostingLine[],
+    CashReversalAgreement,
+    CashReversalPostingLine[],
+    DepositPostingTotals
+) {
+    CashReversalPostingLine[] = new CashReversalPostingLine[] {
+    };
+    DepositPostingTotals.debit = 0;
+    DepositPostingTotals.credit = 0;
+    DepositPostingTotals.fee = CashReversalAgreement.refundAmount;
+    for (DepositPostingLine original : DepositPostingLine[]) {
+        CashReversalPostingLine line = new CashReversalPostingLine();
+        line.slot = original.slot;
+        line.subject = original.subject;
+        if (original.side == "Debit") {
+            line.side = "Credit";
+        } else {
+            line.side = "Debit";
+        }
+        line.amount = original.amount;
+        if (original.slot == 7 || original.slot == 8) {
+            line.amount = CashReversalAgreement.refundAmount;
+        }
+        if (line.side == "Debit") {
+            DepositPostingTotals.debit += line.amount;
+        } else {
+            DepositPostingTotals.credit += line.amount;
+        }
+        CashReversalPostingLine[] = append(CashReversalPostingLine[], line);
+    }
+}
+
+atomic calculate attachCashReversalPostings(CashReversalAgreement, CashReversalPostingLine[]) {
+    for (CashReversalPostingLine line : CashReversalPostingLine[]) {
+        line.reversal = CashReversalAgreement;
+    }
+}
+
+atomic query listCashReversalPostings(key CashReversalAgreement, CashReversalPostingLine[]);

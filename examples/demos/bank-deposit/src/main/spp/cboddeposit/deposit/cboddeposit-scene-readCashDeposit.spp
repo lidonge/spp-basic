@@ -1,0 +1,7 @@
+domain cboddeposit;
+
+Scenario serial readCashDeposit(CashDepositAgreement, DepositPostingLine[]) {
+    findCashDepositAgreement;
+    identify(CashDepositAgreement);
+    listDepositPostings;
+}

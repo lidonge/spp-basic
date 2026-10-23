@@ -1,0 +1,106 @@
+domain cboddeposit;
+Contract DatedAgreementExampleFacts {
+    BankDate start; BankDate end; AgreementTerm term; BankDate clippedStart; BankDate clippedEnd;
+    InterestCalendar calendar; InterestPeriod normal; InterestPeriod overlap; AgreementPolicy policy;
+    AgreementBand[] bands; AgreementProduct result; CashFailureFacts failure;
+    int expectedDays; int expectedStart; int expectedEnd; double expectedNormal; double expectedBand;
+}
+atomic calculate initializeDatedAgreementExample(context DatedAgreementExampleFacts example) {
+    example.start = new BankDate(); example.start.encoded = 20261001;
+    example.end = new BankDate(); example.end.encoded = 20261011;
+    example.term = new AgreementTerm(); example.clippedStart = new BankDate(); example.clippedEnd = new BankDate();
+    example.calendar = new InterestCalendar(); example.calendar.convention = "ACT";
+    example.normal = new InterestPeriod(); example.normal.amount = 650; example.normal.unit = 1;
+    example.overlap = new InterestPeriod(); example.result = new AgreementProduct(); example.failure = null;
+    example.policy = new AgreementPolicy(); example.policy.mode = "2"; example.policy.currency = "CNY"; example.policy.enabled = true;
+    AgreementBand[] bands = new AgreementBand[] {new AgreementBand(), new AgreementBand(), new AgreementBand(), new AgreementBand(), new AgreementBand()};
+    int slot = 5;
+    for (AgreementBand band : bands) { band.slot = slot; band.threshold = slot * 100; slot--; }
+    example.bands = bands;
+}
+atomic check verifyDatedAgreementExample(DatedAgreementExampleFacts example) {
+    require(example.normal.days == 10 && example.overlap.days == example.expectedDays, "EXAMPLE_DATED_AGREEMENT_DAYS");
+    require(example.result.normalProduct == example.expectedNormal && example.result.bandProduct == example.expectedBand,
+        "EXAMPLE_DATED_AGREEMENT_PRODUCTS");
+    require(example.clippedStart.encoded == example.expectedStart && example.clippedEnd.encoded == example.expectedEnd,
+        "EXAMPLE_DATED_AGREEMENT_CLIPPED_DATES");
+}
+atomic check verifyDatedAgreementFailureExample(DatedAgreementExampleFacts example) {
+    require(example.failure != null && example.failure.code == "EE374", "EXAMPLE_DATED_AGREEMENT_INVALID_DATE");
+    require(example.result.normalProduct == null, "EXAMPLE_DATED_AGREEMENT_FAILED_OUTPUT");
+}
+atomic calculate configureDatedAgreementCase01(context DatedAgreementExampleFacts example) {
+    example.term.effectiveDate = 20261003; example.term.cancelDate = 20261007;
+    example.expectedDays = 4; example.expectedNormal = 4300; example.expectedBand = 2200;
+    example.expectedStart = 20261003; example.expectedEnd = 20261007;
+}
+atomic calculate configureDatedAgreementCase02(context DatedAgreementExampleFacts example) {
+    example.term.effectiveDate = 20260901; example.term.cancelDate = 0;
+    example.expectedDays = 10; example.expectedNormal = 1000; example.expectedBand = 5500;
+    example.expectedStart = 20261001; example.expectedEnd = 20261011;
+}
+atomic calculate configureDatedAgreementCase03(context DatedAgreementExampleFacts example) {
+    example.term.effectiveDate = 20261007; example.term.cancelDate = 20261101;
+    example.expectedDays = 4; example.expectedNormal = 4300; example.expectedBand = 2200;
+    example.expectedStart = 20261007; example.expectedEnd = 20261011;
+}
+atomic calculate configureDatedAgreementCase04(context DatedAgreementExampleFacts example) {
+    example.term.effectiveDate = 0; example.term.cancelDate = 0;
+    example.expectedDays = 0; example.expectedNormal = 6500; example.expectedBand = 0;
+    example.expectedStart = 20261001; example.expectedEnd = 20261001;
+}
+atomic calculate configureDatedAgreementCase05(context DatedAgreementExampleFacts example) {
+    example.term.effectiveDate = 20261101; example.term.cancelDate = 0;
+    example.expectedDays = 0; example.expectedNormal = 6500; example.expectedBand = 0;
+    example.expectedStart = 20261001; example.expectedEnd = 20261001;
+}
+atomic calculate configureDatedAgreementCase06(context DatedAgreementExampleFacts example) {
+    example.term.effectiveDate = 20260901; example.term.cancelDate = 20260930;
+    example.expectedDays = 0; example.expectedNormal = 6500; example.expectedBand = 0;
+    example.expectedStart = 20261001; example.expectedEnd = 20261001;
+}
+atomic calculate configureDatedAgreementCase07(context DatedAgreementExampleFacts example) {
+    example.term.effectiveDate = 20261007; example.term.cancelDate = 20261007;
+    example.expectedDays = 0; example.expectedNormal = 6500; example.expectedBand = 0;
+    example.expectedStart = 20261001; example.expectedEnd = 20261001;
+}
+atomic calculate configureInvalidDatedAgreementExample(context DatedAgreementExampleFacts example) {
+    example.start.encoded = 20260201; example.end.encoded = 20260310;
+    example.term.effectiveDate = 20260230; example.term.cancelDate = 0; example.normal.amount = 10;
+    for (AgreementBand band : example.bands) { band.threshold = 0; }
+}
+Scenario serial datedAgreementExampleRun(context DatedAgreementExampleFacts example) {
+    initializeDatedAgreementExample(example);
+    configureDatedAgreementCase01(example);
+    calculateDatedAgreement(example.start, example.end, example.term, example.clippedStart, example.clippedEnd, example.calendar, example.normal, example.overlap, example.policy, example.bands, example.result);
+    verifyDatedAgreementExample(example);
+    initializeDatedAgreementExample(example);
+    configureDatedAgreementCase02(example);
+    calculateDatedAgreement(example.start, example.end, example.term, example.clippedStart, example.clippedEnd, example.calendar, example.normal, example.overlap, example.policy, example.bands, example.result);
+    verifyDatedAgreementExample(example);
+    initializeDatedAgreementExample(example);
+    configureDatedAgreementCase03(example);
+    calculateDatedAgreement(example.start, example.end, example.term, example.clippedStart, example.clippedEnd, example.calendar, example.normal, example.overlap, example.policy, example.bands, example.result);
+    verifyDatedAgreementExample(example);
+    initializeDatedAgreementExample(example);
+    configureDatedAgreementCase04(example);
+    calculateDatedAgreement(example.start, example.end, example.term, example.clippedStart, example.clippedEnd, example.calendar, example.normal, example.overlap, example.policy, example.bands, example.result);
+    verifyDatedAgreementExample(example);
+    initializeDatedAgreementExample(example);
+    configureDatedAgreementCase05(example);
+    calculateDatedAgreement(example.start, example.end, example.term, example.clippedStart, example.clippedEnd, example.calendar, example.normal, example.overlap, example.policy, example.bands, example.result);
+    verifyDatedAgreementExample(example);
+    initializeDatedAgreementExample(example);
+    configureDatedAgreementCase06(example);
+    calculateDatedAgreement(example.start, example.end, example.term, example.clippedStart, example.clippedEnd, example.calendar, example.normal, example.overlap, example.policy, example.bands, example.result);
+    verifyDatedAgreementExample(example);
+    initializeDatedAgreementExample(example);
+    configureDatedAgreementCase07(example);
+    calculateDatedAgreement(example.start, example.end, example.term, example.clippedStart, example.clippedEnd, example.calendar, example.normal, example.overlap, example.policy, example.bands, example.result);
+    verifyDatedAgreementExample(example);
+    initializeDatedAgreementExample(example);
+    configureInvalidDatedAgreementExample(example);
+    try { calculateDatedAgreement(example.start, example.end, example.term, example.clippedStart, example.clippedEnd, example.calendar, example.normal, example.overlap, example.policy, example.bands, example.result); }
+    catch (CashFailureFacts example.failure) {}
+    verifyDatedAgreementFailureExample(example);
+}

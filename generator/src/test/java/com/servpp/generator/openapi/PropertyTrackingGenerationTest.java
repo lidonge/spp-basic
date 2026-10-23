@@ -30,11 +30,21 @@ public class PropertyTrackingGenerationTest {
         Files.writeString(source.resolve("shop.app"),"domain shop; " + (enabled==null?"":"propertyTracking: "+enabled+"; ") + """
                 tables entities { table ACCOUNTS(Account) { primarykey(Account.accountNumber); } }
                 """);
-        GeneratorUtil.execute(source.toFile(),root.resolve("yaml").toFile(),root.resolve("java").toFile(),"generated");
+        var diagnostics = new java.io.ByteArrayOutputStream();
+        var originalOutput = System.out;
+        try (var captured = new java.io.PrintStream(diagnostics, true, java.nio.charset.StandardCharsets.UTF_8)) {
+            System.setOut(captured);
+            GeneratorUtil.execute(source.toFile(),root.resolve("yaml").toFile(),root.resolve("java").toFile(),"generated");
+        } finally {
+            System.setOut(originalOutput);
+        }
+        String warnings = diagnostics.toString(java.nio.charset.StandardCharsets.UTF_8);
+        assertEquals(!Boolean.FALSE.equals(enabled), warnings.contains("SPP_OPTIONAL_ENHANCEMENT_UNAVAILABLE: domain=shop feature=propertyTracking"));
         Properties properties=new Properties();try(var in=Files.newInputStream(root.resolve("resources/META-INF/spp/app-ddl.properties"))){properties.load(in);}
         boolean tracking=false;
         assertFalse(PropertyChanges.isAvailable());
         assertEquals(tracking,AppDdlCatalog.fromProperties(properties).propertyTracking());
+        assertEquals("true", properties.getProperty("optimisticConcurrency"));
         var config=new CodegenConfigurator().setGeneratorName("spring").setInputSpec(root.resolve("yaml/shop.spp.yaml").toString())
                 .setOutputDir(root.resolve("client").toString()).setModelPackage("generated.shop.model")
                 .setTemplateDir(root.resolve("yaml/JavaSpring").toString()).setValidateSpec(false)

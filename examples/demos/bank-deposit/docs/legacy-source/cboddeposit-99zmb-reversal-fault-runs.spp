@@ -1,0 +1,31 @@
+domain cboddeposit;
+
+Scenario serial exerciseReversalFaultExample(context ReversalFaultExample example) {
+    seedReversalFaultBusiness(example);
+    try { executeCashReversal(example.reversal.command, example.reversal.lifecycle); } catch (CashFailureFacts example.reversal.failure) {}
+    observeReversalFaultBusiness(example); verifyReversalFaultIndependentBusiness(example); verifyReversalFaultInitialHistory(example);
+    if (example.mode <= 2 || example.mode >= 5) { verifyReversalFaultUncommitted(example); }
+    else { verifyReversalFaultCommitted(example); }
+    selectReversalFaultRetry(example); executeCashReversal(example.reversal.command, example.reversal.lifecycle);
+    selectReversalFaultReplay(example); executeCashReversal(example.reversal.command, example.reversal.lifecycle);
+    observeReversalFaultBusiness(example); verifyReversalFaultIndependentBusiness(example);
+    verifyReversalFaultCommitted(example); verifyReversalFaultResolvedHistory(example);
+}
+Scenario serial beforeCommitReversalFaultExampleRun(context ReversalFaultExample example) {
+    selectBeforeCommitReversalFaultExample(example); exerciseReversalFaultExample(example);
+}
+Scenario serial commitBeforeReversalFaultExampleRun(context ReversalFaultExample example) {
+    selectCommitBeforeReversalFaultExample(example); exerciseReversalFaultExample(example);
+}
+Scenario serial commitAfterReversalFaultExampleRun(context ReversalFaultExample example) {
+    selectCommitAfterReversalFaultExample(example); exerciseReversalFaultExample(example);
+}
+Scenario serial afterCommitReversalFaultExampleRun(context ReversalFaultExample example) {
+    selectAfterCommitReversalFaultExample(example); exerciseReversalFaultExample(example);
+}
+Scenario serial recordReversalFaultExampleRun(context ReversalFaultExample example) {
+    selectRecordReversalFaultExample(example); exerciseReversalFaultExample(example);
+}
+Scenario serial linkReversalFaultExampleRun(context ReversalFaultExample example) {
+    selectLinkReversalFaultExample(example); exerciseReversalFaultExample(example);
+}

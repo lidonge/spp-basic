@@ -1,0 +1,153 @@
+domain cboddeposit;
+
+// Normal cash-entry subset of GSA01102 and CSAQRY1, distinct from special channels.
+Role CashAccountControl {
+    String controllingInstitution;
+    String controlStatus;
+    int cancelledOn;
+    String productKind;
+}
+atomic check checkCashAccountControl(CashAccountControl control, AccountEligibility account) {
+    require(control.controllingInstitution == "" && control.controlStatus != "PayNoReceive"
+        && control.controlStatus != "Locked", "EN432");
+    require(account.status != "Frozen", "EG877");
+}
+atomic check checkCoreCashAccount(CashAccountControl control) {
+    require(control.cancelledOn == 0, "EN113");
+    // CSAQRY1 permits real-estate deposits only through business code 1182, not cash 1102.
+    require(control.productKind != "RealEstate", "EI090");
+}
+Scenario serial assessNormalCashDeposit(DepositRequest d, CashAccountControl control, AccountEligibility a,
+    DepositProduct product, BusinessDay day, CashChannel channel, CashAuthorizationPolicy policy,
+    AuthorizationEvidence evidence, context AdmissionDecision decision) {
+    checkCashInput(d, day);
+    checkCashAccountControl(control, a);
+    checkDepositEligibility(d, a, product, day);
+    checkCoreCashAccount(control);
+    assessCashAdmission(d, a, day, channel, policy, evidence, decision);
+}
+
+// KSADEP0 6100: business amount categories before runtime accounting rule selection.
+Contract DepositAccounting {
+    double transactionAmount;
+    double depositIncrease;
+    double depositDecrease;
+    double principalPaid;
+    double interestPaid;
+    double collectionPaid;
+    double fundingTotal;
+    double allocationTotal;
+}
+atomic calculate classifyDepositAccounting(DepositRequest d, context DepositPlan plan, context DepositAccounting amounts) {
+    amounts.transactionAmount = d.amount;
+    amounts.depositIncrease = plan.interestBaseIncrease;
+    amounts.depositDecrease = plan.interestBaseDecrease;
+    amounts.principalPaid = plan.principalPaid;
+    amounts.interestPaid = plan.interestPaid;
+    amounts.collectionPaid = plan.collectionInterestPaid;
+    amounts.fundingTotal = amounts.transactionAmount + amounts.depositDecrease;
+    amounts.allocationTotal = amounts.depositIncrease + amounts.principalPaid + amounts.interestPaid + amounts.collectionPaid;
+}
+atomic check checkDepositAccounting(context DepositAccounting amounts) {
+    require(amounts.transactionAmount >= 0 && amounts.depositIncrease >= 0 && amounts.depositDecrease >= 0
+        && amounts.principalPaid >= 0 && amounts.interestPaid >= 0 && amounts.collectionPaid >= 0,
+        "NEGATIVE_DEPOSIT_ACCOUNTING_AMOUNT");
+    require(amounts.fundingTotal == amounts.transactionAmount + amounts.depositDecrease
+        && amounts.allocationTotal == amounts.depositIncrease + amounts.principalPaid
+            + amounts.interestPaid + amounts.collectionPaid, "DEPOSIT_ACCOUNTING_TOTAL_MISMATCH");
+    require(amounts.fundingTotal == amounts.allocationTotal, "DEPOSIT_ACCOUNTING_NOT_BALANCED");
+}
+// Explicit demo rule slots, not a reconstruction of the unavailable ART subject configuration.
+Role DepositPostingLine { int slot; String subject; String side; quantum double amount; }
+Contract DepositPostingTotals { double debit; double credit; double fee; }
+atomic calculate calculateDepositPostings(context DepositAccounting amounts, context DepositFeePlan fee,
+    DepositPostingLine[] lines, context DepositPostingTotals totals) {
+    int expected = 1;
+    for (DepositPostingLine line : lines) {
+        require(line.slot == expected && line.subject != null && line.subject != "", "INVALID_DEPOSIT_POSTING_RULES");
+        if (line.slot == 1 || line.slot == 2 || line.slot == 7) {
+            require(line.side == "Debit", "INVALID_DEPOSIT_POSTING_SIDE");
+        } else { require(line.side == "Credit", "INVALID_DEPOSIT_POSTING_SIDE"); }
+        expected++;
+    }
+    require(expected == 9 && fee.fee >= 0, "INVALID_DEPOSIT_POSTING_RULES");
+    totals.debit = 0;
+    totals.credit = 0;
+    totals.fee = fee.fee;
+    for (DepositPostingLine line : lines) {
+        switch (line.slot) {
+            case 1: line.amount = amounts.transactionAmount; break;
+            case 2: line.amount = amounts.depositDecrease; break;
+            case 3: line.amount = amounts.depositIncrease; break;
+            case 4: line.amount = amounts.principalPaid; break;
+            case 5: line.amount = amounts.interestPaid; break;
+            case 6: line.amount = amounts.collectionPaid; break;
+            case 7: line.amount = fee.fee; break;
+            case 8: line.amount = fee.fee; break;
+        }
+        if (line.side == "Debit") { totals.debit += line.amount; }
+        else { totals.credit += line.amount; }
+    }
+}
+atomic check checkDepositPostings(context DepositPostingTotals totals) {
+    require(totals.debit == totals.credit, "DEPOSIT_POSTINGS_NOT_BALANCED");
+}
+Scenario serial prepareDepositPostings(DepositRequest d, DepositAccount a, context DepositPlan plan,
+    context DepositAccounting amounts, context DepositFeePlan fee, DepositPostingLine[] lines,
+    context DepositPostingTotals totals) {
+    depositKernel(d, a, plan);
+    classifyDepositAccounting(d, plan, amounts);
+    checkDepositAccounting(amounts);
+    calculateDepositPostings(amounts, fee, lines, totals);
+    checkDepositPostings(totals);
+}
+
+// Produce a separate proposed account snapshot; storage never supplies repayment policy.
+atomic calculate prepareDepositAccountUpdate(DepositAccount before, context DepositPlan plan, DepositAccount after) {
+    after.interestBase = plan.newInterestBase;
+    after.frozenAmount = before.frozenAmount;
+    after.authorizedAmount = before.authorizedAmount;
+    after.overdraftInterest = before.overdraftInterest - plan.interestPaid;
+    after.collectionInterest = before.collectionInterest - plan.collectionInterestPaid;
+    after.overdraftPrincipal = before.overdraftPrincipal - plan.principalPaid;
+    after.overdraftExposure = plan.newOverdraftExposure;
+    after.loanState = before.loanState;
+}
+
+// KSADEP0 updates detail count by WK-DET-ITEM; the demo explicitly configures its item count.
+Role DepositDetailPolicy { int itemCount; }
+atomic calculate prepareDepositEligibilityUpdate(AccountEligibility before, BusinessDay day,
+    DepositDetailPolicy details, context AdmissionDecision admission, context DepositPlan plan,
+    AccountEligibility after) {
+    require(details.itemCount > 0, "INVALID_DEPOSIT_DETAIL_COUNT");
+    after.accountId = before.accountId;
+    after.status = before.status;
+    after.temporary = before.temporary;
+    after.expiresOn = before.expiresOn;
+    after.temporaryOpen = before.temporaryOpen;
+    after.openedOn = before.openedOn;
+    after.detailCount = before.detailCount + details.itemCount;
+    after.lastTransactionDate = day.date;
+    after.cashDepositedToday = admission.dayCashTotal;
+    after.transferredToday = 0;
+    if (before.lastTransactionDate == day.date) { after.transferredToday = before.transferredToday; }
+    after.accountBalance = plan.newAccountBalance;
+}
+atomic check checkNormalCashDemoPath(CashChannel channel, DepositFeeContext feeContext) {
+    require(channel.teller && channel.channel == "Teller" && channel.transactionId == "GSA01102"
+        && channel.channel == feeContext.channel, "UNSUPPORTED_CASH_DEMO_PATH");
+}
+Scenario serial prepareNormalCashDeposit(DepositRequest d, DepositAccount before, CashAccountControl control,
+    AccountEligibility eligibility, DepositProduct product, BusinessDay day, CashChannel channel,
+    CashAuthorizationPolicy authorizationPolicy, AuthorizationEvidence evidence, context AdmissionDecision admission,
+    DepositFeeParty feeParty, DepositFeeContext feeContext, DepositFeeRate rate, context DepositFeePlan fee,
+    context DepositPlan plan, context DepositAccounting amounts, DepositPostingLine[] lines,
+    context DepositPostingTotals totals, DepositDetailPolicy details, DepositAccount after, AccountEligibility afterEligibility) {
+    checkNormalCashDemoPath(channel, feeContext);
+    assessNormalCashDeposit(d, control, eligibility, product, day, channel, authorizationPolicy, evidence, admission);
+    checkCashAuthorization(admission);
+    prepareDepositFee(d, feeParty, feeContext, rate, fee);
+    prepareDepositPostings(d, before, plan, amounts, fee, lines, totals);
+    prepareDepositAccountUpdate(before, plan, after);
+    prepareDepositEligibilityUpdate(eligibility, day, details, admission, plan, afterEligibility);
+}

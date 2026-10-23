@@ -1,0 +1,31 @@
+domain petshop;
+
+Enum OrderStatus {
+    UNPAID("UNPAID"),
+    PAID("PAID"),
+    SHIPPED("SHIPPED"),
+    DELIVERED("DELIVERED"),
+    CANCELLED("CANCELLED"),
+    RETURN_REQUESTED("RETURN_REQUESTED"),
+    RETURNED("RETURNED")
+}
+
+Enum ReceiptStatus {
+    COMPLETED("COMPLETED")
+}
+
+Enum MemberTier {
+    NORMAL("NORMAL"),
+    VIP("VIP")
+}
+
+Enum ReservationStatus {
+    ACCEPTED("ACCEPTED"),
+    RESERVED("RESERVED"),
+    REJECTED("REJECTED")
+}
+
+Enum ReservationRejectionReason {
+    INSUFFICIENT_STOCK("INSUFFICIENT_STOCK"),
+    RESERVATION_NOT_COMPLETED("RESERVATION_NOT_COMPLETED")
+}

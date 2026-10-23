@@ -1,0 +1,153 @@
+domain cboddeposit;
+
+// KSADEP0 6100: business amount categories before runtime accounting rule selection.
+
+Role DepositAccounting {
+    BigDecimal(19, 2) transactionAmount;
+    BigDecimal(19, 2) depositIncrease;
+    BigDecimal(19, 2) depositDecrease;
+    BigDecimal(19, 2) principalPaid;
+    BigDecimal(19, 2) interestPaid;
+    BigDecimal(19, 2) collectionPaid;
+    BigDecimal(19, 2) fundingTotal;
+    BigDecimal(19, 2) allocationTotal;
+}
+
+atomic calculate classifyDepositAccounting(DepositRequest, DepositPlan, DepositAccounting) {
+    DepositAccounting.transactionAmount = DepositRequest.amount;
+    DepositAccounting.depositIncrease = DepositPlan.interestBaseIncrease;
+    DepositAccounting.depositDecrease = DepositPlan.interestBaseDecrease;
+    DepositAccounting.principalPaid = DepositPlan.principalPaid;
+    DepositAccounting.interestPaid = DepositPlan.interestPaid;
+    DepositAccounting.collectionPaid = DepositPlan.collectionInterestPaid;
+    DepositAccounting.fundingTotal = DepositAccounting.transactionAmount + DepositAccounting.depositDecrease;
+    DepositAccounting.allocationTotal = DepositAccounting.depositIncrease
+        + DepositAccounting.principalPaid
+        + DepositAccounting.interestPaid
+        + DepositAccounting.collectionPaid;
+}
+
+atomic check checkDepositAccounting(DepositAccounting) {
+    require(
+        DepositAccounting.transactionAmount >= 0
+            && DepositAccounting.depositIncrease >= 0
+            && DepositAccounting.depositDecrease >= 0
+            && DepositAccounting.principalPaid >= 0
+            && DepositAccounting.interestPaid >= 0
+            && DepositAccounting.collectionPaid >= 0,
+        "NEGATIVE_DEPOSIT_ACCOUNTING_AMOUNT"
+    );
+    require(
+        DepositAccounting.fundingTotal == DepositAccounting.transactionAmount
+            + DepositAccounting.depositDecrease
+            && DepositAccounting.allocationTotal == DepositAccounting.depositIncrease
+            + DepositAccounting.principalPaid
+            + DepositAccounting.interestPaid
+            + DepositAccounting.collectionPaid,
+        "DEPOSIT_ACCOUNTING_TOTAL_MISMATCH"
+    );
+    require(
+        DepositAccounting.fundingTotal == DepositAccounting.allocationTotal,
+        "DEPOSIT_ACCOUNTING_NOT_BALANCED"
+    );
+}
+
+// Explicit demo rule slots, not a reconstruction of the unavailable ART subject configuration.
+
+Role DepositPostingLine {
+    CashDepositAgreement deposit;
+    int slot;
+    String subject;
+    String side;
+    BigDecimal(19, 2) amount;
+}
+
+Role DepositPostingTotals {
+    BigDecimal(19, 2) debit;
+    BigDecimal(19, 2) credit;
+    BigDecimal(19, 2) fee;
+}
+
+atomic calculate calculateDepositPostings(
+    DepositAccounting,
+    DepositFeePlan,
+    DepositPostingLine[],
+    DepositPostingTotals
+) {
+    DepositPostingTotals.debit = 0;
+    DepositPostingTotals.credit = 0;
+    DepositPostingTotals.fee = DepositFeePlan.fee;
+    for (DepositPostingLine line : DepositPostingLine[]) {
+        switch (line.slot) {
+            case 1:
+                line.amount = DepositAccounting.transactionAmount;
+                break;
+            case 2:
+                line.amount = DepositAccounting.depositDecrease;
+                break;
+            case 3:
+                line.amount = DepositAccounting.depositIncrease;
+                break;
+            case 4:
+                line.amount = DepositAccounting.principalPaid;
+                break;
+            case 5:
+                line.amount = DepositAccounting.interestPaid;
+                break;
+            case 6:
+                line.amount = DepositAccounting.collectionPaid;
+                break;
+            case 7:
+                line.amount = DepositFeePlan.fee;
+                break;
+            case 8:
+                line.amount = DepositFeePlan.fee;
+                break;
+        }
+        if (line.side == "Debit") {
+            DepositPostingTotals.debit += line.amount;
+        } else {
+            DepositPostingTotals.credit += line.amount;
+        }
+    }
+}
+
+atomic check checkDepositPostings(DepositPostingTotals) {
+    require(DepositPostingTotals.debit == DepositPostingTotals.credit, "DEPOSIT_POSTINGS_NOT_BALANCED");
+}
+
+atomic check checkPostingRules(DepositPostingLine[], DepositFeePlan) {
+    int expected = 1;
+    for (DepositPostingLine line : DepositPostingLine[]) {
+        require(
+            line.slot == expected && line.subject != null && line.subject != "",
+            "INVALID_DEPOSIT_POSTING_RULES"
+        );
+        if (line.slot == 1 || line.slot == 2 || line.slot == 7) {
+            require(line.side == "Debit", "INVALID_DEPOSIT_POSTING_SIDE");
+        } else {
+            require(line.side == "Credit", "INVALID_DEPOSIT_POSTING_SIDE");
+        }
+        expected++;
+    }
+    require(expected == 9 && DepositFeePlan.fee >= 0, "INVALID_DEPOSIT_POSTING_RULES");
+}
+
+atomic calculate attachDepositPostings(CashDepositAgreement, DepositPostingLine[]) {
+    for (DepositPostingLine line : DepositPostingLine[]) {
+        line.deposit = CashDepositAgreement;
+    }
+}
+
+atomic calculate preserveDepositPostingEvidence(CashDepositAgreement, DepositPostingLine[]) {
+    CashDepositAgreement.postingEvidence = new DepositPostingLine[] {
+    };
+    for (DepositPostingLine line : DepositPostingLine[]) {
+        DepositPostingLine evidence = new DepositPostingLine();
+        evidence.slot = line.slot;
+        evidence.subject = line.subject;
+        evidence.side = line.side;
+        evidence.amount = line.amount;
+        CashDepositAgreement.postingEvidence = append(CashDepositAgreement.postingEvidence, evidence);
+    }
+}

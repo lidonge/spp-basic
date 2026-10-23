@@ -1,0 +1,69 @@
+domain cboddeposit;
+
+phy {
+    numeric {
+        replace BigDecimal(19, 2) with BigDecimal(25, 6);
+    }
+    config requestIdempotencyAdapter = "jdbc";
+    environment develop {
+        repository cashRecords {
+            adapter jdbcObjectRepository;
+            config default = true;
+            config appDdlTables = true;
+            config datasourceUrl = "${spp.xbod.datasource-url:jdbc:h2:mem:xbod-deposit;DB_CLOSE_DELAY=-1;WRITE_DELAY=0}";
+            config driverClassName = "org.h2.Driver";
+            config table = "xbod_cash_record";
+        }
+        backend cashDatabase {
+            adapter localJdbc;
+            at;
+            quantum cashLedger;
+            repository cashRecords;
+            quantumStore cashLedger;
+            config datasourceUrl = "${spp.xbod.datasource-url:jdbc:h2:mem:xbod-deposit;DB_CLOSE_DELAY=-1;WRITE_DELAY=0}";
+            config driverClassName = "org.h2.Driver";
+        }
+        quantumStore cashLedger {
+            adapter jdbcQuantum;
+            config datasourceUrl = "${spp.xbod.datasource-url:jdbc:h2:mem:xbod-deposit;DB_CLOSE_DELAY=-1;WRITE_DELAY=0}";
+            config driverClassName = "org.h2.Driver";
+            config journalStore = "com.servpp.service.transaction.JdbcQuantumJournalStore";
+            config journalTable = "xbod_quantum_journal";
+            config valueTable = "xbod_quantum_value";
+            config decimalStorage = "text";
+        }
+    }
+    environment testing {
+        repository cashRecords {
+            adapter jdbcObjectRepository;
+            config default = true;
+            config appDdlTables = true;
+            config datasourceUrl = "${spp.xbod.datasource-url:jdbc:h2:mem:xbod-deposit;DB_CLOSE_DELAY=-1;WRITE_DELAY=0}";
+            config driverClassName = "org.h2.Driver";
+            config table = "xbod_cash_record";
+        }
+        backend cashDatabase {
+            adapter localJdbc;
+            saga cashRecordsResource;
+            repository cashRecords;
+            config datasourceUrl = "${spp.xbod.datasource-url:jdbc:h2:mem:xbod-deposit;DB_CLOSE_DELAY=-1;WRITE_DELAY=0}";
+            config driverClassName = "org.h2.Driver";
+        }
+        backend cashQuantumDatabase {
+            adapter localJdbc;
+            quantum cashLedger;
+            quantumStore cashLedger;
+            config datasourceUrl = "${spp.xbod.testing.ledger-url:jdbc:h2:mem:xbod-ledger;DB_CLOSE_DELAY=-1;WRITE_DELAY=0}";
+            config driverClassName = "org.h2.Driver";
+        }
+        quantumStore cashLedger {
+            adapter jdbcQuantum;
+            config datasourceUrl = "${spp.xbod.testing.ledger-url:jdbc:h2:mem:xbod-ledger;DB_CLOSE_DELAY=-1;WRITE_DELAY=0}";
+            config driverClassName = "org.h2.Driver";
+            config journalStore = "com.servpp.service.transaction.JdbcQuantumJournalStore";
+            config journalTable = "xbod_quantum_journal";
+            config valueTable = "xbod_quantum_value";
+            config decimalStorage = "text";
+        }
+    }
+}

@@ -1,0 +1,48 @@
+domain cboddeposit;
+
+Contract AccountOpeningAgreement {
+    String openingNumber;
+    DepositAccount account;
+    AccountEligibility eligibility;
+    CashSettlementAccount settlement;
+}
+
+atomic calculate prepareAccountOpening(
+    BankAccount,
+    DepositAccount,
+    AccountEligibility,
+    CashSettlementAccount,
+    DepositAccrualState,
+    AccountOpeningAgreement
+) {
+    DepositAccount.accountNumber = BankAccount.accountNumber;
+    AccountEligibility.accountNumber = BankAccount.accountNumber;
+    DepositAccrualState.accountNumber = BankAccount.accountNumber;
+    DepositAccrualState.lastProductDate = AccountEligibility.openedOn;
+    DepositAccount.loanState = LoanState.NORMAL;
+    if (AccountEligibility.temporary == null) {
+        AccountEligibility.temporary = false;
+    }
+    if (AccountEligibility.temporaryOpen == null) {
+        AccountEligibility.temporaryOpen = false;
+    }
+    if (AccountEligibility.expiresOn == null) {
+        AccountEligibility.expiresOn = 0;
+    }
+    AccountEligibility.status = AccountStatus.ACTIVE;
+    AccountEligibility.detailCount = 0;
+    AccountEligibility.lastTransactionDate = AccountEligibility.openedOn;
+    AccountEligibility.cashDepositedToday = 0;
+    AccountEligibility.transferredToday = 0;
+    AccountEligibility.accountBalance = 0;
+    DepositAccrualState.normalProduct = 0;
+    DepositAccrualState.overdraftProduct = 0;
+    DepositAccrualState.overdraftInterestProduct = 0;
+    DepositAccrualState.actualProduct = 0;
+    DepositAccrualState.agreementProduct = 0;
+    DepositAccrualState.overdraftDays = 0;
+    DepositAccrualState.overdraftInterestDays = 0;
+    AccountOpeningAgreement.account = DepositAccount;
+    AccountOpeningAgreement.eligibility = AccountEligibility;
+    AccountOpeningAgreement.settlement = CashSettlementAccount;
+}

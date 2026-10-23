@@ -1,0 +1,38 @@
+domain petshop;
+
+Scenario serial approveShopReturn(Buyer, Merchant, StockLine[], ShopOrder, ReturnRefundAgreement) {
+    checkBuyerCredential;
+    initializeReturnRefundAgreement;
+
+    configureMerchantLookup;
+    parallel {
+        findBuyer;
+        findMerchant;
+        findShopOrder;
+    }
+    identify(Buyer);
+    identify(Merchant);
+    identify(ShopOrder);
+    checkOrderOwner;
+    prepareOrderInventory;
+    findStockLine;
+    identify(StockLine[]);
+    checkReturnApproval;
+    checkSoldInventory;
+    prepareReturnApproval;
+    prepareReturnRefund;
+    prepareReturnRefundAgreementReceipt;
+    transaction {
+        returnInventory bounds {
+            StockLine[].available: [0, null];
+            StockLine[].sold: [0, null];
+        };
+        refundReturnFunds bounds {
+            Buyer.wallet: [0, null];
+            Merchant.cash: [0, null];
+        };
+        updateShopOrder;
+
+        insertReceipt(ReturnRefundAgreement.receipt);
+    }
+}

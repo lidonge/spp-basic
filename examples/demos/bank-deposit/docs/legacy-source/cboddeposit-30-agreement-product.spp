@@ -1,0 +1,59 @@
+domain cboddeposit;
+
+// CSAPRD2 5500/5555: retain the five source slots, traversed 5 down to 1.
+// Normal and agreement periods have already been clipped/decoded by calendar services.
+Role AgreementBand { int slot; double threshold; double product; }
+Role AgreementPolicy { String mode; String currency; boolean enabled; }
+Contract AgreementProduct {
+    double normalProduct;
+    double bandProduct;
+    double remainingAmount;
+    int selectedSlot;
+    String appliedMode;
+}
+atomic calculate calculateAgreementProduct(InterestPeriod normal, InterestPeriod overlap,
+    AgreementPolicy policy, AgreementBand[] bands, context AgreementProduct result) {
+    require(normal.amount >= 0 && normal.unit > 0 && normal.days >= 0, "INVALID_INTEREST_PERIOD");
+    require(overlap.amount == normal.amount && overlap.unit == normal.unit
+        && overlap.days >= 0 && overlap.days <= normal.days, "INVALID_AGREEMENT_PERIOD");
+    int expectedSlot = 5;
+    for (AgreementBand band : bands) {
+        require(band.slot == expectedSlot && band.threshold >= 0, "INVALID_AGREEMENT_BANDS");
+        expectedSlot--;
+    }
+    require(expectedSlot == 0, "INVALID_AGREEMENT_BANDS");
+    result.normalProduct = roundDown(normal.amount / normal.unit, 0) * normal.unit * normal.days;
+    result.bandProduct = 0;
+    result.remainingAmount = normal.amount;
+    result.selectedSlot = 0;
+    result.appliedMode = policy.mode;
+    if (policy.mode != "1" && policy.mode != "2") {
+        if (policy.currency == "CNY") { result.appliedMode = "2"; }
+        else { result.appliedMode = "1"; }
+    }
+    for (AgreementBand band : bands) { band.product = 0; }
+    if (policy.enabled && overlap.days > 0) {
+        for (AgreementBand band : bands) {
+            if (result.appliedMode == "2") {
+                if (result.remainingAmount > band.threshold) {
+                    band.product = roundDown((result.remainingAmount - band.threshold) / normal.unit, 0)
+                        * normal.unit * overlap.days;
+                    result.bandProduct += band.product;
+                    result.remainingAmount = band.threshold;
+                    if (band.slot == 1) {
+                        result.normalProduct -= roundDown((normal.amount - band.threshold) / normal.unit, 0)
+                            * normal.unit * overlap.days;
+                    }
+                }
+            } else {
+                if (normal.amount >= band.threshold) {
+                    band.product = roundDown(normal.amount / normal.unit, 0) * normal.unit * overlap.days;
+                    result.bandProduct = band.product;
+                    result.normalProduct -= band.product;
+                    result.selectedSlot = band.slot;
+                    break;
+                }
+            }
+        }
+    }
+}

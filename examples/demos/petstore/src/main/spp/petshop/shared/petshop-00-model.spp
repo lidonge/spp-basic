@@ -1,0 +1,19 @@
+domain petshop;
+
+Role Merchant {
+}
+
+take Person as Merchant {
+    takeall;
+    String tradingName;
+    String shopName;
+    quantum BigDecimal(19, 2) cash;
+}
+
+Entity Receipt {
+    business("Business receipt number") String receiptNumber;
+    Buyer buyer;
+    ShopOrder order;
+    ReceiptStatus status;
+    OrderStatus orderStatus;
+}

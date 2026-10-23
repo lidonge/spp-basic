@@ -1,0 +1,70 @@
+domain cboddeposit;
+
+atomic calculate configureBankQualificationCase28(context BankQualificationExampleFacts example) {
+    example.profile.depositRange = "SameBranch"; example.operator.tellerFamily = "UH"; example.operator.tellerNumber = 0; example.operator.operationCode = "1102";
+    example.expectedCode = "";
+}
+atomic calculate configureBankQualificationCase29(context BankQualificationExampleFacts example) {
+    example.profile.depositRange = "SameBranch"; example.operator.tellerFamily = "UH"; example.operator.tellerNumber = 9; example.operator.operationCode = "1102";
+    example.expectedCode = "";
+}
+atomic calculate configureBankQualificationCase30(context BankQualificationExampleFacts example) {
+    example.profile.depositRange = "SameBranch"; example.operator.tellerFamily = "UH"; example.operator.tellerNumber = 10; example.operator.operationCode = "1102";
+    example.expectedCode = "EN134";
+}
+atomic calculate configureBankQualificationCase31(context BankQualificationExampleFacts example) {
+    example.profile.depositRange = "SameBranch"; example.operator.tellerFamily = "O"; example.operator.tellerNumber = 56; example.operator.operationCode = "1751";
+    example.expectedCode = "";
+}
+atomic calculate configureBankQualificationCase32(context BankQualificationExampleFacts example) {
+    example.profile.depositRange = "SameBranch"; example.operator.tellerFamily = "O"; example.operator.tellerNumber = 99; example.operator.operationCode = "1176";
+    example.expectedCode = "";
+}
+atomic calculate configureBankQualificationCase33(context BankQualificationExampleFacts example) {
+    example.profile.depositRange = "SameBranch"; example.operator.tellerFamily = "O"; example.operator.tellerNumber = 55; example.operator.operationCode = "1751";
+    example.expectedCode = "EN134";
+}
+atomic calculate configureBankQualificationCase34(context BankQualificationExampleFacts example) {
+    example.profile.depositRange = "SameBranch"; example.operator.tellerFamily = "O"; example.operator.tellerNumber = 56; example.operator.operationCode = "1102";
+    example.expectedCode = "EN134";
+}
+atomic calculate configureBankQualificationCase35(context BankQualificationExampleFacts example) {
+    example.profile.depositRange = "SameBranch"; example.operator.tellerFamily = "ZD"; example.operator.tellerNumber = 0; example.operator.operationCode = "1751";
+    example.expectedCode = "";
+}
+atomic calculate configureBankQualificationCase36(context BankQualificationExampleFacts example) {
+    example.profile.depositRange = "SameBranch"; example.operator.tellerFamily = "ZD"; example.operator.tellerNumber = 0; example.operator.operationCode = "1176";
+    example.expectedCode = "EN134";
+}
+atomic calculate configureBankQualificationCase37(context BankQualificationExampleFacts example) {
+    example.profile.depositRange = "SameBranch"; example.operator.corporateTransfer = true;
+    example.expectedCode = "";
+}
+atomic calculate configureBankQualificationCase38(context BankQualificationExampleFacts example) {
+    example.profile.depositRange = "SameBranch"; example.operator.mode = "CentralBatch";
+    example.expectedCode = "";
+}
+atomic calculate configureBankQualificationCase39(context BankQualificationExampleFacts example) {
+    example.profile.depositRange = "SameBranch"; example.profile.groupSubaccount = true; example.operator.settlementChannel = "HVP";
+    example.expectedCode = "";
+}
+atomic calculate configureBankQualificationCase40(context BankQualificationExampleFacts example) {
+    example.profile.depositRange = "SameBranch"; example.profile.groupSubaccount = true; example.operator.settlementChannel = "BEP";
+    example.expectedCode = "";
+}
+atomic calculate configureBankQualificationCase41(context BankQualificationExampleFacts example) {
+    example.profile.depositRange = "SameBranch"; example.profile.groupSubaccount = true; example.operator.settlementChannel = "NXY";
+    example.expectedCode = "";
+}
+atomic calculate configureBankQualificationCase42(context BankQualificationExampleFacts example) {
+    example.profile.depositRange = "SameBranch"; example.profile.restrictedSubtype = true; example.profile.cardLinked = true; example.operator.mode = "CentralBatch"; example.operator.corporateTransfer = true;
+    example.expectedCode = "EN134";
+}
+atomic calculate configureBankQualificationCase43(context BankQualificationExampleFacts example) {
+    example.profile.restrictedSubtype = true; example.operator.transactionPrefix = "RE04035";
+    example.expectedCode = "";
+}
+atomic calculate configureBankQualificationCase44(context BankQualificationExampleFacts example) {
+    example.profile.normalSavings = false; example.profile.proprietaryRange = "WithdrawOnly"; example.profile.groupSubaccount = true; example.operator.settlementChannel = "HVP";
+    example.expectedCode = "EN134";
+}

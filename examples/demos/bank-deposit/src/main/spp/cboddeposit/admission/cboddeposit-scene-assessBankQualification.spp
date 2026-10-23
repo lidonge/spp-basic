@@ -1,0 +1,11 @@
+domain cboddeposit;
+
+Scenario serial assessBankQualification(
+    DepositBankProfile,
+    DepositOperatorFacts,
+    CashChannel,
+    DepositNotices
+) {
+    checkDepositBranchRange;
+    assessDepositDocumentNotices;
+}

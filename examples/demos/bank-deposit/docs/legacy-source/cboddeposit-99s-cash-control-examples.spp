@@ -1,0 +1,84 @@
+domain cboddeposit;
+Contract CashControlExampleFacts {
+    CashAccountControl control; AccountEligibility eligibility; DepositAccount account;
+    DepositRequest request; DepositPlan plan; CashFailureFacts failure; String expectedCode;
+}
+atomic calculate initializeCashControlExample(context CashControlExampleFacts example) {
+    example.control = new CashAccountControl(); example.control.controllingInstitution = "";
+    example.control.controlStatus = "Normal"; example.control.cancelledOn = 0; example.control.productKind = "DemandDeposit";
+    example.eligibility = new AccountEligibility(); example.eligibility.status = "Normal";
+    example.request = new DepositRequest(); example.request.amount = 1;
+    example.account = new DepositAccount(); example.account.interestBase = 10; example.account.frozenAmount = 10;
+    example.account.authorizedAmount = 0; example.account.overdraftInterest = 0; example.account.collectionInterest = 0;
+    example.account.overdraftPrincipal = 0; example.account.overdraftExposure = 0; example.account.loanState = "Normal";
+    example.plan = new DepositPlan(); example.failure = null; example.expectedCode = "";
+}
+atomic check verifyCashControlFailureExample(CashControlExampleFacts example) {
+    require(example.failure != null && example.failure.code == example.expectedCode, "EXAMPLE_CASH_CONTROL_REJECTION");
+}
+atomic check verifyCashFrozenAmountExample(CashControlExampleFacts example) {
+    require(example.plan.newAvailableBalance == 1, "EXAMPLE_FROZEN_AMOUNT_AVAILABLE_BALANCE");
+}
+atomic calculate configureCashControlInstitutionExample(context CashControlExampleFacts example) {
+    example.control.controllingInstitution = "branch-1";
+    example.expectedCode = "EN432";
+}
+atomic calculate configureCashControlPayOnlyExample(context CashControlExampleFacts example) {
+    example.control.controlStatus = "PayNoReceive";
+    example.expectedCode = "EN432";
+}
+atomic calculate configureCashControlLockedExample(context CashControlExampleFacts example) {
+    example.control.controlStatus = "Locked";
+    example.expectedCode = "EN432";
+}
+atomic calculate configureCashControlFrozenExample(context CashControlExampleFacts example) {
+    example.eligibility.status = "Frozen";
+    example.expectedCode = "EG877";
+}
+atomic calculate configureCashControlCancelledExample(context CashControlExampleFacts example) {
+    example.control.cancelledOn = 20261007;
+    example.expectedCode = "EN113";
+}
+atomic calculate configureCashControlRealEstateExample(context CashControlExampleFacts example) {
+    example.control.productKind = "RealEstate";
+    example.expectedCode = "EI090";
+}
+Scenario serial cashAccountControlExampleRun(context CashControlExampleFacts example) {
+    initializeCashControlExample(example);
+    checkCashAccountControl(example.control, example.eligibility);
+    checkCoreCashAccount(example.control);
+    initializeCashControlExample(example);
+    configureCashControlInstitutionExample(example);
+    try { checkCashAccountControl(example.control, example.eligibility); }
+    catch (CashFailureFacts example.failure) {}
+    verifyCashControlFailureExample(example);
+    initializeCashControlExample(example);
+    configureCashControlPayOnlyExample(example);
+    try { checkCashAccountControl(example.control, example.eligibility); }
+    catch (CashFailureFacts example.failure) {}
+    verifyCashControlFailureExample(example);
+    initializeCashControlExample(example);
+    configureCashControlLockedExample(example);
+    try { checkCashAccountControl(example.control, example.eligibility); }
+    catch (CashFailureFacts example.failure) {}
+    verifyCashControlFailureExample(example);
+    initializeCashControlExample(example);
+    configureCashControlFrozenExample(example);
+    try { checkCashAccountControl(example.control, example.eligibility); }
+    catch (CashFailureFacts example.failure) {}
+    verifyCashControlFailureExample(example);
+    initializeCashControlExample(example);
+    configureCashControlCancelledExample(example);
+    try { checkCoreCashAccount(example.control); }
+    catch (CashFailureFacts example.failure) {}
+    verifyCashControlFailureExample(example);
+    initializeCashControlExample(example);
+    configureCashControlRealEstateExample(example);
+    try { checkCoreCashAccount(example.control); }
+    catch (CashFailureFacts example.failure) {}
+    verifyCashControlFailureExample(example);
+    initializeCashControlExample(example);
+    checkCashAccountControl(example.control, example.eligibility);
+    calculateDepositPlan(example.request, example.account, example.plan);
+    verifyCashFrozenAmountExample(example);
+}

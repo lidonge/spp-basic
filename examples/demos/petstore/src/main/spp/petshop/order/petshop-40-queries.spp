@@ -1,0 +1,5 @@
+domain petshop;
+
+Scenario serial readShopOrders(Buyer, ShopOrder[]) {
+    listOrders;
+}

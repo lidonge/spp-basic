@@ -1,0 +1,31 @@
+domain petshop;
+
+Scenario serial shipShopOrder(Buyer, StockLine[], ShopOrder, ShipmentAgreement) {
+    checkBuyerCredential;
+    initializeShipmentAgreement;
+    checkShipmentAgreementInput;
+
+    parallel {
+        findBuyer;
+        findShopOrder;
+    }
+    identify(Buyer);
+    identify(ShopOrder);
+    checkOrderOwner;
+    prepareOrderInventory;
+    findStockLine;
+    identify(StockLine[]);
+    checkShipmentEligibility;
+    checkReservedInventory;
+    prepareShipment;
+    prepareShipmentAgreementReceipt;
+    transaction {
+        shipInventory bounds {
+            StockLine[].reserved: [0, null];
+            StockLine[].sold: [0, null];
+        };
+        updateShopOrder;
+
+        insertReceipt(ShipmentAgreement.receipt);
+    }
+}

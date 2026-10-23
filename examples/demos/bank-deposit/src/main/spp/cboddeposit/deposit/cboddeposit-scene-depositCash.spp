@@ -1,0 +1,119 @@
+domain cboddeposit;
+
+Scenario serial depositCash(
+    DepositRequest,
+    DepositAccount,
+    CashSettlementAccount,
+    InterestIncomeAccount,
+    CollectionInterestIncomeAccount,
+    PrincipalRecoveryAccount,
+    AccountEligibility,
+    CashAccountControl,
+    DepositProduct,
+    BusinessDay,
+    CashChannel,
+    CashAuthorizationPolicy,
+    AuthorizationEvidence,
+    AdmissionDecision,
+    DepositFeeParty,
+    DepositFeeContext,
+    DepositFeeRate,
+    DepositFeePlan,
+    DepositPlan,
+    DepositDetailPolicy,
+    CashDepositAgreement,
+    DepositBankProfile,
+    DepositOperatorFacts,
+    DepositNotices,
+    CashFailureRecord,
+    DepositAccounting,
+    DepositPostingLine[],
+    DepositPostingTotals,
+    DepositAccrualState,
+    DepositInterestPolicy,
+    InterestCalendar,
+    AgreementTerm,
+    AgreementPolicy,
+    AgreementBand[],
+    DepositAccrualPlan
+) {
+    checkCashInput;
+    checkDetailPolicy;
+    parallel {
+        findDepositAccount;
+        findAccountEligibility;
+        findCashSettlementAccount;
+        findInterestIncomeAccount;
+        findCollectionInterestIncomeAccount;
+        findPrincipalRecoveryAccount;
+        findDepositAccrualState;
+    }
+    identify(DepositAccount);
+    identify(AccountEligibility);
+    identify(CashSettlementAccount);
+    identify(InterestIncomeAccount);
+    identify(CollectionInterestIncomeAccount);
+    identify(PrincipalRecoveryAccount);
+    identify(DepositAccrualState);
+    checkAccountParticipants;
+    describeAccountBalance;
+    checkCashControl;
+    checkDepositEligibility;
+    checkDepositOperatorBinding;
+    checkDepositBranchRange;
+    assessDepositDocumentNotices;
+    assessCashAdmission;
+    mergeDepositNotices;
+    checkCashAuthorization;
+    checkFeeAccount;
+    classifyDepositFee;
+    if (DepositFeePlan.applicable) {
+        prepareFeeLookup;
+        findDepositFeeRate;
+    }
+    checkRequiredFeeIdentified;
+    checkFeeRate;
+    calculateDepositFee;
+    checkKernelInput;
+    calculateDepositPlan;
+    checkPlan;
+    classifyDepositAccounting;
+    checkDepositAccounting;
+    checkPostingRules;
+    calculateDepositPostings;
+    checkDepositPostings;
+    checkAccrualPolicy;
+    checkAccrualDates;
+    calculateDepositAccrual;
+    prepareDepositAgreement;
+    preserveDepositPostingEvidence;
+    transaction {
+        settleCashDeposit bounds {
+            DepositAccount.interestBase: [0, null];
+            DepositAccount.overdraftInterest: [0, null];
+            DepositAccount.collectionInterest: [0, null];
+            DepositAccount.overdraftPrincipal: [0, null];
+            DepositAccount.overdraftExposure: [0, null];
+            CashSettlementAccount.balance: [null, null];
+            InterestIncomeAccount.balance: [0, null];
+            CollectionInterestIncomeAccount.balance: [0, null];
+            PrincipalRecoveryAccount.balance: [0, null];
+        };
+        accumulateAccrual;
+        updateDepositAccrualState;
+        completeDepositMetadata;
+        updateAccountEligibility;
+        insertCashDepositAgreement;
+        attachDepositPostings;
+        insertDepositPostingLine;
+    } fail {
+        recordDepositFailure;
+        if (ResultInfo.failure.recoveryStatus == "ROLLED_BACK"
+            || ResultInfo.failure.recoveryStatus == "REVERSED") {
+            confirmNoCashMovement;
+        }
+        transaction {
+            insertCashFailureRecord;
+        }
+    }
+}

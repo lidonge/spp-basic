@@ -1,0 +1,22 @@
+domain petshop;
+
+Scenario serial removeCartItem(Buyer, Cart, Goods, CartRemovalAgreement, CartLine[]) {
+    checkBuyerCredential;
+    checkGoodsCredential;
+    initializeCartRemovalAgreement;
+    findBuyer;
+    identify(Buyer);
+    locateBuyerCart;
+    prepareCartRemovalAgreementReceipt;
+    findCart;
+    identify(Cart);
+    checkCart;
+    captureCartLines;
+    removeCartProduct;
+    transaction {
+        deleteCartLine;
+        insertCartLine(Cart.lines);
+        updateCart;
+        insertReceipt(CartRemovalAgreement.receipt);
+    }
+}

@@ -1,0 +1,4 @@
+domain petshop;
+
+const String MERCHANT_NAME = "Pet shop merchant";
+const String SHOP_NAME = "Little Pet Shop";

@@ -1,0 +1,6 @@
+domain petshop;
+
+quantum update payOrderFunds(Buyer, Merchant, PaymentAgreement) {
+    Buyer.wallet -= PaymentAgreement.paymentAmount;
+    Merchant.cash += PaymentAgreement.paymentAmount;
+}

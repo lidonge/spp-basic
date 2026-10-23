@@ -1,0 +1,19 @@
+domain cboddeposit;
+
+Scenario serial openDepositAccount(
+    BankAccount,
+    DepositAccount,
+    AccountEligibility,
+    CashSettlementAccount,
+    DepositAccrualState,
+    AccountOpeningAgreement
+) {
+    prepareAccountOpening;
+    transaction {
+        insertBankAccount;
+        insertDepositAccount;
+        insertAccountEligibility;
+        insertCashSettlementAccount;
+        insertDepositAccrualState;
+    }
+}

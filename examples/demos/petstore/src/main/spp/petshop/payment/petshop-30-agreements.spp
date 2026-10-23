@@ -1,0 +1,18 @@
+domain petshop;
+
+atomic calculate initializePaymentAgreement(Buyer, Merchant, ShopOrder, PaymentAgreement) {
+    PaymentAgreement.buyer = Buyer;
+    PaymentAgreement.order = ShopOrder;
+    PaymentAgreement.seller = Merchant;
+
+    PaymentAgreement.paymentAmount = 0;
+}
+
+atomic calculate preparePaymentAgreementReceipt(ShopOrder, PaymentAgreement) {
+    PaymentAgreement.order = ShopOrder;
+    PaymentAgreement.receipt = new Receipt();
+    PaymentAgreement.receipt.order = ShopOrder;
+    PaymentAgreement.receipt.buyer = ShopOrder.buyer;
+    PaymentAgreement.receipt.status = ReceiptStatus.COMPLETED;
+    PaymentAgreement.receipt.orderStatus = ShopOrder.status;
+}

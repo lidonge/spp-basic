@@ -1,0 +1,228 @@
+domain inventory;
+
+Reference Goods from petshop.Goods {
+    business("Goods number used for selection, inventory and settled order lines") String sku;
+    String category;
+    String name;
+    String description;
+    BigDecimal(19, 2) price;
+    boolean active;
+}
+
+Reference Buyer from petshop.Buyer {
+    business("Membership account number used to identify the buyer and verify order ownership") String membershipNumber;
+    business("Registration number of the linked customer-domain subject") String customerNumber;
+    String name;
+    String email;
+    String address;
+    MemberTier tier;
+    BigDecimal(19, 2) wallet;
+}
+
+Reference Merchant from petshop.Merchant {
+    String customerNumber;
+    String name;
+    String email;
+    String address;
+    String tradingName;
+    String shopName;
+    BigDecimal(19, 2) cash;
+}
+
+Reference OrderLine from petshop.OrderLine {
+    String lineNumber;
+    Goods goods;
+    String name;
+    int quantity;
+    BigDecimal(19, 2) unitPrice;
+    BigDecimal(19, 2) amount;
+}
+
+Reference ShopOrder from petshop.ShopOrder {
+    business("Order reference presented to the buyer") String orderNumber;
+    Buyer buyer;
+    OrderStatus status;
+    OrderLine[] lines;
+    int reservedQuantity;
+    BigDecimal(19, 2) subtotal;
+    BigDecimal(19, 2) discount;
+    BigDecimal(19, 2) shipping;
+    BigDecimal(19, 2) total;
+    String address;
+    String tracking;
+    String reason;
+}
+
+Reference Receipt from petshop.Receipt {
+    business("Business receipt number") String receiptNumber;
+    Buyer buyer;
+    ShopOrder order;
+    ReceiptStatus status;
+    OrderStatus orderStatus;
+}
+
+Reference ShipmentAgreement from petshop.ShipmentAgreement {
+    Buyer buyer;
+    ShopOrder order;
+    String tracking;
+    Receipt receipt;
+    int shippedQuantity;
+}
+
+Reference UnpaidCancellationAgreement from petshop.UnpaidCancellationAgreement {
+    Buyer buyer;
+    ShopOrder order;
+    String reason;
+    Receipt receipt;
+    int releasedQuantity;
+}
+
+Reference PaidCancellationAgreement from petshop.PaidCancellationAgreement {
+    Buyer buyer;
+    Merchant seller;
+    ShopOrder order;
+    String reason;
+    Receipt receipt;
+    int releasedQuantity;
+    BigDecimal(19, 2) refundAmount;
+}
+
+Reference ReturnRefundAgreement from petshop.ReturnRefundAgreement {
+    Buyer buyer;
+    Merchant seller;
+    ShopOrder order;
+    Receipt receipt;
+    int returnedQuantity;
+    BigDecimal(19, 2) refundAmount;
+}
+
+Role StockSupply {
+    Goods;
+    quantum int balance;
+}
+
+Role StockLine {
+    Goods;
+    quantum int available;
+    quantum int reserved;
+    quantum int sold;
+}
+
+Contract InventoryOpeningAgreement {
+    Goods[] goods;
+    StockLine[] inventory;
+}
+
+atomic calculate initializeInventory(Goods[], StockLine[], StockSupply[]) {
+    StockLine[] = new StockLine[] {
+    };
+    StockSupply[] = new StockSupply[] {
+    };
+    for (Goods product : Goods[]) {
+        StockLine stock = new StockLine();
+        stock.goods = product;
+        stock.available = 0;
+        stock.reserved = 0;
+        stock.sold = 0;
+        StockLine[] = append(StockLine[], stock);
+        StockSupply source = new StockSupply();
+        source.goods = product;
+        source.balance = 0;
+        StockSupply[] = append(StockSupply[], source);
+    }
+}
+
+quantum update reserveInventory(StockLine[], ShopOrder) {
+    for (StockLine stock : StockLine[]) {
+        for (OrderLine line : ShopOrder.lines) {
+            if (stock.goods.sku == line.goods.sku) {
+                stock.available -= line.quantity;
+                stock.reserved += line.quantity;
+            }
+        }
+    }
+}
+
+quantum update shipInventory(StockLine[], ShipmentAgreement) {
+    for (StockLine stock : StockLine[]) {
+        for (OrderLine line : ShipmentAgreement.order.lines) {
+            if (stock.goods.sku == line.goods.sku) {
+                stock.reserved -= line.quantity;
+                stock.sold += line.quantity;
+            }
+        }
+    }
+}
+
+quantum update releaseUnpaidInventory(StockLine[], UnpaidCancellationAgreement) {
+    for (StockLine stock : StockLine[]) {
+        for (OrderLine line : UnpaidCancellationAgreement.order.lines) {
+            if (stock.goods.sku == line.goods.sku) {
+                stock.reserved -= line.quantity;
+                stock.available += line.quantity;
+            }
+        }
+    }
+}
+
+quantum update releasePaidInventory(StockLine[], PaidCancellationAgreement) {
+    for (StockLine stock : StockLine[]) {
+        for (OrderLine line : PaidCancellationAgreement.order.lines) {
+            if (stock.goods.sku == line.goods.sku) {
+                stock.reserved -= line.quantity;
+                stock.available += line.quantity;
+            }
+        }
+    }
+}
+
+quantum update returnInventory(StockLine[], ReturnRefundAgreement) {
+    for (StockLine stock : StockLine[]) {
+        for (OrderLine line : ReturnRefundAgreement.order.lines) {
+            if (stock.goods.sku == line.goods.sku) {
+                stock.sold -= line.quantity;
+                stock.available += line.quantity;
+            }
+        }
+    }
+}
+
+atomic calculate prepareInventoryOpening(Goods[], StockLine[], InventoryOpeningAgreement) {
+    InventoryOpeningAgreement.goods = Goods[];
+    InventoryOpeningAgreement.inventory = StockLine[];
+}
+
+Scenario serial openInventory(Goods[], StockLine[], StockSupply[], InventoryOpeningAgreement) {
+    initializeInventory;
+    prepareInventoryOpening;
+    transaction {
+        insertStockLine;
+        insertStockSupply;
+    }
+}
+
+Reference PetReservationAgreement from petshop.PetReservationAgreement {
+    Goods goods;
+    int quantity;
+}
+
+quantum update reserveRequestedInventory(StockLine[], PetReservationAgreement) {
+    for (StockLine item : StockLine[]) {
+        if (item.goods.sku == PetReservationAgreement.goods.sku) {
+            item.available -= PetReservationAgreement.quantity;
+            item.reserved += PetReservationAgreement.quantity;
+        }
+    }
+}
+
+Reference StockReceiptAgreement from petshop.StockReceiptAgreement {
+    Goods goods;
+    StockLine stock;
+    StockSupply source;
+    int quantity;
+}
+
+quantum update receiveInventory(StockLine, StockSupply, StockReceiptAgreement) {
+    StockSupply.balance -= StockReceiptAgreement.quantity;
+    StockLine.available += StockReceiptAgreement.quantity;
+}

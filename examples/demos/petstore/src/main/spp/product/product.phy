@@ -1,0 +1,47 @@
+domain product;
+
+phy {
+    numeric {
+        replace BigDecimal(9, 2) with BigDecimal(18, 2);
+    }
+    i18n {
+        resources: "../../resources/i18n/product/";
+        defaultLocale: "en-US";
+    }
+    environment develop {
+        repository shopRecords {
+            adapter jdbcObjectRepository;
+            config default = true;
+
+            config appDdlTables = true;
+            config datasourceUrl = "${spp.petstore.datasource-url:jdbc:h2:mem:petstore;DB_CLOSE_DELAY=-1}";
+            config driverClassName = "org.h2.Driver";
+            config table = "petstore_records";
+        }
+        backend shopDatabase {
+            adapter localJdbc;
+            at shopRecordsResource;
+            repository shopRecords;
+            config datasourceUrl = "${spp.petstore.datasource-url:jdbc:h2:mem:petstore;DB_CLOSE_DELAY=-1}";
+            config driverClassName = "org.h2.Driver";
+        }
+    }
+    environment testing {
+        config domainRpcToken = "${spp.petstore.testing.rpc-token}";
+        repository shopRecords {
+            adapter jdbcObjectRepository;
+            config default = true;
+            config appDdlTables = true;
+            config datasourceUrl = "${spp.petstore.testing.product-url:jdbc:h2:file:./demos/petstore/target/testing-product;DB_CLOSE_DELAY=-1}";
+            config driverClassName = "org.h2.Driver";
+            config table = "petstore_records";
+        }
+        backend shopDatabase {
+            adapter localJdbc;
+            saga shopRecordsResource;
+            repository shopRecords;
+            config datasourceUrl = "${spp.petstore.testing.product-url:jdbc:h2:file:./demos/petstore/target/testing-product;DB_CLOSE_DELAY=-1}";
+            config driverClassName = "org.h2.Driver";
+        }
+    }
+}

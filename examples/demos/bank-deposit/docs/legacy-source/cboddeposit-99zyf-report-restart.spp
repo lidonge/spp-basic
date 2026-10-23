@@ -1,0 +1,78 @@
+domain cboddeposit;
+
+atomic calculate restoreDepositCompleteReport(context DepositCompleteReportExample example) {
+    require(example.loaded != null, "REPORT_COMPLETE_NOT_PERSISTED");
+    example.report = copy(example.loaded); example.cashWork.report = copy(example.report.cash); example.cashWork.slot = 1;
+}
+atomic calculate selectDepositActualReportReadback(context DepositCompleteReportExample example) {
+    example.report.id = "SOURCE-REPORT-ACTUAL-REVERSALS";
+}
+atomic calculate prepareDepositDebtReportReadback(context DepositReportDebtEvidence debt) {
+    debt.fixture.cash.postingKey.tradeId = debt.original.id;
+}
+atomic check verifyDepositDebtReportOriginalReadback(DepositReportDebtEvidence debt) {
+    require(sameFacts(debt.original, debt.fixture.cash.storedTrade)
+        && sameFacts(debt.originalPostings, debt.fixture.cash.postings), "REPORT_DEBT_ORIGINAL_NOT_PERSISTED");
+}
+Scenario serial readDepositDebtReportOriginal(context DepositReportDebtEvidence debt) {
+    prepareDepositDebtReportReadback(debt);
+    debt.fixture.cash.storedTrade = queryCashDepositTrade(debt.fixture.cash.tradeKey);
+    debt.fixture.cash.postings = queryCashPostingRecords(debt.fixture.cash.postingKey);
+    verifyDepositDebtReportOriginalReadback(debt);
+}
+atomic check verifyDepositDebtReportSettledReadback(DepositReportDebtEvidence debt) {
+    require(sameFacts(debt.settled, debt.fixture.cash.observed), "REPORT_DEBT_SETTLEMENT_NOT_PERSISTED");
+}
+Scenario serial readDepositDebtReportSettlement(context DepositReportDebtEvidence debt) {
+    readDepositDebtReportOriginal(debt);
+    debt.fixture.cash.observed = queryCashAccount(debt.fixture.cash.observed);
+    verifyDepositDebtReportSettledReadback(debt); verifyDepositReportDebt(debt);
+}
+Scenario serial readDepositDebtReportReversal(context DepositReportDebtEvidence debt) {
+    readDepositDebtReportOriginal(debt);
+    prepareCashReversalObservationsExample(debt.fixture); observeCashReversalExample(debt.fixture);
+    verifyDepositReportActualReversal(debt.fixture); verifyDepositReportDebtRestore(debt);
+}
+atomic check verifyDepositReportCashOriginalReadback(DepositCompleteReportExample example) {
+    require(sameFacts(example.loaded.cash.actualTrades, example.cashWork.report.actualTrades), "REPORT_CASH_TRADES_NOT_PERSISTED");
+}
+atomic calculate selectDepositReportRejectionReadback(context DepositCompleteReportExample example) {
+    if (example.rejectionSlot == 9) { example.rejection = copy(example.report.controlRejected); }
+    else { example.rejection = copy(example.report.dateRejected); }
+}
+Scenario serial readDepositReportRejection(context DepositCompleteReportExample example) {
+    selectDepositReportRejectionReadback(example);
+    example.rejection.observed = queryCashAccount(example.rejection.observed);
+    example.rejection.storedTrade = lookupCashDepositTrade(example.rejection.tradeKey);
+    example.rejection.postings = queryCashPostingRecords(example.rejection.postingKey);
+    example.rejection.history = queryCoreReversalExampleAudits(example.rejection.auditKey);
+    captureDepositReportRejection(example);
+}
+Scenario serial readDepositReportCashOriginals(context DepositCompleteReportExample example) {
+    readDepositCashReportTrade(example.cashWork); readDepositCashReportTrade(example.cashWork); readDepositCashReportTrade(example.cashWork);
+    verifyDepositReportCashOriginalReadback(example);
+}
+Scenario serial depositCompleteReportResumeExampleRun(context DepositCompleteReportExample example) {
+    initializeDepositCompleteReport(example);
+    initializeDepositCashReport(example.cashWork); initializeStoredPreparationFixtureExample(example.cashWork.stored);
+    example.loaded = queryDepositCompleteSourceReport(example.report); restoreDepositCompleteReport(example);
+    observeStoredPreparationExample(example.cashWork.stored); readDepositReportCashOriginals(example);
+    verifyDepositCashReport(example.cashWork);
+    readDepositDebtReportSettlement(example.report.normal); readDepositDebtReportSettlement(example.report.bad);
+    readDepositDebtReportSettlement(example.report.fractional);
+    selectDepositReportControlCase(example); readDepositReportRejection(example);
+    selectDepositReportDateCase(example); readDepositReportRejection(example);
+    observeDepositCompleteReportQuantum(example); verifyDepositCompleteReport(example);
+}
+Scenario serial depositActualReversalReportResumeExampleRun(context DepositCompleteReportExample example) {
+    initializeDepositCompleteReport(example); selectDepositActualReportReadback(example);
+    initializeDepositCashReport(example.cashWork); initializeStoredPreparationFixtureExample(example.cashWork.stored);
+    example.loaded = queryDepositCompleteSourceReport(example.report); restoreDepositCompleteReport(example);
+    readDepositReportCashOriginals(example);
+    observeCashReversalExample(example.report.cashReversal); verifyDepositReportActualReversal(example.report.cashReversal);
+    readDepositDebtReportReversal(example.report.normal); readDepositDebtReportReversal(example.report.bad);
+    readDepositDebtReportReversal(example.report.fractional);
+    selectDepositReportControlCase(example); readDepositReportRejection(example);
+    selectDepositReportDateCase(example); readDepositReportRejection(example);
+    observeDepositCompleteReportQuantum(example); verifyDepositReportActualReversals(example);
+}

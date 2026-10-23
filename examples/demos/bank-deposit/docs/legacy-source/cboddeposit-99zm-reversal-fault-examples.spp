@@ -1,0 +1,86 @@
+domain cboddeposit;
+
+Contract ReversalFaultExample {
+    CashReversalExample reversal; String prefix; int mode; String expectedCode; String expectedOutcome; String expectedEvent;
+    CashAuditRecord historyKey; CashAuditRecord[] history; CashPostingRecord originalPostingKey; CashPostingRecord[] originalPostings;
+    CashDepositTrade laterKey; CashDepositTrade later; CashPostingRecord laterPostingKey; CashPostingRecord[] laterPostings;
+}
+atomic calculate selectBeforeCommitReversalFaultExample(context ReversalFaultExample example) {
+    example.prefix = "SOURCE-REV-BEFORE"; example.mode = 1;
+    example.expectedCode = "EXAMPLE_JDBC_BEFORE_COMMIT"; example.expectedOutcome = "ROLLED_BACK"; example.expectedEvent = "ReversalRolledBack";
+}
+atomic calculate selectCommitBeforeReversalFaultExample(context ReversalFaultExample example) {
+    example.prefix = "SOURCE-REV-COMMIT-BEFORE"; example.mode = 2;
+    example.expectedCode = "Cannot execute quantum transaction"; example.expectedOutcome = "UNKNOWN"; example.expectedEvent = "ReversalCommitUnknown";
+}
+atomic calculate selectCommitAfterReversalFaultExample(context ReversalFaultExample example) {
+    example.prefix = "SOURCE-REV-COMMIT-AFTER"; example.mode = 3;
+    example.expectedCode = "Cannot execute quantum transaction"; example.expectedOutcome = "UNKNOWN"; example.expectedEvent = "ReversalCommitUnknown";
+}
+atomic calculate selectAfterCommitReversalFaultExample(context ReversalFaultExample example) {
+    example.prefix = "SOURCE-REV-RESPONSE"; example.mode = 4;
+    example.expectedCode = "EXAMPLE_JDBC_RESPONSE_FAILURE"; example.expectedOutcome = "COMMITTED"; example.expectedEvent = "ReversalCommittedResponseFailed";
+}
+atomic calculate selectRecordReversalFaultExample(context ReversalFaultExample example) {
+    example.prefix = "SOURCE-REV-RECORD"; example.mode = 5;
+    example.expectedCode = "EXAMPLE_SERVICE_FAULT"; example.expectedOutcome = "ROLLED_BACK"; example.expectedEvent = "ReversalRolledBack";
+}
+atomic calculate selectLinkReversalFaultExample(context ReversalFaultExample example) {
+    example.prefix = "SOURCE-REV-LINK"; example.mode = 6;
+    example.expectedCode = "EXAMPLE_SERVICE_FAULT"; example.expectedOutcome = "ROLLED_BACK"; example.expectedEvent = "ReversalRolledBack";
+}
+atomic calculate selectRestartReversalExample(context ReversalFaultExample example) {
+    example.prefix = "SOURCE-REV-RESTART"; example.mode = 7;
+}
+atomic calculate initializeReversalFaultExample(context ReversalFaultExample example) {
+    example.reversal = new CashReversalExample(); example.historyKey = new CashAuditRecord();
+    example.originalPostingKey = new CashPostingRecord(); example.laterKey = new CashDepositTrade(); example.laterPostingKey = new CashPostingRecord();
+}
+atomic calculate configureReversalFaultExample(context ReversalFaultExample example) {
+    example.reversal.cash.seed.id = example.prefix + "-A";
+    example.reversal.cash.seed.eligibility.accountId = example.reversal.cash.seed.id;
+    example.reversal.cash.seed.feeParty.customerId = example.prefix + "-CUSTOMER";
+    example.reversal.cash.tariffRecord.customerId = example.reversal.cash.seed.feeParty.customerId;
+    example.reversal.cash.command.accountId = example.reversal.cash.seed.id;
+    example.reversal.cash.command.id = example.prefix + "-T"; example.reversal.cash.command.attemptId = example.prefix + "-DEPOSIT";
+    example.reversal.cash.originalCommand = copy(example.reversal.cash.command);
+    example.reversal.cash.observed.id = example.reversal.cash.seed.id;
+    example.reversal.cash.tradeKey.id = example.reversal.cash.command.id;
+    example.reversal.command.originalTradeId = example.reversal.cash.command.id;
+    example.reversal.command.id = example.prefix + "-R"; example.reversal.command.attemptId = example.prefix + "-FIRST";
+    example.reversal.recordKey.id = example.reversal.command.id; example.reversal.linkKey.id = example.reversal.command.originalTradeId;
+    example.reversal.cash.postingKey.tradeId = example.reversal.command.id;
+    example.historyKey.tradeId = example.reversal.command.id;
+    example.originalPostingKey.tradeId = example.reversal.command.originalTradeId;
+    example.laterKey.id = example.prefix + "-L"; example.laterPostingKey.tradeId = example.laterKey.id;
+}
+Scenario serial prepareReversalFaultFacts(context ReversalFaultExample example) {
+    initializeReversalFaultExample(example); initializeCashReversalExample(example.reversal);
+    prepareOrdinaryCashExample(example.reversal.cash); configureCrossBranchFeeExample(example.reversal.cash);
+    configureCashReversalExample(example.reversal); configureReversalFaultExample(example);
+}
+atomic calculate selectReversalFaultLaterDeposit(context ReversalFaultExample example) {
+    example.reversal.cash.command.id = example.laterKey.id;
+    example.reversal.cash.command.attemptId = example.prefix + "-LATER";
+}
+Scenario serial seedReversalFaultBusiness(context ReversalFaultExample example) {
+    prepareReversalFaultFacts(example);
+    serial { transaction quantum {
+        seedCashExampleAccount(example.reversal.cash.seed); seedCashExampleTariff(example.reversal.cash.tariffRecord);
+    } }
+    executeCashDeposit(example.reversal.cash.command, example.reversal.cash.lifecycle);
+    example.reversal.cash.observed = queryCashAccount(example.reversal.cash.observed); verifyOriginalQualifiedCashExample(example.reversal);
+    prepareCashReversalLaterTradeExample(example.reversal); selectReversalFaultLaterDeposit(example);
+    executeCashDeposit(example.reversal.cash.command, example.reversal.cash.lifecycle);
+    example.reversal.cash.observed = queryCashAccount(example.reversal.cash.observed); verifyBeforeCashReversalExample(example.reversal);
+}
+Scenario serial observeReversalFaultBusiness(context ReversalFaultExample example) {
+    example.reversal.cash.observed = queryCashAccount(example.reversal.cash.observed);
+    example.reversal.cash.storedTrade = queryCashDepositTrade(example.reversal.cash.tradeKey);
+    example.reversal.record = lookupCashReversalTrade(example.reversal.recordKey);
+    example.reversal.link = queryCashTradeReversalLink(example.reversal.linkKey);
+    example.reversal.cash.postings = queryCashPostingRecords(example.reversal.cash.postingKey);
+    example.originalPostings = queryCashPostingRecords(example.originalPostingKey);
+    example.later = queryCashDepositTrade(example.laterKey); example.laterPostings = queryCashPostingRecords(example.laterPostingKey);
+    example.history = queryCashExampleHistory(example.historyKey);
+}

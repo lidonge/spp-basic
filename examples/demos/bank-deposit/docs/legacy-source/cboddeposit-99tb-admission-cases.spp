@@ -1,0 +1,156 @@
+domain cboddeposit;
+
+atomic calculate configureAdmissionRuleCase19(context AdmissionRuleExampleFacts example) {
+    example.request.amount = 400; example.account.cashDepositedToday = 101;
+    example.expectedCode = "";
+}
+atomic check verifyAdmissionRuleCase19(AdmissionRuleExampleFacts example) {
+    require(example.decision.warningCode == "F0554", "EXAMPLE_ADMISSION_RULE_19_1");
+    require(example.decision.status == "Warning", "EXAMPLE_ADMISSION_RULE_19_2");
+    require(example.decision.executable, "EXAMPLE_ADMISSION_RULE_19_3");
+}
+atomic calculate configureAdmissionRuleCase20(context AdmissionRuleExampleFacts example) {
+    example.request.amount = 400; example.account.lastTransactionDate = 20261006; example.account.cashDepositedToday = 900;
+    example.expectedCode = "";
+}
+atomic check verifyAdmissionRuleCase20(AdmissionRuleExampleFacts example) {
+    require(example.decision.status == "Ready", "EXAMPLE_ADMISSION_RULE_20_1");
+    require(example.decision.dayCashTotal == 400, "EXAMPLE_ADMISSION_RULE_20_2");
+}
+atomic calculate configureAdmissionRuleCase21(context AdmissionRuleExampleFacts example) {
+    example.request.amount = 500;
+    example.expectedCode = "";
+}
+atomic check verifyAdmissionRuleCase21(AdmissionRuleExampleFacts example) {
+    require(example.decision.warningCode == "", "EXAMPLE_ADMISSION_RULE_21_1");
+}
+atomic calculate configureAdmissionRuleCase22(context AdmissionRuleExampleFacts example) {
+    example.request.amount = 1000;
+    example.expectedCode = "";
+}
+atomic check verifyAdmissionRuleCase22(AdmissionRuleExampleFacts example) {
+    require(example.decision.requiredLevel == "None", "EXAMPLE_ADMISSION_RULE_22_1");
+}
+atomic calculate configureAdmissionRuleCase23(context AdmissionRuleExampleFacts example) {
+    example.request.amount = 1000.01;
+    example.expectedCode = "PENDING_AUTHORIZATION";
+}
+atomic check verifyAdmissionRuleCase23(AdmissionRuleExampleFacts example) {
+    require(example.decision.requiredLevel == "B", "EXAMPLE_ADMISSION_RULE_23_1");
+    require(example.decision.authorizationCode == "B7000", "EXAMPLE_ADMISSION_RULE_23_2");
+    require(example.decision.status == "PendingAuthorization", "EXAMPLE_ADMISSION_RULE_23_3");
+    require(!example.decision.executable, "EXAMPLE_ADMISSION_RULE_23_4");
+}
+atomic calculate configureAdmissionRuleCase24(context AdmissionRuleExampleFacts example) {
+    example.request.amount = 2000; example.evidence.grantedLevel = "B";
+    example.expectedCode = "";
+}
+atomic check verifyAdmissionRuleCase24(AdmissionRuleExampleFacts example) {
+    require(example.decision.executable, "EXAMPLE_ADMISSION_RULE_24_1");
+}
+atomic calculate configureAdmissionRuleCase25(context AdmissionRuleExampleFacts example) {
+    example.request.amount = 2000; example.evidence.grantedLevel = "A";
+    example.expectedCode = "";
+}
+atomic check verifyAdmissionRuleCase25(AdmissionRuleExampleFacts example) {
+    require(example.decision.executable, "EXAMPLE_ADMISSION_RULE_25_1");
+}
+atomic calculate configureAdmissionRuleCase26(context AdmissionRuleExampleFacts example) {
+    example.request.amount = 2000.01; example.evidence.grantedLevel = "B";
+    example.expectedCode = "";
+}
+atomic check verifyAdmissionRuleCase26(AdmissionRuleExampleFacts example) {
+    require(example.decision.authorizationCode == "A8147", "EXAMPLE_ADMISSION_RULE_26_1");
+    require(!example.decision.executable, "EXAMPLE_ADMISSION_RULE_26_2");
+}
+atomic calculate configureAdmissionRuleCase27(context AdmissionRuleExampleFacts example) {
+    example.request.amount = 2000.01; example.evidence.grantedLevel = "A";
+    example.expectedCode = "";
+}
+atomic check verifyAdmissionRuleCase27(AdmissionRuleExampleFacts example) {
+    require(example.decision.executable, "EXAMPLE_ADMISSION_RULE_27_1");
+}
+atomic calculate configureAdmissionRuleCase28(context AdmissionRuleExampleFacts example) {
+    example.request.amount = 1500;
+    example.expectedCode = "";
+}
+atomic check verifyAdmissionRuleCase28(AdmissionRuleExampleFacts example) {
+    require(!example.decision.executable, "EXAMPLE_ADMISSION_RULE_28_1");
+}
+atomic calculate configureAdmissionRuleCase29(context AdmissionRuleExampleFacts example) {
+    example.request.amount = 1500; example.evidence.grantedLevel = "B";
+    example.expectedCode = "";
+}
+atomic check verifyAdmissionRuleCase29(AdmissionRuleExampleFacts example) {
+    require(example.decision.executable, "EXAMPLE_ADMISSION_RULE_29_1");
+}
+atomic calculate configureAdmissionRuleCase30(context AdmissionRuleExampleFacts example) {
+    example.request.amount = 1500; example.policy.tellerLimit = 500; example.evidence.grantedLevel = "B";
+    example.expectedCode = "";
+}
+atomic check verifyAdmissionRuleCase30(AdmissionRuleExampleFacts example) {
+    require(example.decision.requiredLevel == "A", "EXAMPLE_ADMISSION_RULE_30_1");
+    require(!example.decision.executable, "EXAMPLE_ADMISSION_RULE_30_2");
+}
+atomic calculate configureAdmissionRuleCase31(context AdmissionRuleExampleFacts example) {
+    example.request.amount = 9000; example.channel.transactionId = "FL0658000";
+    example.expectedCode = "";
+}
+atomic check verifyAdmissionRuleCase31(AdmissionRuleExampleFacts example) {
+    require(example.decision.executable, "EXAMPLE_ADMISSION_RULE_31_1");
+    require(example.decision.status == "Ready", "EXAMPLE_ADMISSION_RULE_31_2");
+}
+atomic calculate configureAdmissionRuleCase32(context AdmissionRuleExampleFacts example) {
+    example.request.amount = 9000; example.channel.transactionId = "FL0655400";
+    example.expectedCode = "";
+}
+atomic check verifyAdmissionRuleCase32(AdmissionRuleExampleFacts example) {
+    require(example.decision.executable, "EXAMPLE_ADMISSION_RULE_32_1");
+    require(example.decision.status == "Ready", "EXAMPLE_ADMISSION_RULE_32_2");
+}
+atomic calculate configureAdmissionRuleCase33(context AdmissionRuleExampleFacts example) {
+    example.request.amount = 9000; example.channel.transactionId = "FL0659302";
+    example.expectedCode = "";
+}
+atomic check verifyAdmissionRuleCase33(AdmissionRuleExampleFacts example) {
+    require(example.decision.executable, "EXAMPLE_ADMISSION_RULE_33_1");
+    require(example.decision.status == "Ready", "EXAMPLE_ADMISSION_RULE_33_2");
+}
+atomic calculate configureAdmissionRuleCase34(context AdmissionRuleExampleFacts example) {
+    example.request.amount = 9000; example.channel.transactionId = "FL0659304";
+    example.expectedCode = "";
+}
+atomic check verifyAdmissionRuleCase34(AdmissionRuleExampleFacts example) {
+    require(example.decision.executable, "EXAMPLE_ADMISSION_RULE_34_1");
+    require(example.decision.status == "Ready", "EXAMPLE_ADMISSION_RULE_34_2");
+}
+atomic calculate configureAdmissionRuleCase35(context AdmissionRuleExampleFacts example) {
+    example.request.amount = 9000; example.channel.transactionId = "FL0659306";
+    example.expectedCode = "";
+}
+atomic check verifyAdmissionRuleCase35(AdmissionRuleExampleFacts example) {
+    require(example.decision.executable, "EXAMPLE_ADMISSION_RULE_35_1");
+    require(example.decision.status == "Ready", "EXAMPLE_ADMISSION_RULE_35_2");
+}
+atomic calculate configureAdmissionRuleCase36(context AdmissionRuleExampleFacts example) {
+    example.request.amount = 9000; example.channel.transactionId = "FL0659308";
+    example.expectedCode = "";
+}
+atomic check verifyAdmissionRuleCase36(AdmissionRuleExampleFacts example) {
+    require(example.decision.executable, "EXAMPLE_ADMISSION_RULE_36_1");
+    require(example.decision.status == "Ready", "EXAMPLE_ADMISSION_RULE_36_2");
+}
+atomic calculate configureAdmissionRuleCase37(context AdmissionRuleExampleFacts example) {
+    example.request.amount = 9000; example.channel.channel = "AGS";
+    example.expectedCode = "";
+}
+atomic check verifyAdmissionRuleCase37(AdmissionRuleExampleFacts example) {
+    require(example.decision.status == "Ready", "EXAMPLE_ADMISSION_RULE_37_1");
+}
+atomic calculate configureAdmissionRuleCase38(context AdmissionRuleExampleFacts example) {
+    example.request.amount = 9000; example.channel.teller = false;
+    example.expectedCode = "";
+}
+atomic check verifyAdmissionRuleCase38(AdmissionRuleExampleFacts example) {
+    require(example.decision.status == "Ready", "EXAMPLE_ADMISSION_RULE_38_1");
+}

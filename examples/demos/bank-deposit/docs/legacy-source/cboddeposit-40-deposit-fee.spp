@@ -1,0 +1,77 @@
+domain cboddeposit;
+
+// GSA01102 -> KSAFEE0 -> CSAFEE0, normal savings payee-only cash deposit path.
+// Branch identifiers and four-character cross-area codes are decoded/query facts.
+Role DepositFeeParty { String accountKind; String customerId; String branchId; String regionCode; }
+Role DepositFeeContext { String channel; String branchId; String regionCode; }
+Role DepositFeeRate {
+    String tariff;
+    double rate;
+    double discount;
+    double fixedAmount;
+    double minimum;
+    double maximum;
+}
+Role DepositTariffRateRecord { String customerId; String tariff; DepositFeeRate rate; }
+Contract DepositFeePlan { DepositTariffRateRecord rateRecord; int range; String tariff; boolean applicable; double variableAmount; double fee; }
+atomic calculate classifyDepositFee(DepositFeeParty party, DepositFeeContext channel, context DepositFeePlan plan) {
+    plan.range = 0;
+    plan.tariff = "";
+    plan.applicable = false;
+    plan.variableAmount = 0;
+    plan.fee = 0;
+    if (channel.channel == "Teller") {
+        // Other account kinds need the separate KCMFEE0 contract, outside this selected path.
+        require(party.accountKind == "NormalSavings", "UNSUPPORTED_DEPOSIT_FEE_ACCOUNT");
+        if (party.regionCode != channel.regionCode) {
+            plan.range = 2;
+            plan.tariff = "SAP00001";
+        } else {
+            if (party.branchId != channel.branchId) {
+                plan.range = 1;
+                plan.tariff = "SAC00001";
+            }
+        }
+        plan.applicable = plan.range > 0;
+    }
+}
+atomic check checkDepositFeeInput(DepositRequest d) { require(d.amount >= 0, "EP192"); }
+atomic query <DepositTariffRateRecord record> queryStoredDepositFeeRate(DepositTariffRateRecord key);
+atomic calculate prepareDepositFeeRateLookup(DepositFeeParty party, context DepositFeePlan plan) {
+    plan.rateRecord = new DepositTariffRateRecord();
+    plan.rateRecord.customerId = party.customerId;
+    plan.rateRecord.tariff = plan.tariff;
+}
+atomic calculate applyStoredDepositFeeRate(DepositTariffRateRecord record, DepositFeeRate rate) {
+    require(record != null && record.rate != null, "DEPOSIT_FEE_RATE_NOT_FOUND");
+    rate.tariff = record.tariff;
+    rate.rate = record.rate.rate;
+    rate.discount = record.rate.discount;
+    rate.fixedAmount = record.rate.fixedAmount;
+    rate.minimum = record.rate.minimum;
+    rate.maximum = record.rate.maximum;
+}
+Scenario serial queryDepositFeeRate(DepositFeeParty party, DepositFeeRate rate, context DepositFeePlan plan) {
+    if (plan.applicable) {
+        prepareDepositFeeRateLookup(party, plan);
+        plan.rateRecord = queryStoredDepositFeeRate(plan.rateRecord);
+        applyStoredDepositFeeRate(plan.rateRecord, rate);
+    }
+}
+atomic calculate calculateDepositFee(DepositRequest d, DepositFeeRate rate, context DepositFeePlan plan) {
+    require(d.amount >= 0, "EP192");
+    if (plan.applicable) {
+        require(rate.tariff == plan.tariff, "DEPOSIT_FEE_TARIFF_MISMATCH");
+        plan.variableAmount = roundHalfUp(d.amount * rate.rate * rate.discount, 2);
+        plan.fee = plan.variableAmount + rate.fixedAmount;
+        if (plan.fee > rate.maximum) { plan.fee = rate.maximum; }
+        else { if (plan.fee < rate.minimum) { plan.fee = rate.minimum; } }
+    }
+}
+Scenario serial prepareDepositFee(DepositRequest d, DepositFeeParty party, DepositFeeContext channel,
+    DepositFeeRate rate, context DepositFeePlan plan) {
+    checkDepositFeeInput(d);
+    classifyDepositFee(party, channel, plan);
+    queryDepositFeeRate(party, rate, plan);
+    calculateDepositFee(d, rate, plan);
+}

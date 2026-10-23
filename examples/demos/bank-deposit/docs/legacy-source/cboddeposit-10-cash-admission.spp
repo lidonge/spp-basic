@@ -1,0 +1,122 @@
+domain cboddeposit;
+
+// GSA01102 normal cash entry, distinct from the zero-amount kernel.
+Role BusinessDay { int date; }
+Role AccountEligibility {
+    String accountId;
+    String status;
+    boolean temporary;
+    int expiresOn;
+    boolean temporaryOpen;
+    int detailCount;
+    int lastTransactionDate;
+    int openedOn;
+    quantum double cashDepositedToday;
+    quantum double transferredToday;
+    quantum double accountBalance;
+}
+Role DepositProduct {
+    double minimumOpeningAmount;
+    double maximumOpeningAmount;
+    double maximumBalance;
+}
+atomic check checkCashInput(DepositRequest d, BusinessDay day) {
+    require(d.amount > 0, "E1155");
+    require(d.valueDate <= day.date, "E1044");
+    require(d.valueDate >= day.date, "E1043");
+}
+atomic check checkDepositEligibility(DepositRequest d, AccountEligibility a, DepositProduct product, BusinessDay day) {
+    require(!a.temporary || a.expiresOn >= day.date || a.temporaryOpen, "EDF19");
+    require(a.status != "Closed", "EO082");
+    boolean opening = a.detailCount == 0 || (a.detailCount > 0 && a.detailCount < 10
+        && a.accountBalance == 0 && a.lastTransactionDate == a.openedOn
+        && a.cashDepositedToday == 0 && a.transferredToday == 0);
+    if (opening) {
+        require(product.minimumOpeningAmount <= 0 || d.amount >= product.minimumOpeningAmount, "EN173");
+        require(product.maximumOpeningAmount <= 0 || d.amount <= product.maximumOpeningAmount, "EN174");
+    }
+    require(product.maximumBalance <= 0 || d.amount + a.accountBalance <= product.maximumBalance, "EN175");
+}
+// Cash-only subset of KSADEP0 warning/authorization. Parameter values are queried facts.
+Role CashAuthorizationPolicy {
+    double warningThreshold;
+    double tellerLimit;
+    double levelAMultiplier;
+    double specialUsdLevelB;
+    double specialUsdLevelA;
+}
+Role CashChannel {
+    boolean teller;
+    String channel;
+    String transactionId;
+    String transactionFamily;
+    String businessCode;
+}
+Role AuthorizationEvidence { String grantedLevel; }
+Contract AdmissionDecision {
+    String warningCode;
+    String authorizationCode;
+    String requiredLevel;
+    String status;
+    boolean executable;
+    double dayCashTotal;
+}
+atomic calculate assessCashAdmission(DepositRequest d, AccountEligibility a, BusinessDay day,
+    CashChannel channel, CashAuthorizationPolicy policy, AuthorizationEvidence evidence, context AdmissionDecision decision) {
+    decision.warningCode = "";
+    decision.authorizationCode = "";
+    decision.requiredLevel = "None";
+    decision.dayCashTotal = d.amount;
+    if (a.lastTransactionDate == day.date) {
+        decision.dayCashTotal += a.cashDepositedToday;
+    }
+    boolean applies = channel.teller && channel.channel != "AGS"
+        && channel.transactionId != "FL0658000" && channel.transactionId != "FL0655400"
+        && channel.transactionId != "FL0659302" && channel.transactionId != "FL0659304"
+        && channel.transactionId != "FL0659306" && channel.transactionId != "FL0659308";
+    if (applies) {
+        boolean warningBusiness = channel.businessCode == "SA0" || channel.businessCode == "TD0"
+            || channel.businessCode == "CR0" || channel.businessCode == "FS0";
+        if (warningBusiness && policy.warningThreshold > 0 && decision.dayCashTotal > policy.warningThreshold) {
+            decision.warningCode = "F0554";
+        }
+        if (d.amount > policy.tellerLimit) {
+            if (channel.transactionFamily == "XT01821" && d.currency == "USD") {
+                if (d.amount > policy.specialUsdLevelB) {
+                    if (d.amount > policy.specialUsdLevelA) {
+                        decision.requiredLevel = "A";
+                        decision.authorizationCode = "A8147";
+                    } else {
+                        decision.requiredLevel = "B";
+                        decision.authorizationCode = "B7006";
+                    }
+                }
+            } else {
+                if (d.amount > policy.levelAMultiplier * policy.tellerLimit) {
+                    decision.requiredLevel = "A";
+                    decision.authorizationCode = "A8147";
+                } else {
+                    decision.requiredLevel = "B";
+                    decision.authorizationCode = "B7000";
+                }
+            }
+        }
+    }
+    decision.executable = decision.requiredLevel == "None" || evidence.grantedLevel == "A"
+        || (decision.requiredLevel == "B" && evidence.grantedLevel == "B");
+    if (!decision.executable) {
+        decision.status = "PendingAuthorization";
+    } else {
+        if (decision.warningCode != "") { decision.status = "Warning"; }
+        else { decision.status = "Ready"; }
+    }
+}
+atomic check checkCashAuthorization(context AdmissionDecision decision) {
+    require(decision.executable, "PENDING_AUTHORIZATION");
+}
+Scenario serial assessCashDeposit(DepositRequest d, AccountEligibility a, DepositProduct product, BusinessDay day,
+    CashChannel channel, CashAuthorizationPolicy policy, AuthorizationEvidence evidence, context AdmissionDecision decision) {
+    checkCashInput(d, day);
+    checkDepositEligibility(d, a, product, day);
+    assessCashAdmission(d, a, day, channel, policy, evidence, decision);
+}

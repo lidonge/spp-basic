@@ -1,0 +1,146 @@
+domain cboddeposit;
+
+atomic calculate configureDebtCashReversalExample(context CashReversalExample example) {
+    example.cash.seed.id = "SOURCE-DEBT-REVERSAL-A";
+    example.cash.command.id = "SOURCE-DEBT-REVERSAL-T";
+    example.cash.command.attemptId = "SOURCE-DEBT-REVERSAL-DEPOSIT";
+    example.command.id = "SOURCE-DEBT-REVERSAL-R";
+    example.command.attemptId = "SOURCE-DEBT-REVERSAL-REVERSE";
+    example.cash.seed.account.interestBase = 0;
+    example.cash.seed.account.overdraftInterest = 30;
+    example.cash.seed.account.collectionInterest = 40;
+    example.cash.seed.account.overdraftPrincipal = 100;
+    example.cash.seed.account.overdraftExposure = 100;
+    example.cash.seed.eligibility.accountBalance = -170;
+    example.cash.command.request.amount = 50;
+}
+atomic calculate selectBadDebtCashReversalExample(context CashReversalExample example) {
+    example.cash.seed.id = "SOURCE-BAD-REVERSAL-A";
+    example.cash.command.id = "SOURCE-BAD-REVERSAL-T";
+    example.cash.command.attemptId = "SOURCE-BAD-REVERSAL-DEPOSIT";
+    example.command.id = "SOURCE-BAD-REVERSAL-R";
+    example.command.attemptId = "SOURCE-BAD-REVERSAL-REVERSE";
+    example.cash.seed.account.loanState = "BadDebt";
+}
+atomic calculate selectFractionalCashReversalExample(context CashReversalExample example) {
+    example.cash.seed.id = "SOURCE-FRACTIONAL-REVERSAL-A";
+    example.cash.command.id = "SOURCE-FRACTIONAL-REVERSAL-T";
+    example.cash.command.attemptId = "SOURCE-FRACTIONAL-REVERSAL-DEPOSIT";
+    example.command.id = "SOURCE-FRACTIONAL-REVERSAL-R";
+    example.command.attemptId = "SOURCE-FRACTIONAL-REVERSAL-REVERSE";
+    example.cash.seed.account.overdraftInterest = 0.005;
+    example.cash.seed.account.collectionInterest = 0.004;
+    example.cash.seed.account.overdraftPrincipal = 0.01;
+    example.cash.seed.account.overdraftExposure = 0.01;
+    example.cash.seed.eligibility.accountBalance = -0.019;
+    example.cash.command.request.amount = 0.01;
+}
+atomic check verifyDebtReversalOriginalExample(CashReversalExample example) {
+    require(example.cash.lifecycle.execution.status == "Committed" && example.cash.observed.version == 1,
+        "EXAMPLE_DEBT_REVERSAL_ORIGINAL_NOT_COMMITTED");
+    if (example.cash.command.request.amount == 0.01) {
+        require(example.cash.observed.eligibility.accountBalance == -0.009
+            && example.cash.lifecycle.execution.work.plan.interestPaid == 0.005
+            && example.cash.lifecycle.execution.work.plan.collectionInterestPaid == 0.004
+            && example.cash.lifecycle.execution.work.plan.principalPaid == 0.001, "EXAMPLE_FRACTIONAL_REPAYMENT");
+        require(example.cash.observed.accrual.state.overdraftProduct == 0.01
+            && example.cash.observed.accrual.state.overdraftInterestProduct == 0, "EXAMPLE_FRACTIONAL_ACCRUAL");
+    } else {
+        require(example.cash.observed.eligibility.accountBalance == -120, "EXAMPLE_DEBT_REPAYMENT_BALANCE");
+        if (example.cash.seed.account.loanState == "BadDebt") {
+            require(example.cash.lifecycle.execution.work.plan.principalPaid == 50
+                && example.cash.lifecycle.execution.work.plan.interestPaid == 0, "EXAMPLE_BAD_DEBT_REPAYMENT");
+        } else {
+            require(example.cash.lifecycle.execution.work.plan.principalPaid == 0
+                && example.cash.lifecycle.execution.work.plan.interestPaid == 30
+                && example.cash.lifecycle.execution.work.plan.collectionInterestPaid == 20, "EXAMPLE_NORMAL_DEBT_REPAYMENT");
+        }
+        require(example.cash.observed.accrual.state.overdraftProduct == 100
+            && example.cash.observed.accrual.state.overdraftInterestProduct == 70, "EXAMPLE_DEBT_ACCRUAL");
+    }
+}
+atomic check verifyDebtCashReversalExample(CashReversalExample example) {
+    require(example.lifecycle.work.status == "Committed" && example.cash.observed.version == 2,
+        "EXAMPLE_DEBT_REVERSAL_NOT_COMMITTED");
+    require(example.cash.observed.account.interestBase == 0 && example.cash.observed.accrual.state.normalProduct == 0,
+        "EXAMPLE_DEBT_REVERSAL_BASE");
+    double expectedLedger = 52;
+    if (example.cash.command.request.amount == 0.01) {
+        require(example.cash.observed.eligibility.accountBalance == -0.019
+            && example.cash.observed.account.overdraftInterest == 0.005
+            && example.cash.observed.account.collectionInterest == 0.004
+            && example.cash.observed.account.overdraftPrincipal == 0.01
+            && example.cash.observed.account.overdraftExposure == 0.01, "EXAMPLE_FRACTIONAL_DEBT_RESTORE");
+        require(example.cash.observed.accrual.state.overdraftProduct == 0.01
+            && example.cash.observed.accrual.state.overdraftInterestProduct == 0
+            && example.cash.observed.accrual.state.actualProduct == -0.01, "EXAMPLE_FRACTIONAL_RETAINED_ACCRUAL");
+        expectedLedger = 2.01;
+    } else {
+        require(example.cash.observed.eligibility.accountBalance == -170
+            && example.cash.observed.account.overdraftInterest == 30
+            && example.cash.observed.account.collectionInterest == 40
+            && example.cash.observed.account.overdraftPrincipal == 100
+            && example.cash.observed.account.overdraftExposure == 100, "EXAMPLE_ORIGINAL_DEBT_RESTORE");
+        require(example.cash.observed.accrual.state.overdraftProduct == 100
+            && example.cash.observed.accrual.state.overdraftInterestProduct == 70
+            && example.cash.observed.accrual.state.actualProduct == -100, "EXAMPLE_DEBT_RETAINED_ACCRUAL");
+    }
+    require(example.cash.observed.account.loanState == example.cash.seed.account.loanState
+        && example.cash.observed.eligibility.cashDepositedToday == 0
+        && example.cash.observed.eligibility.detailCount == 12
+        && example.cash.observed.eligibility.lastTransactionDate == 20261006, "EXAMPLE_DEBT_REVERSAL_METADATA");
+    require(example.link.version == 1 && example.link.reversalId == example.command.id
+        && example.record.fee.refundAmount == 2, "EXAMPLE_DEBT_REVERSAL_LINK_AND_FEE");
+    require(example.cash.storedTrade.settled.version == 1
+        && example.cash.storedTrade.request.amount == example.cash.command.request.amount, "EXAMPLE_DEBT_CHANGED_ORIGINAL");
+    int count = 0;
+    double debit = 0;
+    double credit = 0;
+    for (CashPostingRecord posting : example.cash.postings) {
+        count++;
+        if (posting.line.side == "Debit") { debit += posting.line.amount; }
+        else { credit += posting.line.amount; }
+    }
+    require(count == 8 && debit == expectedLedger && credit == expectedLedger, "EXAMPLE_DEBT_REVERSAL_LEDGER");
+    require(example.cash.audit != null && example.cash.audit.event == "ReversalCommitted", "EXAMPLE_DEBT_REVERSAL_AUDIT");
+}
+Scenario serial submitDebtCashReversalExample(context CashReversalExample example) {
+    alignCashReversalExampleKeys(example);
+    serial { transaction quantum {
+        seedCashExampleAccount(example.cash.seed);
+        seedCashExampleTariff(example.cash.tariffRecord);
+    } }
+    executeCashDeposit(example.cash.command, example.cash.lifecycle);
+    example.cash.observed = queryCashAccount(example.cash.observed);
+    verifyDebtReversalOriginalExample(example);
+    executeCashReversal(example.command, example.lifecycle);
+    prepareCashReversalObservationsExample(example);
+    observeCashReversalExample(example);
+    verifyDebtCashReversalExample(example);
+}
+Scenario serial normalDebtCashReversalExample(context CashReversalExample example) {
+    initializeCashReversalExample(example);
+    prepareOrdinaryCashExample(example.cash);
+    configureCrossBranchFeeExample(example.cash);
+    configureCashReversalExample(example);
+    configureDebtCashReversalExample(example);
+    submitDebtCashReversalExample(example);
+}
+Scenario serial badDebtCashReversalExample(context CashReversalExample example) {
+    initializeCashReversalExample(example);
+    prepareOrdinaryCashExample(example.cash);
+    configureCrossBranchFeeExample(example.cash);
+    configureCashReversalExample(example);
+    configureDebtCashReversalExample(example);
+    selectBadDebtCashReversalExample(example);
+    submitDebtCashReversalExample(example);
+}
+Scenario serial fractionalCashReversalExample(context CashReversalExample example) {
+    initializeCashReversalExample(example);
+    prepareOrdinaryCashExample(example.cash);
+    configureCrossBranchFeeExample(example.cash);
+    configureCashReversalExample(example);
+    configureDebtCashReversalExample(example);
+    selectFractionalCashReversalExample(example);
+    submitDebtCashReversalExample(example);
+}

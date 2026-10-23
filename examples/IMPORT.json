@@ -1,0 +1,2163 @@
+{
+  "schema": 1,
+  "requirement": "BASIC-EXAMPLES-20261023-v1",
+  "repository": "https://github.com/lidonge/spp-examples",
+  "baselineRevision": "417a41f272629a14ff004d8fd89cb369357e5a62",
+  "sourceState": "Working-tree basic-profile and English-documentation updates atop baseline; not an assertion that baseline contains these bytes.",
+  "scope": "Demo sources/tests/docs, Maven configuration, selected checks/install helper, license and book copyright notice. No Git history, book manuscripts, website, binaries or commercial implementation.",
+  "adaptations": [
+    "External links for unbundled book/site files",
+    "Integrated build instructions and contribution paths",
+    "Original MIT scope and book reserved-rights retained"
+  ],
+  "files": [
+    {
+      "path": ".gitignore",
+      "sourceSha256": "a90fa91ee3d540799059818b79578a4373d9b8c42c9802e09f3f8839faf1082c",
+      "importedSha256": "a90fa91ee3d540799059818b79578a4373d9b8c42c9802e09f3f8839faf1082c",
+      "executable": false
+    },
+    {
+      "path": "AGENTS.md",
+      "sourceSha256": "216fa2e4f2a17adc7520db53016cce601316a4fe46ed0413de1b0cd63ad1a5b0",
+      "importedSha256": "0017ca6dcf57a2398f56e8de583c4fea836391b7b5f4c7fccb2e642387e61327",
+      "executable": false
+    },
+    {
+      "path": "CONTRIBUTING.md",
+      "sourceSha256": "c4153d0c4a8fa7dc5b0e56a9e27c166a098f361d2376aae258c15f397bff118a",
+      "importedSha256": "82a521146d9a15a86f051108641494b2efc77799e4fd93b3bc0931b2a4337f66",
+      "executable": false
+    },
+    {
+      "path": "LICENSE",
+      "sourceSha256": "89efb9b1a765dc0497839be857660dcd5866f0db630d7f46a130baccfb29a326",
+      "importedSha256": "89efb9b1a765dc0497839be857660dcd5866f0db630d7f46a130baccfb29a326",
+      "executable": false
+    },
+    {
+      "path": "README.md",
+      "sourceSha256": "9a2d623cb1a2f9fee8302f43b1fc873ab7b9eebe199cbc5a0e86a28a18b81f2f",
+      "importedSha256": "47ab0b8d5612d7598445fac411903b19c8581e7c0d314ab4df4b0f9e131b968b",
+      "executable": false
+    },
+    {
+      "path": "book/COPYRIGHT.md",
+      "sourceSha256": "89deb3c9bd4ec84c4bedf7a49d6704d688dc9a3a271e894127c03043226dd260",
+      "importedSha256": "89deb3c9bd4ec84c4bedf7a49d6704d688dc9a3a271e894127c03043226dd260",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/AGENTS.md",
+      "sourceSha256": "ef7c364b71bb073ba14a9d254dc1c819bb5eae4a78a17191641336842b306165",
+      "importedSha256": "ef7c364b71bb073ba14a9d254dc1c819bb5eae4a78a17191641336842b306165",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/README.md",
+      "sourceSha256": "ae667d62610daa6adb7477e0a1503b4426a6392b0c97e5cd2f15936f6398fce8",
+      "importedSha256": "0a260c8c96d9d07c743f08637366dad5b3fac580b719dc2511f96d6481a23d41",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/acceptance-audit.md",
+      "sourceSha256": "28e7883e8c4c553d9d467474a090b26dc85d562511e6cb68af328e4768593e67",
+      "importedSha256": "28e7883e8c4c553d9d467474a090b26dc85d562511e6cb68af328e4768593e67",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/acceptance-history.md",
+      "sourceSha256": "23f58016b54929ed94f1443c74fd9cd96d1aacd7f38dc48fd6fe1674da32173e",
+      "importedSha256": "23f58016b54929ed94f1443c74fd9cd96d1aacd7f38dc48fd6fe1674da32173e",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/accrual-execution.md",
+      "sourceSha256": "4c832e39023c124edd16236bc11568c6b4f7148870d480401ec4b3afb8ab7f80",
+      "importedSha256": "4c832e39023c124edd16236bc11568c6b4f7148870d480401ec4b3afb8ab7f80",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/audit-and-failure.md",
+      "sourceSha256": "0c4fa1255b4fa52201cd7b9359d94f4a9dbe6481543ce10e03dc770e24ea9395",
+      "importedSha256": "0c4fa1255b4fa52201cd7b9359d94f4a9dbe6481543ce10e03dc770e24ea9395",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/bank-qualification.md",
+      "sourceSha256": "7e3966f0dbd15f4a2defd40675f2aefb2691cd86a007a74547523a2eb95b7281",
+      "importedSha256": "7e3966f0dbd15f4a2defd40675f2aefb2691cd86a007a74547523a2eb95b7281",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/cash-execution-contract.md",
+      "sourceSha256": "c5db1289566ffab8f93ed62c289698656fe7117ac83c27c5b85e925f20536359",
+      "importedSha256": "c5db1289566ffab8f93ed62c289698656fe7117ac83c27c5b85e925f20536359",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/cash-reversal-source.md",
+      "sourceSha256": "bcb95d0810e09d8c8a750468f63e3bd890e1c0098f8b75bf87c2a25558482346",
+      "importedSha256": "bcb95d0810e09d8c8a750468f63e3bd890e1c0098f8b75bf87c2a25558482346",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/completion-audit.md",
+      "sourceSha256": "5ba06f4821734f6cc3106759d1df8038151b516ca586250da342c7c06cd87bbc",
+      "importedSha256": "5ba06f4821734f6cc3106759d1df8038151b516ca586250da342c7c06cd87bbc",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/decisions.md",
+      "sourceSha256": "cc86176059f39cfa3d7b39b98f0598d61bedbee20728bf9d8cf0b717dab3e016",
+      "importedSha256": "cc86176059f39cfa3d7b39b98f0598d61bedbee20728bf9d8cf0b717dab3e016",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/default-reversal-design.md",
+      "sourceSha256": "9698c4858dab743fbe6aa6c10ebb47d290b20c088a547c554e542891305154c2",
+      "importedSha256": "9698c4858dab743fbe6aa6c10ebb47d290b20c088a547c554e542891305154c2",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/deposit-store-retirement.md",
+      "sourceSha256": "1e69e26ceae602bb552ddd07234143af41b9d58125463c43282992181cb6e55b",
+      "importedSha256": "1e69e26ceae602bb552ddd07234143af41b9d58125463c43282992181cb6e55b",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/implementation-path.md",
+      "sourceSha256": "3a6d1c04b1fe29c4e2401416708013c3daa4c5356c0b230a7dbe249365b1d546",
+      "importedSha256": "3a6d1c04b1fe29c4e2401416708013c3daa4c5356c0b230a7dbe249365b1d546",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/known-issues-latest.md",
+      "sourceSha256": "1406d40684934520d8e82c58c6c1964ade6cd970fc7f8ed9b5e1af856809785a",
+      "importedSha256": "1406d40684934520d8e82c58c6c1964ade6cd970fc7f8ed9b5e1af856809785a",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/latest-petstore-refactoring.md",
+      "sourceSha256": "979fdc3bee8391835c6ae8ff93373541b323cb5278a0f9ee3ba26f843b409ecc",
+      "importedSha256": "979fdc3bee8391835c6ae8ff93373541b323cb5278a0f9ee3ba26f843b409ecc",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/latest-refactoring-verification.md",
+      "sourceSha256": "7ce8bdd91a4af4900825f2b8c4f2562059eed43795c55b1b5ab271fd79d6cd4a",
+      "importedSha256": "7ce8bdd91a4af4900825f2b8c4f2562059eed43795c55b1b5ab271fd79d6cd4a",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-entry-migration.md",
+      "sourceSha256": "c29ba9ea3c574f6836d631f7f991481f2cc8158cfd0f52dce7305ebffb1078ce",
+      "importedSha256": "c29ba9ea3c574f6836d631f7f991481f2cc8158cfd0f52dce7305ebffb1078ce",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/README.md",
+      "sourceSha256": "f57854aa877ae9743c126a82c18f2540859e89d6eb87d5318c5ce33c33c9c967",
+      "importedSha256": "f57854aa877ae9743c126a82c18f2540859e89d6eb87d5318c5ce33c33c9c967",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-00-deposit-kernel.spp",
+      "sourceSha256": "5edca3f6e1a571553c83582936b78a56991fc38b9eb9f291674dd57b1a4b48ef",
+      "importedSha256": "5edca3f6e1a571553c83582936b78a56991fc38b9eb9f291674dd57b1a4b48ef",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-10-cash-admission.spp",
+      "sourceSha256": "06091b1746064faa1b5cd4b3060cffb43c8005084321bd1186f301f4cba62f68",
+      "importedSha256": "06091b1746064faa1b5cd4b3060cffb43c8005084321bd1186f301f4cba62f68",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-20-bank-calendar.spp",
+      "sourceSha256": "43c44b56452b790ab41943368baeda222ad14b51d42c074c50b98495e99458a3",
+      "importedSha256": "43c44b56452b790ab41943368baeda222ad14b51d42c074c50b98495e99458a3",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-30-agreement-product.spp",
+      "sourceSha256": "f156985d7bb7a852ddd4d1d85b7eb89678097765ea39de16d899213f26ed1003",
+      "importedSha256": "f156985d7bb7a852ddd4d1d85b7eb89678097765ea39de16d899213f26ed1003",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-40-deposit-fee.spp",
+      "sourceSha256": "265a1f2df71eedb9f5696b70aa5c3508e96936d492d47c3a9f0fa1dfd6bef597",
+      "importedSha256": "265a1f2df71eedb9f5696b70aa5c3508e96936d492d47c3a9f0fa1dfd6bef597",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-45-agreement-window.spp",
+      "sourceSha256": "ee2da975a1f34601d987fded54a32e41ad13e9d9510a68956834fac5c131aa7b",
+      "importedSha256": "ee2da975a1f34601d987fded54a32e41ad13e9d9510a68956834fac5c131aa7b",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-50-cash-deposit.spp",
+      "sourceSha256": "21d418d66487b3c97d74af3c696bbf84dc9e7b694c3a9f4ed9dc36a98b453856",
+      "importedSha256": "21d418d66487b3c97d74af3c696bbf84dc9e7b694c3a9f4ed9dc36a98b453856",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-60-deposit-accrual.spp",
+      "sourceSha256": "ef85ef2e8eefb9455f3462d4cf46c0fc8ac75881e6a8c7510def3d0a5c431867",
+      "importedSha256": "ef85ef2e8eefb9455f3462d4cf46c0fc8ac75881e6a8c7510def3d0a5c431867",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-70-reversal-financial.spp",
+      "sourceSha256": "710d11f0f1bb5336338c9c3e884d388fa651a9f3580d222be875e7fd54b12319",
+      "importedSha256": "710d11f0f1bb5336338c9c3e884d388fa651a9f3580d222be875e7fd54b12319",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-80-bank-qualification.spp",
+      "sourceSha256": "040c0f2c89cc79cc3e86d81711696e552016ec3e9cac73ab6c5a9de0dbdf13d9",
+      "importedSha256": "040c0f2c89cc79cc3e86d81711696e552016ec3e9cac73ab6c5a9de0dbdf13d9",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-85-deposit-route.spp",
+      "sourceSha256": "5e65ab1f669aba1dbcb344e348868113683a26a6291f060cc72f27a326a4ca9f",
+      "importedSha256": "5e65ab1f669aba1dbcb344e348868113683a26a6291f060cc72f27a326a4ca9f",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-90-cash-reversal.spp",
+      "sourceSha256": "d4d99c282f2c8dbb5a6cee69153c133b9c9fb736300b1b8ca81a3c0eb17e99d4",
+      "importedSha256": "d4d99c282f2c8dbb5a6cee69153c133b9c9fb736300b1b8ca81a3c0eb17e99d4",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-91-cash-storage-model.spp",
+      "sourceSha256": "98f8f44de253ff2c3843ba1dc3d2ef0bcce7a5fea8b13b5b3f4f4d8a8b8af82c",
+      "importedSha256": "98f8f44de253ff2c3843ba1dc3d2ef0bcce7a5fea8b13b5b3f4f4d8a8b8af82c",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-92-cash-deposit-records.spp",
+      "sourceSha256": "a5efa1cba105c513640431af48aed71920c031feaa225e690a571572d6bb19bc",
+      "importedSha256": "a5efa1cba105c513640431af48aed71920c031feaa225e690a571572d6bb19bc",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-93-cash-reversal-records.spp",
+      "sourceSha256": "3930834c84fc30cf23c087406bffc52701c67a99a6d238f314a49ee75528f848",
+      "importedSha256": "3930834c84fc30cf23c087406bffc52701c67a99a6d238f314a49ee75528f848",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-95-cash-transaction.spp",
+      "sourceSha256": "c3416d49828addef6f6124b37ae81788f17a7cc8b223b0fcb4eae009484b90c8",
+      "importedSha256": "c3416d49828addef6f6124b37ae81788f17a7cc8b223b0fcb4eae009484b90c8",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-96-deposit-work.spp",
+      "sourceSha256": "35e17e25ce64b5f02dae011da84e92dd6cfa1d8b33a93462d11bc8d6b1114f8d",
+      "importedSha256": "35e17e25ce64b5f02dae011da84e92dd6cfa1d8b33a93462d11bc8d6b1114f8d",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-97-deposit-execution.spp",
+      "sourceSha256": "907d2e1956222476473e38372f74729238f640fb7939b7aa3daabd66478b1c9e",
+      "importedSha256": "907d2e1956222476473e38372f74729238f640fb7939b7aa3daabd66478b1c9e",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-98-deposit-lifecycle.spp",
+      "sourceSha256": "6662c39f756df3b73749a5f1faaf11e6be3e7fae132d623c9f0665ae48e8ce0d",
+      "importedSha256": "6662c39f756df3b73749a5f1faaf11e6be3e7fae132d623c9f0665ae48e8ce0d",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99-reversal-execution.spp",
+      "sourceSha256": "844fc8aa613fc8f288e389b2874d6d64e63fb7bc190324840e052532d60c75ad",
+      "importedSha256": "844fc8aa613fc8f288e389b2874d6d64e63fb7bc190324840e052532d60c75ad",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99b-reversal-lifecycle.spp",
+      "sourceSha256": "e386464b13fa5bf475e2bfda32f580ac685792507cd5ef9ebf5b9852335cb3f9",
+      "importedSha256": "e386464b13fa5bf475e2bfda32f580ac685792507cd5ef9ebf5b9852335cb3f9",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99c-failure-audit.spp",
+      "sourceSha256": "e45b1440dd8055af348d5f2506b2e83cdceb742fdcaabb6b4304de7ecdc939a2",
+      "importedSha256": "e45b1440dd8055af348d5f2506b2e83cdceb742fdcaabb6b4304de7ecdc939a2",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99ca-reversal-preparation.spp",
+      "sourceSha256": "18b2ef6ab92144a008473ea2d1d0ccaf93b4e62cd726728742300daf9e886747",
+      "importedSha256": "18b2ef6ab92144a008473ea2d1d0ccaf93b4e62cd726728742300daf9e886747",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99d-source-examples.spp",
+      "sourceSha256": "068890c239f1baa7f353fc85e885220673750a830ddc2685e117626423d0c1ea",
+      "importedSha256": "068890c239f1baa7f353fc85e885220673750a830ddc2685e117626423d0c1ea",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99e-debt-examples.spp",
+      "sourceSha256": "516cb70c7d706b01ffe54e7d1be809c59674c7d9c2802a4fbae5bbc7e1e1876d",
+      "importedSha256": "516cb70c7d706b01ffe54e7d1be809c59674c7d9c2802a4fbae5bbc7e1e1876d",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99f-authorization-examples.spp",
+      "sourceSha256": "0721c233fb56a185313d765891c9f07e7fc9705d01686ec6b5903a37d3715788",
+      "importedSha256": "0721c233fb56a185313d765891c9f07e7fc9705d01686ec6b5903a37d3715788",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99g-replay-examples.spp",
+      "sourceSha256": "5f7c0d9c86a762b81fc3129bfb1da51c2f45d7017cfa3e2b1cd3c6bdf0fac7cd",
+      "importedSha256": "5f7c0d9c86a762b81fc3129bfb1da51c2f45d7017cfa3e2b1cd3c6bdf0fac7cd",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99h-fee-examples.spp",
+      "sourceSha256": "5e42bb945689bad0808c1a2559b76f79b313f4d79048bd39f8ac0039c753f041",
+      "importedSha256": "5e42bb945689bad0808c1a2559b76f79b313f4d79048bd39f8ac0039c753f041",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99i-pending-current-account-example.spp",
+      "sourceSha256": "b5095157aae46bb08c828717070ff5591561145997513695944ef801cd37830b",
+      "importedSha256": "b5095157aae46bb08c828717070ff5591561145997513695944ef801cd37830b",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99j-cash-reversal-example.spp",
+      "sourceSha256": "1e785e21ac222f0b3be892e0f45a93e84e67238d0909cb0d13f320e52769a701",
+      "importedSha256": "1e785e21ac222f0b3be892e0f45a93e84e67238d0909cb0d13f320e52769a701",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99k-reversal-date-examples.spp",
+      "sourceSha256": "cbef814c6b5f834bf5803f2ed07dc2887916c3fbd6de27d2b2ded952e0c8adb0",
+      "importedSha256": "cbef814c6b5f834bf5803f2ed07dc2887916c3fbd6de27d2b2ded952e0c8adb0",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99l-debt-reversal-examples.spp",
+      "sourceSha256": "da9376a8d54ce1f7edb0abc55471382fab98e2bc576142dd197f77016a67fb7a",
+      "importedSha256": "da9376a8d54ce1f7edb0abc55471382fab98e2bc576142dd197f77016a67fb7a",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99m-version-conflict-example.spp",
+      "sourceSha256": "510a9690db3c9099243d7093cf0fcbb72ab8539fb0029e152f4847c78c7b797f",
+      "importedSha256": "510a9690db3c9099243d7093cf0fcbb72ab8539fb0029e152f4847c78c7b797f",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99n-write-failure-example.spp",
+      "sourceSha256": "0ca8b7cca29a08657acb1e760a352b64cfcbe92d725dd18e875279b53d89b6bd",
+      "importedSha256": "0ca8b7cca29a08657acb1e760a352b64cfcbe92d725dd18e875279b53d89b6bd",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99o-calendar-examples.spp",
+      "sourceSha256": "3e2c821958361af2b70db2916e72dfaa21f86c65957b1885b5eb0c3d5f38c6be",
+      "importedSha256": "3e2c821958361af2b70db2916e72dfaa21f86c65957b1885b5eb0c3d5f38c6be",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99p-kernel-examples.spp",
+      "sourceSha256": "974c1de4707ac3ddf05ee3e5629ca2d28b0f9248b6d56a74c8a22f867d1383aa",
+      "importedSha256": "974c1de4707ac3ddf05ee3e5629ca2d28b0f9248b6d56a74c8a22f867d1383aa",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99pa-kernel-repayment.spp",
+      "sourceSha256": "665337f85d4296773f885d496187e9d30b3a1a905bda4c124e46f7af404ffe4b",
+      "importedSha256": "665337f85d4296773f885d496187e9d30b3a1a905bda4c124e46f7af404ffe4b",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99pb-kernel-boundaries.spp",
+      "sourceSha256": "eb7088c0d9737f798048bcb3ae91f9804f6df3460d6b701bf5a50943f8089a16",
+      "importedSha256": "eb7088c0d9737f798048bcb3ae91f9804f6df3460d6b701bf5a50943f8089a16",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99q-agreement-examples.spp",
+      "sourceSha256": "60763fabde9ec804b0d3e37b273642ac4bd2487178128d65c26c85893098ee67",
+      "importedSha256": "60763fabde9ec804b0d3e37b273642ac4bd2487178128d65c26c85893098ee67",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99qa-agreement-modes.spp",
+      "sourceSha256": "2d51e6c8542f60027eaab7acf48de813e830946995ad0b7659629dad01cf0122",
+      "importedSha256": "2d51e6c8542f60027eaab7acf48de813e830946995ad0b7659629dad01cf0122",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99qb-agreement-edges.spp",
+      "sourceSha256": "223fc78bbbf2f98b5ed241668f4397e3ce1fff87a7cb79f3cb691f783e1d2ee0",
+      "importedSha256": "223fc78bbbf2f98b5ed241668f4397e3ce1fff87a7cb79f3cb691f783e1d2ee0",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99qc-agreement-rejections.spp",
+      "sourceSha256": "4fb4cf5dee61f60992e62d45f3c919ab4689459f33bae028ea7ff4254cbb3cce",
+      "importedSha256": "4fb4cf5dee61f60992e62d45f3c919ab4689459f33bae028ea7ff4254cbb3cce",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99r-dated-agreement-examples.spp",
+      "sourceSha256": "a8b88741790106fe009f0b6e67008f830363c370057863e5df8aaf4b80ea7b9d",
+      "importedSha256": "a8b88741790106fe009f0b6e67008f830363c370057863e5df8aaf4b80ea7b9d",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99s-cash-control-examples.spp",
+      "sourceSha256": "eb10e0f67d3858bab566a6b3d90ff6492d348608582b3dbd29c8c48ce39dcadb",
+      "importedSha256": "eb10e0f67d3858bab566a6b3d90ff6492d348608582b3dbd29c8c48ce39dcadb",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99t-admission-rule-examples.spp",
+      "sourceSha256": "6aba7330e9faec2f77b632006cf1ba50cf7c739c3a99da2c53ba29a11d2ef553",
+      "importedSha256": "6aba7330e9faec2f77b632006cf1ba50cf7c739c3a99da2c53ba29a11d2ef553",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99ta-admission-cases.spp",
+      "sourceSha256": "e01442b6dc34a94ad9c139aabc0b44077ab1db88cf13bbe6f083536d74381963",
+      "importedSha256": "e01442b6dc34a94ad9c139aabc0b44077ab1db88cf13bbe6f083536d74381963",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99tb-admission-cases.spp",
+      "sourceSha256": "2ef08b7ba90612d4d36a3a226f6c86df244a04ca676b9b0da6543e19f495ecee",
+      "importedSha256": "2ef08b7ba90612d4d36a3a226f6c86df244a04ca676b9b0da6543e19f495ecee",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99tc-admission-cases.spp",
+      "sourceSha256": "918c7b56b089fe6a645d3b4d726fde652070e4edc994c25988a9eca38b32bf3f",
+      "importedSha256": "918c7b56b089fe6a645d3b4d726fde652070e4edc994c25988a9eca38b32bf3f",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99u-bank-qualification-examples.spp",
+      "sourceSha256": "9525258b7d210f788af7e4e33060b4b9659f76c68cc153723e822e9135571cd9",
+      "importedSha256": "9525258b7d210f788af7e4e33060b4b9659f76c68cc153723e822e9135571cd9",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99ua-qualification-cases.spp",
+      "sourceSha256": "fa56aa6df65d4c9ddbd773beda82ce623b7e9ccc8002545f24bafe86d8802929",
+      "importedSha256": "fa56aa6df65d4c9ddbd773beda82ce623b7e9ccc8002545f24bafe86d8802929",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99ub-qualification-cases.spp",
+      "sourceSha256": "cc8a6466f5ac8c8ce76d10fd566c857bdd7148348442cd919c7e53c35132319c",
+      "importedSha256": "cc8a6466f5ac8c8ce76d10fd566c857bdd7148348442cd919c7e53c35132319c",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99uc-qualification-cases.spp",
+      "sourceSha256": "3a812abef58d16979d1bba55c0bb4ece0636bfe07b704bdaf98cb6930d9dd3a9",
+      "importedSha256": "3a812abef58d16979d1bba55c0bb4ece0636bfe07b704bdaf98cb6930d9dd3a9",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99v-bank-cash-examples.spp",
+      "sourceSha256": "d237387c64e18f71f888e257126c140de5a1fa8152b00955b7c2478426faebe6",
+      "importedSha256": "d237387c64e18f71f888e257126c140de5a1fa8152b00955b7c2478426faebe6",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99w-cash-policy-examples.spp",
+      "sourceSha256": "ed751c7f71a025ccfd1861e19f45bf339d17d5575282f63799e6cd27cfa84d45",
+      "importedSha256": "ed751c7f71a025ccfd1861e19f45bf339d17d5575282f63799e6cd27cfa84d45",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99x-fee-rule-examples.spp",
+      "sourceSha256": "6889af932e97006299ba8baf86e473146313e2ae5170704771231d83af8e3cfc",
+      "importedSha256": "6889af932e97006299ba8baf86e473146313e2ae5170704771231d83af8e3cfc",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99xa-fee-rule-cases.spp",
+      "sourceSha256": "40e6c990825e9a34dfc22ad168d32e46b9e82a6c0e70347471278326c8bd8be2",
+      "importedSha256": "40e6c990825e9a34dfc22ad168d32e46b9e82a6c0e70347471278326c8bd8be2",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99xb-fee-rule-cases.spp",
+      "sourceSha256": "28bbb946f25db330bc5c3bda3951aab65493ae4e939e7742742fa84577e2676f",
+      "importedSha256": "28bbb946f25db330bc5c3bda3951aab65493ae4e939e7742742fa84577e2676f",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99y-financial-inverse-examples.spp",
+      "sourceSha256": "5e056ba5dc531e0547591102bc09dd831578fdb4064d39952fbd849c9ab86599",
+      "importedSha256": "5e056ba5dc531e0547591102bc09dd831578fdb4064d39952fbd849c9ab86599",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99ya-inverse-cases.spp",
+      "sourceSha256": "461bf6894d8e364509a4638f0bbb33edc99d7ea4e15cfab5577f6079008c225a",
+      "importedSha256": "461bf6894d8e364509a4638f0bbb33edc99d7ea4e15cfab5577f6079008c225a",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99yb-inverse-cases.spp",
+      "sourceSha256": "b54d3cc402a305ec28f6252333ce0b05c05fad563e806b3730c3fc7f32eaad5a",
+      "importedSha256": "b54d3cc402a305ec28f6252333ce0b05c05fad563e806b3730c3fc7f32eaad5a",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99z-accrual-rule-examples.spp",
+      "sourceSha256": "22db7cfe602935403246377670223721773888147280b3d63e4c2b2e31afb625",
+      "importedSha256": "22db7cfe602935403246377670223721773888147280b3d63e4c2b2e31afb625",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99za-accrual-cash-examples.spp",
+      "sourceSha256": "7b7c53b651772b6c8450b2217b89a569f1b2b4ef870d54f1200e6c0d793b5cfa",
+      "importedSha256": "7b7c53b651772b6c8450b2217b89a569f1b2b4ef870d54f1200e6c0d793b5cfa",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99zb-failure-audit-examples.spp",
+      "sourceSha256": "2ffd14d53182f74529c2ad034066048d97c589fa54204f629a4547d3104fd54f",
+      "importedSha256": "2ffd14d53182f74529c2ad034066048d97c589fa54204f629a4547d3104fd54f",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99zc-core-reversal-eligibility-examples.spp",
+      "sourceSha256": "6ab8b5772358eeb450d1a860c466622b49a2593bb0ae7561692320d16eb785d2",
+      "importedSha256": "6ab8b5772358eeb450d1a860c466622b49a2593bb0ae7561692320d16eb785d2",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99zd-core-reversal-current-example.spp",
+      "sourceSha256": "0a355f684cdebf183f64b1d0a57fe35a8db8de5f1f7adc81506c44c2c3abdd56",
+      "importedSha256": "0a355f684cdebf183f64b1d0a57fe35a8db8de5f1f7adc81506c44c2c3abdd56",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99ze-stored-reversal-preparation-examples.spp",
+      "sourceSha256": "a79410170bef22211b5faa8328c09f3e94b388513f1f84cb291b0e7999cd4e59",
+      "importedSha256": "a79410170bef22211b5faa8328c09f3e94b388513f1f84cb291b0e7999cd4e59",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99zf-preparation-rejection-examples.spp",
+      "sourceSha256": "ffa6e3c339e1d01fe7ea8e8a211d3afd35093774bac34be5dbb47278d290124b",
+      "importedSha256": "ffa6e3c339e1d01fe7ea8e8a211d3afd35093774bac34be5dbb47278d290124b",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99zg-preparation-evidence-examples.spp",
+      "sourceSha256": "6be6f5428e5ef561a2dbdb0298369523b35a7019135f61081933dbf9fc69fc32",
+      "importedSha256": "6be6f5428e5ef561a2dbdb0298369523b35a7019135f61081933dbf9fc69fc32",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99zh-daily-cash-examples.spp",
+      "sourceSha256": "af5a558041bc1c42fedef9e9f1fd182f14d0dcf34998166db4010bd3735f00d1",
+      "importedSha256": "af5a558041bc1c42fedef9e9f1fd182f14d0dcf34998166db4010bd3735f00d1",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99zi-concurrent-cash-examples.spp",
+      "sourceSha256": "fb92fdd91f8da684532dd29179a2364165a01cda433a0e746551d6082e862b2e",
+      "importedSha256": "fb92fdd91f8da684532dd29179a2364165a01cda433a0e746551d6082e862b2e",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99zj-pending-restart-examples.spp",
+      "sourceSha256": "8ff72509f08a31626f6e786ef71e96f7abc4f868d7cf769fafe0fa05e5676c04",
+      "importedSha256": "8ff72509f08a31626f6e786ef71e96f7abc4f868d7cf769fafe0fa05e5676c04",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99zk-uncommitted-collision-example.spp",
+      "sourceSha256": "fdd980b0fe2a8d50c8350378bf13f1258672d863d9751aa58c03f04427b27a84",
+      "importedSha256": "fdd980b0fe2a8d50c8350378bf13f1258672d863d9751aa58c03f04427b27a84",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99zl-jdbc-cash-fault-examples.spp",
+      "sourceSha256": "2db8d0c7375ab993d873095d9198cd18c97835984281fb1de75a1bcd35b93bf0",
+      "importedSha256": "2db8d0c7375ab993d873095d9198cd18c97835984281fb1de75a1bcd35b93bf0",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99zm-reversal-fault-examples.spp",
+      "sourceSha256": "aa615772dbd68e09754da6ca362e049157ae028a5fab94124be1f0838b93d474",
+      "importedSha256": "aa615772dbd68e09754da6ca362e049157ae028a5fab94124be1f0838b93d474",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99zma-reversal-fault-assertions.spp",
+      "sourceSha256": "c2e6f48a0de9366fae392a808353736999bd7b616bf1e68b67f2e26d93daddfd",
+      "importedSha256": "c2e6f48a0de9366fae392a808353736999bd7b616bf1e68b67f2e26d93daddfd",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99zmb-reversal-fault-runs.spp",
+      "sourceSha256": "281c929e23efa5c70ed492947264f731bfc60acd3303b50b53822338ff47a1bf",
+      "importedSha256": "281c929e23efa5c70ed492947264f731bfc60acd3303b50b53822338ff47a1bf",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99zn-reversal-restart-examples.spp",
+      "sourceSha256": "68bc2987363230af7f59089e799cea953a47060bb5217583fd89859feee045fa",
+      "importedSha256": "68bc2987363230af7f59089e799cea953a47060bb5217583fd89859feee045fa",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99zo-concurrent-reversal-examples.spp",
+      "sourceSha256": "1cca2d0b311e820bcaa66ae13cbbbaa8fd62ad91547cba81b51843345f28eb8b",
+      "importedSha256": "1cca2d0b311e820bcaa66ae13cbbbaa8fd62ad91547cba81b51843345f28eb8b",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99zoa-concurrent-reversal-assertions.spp",
+      "sourceSha256": "0aa3c29fbda65470a08d3bfd935310fec6754e7f57f91567245ca0ab5c249306",
+      "importedSha256": "0aa3c29fbda65470a08d3bfd935310fec6754e7f57f91567245ca0ab5c249306",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99zob-concurrent-reversal-runs.spp",
+      "sourceSha256": "e71ad0308cfe60bfa74477e88245843c24f4dc8457b9839a9c668e799bbd867f",
+      "importedSha256": "e71ad0308cfe60bfa74477e88245843c24f4dc8457b9839a9c668e799bbd867f",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99zp-quantum-evidence.spp",
+      "sourceSha256": "fe96fc02398c139f926c0974853835c4bbb199a13a3a2a5b9d8698abe711c0cb",
+      "importedSha256": "fe96fc02398c139f926c0974853835c4bbb199a13a3a2a5b9d8698abe711c0cb",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99zpa-quantum-lifecycle-examples.spp",
+      "sourceSha256": "1fdbf75d41b2de48b2ed292b3b533a8b94d4ba97ca1a6565e73d69859e705edc",
+      "importedSha256": "1fdbf75d41b2de48b2ed292b3b533a8b94d4ba97ca1a6565e73d69859e705edc",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99zq-cash-audit-failure-examples.spp",
+      "sourceSha256": "b4969aa42e46eae24863c5630889bb06e7ddb151b334c7b3b2434da62230ff43",
+      "importedSha256": "b4969aa42e46eae24863c5630889bb06e7ddb151b334c7b3b2434da62230ff43",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99zr-reversal-audit-failure-examples.spp",
+      "sourceSha256": "e885667a1733961ed7fc9bae74e8ea7d0f32661f88e98aab86f7c1d6b5f8155a",
+      "importedSha256": "e885667a1733961ed7fc9bae74e8ea7d0f32661f88e98aab86f7c1d6b5f8155a",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99zs-partial-cash-posting-example.spp",
+      "sourceSha256": "86c476e333f3882ceeb092d22c7b875a994c8f7f54909d5d2c9191aa3af3924b",
+      "importedSha256": "86c476e333f3882ceeb092d22c7b875a994c8f7f54909d5d2c9191aa3af3924b",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99zt-partial-reversal-posting-example.spp",
+      "sourceSha256": "bf8456afa9a5eaa606051d102145d3454c7da437090039efc790039a595b02a5",
+      "importedSha256": "bf8456afa9a5eaa606051d102145d3454c7da437090039efc790039a595b02a5",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99zu-prepared-reversal-examples.spp",
+      "sourceSha256": "c0f12990f5ce0c37c5f6242cd8f1f99e8ac5ae9219a7f6b507400555d79336d6",
+      "importedSha256": "c0f12990f5ce0c37c5f6242cd8f1f99e8ac5ae9219a7f6b507400555d79336d6",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99zua-stale-prepared-reversal-example.spp",
+      "sourceSha256": "bdcf85ec7aa799579377a60a1e4c161ba4128412894a240fc9540b19d0395ec8",
+      "importedSha256": "bdcf85ec7aa799579377a60a1e4c161ba4128412894a240fc9540b19d0395ec8",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99zub-prepared-reversal-replay-example.spp",
+      "sourceSha256": "fc9333f56e37c7d9891f9ecc963cb934ae2f570277d55bab5c0f1991b6c642f8",
+      "importedSha256": "fc9333f56e37c7d9891f9ecc963cb934ae2f570277d55bab5c0f1991b6c642f8",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99zv-saga-examples.spp",
+      "sourceSha256": "7369cca8b518db9619f6125b4a692dfb6fbf32b9ce40846fdeb1c402606ca51d",
+      "importedSha256": "7369cca8b518db9619f6125b4a692dfb6fbf32b9ce40846fdeb1c402606ca51d",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99zw-posting-rules-examples.spp",
+      "sourceSha256": "5b77e6a9b8307d71deaa193b1891447cc648bad1c92bf7c5895a8a86f9c92149",
+      "importedSha256": "5b77e6a9b8307d71deaa193b1891447cc648bad1c92bf7c5895a8a86f9c92149",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99zx-account-boundary-examples.spp",
+      "sourceSha256": "c54772f09a324b25ed804698bd931ed4c01c78c188cc0b522bba446c240bde45",
+      "importedSha256": "c54772f09a324b25ed804698bd931ed4c01c78c188cc0b522bba446c240bde45",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99zya-report-model.spp",
+      "sourceSha256": "068234769969fd10e8d52481e52815339c3079146c814104df416bbdbbcae0c6",
+      "importedSha256": "068234769969fd10e8d52481e52815339c3079146c814104df416bbdbbcae0c6",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99zyb-report-cash-scenarios.spp",
+      "sourceSha256": "287554b11b08a61560b35457235e642688c3121cf8c4f98541e66825d4bd752a",
+      "importedSha256": "287554b11b08a61560b35457235e642688c3121cf8c4f98541e66825d4bd752a",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99zyc-report-complete-model.spp",
+      "sourceSha256": "bf4f684444723f6dce0791fce83388106b1d128192f8a89a2fd9e3eb3e742a98",
+      "importedSha256": "bf4f684444723f6dce0791fce83388106b1d128192f8a89a2fd9e3eb3e742a98",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99zyd-report-cases.spp",
+      "sourceSha256": "c9a02820aa72da18a592618a504a816575271c6f059e329edddc8dd0033358b6",
+      "importedSha256": "c9a02820aa72da18a592618a504a816575271c6f059e329edddc8dd0033358b6",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99zyda-report-reversal-repeat.spp",
+      "sourceSha256": "17023be0a32d1e03d69faf2c9b5046799d2f5d66e5b96c34d60e5c71cbddfffa",
+      "importedSha256": "17023be0a32d1e03d69faf2c9b5046799d2f5d66e5b96c34d60e5c71cbddfffa",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99zye-report-actual-reversals.spp",
+      "sourceSha256": "a180ff79071b24755e0a481ff7d2e505c64ba8c51f1a40f6c12248cbedb00de6",
+      "importedSha256": "a180ff79071b24755e0a481ff7d2e505c64ba8c51f1a40f6c12248cbedb00de6",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit-99zyf-report-restart.spp",
+      "sourceSha256": "f394aae84cc399b442bc9306a3f62480b6f8eb6a4d7c96df0e7493603111d378",
+      "importedSha256": "f394aae84cc399b442bc9306a3f62480b6f8eb6a4d7c96df0e7493603111d378",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit.app",
+      "sourceSha256": "9e588cb40c91e8cee70c8c4759e97daf8d1f4845e26cae38fc78aa8b760070a3",
+      "importedSha256": "9e588cb40c91e8cee70c8c4759e97daf8d1f4845e26cae38fc78aa8b760070a3",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit.phy",
+      "sourceSha256": "ec8fd1dea2daee4e0f032088f9f10587b58811590e93136c346cad897ee6f28f",
+      "importedSha256": "ec8fd1dea2daee4e0f032088f9f10587b58811590e93136c346cad897ee6f28f",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/legacy-source/cboddeposit.spp",
+      "sourceSha256": "ed0f8062b5836b91014295506fd40cbb7a8611067c1926ab8722993ad6c005c2",
+      "importedSha256": "ed0f8062b5836b91014295506fd40cbb7a8611067c1926ab8722993ad6c005c2",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/participant-facts-and-locked-read.md",
+      "sourceSha256": "4afbd1db766d02b70b6687c9830dd07f1db465bbb1a7c5b52a814bc6b7720d93",
+      "importedSha256": "4afbd1db766d02b70b6687c9830dd07f1db465bbb1a7c5b52a814bc6b7720d93",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/posting-plan-source.md",
+      "sourceSha256": "cb14b6945152aefa4a191ef32fb3fb5fc44b8d3aaa253b56c68442017ff83801",
+      "importedSha256": "cb14b6945152aefa4a191ef32fb3fb5fc44b8d3aaa253b56c68442017ff83801",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/quantum-and-transactions.md",
+      "sourceSha256": "ead950a6284163afd1a348035e6456d3794a2bfc9a46f91ff4ff930eb9c43a4a",
+      "importedSha256": "ead950a6284163afd1a348035e6456d3794a2bfc9a46f91ff4ff930eb9c43a4a",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/requirements-and-functions.md",
+      "sourceSha256": "edbbb5e1746fc66b97cfecee86fc8e16c1ccffab3b4d5ec2e0514d266d67ed9b",
+      "importedSha256": "edbbb5e1746fc66b97cfecee86fc8e16c1ccffab3b4d5ec2e0514d266d67ed9b",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/reversal-financial-plan.md",
+      "sourceSha256": "a97361361c459115e3bae8c6cf485dca026a74641201718ade79b067a7fb20f1",
+      "importedSha256": "a97361361c459115e3bae8c6cf485dca026a74641201718ade79b067a7fb20f1",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/reversal-store-retirement.md",
+      "sourceSha256": "dc9629180c66d1e10f033cfd391b906d368d7e96fdb01f212dfd3b557531116c",
+      "importedSha256": "dc9629180c66d1e10f033cfd391b906d368d7e96fdb01f212dfd3b557531116c",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/reversal-submission.md",
+      "sourceSha256": "de62fc9bc8736a37d2583febda3c8cd3b20e73b8a2d3d8c41dab4b3ad465d834",
+      "importedSha256": "de62fc9bc8736a37d2583febda3c8cd3b20e73b8a2d3d8c41dab4b3ad465d834",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/rollback-reversal-compensation.md",
+      "sourceSha256": "f7051580e728332da1ba59f73aaf0d2f76b0d2b2352148bd78fa819b72a7d545",
+      "importedSha256": "f7051580e728332da1ba59f73aaf0d2f76b0d2b2352148bd78fa819b72a7d545",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/running-demo.md",
+      "sourceSha256": "e4ffa3dc1c72733e4b4f6d41a1c5769534ca5fe701b03fb321ff2c562e554158",
+      "importedSha256": "e4ffa3dc1c72733e4b4f6d41a1c5769534ca5fe701b03fb321ff2c562e554158",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/saga-recovery.md",
+      "sourceSha256": "09b88fae6bf53f31014c6dbd59f2cb6a02663719012dd9da2978dae5df4db8f0",
+      "importedSha256": "09b88fae6bf53f31014c6dbd59f2cb6a02663719012dd9da2978dae5df4db8f0",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/source-example-coverage.md",
+      "sourceSha256": "8fea6463e64e23c6228a16149b2420cf2264d4e1aa1d35a27db61c647d4753bf",
+      "importedSha256": "8fea6463e64e23c6228a16149b2420cf2264d4e1aa1d35a27db61c647d4753bf",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/source-language-only.md",
+      "sourceSha256": "c24ebee988d1d3b0206101a210b44c95eea1c869acde1445c670ee7aacf8a385",
+      "importedSha256": "7bf4653bba790a5d6c917ba38450e83ad44e88b8b787ae1a7774aeb3aede51ae",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/source-map.md",
+      "sourceSha256": "34fa3800af6d9dd8011f1d5bbe1c135ae02c45ff4e0af8999c212a7de46ea831",
+      "importedSha256": "34fa3800af6d9dd8011f1d5bbe1c135ae02c45ff4e0af8999c212a7de46ea831",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/source-only-final-verification.md",
+      "sourceSha256": "7c1a9d3559a9c609c042da6eb869f1d980ba09f8414ecc393478fd8029e5da33",
+      "importedSha256": "7c1a9d3559a9c609c042da6eb869f1d980ba09f8414ecc393478fd8029e5da33",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/source-only-refactoring.md",
+      "sourceSha256": "86ab0e9c4a664e4c2a27c7edae1ea174a113f9f93175ec004a282089b2ba0367",
+      "importedSha256": "fa3acc23d701b94cd747dfa61f08a090cfb2d4fa64c85672e3813926d26da4df",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/source-report-migration.md",
+      "sourceSha256": "6e33babdfa73403674d544c37da9af060aff30bff931c01c84f9eb329c3f826b",
+      "importedSha256": "6e33babdfa73403674d544c37da9af060aff30bff931c01c84f9eb329c3f826b",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/source-saga-migration.md",
+      "sourceSha256": "723cebfaad742660a554c5c2b23bf17078fdf49bf89b1aac2ccd21391b3bb10f",
+      "importedSha256": "723cebfaad742660a554c5c2b23bf17078fdf49bf89b1aac2ccd21391b3bb10f",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/spp-vs-cobol-java.md",
+      "sourceSha256": "317161989f8c19ed03a1b276c21429934d3b6ee89c54fb47fdd71d4362b4e53e",
+      "importedSha256": "317161989f8c19ed03a1b276c21429934d3b6ee89c54fb47fdd71d4362b4e53e",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/docs/web-workbench.md",
+      "sourceSha256": "849c6f5df3349e866c98fa117397741e77f9da1bb0943a17425f6e993fea9c98",
+      "importedSha256": "849c6f5df3349e866c98fa117397741e77f9da1bb0943a17425f6e993fea9c98",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/pom.xml",
+      "sourceSha256": "d69d45de6ffa7548f380e33ce5787577facb16fe72363af3313e9d13a37465df",
+      "importedSha256": "d69d45de6ffa7548f380e33ce5787577facb16fe72363af3313e9d13a37465df",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/run-demo.sh",
+      "sourceSha256": "d0fbf5d46c48709ee97002d6a1c641641a9f8dbddf630c44ba0212d7b17da07d",
+      "importedSha256": "d0fbf5d46c48709ee97002d6a1c641641a9f8dbddf630c44ba0212d7b17da07d",
+      "executable": true
+    },
+    {
+      "path": "demos/bank-deposit/src/main/resources/web/app.js",
+      "sourceSha256": "ab9fe5caca1412968a09f81abb4f158220af79ba4c1c6a7c3fe7db7b1847a121",
+      "importedSha256": "ab9fe5caca1412968a09f81abb4f158220af79ba4c1c6a7c3fe7db7b1847a121",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/main/resources/web/index.html",
+      "sourceSha256": "5ad4699729d59a460bf203b48b6373bc162645f8cc2355628f556572b845becd",
+      "importedSha256": "5ad4699729d59a460bf203b48b6373bc162645f8cc2355628f556572b845becd",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/main/resources/web/style.css",
+      "sourceSha256": "17d48517ab3757bda1f3bfb0dd964ba287c0719302009d905e12a3018f37d2b5",
+      "importedSha256": "17d48517ab3757bda1f3bfb0dd964ba287c0719302009d905e12a3018f37d2b5",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/main/resources/web/templates.json",
+      "sourceSha256": "fbd7337a29bf96130ae55328123bb0d20df95e49ebd7c80759ac93b51e06ab46",
+      "importedSha256": "fbd7337a29bf96130ae55328123bb0d20df95e49ebd7c80759ac93b51e06ab46",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/main/spp/cboddeposit/account/cboddeposit-00-model.spp",
+      "sourceSha256": "ae685fac8a3b8c29eb92b18f92ff1107ffbddeaf6b1a1f49db8f928cdf2368cc",
+      "importedSha256": "ae685fac8a3b8c29eb92b18f92ff1107ffbddeaf6b1a1f49db8f928cdf2368cc",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/main/spp/cboddeposit/account/cboddeposit-10-opening.spp",
+      "sourceSha256": "567fe188ba33344aca2ec6ce350a2553c7788ae7652d43eb23736a4d2e054a95",
+      "importedSha256": "567fe188ba33344aca2ec6ce350a2553c7788ae7652d43eb23736a4d2e054a95",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/main/spp/cboddeposit/account/cboddeposit-20-internal-accounts.spp",
+      "sourceSha256": "1fd7009101c4ad53878d7c309d75da580161a14a0b3f3acf8e948bde1c0887fc",
+      "importedSha256": "1fd7009101c4ad53878d7c309d75da580161a14a0b3f3acf8e948bde1c0887fc",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/main/spp/cboddeposit/account/cboddeposit-scene-openBankRepaymentAccounts.spp",
+      "sourceSha256": "fc2d5baa6d8ad709d64629f922bf9d370e8a1fba24446d2d4a5cc693a7141eb2",
+      "importedSha256": "fc2d5baa6d8ad709d64629f922bf9d370e8a1fba24446d2d4a5cc693a7141eb2",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/main/spp/cboddeposit/account/cboddeposit-scene-openDepositAccount.spp",
+      "sourceSha256": "990f3e616edaa413885cd2b697a749420a863fb69a5e91d3b15f5a02d790e8a2",
+      "importedSha256": "990f3e616edaa413885cd2b697a749420a863fb69a5e91d3b15f5a02d790e8a2",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/main/spp/cboddeposit/account/cboddeposit-scene-readDepositAccount.spp",
+      "sourceSha256": "018e8e68b7a9db05f77164704a3982607d1e97cc57ea917dffcb8cbb425b5025",
+      "importedSha256": "018e8e68b7a9db05f77164704a3982607d1e97cc57ea917dffcb8cbb425b5025",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/main/spp/cboddeposit/accrual/cboddeposit-20-bank-calendar.spp",
+      "sourceSha256": "9a4963e0c09549f2f68947c81833ebb68ac0d5427dbf35e37070448c21c833a4",
+      "importedSha256": "9a4963e0c09549f2f68947c81833ebb68ac0d5427dbf35e37070448c21c833a4",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/main/spp/cboddeposit/accrual/cboddeposit-30-agreement-product.spp",
+      "sourceSha256": "5019c2b7f8fdf4628295272cbd9a9e087aa12fad161007c230519a83fecc8054",
+      "importedSha256": "5019c2b7f8fdf4628295272cbd9a9e087aa12fad161007c230519a83fecc8054",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/main/spp/cboddeposit/accrual/cboddeposit-45-agreement-window.spp",
+      "sourceSha256": "cd90530880d97156d905e5b4c2dea41121df6a042f9e1518c12e9e3178cca3b1",
+      "importedSha256": "cd90530880d97156d905e5b4c2dea41121df6a042f9e1518c12e9e3178cca3b1",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/main/spp/cboddeposit/accrual/cboddeposit-60-accrual.spp",
+      "sourceSha256": "d0508c0f425024a18c464102ef4d7ac3e518f86b0e2dbe1d6c91cfe610c474f6",
+      "importedSha256": "d0508c0f425024a18c464102ef4d7ac3e518f86b0e2dbe1d6c91cfe610c474f6",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/main/spp/cboddeposit/admission/cboddeposit-10-cash-admission.spp",
+      "sourceSha256": "19d439f34badd0c94a28844e61129ab8d58e8a1624adad9a48cbc94b38591278",
+      "importedSha256": "19d439f34badd0c94a28844e61129ab8d58e8a1624adad9a48cbc94b38591278",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/main/spp/cboddeposit/admission/cboddeposit-80-bank-qualification.spp",
+      "sourceSha256": "d2652ada79463128900a0b22894dabb7aa44aa1f7d823128f983111660ef3038",
+      "importedSha256": "d2652ada79463128900a0b22894dabb7aa44aa1f7d823128f983111660ef3038",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/main/spp/cboddeposit/admission/cboddeposit-scene-assessBankQualification.spp",
+      "sourceSha256": "b9f7274cfea321ff1096fc61fe6bfdbb513a3ba0c9145fdd8946b718cc7ab667",
+      "importedSha256": "b9f7274cfea321ff1096fc61fe6bfdbb513a3ba0c9145fdd8946b718cc7ab667",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/main/spp/cboddeposit/admission/cboddeposit-scene-assessCashDeposit.spp",
+      "sourceSha256": "24e8efc30d71b58f4118faff976cdfcdb0524b2f75e0a3d6b3b519403380c083",
+      "importedSha256": "24e8efc30d71b58f4118faff976cdfcdb0524b2f75e0a3d6b3b519403380c083",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/main/spp/cboddeposit/calculation/cboddeposit-00-deposit-kernel.spp",
+      "sourceSha256": "b6f8ca206e0ff12e1a77ba4f6b26b06b360b1a2922c5e5b480197790edec60d6",
+      "importedSha256": "b6f8ca206e0ff12e1a77ba4f6b26b06b360b1a2922c5e5b480197790edec60d6",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/main/spp/cboddeposit/calculation/cboddeposit-scene-previewAgreementProduct.spp",
+      "sourceSha256": "e19309d783c9e79682b086b9a9453126ad652f93cf99bc8f3bac86b8e827a02f",
+      "importedSha256": "e19309d783c9e79682b086b9a9453126ad652f93cf99bc8f3bac86b8e827a02f",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/main/spp/cboddeposit/calculation/cboddeposit-scene-previewDeposit.spp",
+      "sourceSha256": "80f25a7382da7399357c91dc39417f5db0990548ec1e33c7225645f8268764bf",
+      "importedSha256": "80f25a7382da7399357c91dc39417f5db0990548ec1e33c7225645f8268764bf",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/main/spp/cboddeposit/calculation/cboddeposit-scene-previewInterestProduct.spp",
+      "sourceSha256": "55a7c285edd679a58d92217d509caeed8fb903e22ef59273b4f8e57a78a109d3",
+      "importedSha256": "55a7c285edd679a58d92217d509caeed8fb903e22ef59273b4f8e57a78a109d3",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/main/spp/cboddeposit/calculation/cboddeposit-scene-previewUnitInterest.spp",
+      "sourceSha256": "34da7476e1dc9dbb8a899e4a7e7bc9c9858a96bcbdb44c6ebe0c97cfc32c5ade",
+      "importedSha256": "34da7476e1dc9dbb8a899e4a7e7bc9c9858a96bcbdb44c6ebe0c97cfc32c5ade",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/main/spp/cboddeposit/cboddeposit.app",
+      "sourceSha256": "9e5aefea79ec0e3cc3f4ac4b1f64ccbb9c610258ddafbc5833d4d44109ff27fa",
+      "importedSha256": "9e5aefea79ec0e3cc3f4ac4b1f64ccbb9c610258ddafbc5833d4d44109ff27fa",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/main/spp/cboddeposit/cboddeposit.enum",
+      "sourceSha256": "23e74b99370ca04f14cfc68cdae836fc8e7f402a668b3351e6ab5b32e5cf2490",
+      "importedSha256": "23e74b99370ca04f14cfc68cdae836fc8e7f402a668b3351e6ab5b32e5cf2490",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/main/spp/cboddeposit/cboddeposit.phy",
+      "sourceSha256": "ef2a903780dbf977d1e69bdc5be3ce232102b9b3056173f150fb22008781e45d",
+      "importedSha256": "ef2a903780dbf977d1e69bdc5be3ce232102b9b3056173f150fb22008781e45d",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/main/spp/cboddeposit/cboddeposit.spp",
+      "sourceSha256": "5a24465ddfab0ba3085fc4e60bae06c562507bd009e4f736f64ab44334a34d32",
+      "importedSha256": "5a24465ddfab0ba3085fc4e60bae06c562507bd009e4f736f64ab44334a34d32",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/main/spp/cboddeposit/deposit/cboddeposit-00-agreements.spp",
+      "sourceSha256": "72c4d096be36247840c3d791076b9c2cb64ce60a39eb8b82b2b12bd3c6275985",
+      "importedSha256": "72c4d096be36247840c3d791076b9c2cb64ce60a39eb8b82b2b12bd3c6275985",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/main/spp/cboddeposit/deposit/cboddeposit-scene-depositCash.spp",
+      "sourceSha256": "a45f57dea0d176124f32590133569301f19dd7be3e13f5c031da60b7a498c1e7",
+      "importedSha256": "a45f57dea0d176124f32590133569301f19dd7be3e13f5c031da60b7a498c1e7",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/main/spp/cboddeposit/deposit/cboddeposit-scene-readCashDeposit.spp",
+      "sourceSha256": "6a2f4cc037cd2b1444d2b6ccbf70182ee761e76cdadb726cf3609330e11e7fb2",
+      "importedSha256": "6a2f4cc037cd2b1444d2b6ccbf70182ee761e76cdadb726cf3609330e11e7fb2",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/main/spp/cboddeposit/fee/cboddeposit-40-deposit-fee.spp",
+      "sourceSha256": "bed34d856bf3239556fecd95d4c7fb2115f929042fa7b3c050466efa6834034d",
+      "importedSha256": "bed34d856bf3239556fecd95d4c7fb2115f929042fa7b3c050466efa6834034d",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/main/spp/cboddeposit/fee/cboddeposit-50-fee-schedule.spp",
+      "sourceSha256": "2f9ee10fca0a971a4cce561e175cb7baf93931b8e9e765fd8a5befcea7c2a4ab",
+      "importedSha256": "2f9ee10fca0a971a4cce561e175cb7baf93931b8e9e765fd8a5befcea7c2a4ab",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/main/spp/cboddeposit/fee/cboddeposit-scene-previewDepositFee.spp",
+      "sourceSha256": "2f0471a7081ed83d5451f2190e74ee88bf37a2dd1d78e9bec2059778e4436a1f",
+      "importedSha256": "2f0471a7081ed83d5451f2190e74ee88bf37a2dd1d78e9bec2059778e4436a1f",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/main/spp/cboddeposit/fee/cboddeposit-scene-quoteDepositFee.spp",
+      "sourceSha256": "d77a8790620987e2b76cbe6afe96bec01d99580d1e5597d646a8d43c25a1a42f",
+      "importedSha256": "d77a8790620987e2b76cbe6afe96bec01d99580d1e5597d646a8d43c25a1a42f",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/main/spp/cboddeposit/fee/cboddeposit-scene-registerFeeSchedule.spp",
+      "sourceSha256": "2b603364ea2f57e9423b681c07faf43fd2e5def000aedac7bb739666e13c2b04",
+      "importedSha256": "2b603364ea2f57e9423b681c07faf43fd2e5def000aedac7bb739666e13c2b04",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/main/spp/cboddeposit/posting/cboddeposit-00-postings.spp",
+      "sourceSha256": "9453c375a5aef00d88d43cf66734340e93187390e9b3a5086ca22c47b3357fcd",
+      "importedSha256": "9453c375a5aef00d88d43cf66734340e93187390e9b3a5086ca22c47b3357fcd",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/main/spp/cboddeposit/reversal/cboddeposit-00-rules.spp",
+      "sourceSha256": "2f4fb073d5a3a1d2309eb164750d6118a9563b7432a0f8126f0ad99986d486c2",
+      "importedSha256": "2f4fb073d5a3a1d2309eb164750d6118a9563b7432a0f8126f0ad99986d486c2",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/main/spp/cboddeposit/reversal/cboddeposit-10-postings.spp",
+      "sourceSha256": "090ae5efa669bd7d5d9791de77ea78c149916887151c9dd3a7ceb4ce939190c8",
+      "importedSha256": "090ae5efa669bd7d5d9791de77ea78c149916887151c9dd3a7ceb4ce939190c8",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/main/spp/cboddeposit/reversal/cboddeposit-scene-previewCashReversal.spp",
+      "sourceSha256": "c4ffaa0e70802b9d6066a76d04192a08e4fa2aaabab12833051b57f4e4790fc6",
+      "importedSha256": "c4ffaa0e70802b9d6066a76d04192a08e4fa2aaabab12833051b57f4e4790fc6",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/main/spp/cboddeposit/reversal/cboddeposit-scene-readCashReversal.spp",
+      "sourceSha256": "73f3e5b195bc9566db3f629079b4f75aa0c1b384e6802699cd27c4efbc15fad7",
+      "importedSha256": "73f3e5b195bc9566db3f629079b4f75aa0c1b384e6802699cd27c4efbc15fad7",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/main/spp/cboddeposit/reversal/cboddeposit-scene-reverseCash.spp",
+      "sourceSha256": "f0c9d03c8f7b18089a39f394ec8bedb9bd343757c585a0b40b605c1f56000f36",
+      "importedSha256": "f0c9d03c8f7b18089a39f394ec8bedb9bd343757c585a0b40b605c1f56000f36",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/main/spp/cboddeposit/technical-services.app",
+      "sourceSha256": "886ebc231fbcd825b9237bd980d41dbe6741fa56fc6fb5638062fca8f41f8d40",
+      "importedSha256": "886ebc231fbcd825b9237bd980d41dbe6741fa56fc6fb5638062fca8f41f8d40",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/main/spp/cboddeposit/technical-services.phy",
+      "sourceSha256": "db452d43f4da0ad3fc24cb227632e9e94ebfbc4966c2b4a1142bfabc008fdadc",
+      "importedSha256": "db452d43f4da0ad3fc24cb227632e9e94ebfbc4966c2b4a1142bfabc008fdadc",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/test/java/com/servpp/xboddemo/XbodAccrualFailureTest.java",
+      "sourceSha256": "f53dc497aab0ae0ea534644157169bc8917097f7a702989171f8b482644d7b01",
+      "importedSha256": "f53dc497aab0ae0ea534644157169bc8917097f7a702989171f8b482644d7b01",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/test/java/com/servpp/xboddemo/XbodAccrualRuleTest.java",
+      "sourceSha256": "40de2c3f8eb64b6caaa19f7d306103aba09d42d434609a3f6be5bafe522d01d4",
+      "importedSha256": "40de2c3f8eb64b6caaa19f7d306103aba09d42d434609a3f6be5bafe522d01d4",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/test/java/com/servpp/xboddemo/XbodAccrualTest.java",
+      "sourceSha256": "ed8d1f2fa7a5ced489cd98f3f80160c1553bf80f3b8c3cb0fbe89649c74dfba5",
+      "importedSha256": "ed8d1f2fa7a5ced489cd98f3f80160c1553bf80f3b8c3cb0fbe89649c74dfba5",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/test/java/com/servpp/xboddemo/XbodAdmissionBoundaryTest.java",
+      "sourceSha256": "280ee654efd2eb8814294d835f1924790335079ba667d8f1e9da7c286efccb5f",
+      "importedSha256": "280ee654efd2eb8814294d835f1924790335079ba667d8f1e9da7c286efccb5f",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/test/java/com/servpp/xboddemo/XbodAgreementReuseTest.java",
+      "sourceSha256": "126680ed3c61d04ac30f581222f7c785950708f463149962ba3228108afaa667",
+      "importedSha256": "126680ed3c61d04ac30f581222f7c785950708f463149962ba3228108afaa667",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/test/java/com/servpp/xboddemo/XbodBankNoticeTest.java",
+      "sourceSha256": "3944f75a97888fa3418133774869c0a40e01fe4056e6f090b363198fa4b102b5",
+      "importedSha256": "3944f75a97888fa3418133774869c0a40e01fe4056e6f090b363198fa4b102b5",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/test/java/com/servpp/xboddemo/XbodCalculationTest.java",
+      "sourceSha256": "5216e2e11c41429f3a036ef15cf4cbb09f8054b5c7466b8d8a19c41d24e69c25",
+      "importedSha256": "5216e2e11c41429f3a036ef15cf4cbb09f8054b5c7466b8d8a19c41d24e69c25",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/test/java/com/servpp/xboddemo/XbodCalendarTest.java",
+      "sourceSha256": "7af6e25ddb4f00697318fca213e5ab871027fb04f277e54582869b1bab01f1e4",
+      "importedSha256": "7af6e25ddb4f00697318fca213e5ab871027fb04f277e54582869b1bab01f1e4",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/test/java/com/servpp/xboddemo/XbodCashPolicyTest.java",
+      "sourceSha256": "47deca49c8480cc7c4d0d37164891247fca6284d363a79b32d0b34701b7f64d0",
+      "importedSha256": "47deca49c8480cc7c4d0d37164891247fca6284d363a79b32d0b34701b7f64d0",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/test/java/com/servpp/xboddemo/XbodCommitOutcomeTest.java",
+      "sourceSha256": "3e99098b85e36434aaafa680cb72fbe54271c12bcd99012630f766af5b011fec",
+      "importedSha256": "3e99098b85e36434aaafa680cb72fbe54271c12bcd99012630f766af5b011fec",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/test/java/com/servpp/xboddemo/XbodConcurrencyTest.java",
+      "sourceSha256": "5d74815bf09096be1f71c2d607f512c2887e766826ae2f02f260f543db1bfcc0",
+      "importedSha256": "5d74815bf09096be1f71c2d607f512c2887e766826ae2f02f260f543db1bfcc0",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/test/java/com/servpp/xboddemo/XbodCurrentEligibilityTest.java",
+      "sourceSha256": "c9908fbb8d6d27bf2a921ece2225fc9b60861fd197320f0f5c2cdbb6c863a446",
+      "importedSha256": "c9908fbb8d6d27bf2a921ece2225fc9b60861fd197320f0f5c2cdbb6c863a446",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/test/java/com/servpp/xboddemo/XbodDailyCashTest.java",
+      "sourceSha256": "a37e985cbe12098fdd42faa56404aa67524fb0111b45becf66d8f21021716d16",
+      "importedSha256": "a37e985cbe12098fdd42faa56404aa67524fb0111b45becf66d8f21021716d16",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/test/java/com/servpp/xboddemo/XbodDatedAgreementTest.java",
+      "sourceSha256": "3e6e5a8d7023f458d383e732d46ce0bdff44368e6e36e92fee63f1a79851971f",
+      "importedSha256": "3e6e5a8d7023f458d383e732d46ce0bdff44368e6e36e92fee63f1a79851971f",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/test/java/com/servpp/xboddemo/XbodFailureDispositionTest.java",
+      "sourceSha256": "45bd3d06211de305f588d6a794f595febe21acbdea796f68f09c5035fe52a4d8",
+      "importedSha256": "45bd3d06211de305f588d6a794f595febe21acbdea796f68f09c5035fe52a4d8",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/test/java/com/servpp/xboddemo/XbodHttpTest.java",
+      "sourceSha256": "9dc5c32a99867f6c67e4006132645f14d19de67a4b9f5a97691c99e4f8be886e",
+      "importedSha256": "9dc5c32a99867f6c67e4006132645f14d19de67a4b9f5a97691c99e4f8be886e",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/test/java/com/servpp/xboddemo/XbodIdempotencyTest.java",
+      "sourceSha256": "3ec3dcdefd7daa2a25ef1ff542940f7424ec7c0b915015963379b14177033856",
+      "importedSha256": "3ec3dcdefd7daa2a25ef1ff542940f7424ec7c0b915015963379b14177033856",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/test/java/com/servpp/xboddemo/XbodOriginalAgreementIntegrityTest.java",
+      "sourceSha256": "e53a994b8f5abff3af96f2566c3d71b8c4fbc387a2527936372de167b8e99d75",
+      "importedSha256": "e53a994b8f5abff3af96f2566c3d71b8c4fbc387a2527936372de167b8e99d75",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/test/java/com/servpp/xboddemo/XbodOriginalPostingIntegrityTest.java",
+      "sourceSha256": "8693342fdc8d497c8d75ddf747ac393f5d5cc0133fedd008bf10c0fa05e1e671",
+      "importedSha256": "8693342fdc8d497c8d75ddf747ac393f5d5cc0133fedd008bf10c0fa05e1e671",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/test/java/com/servpp/xboddemo/XbodPartialPostingTest.java",
+      "sourceSha256": "548c349049fb22cd7f6c75713777363c7b79fde9cdaae51fd9c7841a79ec0c6b",
+      "importedSha256": "548c349049fb22cd7f6c75713777363c7b79fde9cdaae51fd9c7841a79ec0c6b",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/test/java/com/servpp/xboddemo/XbodPostingRulesTest.java",
+      "sourceSha256": "7c72e3891b987194d9cd27efc2ba055cc020b37cbd14fc290758176a92b246bc",
+      "importedSha256": "7c72e3891b987194d9cd27efc2ba055cc020b37cbd14fc290758176a92b246bc",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/test/java/com/servpp/xboddemo/XbodRepaymentTest.java",
+      "sourceSha256": "51e35ac5c676d0a16af99f034bf414535c4849afea07b4537eb9b4223a815c05",
+      "importedSha256": "51e35ac5c676d0a16af99f034bf414535c4849afea07b4537eb9b4223a815c05",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/test/java/com/servpp/xboddemo/XbodRestartProbe.java",
+      "sourceSha256": "95446b87585b25abc1b1a7a5dde6d2d89c448dfcb9222ec97589108c07751539",
+      "importedSha256": "95446b87585b25abc1b1a7a5dde6d2d89c448dfcb9222ec97589108c07751539",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/test/java/com/servpp/xboddemo/XbodRestartTest.java",
+      "sourceSha256": "1bf21097ee2a0efb6184b361fab2ef4d687f577a0874c2fa786fe8a286a65186",
+      "importedSha256": "1bf21097ee2a0efb6184b361fab2ef4d687f577a0874c2fa786fe8a286a65186",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/test/java/com/servpp/xboddemo/XbodReversalCapacityTest.java",
+      "sourceSha256": "dd1b81104555044821d282a742bd202182b30a724fae662d2a38b8e44d47e365",
+      "importedSha256": "dd1b81104555044821d282a742bd202182b30a724fae662d2a38b8e44d47e365",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/test/java/com/servpp/xboddemo/XbodReversalPreviewTest.java",
+      "sourceSha256": "cee54a9261cce754c2d6f9f432537951a144aa73dc5748962cb185ccc531c73d",
+      "importedSha256": "cee54a9261cce754c2d6f9f432537951a144aa73dc5748962cb185ccc531c73d",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/test/java/com/servpp/xboddemo/XbodReversalRuleTest.java",
+      "sourceSha256": "e7eb89e9ddd3836dfd21a3d6347d5ae875fd3f0aa28453c78244d5c336cdfd2a",
+      "importedSha256": "e7eb89e9ddd3836dfd21a3d6347d5ae875fd3f0aa28453c78244d5c336cdfd2a",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/test/java/com/servpp/xboddemo/XbodRuleTest.java",
+      "sourceSha256": "9c391c06e9af9aac0ea5de12963f9c5f007d84cf4d6f1aeb6accedfcb53af7ee",
+      "importedSha256": "9c391c06e9af9aac0ea5de12963f9c5f007d84cf4d6f1aeb6accedfcb53af7ee",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/test/java/com/servpp/xboddemo/XbodSourceIntegrityTest.java",
+      "sourceSha256": "6acad3db7b77c39844b13bf95f1ec2839305cb9742a62c8ab8cbb0947322df78",
+      "importedSha256": "6acad3db7b77c39844b13bf95f1ec2839305cb9742a62c8ab8cbb0947322df78",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/test/java/com/servpp/xboddemo/XbodStaleReversalTest.java",
+      "sourceSha256": "af7cab74fa794818a2dc06a5a6ee4ddabdce9b47423e05186c2d16e5386c86a4",
+      "importedSha256": "af7cab74fa794818a2dc06a5a6ee4ddabdce9b47423e05186c2d16e5386c86a4",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/test/java/com/servpp/xboddemo/XbodTestSupport.java",
+      "sourceSha256": "2b635cdeedadb9078b07bfa18fa8f543db414095ac3ad0dc35094ec43c87178b",
+      "importedSha256": "2b635cdeedadb9078b07bfa18fa8f543db414095ac3ad0dc35094ec43c87178b",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/test/java/com/servpp/xboddemo/XbodTransactionTest.java",
+      "sourceSha256": "4a578467f0764ad856440f9b80512d313c72e386f0c4db7d90b6407a6f9fc02d",
+      "importedSha256": "4a578467f0764ad856440f9b80512d313c72e386f0c4db7d90b6407a6f9fc02d",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/test/resources/admission-cases.json",
+      "sourceSha256": "67cdd7f658ba03ef65cb5f9c906420185166abaeb87796585eeb99bf68d3a617",
+      "importedSha256": "67cdd7f658ba03ef65cb5f9c906420185166abaeb87796585eeb99bf68d3a617",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/test/resources/agreement-product-cases.json",
+      "sourceSha256": "dd9ef7bf21d9c1c3a45ad5cda9f9d6f1dea8b00cfd56658e70ca6f9f64e69f05",
+      "importedSha256": "dd9ef7bf21d9c1c3a45ad5cda9f9d6f1dea8b00cfd56658e70ca6f9f64e69f05",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/test/resources/bank-calendar-cases.json",
+      "sourceSha256": "5cf9c0ed4284150af6f7d0d0ea8420016702b44890386d4a688ee052b8d41d70",
+      "importedSha256": "5cf9c0ed4284150af6f7d0d0ea8420016702b44890386d4a688ee052b8d41d70",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/test/resources/bank-qualification-cases.json",
+      "sourceSha256": "153cee84e21c2d92868ef729f119f6169e64faaecda71fd63437ee1720dfeb62",
+      "importedSha256": "153cee84e21c2d92868ef729f119f6169e64faaecda71fd63437ee1720dfeb62",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/test/resources/deposit-kernel-cases.json",
+      "sourceSha256": "5c59b823efedbeccf92effd22432ac8d7ad7a030276a0e1033c5fd6222e87ce6",
+      "importedSha256": "5c59b823efedbeccf92effd22432ac8d7ad7a030276a0e1033c5fd6222e87ce6",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/test/resources/fee-cases.json",
+      "sourceSha256": "93cc77fc50f4ae0796380432507c6c3358966120e21e395063745747b270bded",
+      "importedSha256": "93cc77fc50f4ae0796380432507c6c3358966120e21e395063745747b270bded",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/src/test/resources/posting-rules-cases.json",
+      "sourceSha256": "8b1352fa1300d03648eaba10a33ca2d5234b39f3567d79b87fbdcb84724ae96f",
+      "importedSha256": "8b1352fa1300d03648eaba10a33ca2d5234b39f3567d79b87fbdcb84724ae96f",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/tools/web-acceptance.cjs",
+      "sourceSha256": "603bd5dd38e6a5a1283200c3e24b47b5d20e7d4e5d2470416cf13c560f82b8d4",
+      "importedSha256": "603bd5dd38e6a5a1283200c3e24b47b5d20e7d4e5d2470416cf13c560f82b8d4",
+      "executable": false
+    },
+    {
+      "path": "demos/bank-deposit/tools/web-templates.py",
+      "sourceSha256": "04607a6badb6abfeb6a1bebb24fdad82cfbaae5e7422d514a8445d699604a076",
+      "importedSha256": "04607a6badb6abfeb6a1bebb24fdad82cfbaae5e7422d514a8445d699604a076",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/AGENTS.md",
+      "sourceSha256": "305d642f3fd867e4e418a51777e1119dcb39db731f521164b3a844c22f51cd0d",
+      "importedSha256": "d9296b41f018d08c73758e80420cf46ce320ef60bd34c60abe927d7db88e043a",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/README.md",
+      "sourceSha256": "91416efaac5e412a7bc4f26f18c39788c8201bccf247959ec12653d8adbb7a1f",
+      "importedSha256": "51704fc9479e7edffb800124c19eb607950312eed0f90d814c93cd102a0453a3",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/docs/acceptance-audit.md",
+      "sourceSha256": "05c1f8761d243e2c1e9dbebce56a86ea4de61da7324cbc3db5bc0496ea0a5a04",
+      "importedSha256": "05c1f8761d243e2c1e9dbebce56a86ea4de61da7324cbc3db5bc0496ea0a5a04",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/docs/capability-matrix.md",
+      "sourceSha256": "f11e823e971908cd9971d25fd3a381a354252becf19649c7c4682bca81c14029",
+      "importedSha256": "6b22b6f0a5dbdf08cac1eb08e7a12b9a12e9966a2a2f084d7ab6ec421cb1456f",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/docs/conserved-opening-and-transfers.md",
+      "sourceSha256": "6910b37b3ef8585868cb0a50bded6eb697efa972a71046711e0e6e6f1dfc18ee",
+      "importedSha256": "6910b37b3ef8585868cb0a50bded6eb697efa972a71046711e0e6e6f1dfc18ee",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/docs/constants-and-localization.md",
+      "sourceSha256": "022a6c5ded1cfdab75c78688e4f042601b94ad045af0229c8f263330dddcff95",
+      "importedSha256": "022a6c5ded1cfdab75c78688e4f042601b94ad045af0229c8f263330dddcff95",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/docs/demo-walkthrough.md",
+      "sourceSha256": "a15c34eb2bba4efd759325045ae6349a978733956f14cfcf631820407f37a36e",
+      "importedSha256": "a15c34eb2bba4efd759325045ae6349a978733956f14cfcf631820407f37a36e",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/docs/domain-boundaries.md",
+      "sourceSha256": "5e54b44a0dd77d73c21b1fd2cb9029814f39fe934e7578c0dc9aebec79126d78",
+      "importedSha256": "2eb45aef6bd7209fd02903c334b4ca6067e01f53e1bc9aa1a34e825fac529a62",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/docs/implementation-path.md",
+      "sourceSha256": "bf531ef28983c7a1ca901220bee9a35f97016a17cdfb867cc03198f5f953c656",
+      "importedSha256": "2d465827f2acc7c68c2ac6087eb448801ad6db09f369f44203ea29d766f00e98",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/docs/java-tests.md",
+      "sourceSha256": "42f6ae9e09076052c08dac5943b7681f92ebdc92ce37635211aaf3fea9f3c224",
+      "importedSha256": "4ca0fe436f48e13f50630bd85ad484de52352de486948999c2691eae8a8167f4",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/docs/known-issues.md",
+      "sourceSha256": "57669c1dff58cbe844c87655b1987bd8ad5bbe045038faaa02186a42af1aa9ec",
+      "importedSha256": "57669c1dff58cbe844c87655b1987bd8ad5bbe045038faaa02186a42af1aa9ec",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/docs/language-gaps.md",
+      "sourceSha256": "1d40c7456832c9a4edfcf9a577491575b4cf981cefb0501540b30dd62774af9c",
+      "importedSha256": "1d40c7456832c9a4edfcf9a577491575b4cf981cefb0501540b30dd62774af9c",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/docs/local-domain-binding.md",
+      "sourceSha256": "90f73af7b1b201c9a8efd76c9fe27d0248bd5bf05d37b922e47ef7266ccec93b",
+      "importedSha256": "c6931d15db3cf7f1200a3a89457ad55fc4263f1f61ccf812b7badf125458afa0",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/docs/multidomain-implementation.md",
+      "sourceSha256": "fc9a6817af003abab02998fb348ac8e61066a8fc891df98aaaeb1e381ecc7951",
+      "importedSha256": "81af0e3a9733fff3f079464ef66367b9a2bee06d5191bef071662ac9dc04c1af",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/docs/quantum-caller-limits.md",
+      "sourceSha256": "8db820545211a87d6c9ce93268f3560ffa3883a482fa34245bf8ca4631487523",
+      "importedSha256": "974803122bb2f626e958826e242fcf7428431c45644369823b65466676ac3e02",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/docs/quantum-opening-recovery.md",
+      "sourceSha256": "fe965eb9b36e0bfcff2ca35cd05c6ee70f51297db7b17900255b73e82c4f44e9",
+      "importedSha256": "fe965eb9b36e0bfcff2ca35cd05c6ee70f51297db7b17900255b73e82c4f44e9",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/docs/regression-2026-10-11.md",
+      "sourceSha256": "e68cc067c4ea8ddebb6dae83b2dbcdc2790198ab3221321d8f303df55208c557",
+      "importedSha256": "e68cc067c4ea8ddebb6dae83b2dbcdc2790198ab3221321d8f303df55208c557",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/docs/regression-2026-10-12-conserved-transfers.md",
+      "sourceSha256": "7ab4218044efc7c6cbb76870d58dddf38a40e518781927686ab99c13407bee48",
+      "importedSha256": "7ab4218044efc7c6cbb76870d58dddf38a40e518781927686ab99c13407bee48",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/docs/requirements-and-functions.md",
+      "sourceSha256": "1f820bab5b3e6159a8b6d6116beda9e78c5bd1a595e8cdc9c7809e6cb05da8bb",
+      "importedSha256": "b27b6860e7b68013847eb1eccf158199637fa5ffb67a6aaff4f236657d9c7cea",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/docs/reservation-failure-handling.md",
+      "sourceSha256": "e67ffe02553d8875c514326794a4ffe7c494ad60d886a58507a5e3552ecc1d9a",
+      "importedSha256": "153a8e0f2fa483f4924bf3de1a527e49e1205a91af34fb1f95700f4ee3db45ec",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/docs/running-demo.md",
+      "sourceSha256": "d1297bdbc49ea352d7cd6190ae25d143aedee9d355c28ed80b46815a545f5502",
+      "importedSha256": "d1297bdbc49ea352d7cd6190ae25d143aedee9d355c28ed80b46815a545f5502",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/docs/scenario-design.md",
+      "sourceSha256": "d4756ee6fca32cfc5ae8e2a2049b4bb4390d432e12d2a6545fe73788b4d17a77",
+      "importedSha256": "c6f5f6e01cbed5aee6073b4959569e2697d3d7dc5b01ef4710ae5ae4d4545c54",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/docs/source-guide.md",
+      "sourceSha256": "22769b3e172d62ade0cb26f110123cef2436675b30bf619ce8f1aa2c6b3c327e",
+      "importedSha256": "49d1bec2e29127441913754a677336ecf8a1c0040e6f6e21a60aff34bd6754e5",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/docs/spp-vs-java.md",
+      "sourceSha256": "86eaaca1b0f911ad8d2938b9bca0cbc1bc93bc753005e1e1df64698c46c15821",
+      "importedSha256": "8d4480e3fa74939b6c35ad44be9e621d4e61f259e57090f1ee80a73495e3df65",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/docs/technical-services.md",
+      "sourceSha256": "3d4727591ed70158849a5027dac38c329e81e615b61d88cee0b884f8e640219f",
+      "importedSha256": "a2a21cd628b90060c95ed2d180f25768f5690b573525450029fb44dc2d3ab86e",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/docs/transaction-boundary-audit.md",
+      "sourceSha256": "1838cead1d9093a9b29d27e4de1777fc2d7064126fd4f7b71c2639e4f3bf9afe",
+      "importedSha256": "8022c17bf5724139e666bef94e5f0c0e24acd9f993fbb6f664516ffc144b1dd7",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/docs/transaction-evolution-plan.md",
+      "sourceSha256": "3bd944b2a05608de50630ce10c8224d55ad7f0bfb9d70f4998c3a238315acd7c",
+      "importedSha256": "216bda39a0456f7f8f675762622f64ac089bedb909e6a077347d62d9e6aa916d",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/pom.xml",
+      "sourceSha256": "a3ed750dd7c00999d587770efeb4b95ea786a687685a976a8452b5deee4f9431",
+      "importedSha256": "a3ed750dd7c00999d587770efeb4b95ea786a687685a976a8452b5deee4f9431",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/run-demo.sh",
+      "sourceSha256": "806d68633c2b1798e50457092ff376d2311f826e32300c5e7e9860fa6dc8fa3c",
+      "importedSha256": "806d68633c2b1798e50457092ff376d2311f826e32300c5e7e9860fa6dc8fa3c",
+      "executable": true
+    },
+    {
+      "path": "demos/petstore/src/main/resources/i18n/petshop/en-US.properties",
+      "sourceSha256": "cb81f89514eb42ae0b98ef98faf99c41ee2f4b085257ab85b8fd114c51e91e3d",
+      "importedSha256": "cb81f89514eb42ae0b98ef98faf99c41ee2f4b085257ab85b8fd114c51e91e3d",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/resources/i18n/petshop/zh-CN.properties",
+      "sourceSha256": "ba2e8cc0cd023f585b404e4742dafa04ab8c0c2c624edd3d2f6f3bc0d3ccee0c",
+      "importedSha256": "ba2e8cc0cd023f585b404e4742dafa04ab8c0c2c624edd3d2f6f3bc0d3ccee0c",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/resources/i18n/product/en-US.properties",
+      "sourceSha256": "f662438632f0ec26237986923c03fc20c4e0f93d4d8c8ee6ee331699d8740ed2",
+      "importedSha256": "f662438632f0ec26237986923c03fc20c4e0f93d4d8c8ee6ee331699d8740ed2",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/resources/i18n/product/zh-CN.properties",
+      "sourceSha256": "6fa51979045e5808ef91a580cf5e28bcb3e1964ca0e811d72744d243f145565b",
+      "importedSha256": "6fa51979045e5808ef91a580cf5e28bcb3e1964ca0e811d72744d243f145565b",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/resources/web/app.js",
+      "sourceSha256": "5eac87d05bf1b74a4ef7986d2c1551092e009e12ba6eb4767137c5cf4299378f",
+      "importedSha256": "5eac87d05bf1b74a4ef7986d2c1551092e009e12ba6eb4767137c5cf4299378f",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/resources/web/index.html",
+      "sourceSha256": "288ddb6029cc9a9a95fbfb183d843342c7310af3ad85ebf9d370ff822f2dcd92",
+      "importedSha256": "288ddb6029cc9a9a95fbfb183d843342c7310af3ad85ebf9d370ff822f2dcd92",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/resources/web/style.css",
+      "sourceSha256": "5174cff024437f0d295f4d67a55ce8fd7a99decb42dd6ebcae6bfacd889e6587",
+      "importedSha256": "5174cff024437f0d295f4d67a55ce8fd7a99decb42dd6ebcae6bfacd889e6587",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/customer/customer.app",
+      "sourceSha256": "a2fc45d40000a7e24ab49d5d90a239118b71f55dc6573f48ca361d86876a5c58",
+      "importedSha256": "a2fc45d40000a7e24ab49d5d90a239118b71f55dc6573f48ca361d86876a5c58",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/customer/customer.phy",
+      "sourceSha256": "d6fa27c334e83b8fd7842cea60069610616c15dcd6e4d5ae148a5e13db015cd4",
+      "importedSha256": "d6fa27c334e83b8fd7842cea60069610616c15dcd6e4d5ae148a5e13db015cd4",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/customer/customer.spp",
+      "sourceSha256": "c1efe8fe3073ebb4d9a1576ad02afce9962fdb767e6eca5c7183c7455db9e971",
+      "importedSha256": "c1efe8fe3073ebb4d9a1576ad02afce9962fdb767e6eca5c7183c7455db9e971",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/inventory/inventory.app",
+      "sourceSha256": "befe548b5e1df9ba19e2c48d91734643b9ea4a0b5028b07ad53bfc77d6513115",
+      "importedSha256": "befe548b5e1df9ba19e2c48d91734643b9ea4a0b5028b07ad53bfc77d6513115",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/inventory/inventory.enum",
+      "sourceSha256": "6440bd42e3970d5aa29f5ebb0ac0e574d3ac7ce75b4434dd1c678086629d22ea",
+      "importedSha256": "6440bd42e3970d5aa29f5ebb0ac0e574d3ac7ce75b4434dd1c678086629d22ea",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/inventory/inventory.phy",
+      "sourceSha256": "105bb491da949b8f8c1043dc4a81de48d5c0944550f200a4d74fcb6c07f5a586",
+      "importedSha256": "105bb491da949b8f8c1043dc4a81de48d5c0944550f200a4d74fcb6c07f5a586",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/inventory/inventory.spp",
+      "sourceSha256": "64cc01417ee3056c2f87bbdba5325a376608699d171be6d379fc61fb116d5183",
+      "importedSha256": "64cc01417ee3056c2f87bbdba5325a376608699d171be6d379fc61fb116d5183",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/cart/petshop-00-model.spp",
+      "sourceSha256": "b616118d13c2c37be4f524a514e4ae51d5749a22aecd0297f167b0554e35479f",
+      "importedSha256": "b616118d13c2c37be4f524a514e4ae51d5749a22aecd0297f167b0554e35479f",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/cart/petshop-05-checks.spp",
+      "sourceSha256": "a0177126d5bb433f03e747df0668b9f7c10f1f47cc39aadd6e45bc0d56d72eb6",
+      "importedSha256": "a0177126d5bb433f03e747df0668b9f7c10f1f47cc39aadd6e45bc0d56d72eb6",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/cart/petshop-10-services.spp",
+      "sourceSha256": "99224650abf1b074e5018bee564341c4788f014b46ad474a812f9d433bde6e87",
+      "importedSha256": "99224650abf1b074e5018bee564341c4788f014b46ad474a812f9d433bde6e87",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/cart/petshop-30-agreements.spp",
+      "sourceSha256": "f36ad360a5d8f64325c4e6a7de6f2ac114c86c0f9044aa6dcd3f9e318e534ffc",
+      "importedSha256": "f36ad360a5d8f64325c4e6a7de6f2ac114c86c0f9044aa6dcd3f9e318e534ffc",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/cart/petshop-40-queries.spp",
+      "sourceSha256": "5206a5c314680d2948a99df45d18adeb6723062c86f0532ae3a62376e9ba7df6",
+      "importedSha256": "5206a5c314680d2948a99df45d18adeb6723062c86f0532ae3a62376e9ba7df6",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/cart/petshop-scene-addCartItem.spp",
+      "sourceSha256": "9cba2f18f1deb3f389c19d6d06fd1134685dc7c47bb0312be6e0bc657c458e0b",
+      "importedSha256": "9cba2f18f1deb3f389c19d6d06fd1134685dc7c47bb0312be6e0bc657c458e0b",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/cart/petshop-scene-clearShopCart.spp",
+      "sourceSha256": "ec4434a2f523289208efffefded674f16f80a6d7e0a713b7dd7f66de4c2a759c",
+      "importedSha256": "ec4434a2f523289208efffefded674f16f80a6d7e0a713b7dd7f66de4c2a759c",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/cart/petshop-scene-removeCartItem.spp",
+      "sourceSha256": "bb092f5e670ad56c9e967029853904104f88e69755b4697860a06684293035b4",
+      "importedSha256": "bb092f5e670ad56c9e967029853904104f88e69755b4697860a06684293035b4",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/cart/petshop-scene-setCartQuantity.spp",
+      "sourceSha256": "381baedee5c8fc6dfe9bdd168da65930ec11086e255cf1d345bb6e7a600d096b",
+      "importedSha256": "381baedee5c8fc6dfe9bdd168da65930ec11086e255cf1d345bb6e7a600d096b",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/catalogue/petshop-00-model.spp",
+      "sourceSha256": "9a58c80ec4fb97300da541dc7971ebe3dae519f5e43ae813015fcb14f36de09d",
+      "importedSha256": "9a58c80ec4fb97300da541dc7971ebe3dae519f5e43ae813015fcb14f36de09d",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/catalogue/petshop-10-services.spp",
+      "sourceSha256": "f930e9307f58506cb4f45ca73a3f6aa858b32ae8e73713d3967f95831ae14e93",
+      "importedSha256": "f930e9307f58506cb4f45ca73a3f6aa858b32ae8e73713d3967f95831ae14e93",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/catalogue/petshop-15-store-opening.spp",
+      "sourceSha256": "63cdc826e2052d47cba0164267145db44bf615253494d3f887194f634f042940",
+      "importedSha256": "63cdc826e2052d47cba0164267145db44bf615253494d3f887194f634f042940",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/catalogue/petshop-16-catalog-labels.spp",
+      "sourceSha256": "0e25fb81caf2299d63c0c5ee175f64f0b29d0bce3bc1852147aa9bf91b035049",
+      "importedSha256": "0e25fb81caf2299d63c0c5ee175f64f0b29d0bce3bc1852147aa9bf91b035049",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/catalogue/petshop-40-queries.spp",
+      "sourceSha256": "b07bb56b4a8c242408a59d6af299dd235d9fcfe8954cfd94d2c1dd284934415e",
+      "importedSha256": "b07bb56b4a8c242408a59d6af299dd235d9fcfe8954cfd94d2c1dd284934415e",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/catalogue/petshop-scene-receiveShopStock.spp",
+      "sourceSha256": "b5aa88b07c2f8164fb22c3cc03ff457d0f569eb79100205bdb50737144c6cd57",
+      "importedSha256": "b5aa88b07c2f8164fb22c3cc03ff457d0f569eb79100205bdb50737144c6cd57",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/catalogue/petshop-scene-reviseShopGoodsPrice.spp",
+      "sourceSha256": "ad6ad76c54bf360043778fd52d87fcd40c30f00a7ffadbe6c98c24265fab3958",
+      "importedSha256": "ad6ad76c54bf360043778fd52d87fcd40c30f00a7ffadbe6c98c24265fab3958",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/fulfillment/petshop-00-model.spp",
+      "sourceSha256": "2e753bf2ff1fd88786cebe60b143463ea58dfa0db49256515fbd8a75a691c547",
+      "importedSha256": "2e753bf2ff1fd88786cebe60b143463ea58dfa0db49256515fbd8a75a691c547",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/fulfillment/petshop-05-checks.spp",
+      "sourceSha256": "4a0cf67c9277c68847ca71c03db8a186c0924fcf91f8f4d1c855531a31a529cc",
+      "importedSha256": "4a0cf67c9277c68847ca71c03db8a186c0924fcf91f8f4d1c855531a31a529cc",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/fulfillment/petshop-10-services.spp",
+      "sourceSha256": "8ad01a17d693d7dd48c9887670207a81d5d6906df13b6d55434b3451836ba5b4",
+      "importedSha256": "8ad01a17d693d7dd48c9887670207a81d5d6906df13b6d55434b3451836ba5b4",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/fulfillment/petshop-20-calculations.spp",
+      "sourceSha256": "77d1fca65f813f01ca4e45d628d6e0f9a6e7ab4180bddedb61054b3010a88ced",
+      "importedSha256": "77d1fca65f813f01ca4e45d628d6e0f9a6e7ab4180bddedb61054b3010a88ced",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/fulfillment/petshop-30-agreements.spp",
+      "sourceSha256": "84e3d5dc65dab2a00582cea21a0faf7f1fd008347817ff924f11853b35feb61c",
+      "importedSha256": "84e3d5dc65dab2a00582cea21a0faf7f1fd008347817ff924f11853b35feb61c",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/fulfillment/petshop-scene-deliverShopOrder.spp",
+      "sourceSha256": "1d4a3d89879ee4f9f8b8054dea12621503ec8cf89b7d390d20b49761a2858f7e",
+      "importedSha256": "1d4a3d89879ee4f9f8b8054dea12621503ec8cf89b7d390d20b49761a2858f7e",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/fulfillment/petshop-scene-shipShopOrder.spp",
+      "sourceSha256": "b4536a805186011452284dc332a53c9d47be4536b97b8cb5321495aa381ec8d6",
+      "importedSha256": "b4536a805186011452284dc332a53c9d47be4536b97b8cb5321495aa381ec8d6",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/membership/petshop-00-model.spp",
+      "sourceSha256": "7f28c51391c3f9cc80dae3321c59a44b928cbce957b1c21fa1690e7a629fa77c",
+      "importedSha256": "7f28c51391c3f9cc80dae3321c59a44b928cbce957b1c21fa1690e7a629fa77c",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/membership/petshop-05-checks.spp",
+      "sourceSha256": "e228b8b3da1c7c6cebeaa666331734435e5f16758dc2008cbaca2b73fd68f375",
+      "importedSha256": "e228b8b3da1c7c6cebeaa666331734435e5f16758dc2008cbaca2b73fd68f375",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/membership/petshop-10-services.spp",
+      "sourceSha256": "8820806bb3c75d4e1e28907f25f5f64a7eb022f18951d5b8ca13e213371c7972",
+      "importedSha256": "8820806bb3c75d4e1e28907f25f5f64a7eb022f18951d5b8ca13e213371c7972",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/membership/petshop-30-agreements.spp",
+      "sourceSha256": "d70f5add49c5911024d94c37924818d201fcbb15ed8a07c9982d2cd8ad2e53c8",
+      "importedSha256": "d70f5add49c5911024d94c37924818d201fcbb15ed8a07c9982d2cd8ad2e53c8",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/membership/petshop-40-queries.spp",
+      "sourceSha256": "c649cdccac718b3fb29e882b6371d92019a126b73ad987e43b6eb670f5cb2bc0",
+      "importedSha256": "c649cdccac718b3fb29e882b6371d92019a126b73ad987e43b6eb670f5cb2bc0",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/membership/petshop-scene-registerShopCustomer.spp",
+      "sourceSha256": "6975edb90e084f164bc5f1a735aea6d9f60a225eb38781324a2893583394309f",
+      "importedSha256": "6975edb90e084f164bc5f1a735aea6d9f60a225eb38781324a2893583394309f",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/membership/petshop-scene-updateShopCustomer.spp",
+      "sourceSha256": "288ac73bdcec2779dc24a4233a83e6a05b497065f5c3316d089d40165838a615",
+      "importedSha256": "288ac73bdcec2779dc24a4233a83e6a05b497065f5c3316d089d40165838a615",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/order/petshop-00-model.spp",
+      "sourceSha256": "cb3d9a9ca8017e811e6d93b61c70370bbefebcfab461e838a05d5d59bea6b61c",
+      "importedSha256": "cb3d9a9ca8017e811e6d93b61c70370bbefebcfab461e838a05d5d59bea6b61c",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/order/petshop-05-checks.spp",
+      "sourceSha256": "2236ff68f862001a848f9a28cff18a17a0ffb9ab2a865f4e80604ba6dada3772",
+      "importedSha256": "2236ff68f862001a848f9a28cff18a17a0ffb9ab2a865f4e80604ba6dada3772",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/order/petshop-10-services.spp",
+      "sourceSha256": "16fd46ad0a492cd0bcfda5225725d1917da234d01db46d866311532f0a8f0c07",
+      "importedSha256": "16fd46ad0a492cd0bcfda5225725d1917da234d01db46d866311532f0a8f0c07",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/order/petshop-20-calculations.spp",
+      "sourceSha256": "4437e02d44af4eda003f6008445957497e79ab4daedd226029309b8a62ee4838",
+      "importedSha256": "4437e02d44af4eda003f6008445957497e79ab4daedd226029309b8a62ee4838",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/order/petshop-30-agreements.spp",
+      "sourceSha256": "4b2c3365e1cb81e0b5667f642ffed502c9f3b692ee239bc24c3bb671ac4591f7",
+      "importedSha256": "4b2c3365e1cb81e0b5667f642ffed502c9f3b692ee239bc24c3bb671ac4591f7",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/order/petshop-40-queries.spp",
+      "sourceSha256": "062a11cf33741d24c548e73c4882bb508814d572414a226bf1c19824015ad584",
+      "importedSha256": "062a11cf33741d24c548e73c4882bb508814d572414a226bf1c19824015ad584",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/order/petshop-scene-cancelPaidShopOrder.spp",
+      "sourceSha256": "19f4a182c2c48891ef8cb3db90e9b86c70d738fff2c9eb3d0423d647573e9936",
+      "importedSha256": "19f4a182c2c48891ef8cb3db90e9b86c70d738fff2c9eb3d0423d647573e9936",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/order/petshop-scene-cancelUnpaidShopOrder.spp",
+      "sourceSha256": "8d99d319c0f9effe259bb7e80e7ba6141dee17797692e322fbf095cd0a7ee86a",
+      "importedSha256": "8d99d319c0f9effe259bb7e80e7ba6141dee17797692e322fbf095cd0a7ee86a",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/order/petshop-scene-placeShopOrder.spp",
+      "sourceSha256": "1e715065e1cb796c06e418952c27c0dcb299e74342b7d691f25cc3d68d1a2b54",
+      "importedSha256": "1e715065e1cb796c06e418952c27c0dcb299e74342b7d691f25cc3d68d1a2b54",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/order/petshop-scene-previewShopOrder.spp",
+      "sourceSha256": "868733122a497c8dc2e81620a72b433328c160c35f24caa66d9b1c67f1869a9f",
+      "importedSha256": "868733122a497c8dc2e81620a72b433328c160c35f24caa66d9b1c67f1869a9f",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/payment/petshop-00-model.spp",
+      "sourceSha256": "cb2e61734b9a6bb7d9f92d9dbc43708258170126abd1bc1fc52c4193997dbcdf",
+      "importedSha256": "cb2e61734b9a6bb7d9f92d9dbc43708258170126abd1bc1fc52c4193997dbcdf",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/payment/petshop-05-checks.spp",
+      "sourceSha256": "0b358ed3dd90e9a1b42ae5a498501bb36623daf30f540f27ff4b896f7f7f52b7",
+      "importedSha256": "0b358ed3dd90e9a1b42ae5a498501bb36623daf30f540f27ff4b896f7f7f52b7",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/payment/petshop-10-services.spp",
+      "sourceSha256": "a70b35941f71e5508e9276118b0a42d4a3ade3c36578dfb81382337a29170e3e",
+      "importedSha256": "a70b35941f71e5508e9276118b0a42d4a3ade3c36578dfb81382337a29170e3e",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/payment/petshop-20-calculations.spp",
+      "sourceSha256": "f7d6d836c63799a29cf37160518859b5cf64855181d0e22e8a453b53adfb0313",
+      "importedSha256": "f7d6d836c63799a29cf37160518859b5cf64855181d0e22e8a453b53adfb0313",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/payment/petshop-30-agreements.spp",
+      "sourceSha256": "73f76fac2d76ec938e14040864888db24d8377f878608ce4073f8101f4f81cf7",
+      "importedSha256": "73f76fac2d76ec938e14040864888db24d8377f878608ce4073f8101f4f81cf7",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/payment/petshop-scene-fundShopWallet.spp",
+      "sourceSha256": "9d502e93a9a2ff27157a345302cd01ab118eb0cda6b5e566d2a519943eb04dbe",
+      "importedSha256": "9d502e93a9a2ff27157a345302cd01ab118eb0cda6b5e566d2a519943eb04dbe",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/payment/petshop-scene-payShopOrder.spp",
+      "sourceSha256": "0ad45f77f7305cc400533f13f701cc2aa07fc388ce2c48c8a1820908f21277a8",
+      "importedSha256": "0ad45f77f7305cc400533f13f701cc2aa07fc388ce2c48c8a1820908f21277a8",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/petshop.app",
+      "sourceSha256": "0a7ee302475b735177721adb3f1c5a7ea247c5595bb84cbe5e98de839f52da7d",
+      "importedSha256": "0a7ee302475b735177721adb3f1c5a7ea247c5595bb84cbe5e98de839f52da7d",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/petshop.phy",
+      "sourceSha256": "21e1bf4d19768174bcd794d3cedfb0d71e65d524f0f3290a6b412f4ea24cef8f",
+      "importedSha256": "21e1bf4d19768174bcd794d3cedfb0d71e65d524f0f3290a6b412f4ea24cef8f",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/petshop.spp",
+      "sourceSha256": "55d8355112f4e66e6d5e426f14ba4a06026453af8c7f497b0b8a32a637262bcd",
+      "importedSha256": "55d8355112f4e66e6d5e426f14ba4a06026453af8c7f497b0b8a32a637262bcd",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/reservation/petshop-35-reservation.spp",
+      "sourceSha256": "8e7b69f3944ed2086d1a37226de436cbb2a4285ce8b1c8858e698a353d8ffba0",
+      "importedSha256": "8e7b69f3944ed2086d1a37226de436cbb2a4285ce8b1c8858e698a353d8ffba0",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/reservation/petshop-scene-reserveShopPet.spp",
+      "sourceSha256": "4a9e5f5e10b31ea47fb975de9d3a2ff7cc8dac7e47bec4cc0d87944063ed8392",
+      "importedSha256": "4a9e5f5e10b31ea47fb975de9d3a2ff7cc8dac7e47bec4cc0d87944063ed8392",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/returns/petshop-00-model.spp",
+      "sourceSha256": "9096e9b0fd75fc02688e7be9299881e27944dbbeec0e5fcdb80edf625ad3a7ff",
+      "importedSha256": "9096e9b0fd75fc02688e7be9299881e27944dbbeec0e5fcdb80edf625ad3a7ff",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/returns/petshop-05-checks.spp",
+      "sourceSha256": "9ab5752235cd39451a02d92706e9ad432a96a58bb09408260a5c370ed992444a",
+      "importedSha256": "9ab5752235cd39451a02d92706e9ad432a96a58bb09408260a5c370ed992444a",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/returns/petshop-10-services.spp",
+      "sourceSha256": "bdb3a6f1c6d3bbab6a0745491058b9f7f3713fa970b7a3f77e894805239e9834",
+      "importedSha256": "bdb3a6f1c6d3bbab6a0745491058b9f7f3713fa970b7a3f77e894805239e9834",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/returns/petshop-20-calculations.spp",
+      "sourceSha256": "66a17dc3d1aca9136a11077679dde235481a56404d731211e904eb854fe66a87",
+      "importedSha256": "66a17dc3d1aca9136a11077679dde235481a56404d731211e904eb854fe66a87",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/returns/petshop-30-agreements.spp",
+      "sourceSha256": "455afe84d83e032620112626c2380aa46f4967930e569626624f2de2e2335151",
+      "importedSha256": "455afe84d83e032620112626c2380aa46f4967930e569626624f2de2e2335151",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/returns/petshop-scene-approveShopReturn.spp",
+      "sourceSha256": "f32317016b8798e09ac19ad978c2395463738fe3f4b14e7b31fe1183d42b82b0",
+      "importedSha256": "f32317016b8798e09ac19ad978c2395463738fe3f4b14e7b31fe1183d42b82b0",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/returns/petshop-scene-requestShopReturn.spp",
+      "sourceSha256": "8b341bd56a4e8b46f4403bc86b41d3e10ed0199baa7106630a47104c25709bd5",
+      "importedSha256": "8b341bd56a4e8b46f4403bc86b41d3e10ed0199baa7106630a47104c25709bd5",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/shared/petshop-00-model.spp",
+      "sourceSha256": "3adef9527b9060bc6ef56535009004f57c708ea1a939fee2d97939a9574c720f",
+      "importedSha256": "3adef9527b9060bc6ef56535009004f57c708ea1a939fee2d97939a9574c720f",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/shared/petshop-01-external-entities.spp",
+      "sourceSha256": "3b9d39e8a6a1e037230f3f5544630bb96aac938a0432a1b4e93f58240a37bb82",
+      "importedSha256": "3b9d39e8a6a1e037230f3f5544630bb96aac938a0432a1b4e93f58240a37bb82",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/shared/petshop-02-constants.spp",
+      "sourceSha256": "0461b6a23ab2cad4ffb3e8f6e60bf70cdba041447cdbe63814e2da8873e05990",
+      "importedSha256": "0461b6a23ab2cad4ffb3e8f6e60bf70cdba041447cdbe63814e2da8873e05990",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/shared/petshop.enum",
+      "sourceSha256": "d1ea79e9a5f645cc2a78a10e5e02c7b7cc79545d3aa67e361ede27ecddf2a196",
+      "importedSha256": "d1ea79e9a5f645cc2a78a10e5e02c7b7cc79545d3aa67e361ede27ecddf2a196",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/technical-services.app",
+      "sourceSha256": "3e0d35e9d48d5e9630b6c12e04438dd4354e75859dddd475e3e1937be9d43375",
+      "importedSha256": "3e0d35e9d48d5e9630b6c12e04438dd4354e75859dddd475e3e1937be9d43375",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/petshop/technical-services.phy",
+      "sourceSha256": "3e39c9d36734634afd34830c6e17f2261cd082af01e784a2d313fc0c1653523c",
+      "importedSha256": "3e39c9d36734634afd34830c6e17f2261cd082af01e784a2d313fc0c1653523c",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/product/product.app",
+      "sourceSha256": "7bb888d64453299a526108fad744c174d836924998d45ac0605f17d7db9e3822",
+      "importedSha256": "7bb888d64453299a526108fad744c174d836924998d45ac0605f17d7db9e3822",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/product/product.phy",
+      "sourceSha256": "42689f6bc78aff3468fbb0d3e10073e2848848e1810ea4c99d6270c0b9b43c9a",
+      "importedSha256": "42689f6bc78aff3468fbb0d3e10073e2848848e1810ea4c99d6270c0b9b43c9a",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/main/spp/product/product.spp",
+      "sourceSha256": "147fde8f3be07561ea36d955accb4078a793c0d70e77069f571ee4e32a21b1d0",
+      "importedSha256": "147fde8f3be07561ea36d955accb4078a793c0d70e77069f571ee4e32a21b1d0",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/test/browser/PetstoreBrowserRegression.cjs",
+      "sourceSha256": "85ed16affb0f7776ac484601ab9faf43d8e31b9d4214d31f2459a32442d264a0",
+      "importedSha256": "85ed16affb0f7776ac484601ab9faf43d8e31b9d4214d31f2459a32442d264a0",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/test/browser/PetstoreLanCartRegression.cjs",
+      "sourceSha256": "5d791342cf1b59afc2b462d180efddd11ba7ea58899577e088a1e8330aac0833",
+      "importedSha256": "5d791342cf1b59afc2b462d180efddd11ba7ea58899577e088a1e8330aac0833",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/test/browser/RequestIdTest.cjs",
+      "sourceSha256": "19f0917256035190bbfcbaa54bd871a7e17b16b69fe8d2c48722560251ab2f55",
+      "importedSha256": "19f0917256035190bbfcbaa54bd871a7e17b16b69fe8d2c48722560251ab2f55",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/test/java/com/servpp/petdemo/PetstoreCatalogueTest.java",
+      "sourceSha256": "6759e53e48afee334d5accfe89d56f07672d1664852401b86c2c1be82e2a2d93",
+      "importedSha256": "6759e53e48afee334d5accfe89d56f07672d1664852401b86c2c1be82e2a2d93",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/test/java/com/servpp/petdemo/PetstoreRestartProbe.java",
+      "sourceSha256": "2cbb72de691bebdf828936b175eaea4765bd3d9fb831810ec7365ec4c0a25991",
+      "importedSha256": "2cbb72de691bebdf828936b175eaea4765bd3d9fb831810ec7365ec4c0a25991",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/test/java/com/servpp/petdemo/PetstoreScenarioTest.java",
+      "sourceSha256": "85af983b23c4577752fc0ec74a60d45e770f999120effe8884da2b5ddf53969d",
+      "importedSha256": "85af983b23c4577752fc0ec74a60d45e770f999120effe8884da2b5ddf53969d",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/test/java/com/servpp/petdemo/PetstoreTechnicalServicesTest.java",
+      "sourceSha256": "5577635c576117b7b5ab4095d871e4d9c98f4ff3a110ae15b4cebf7501b319ea",
+      "importedSha256": "5577635c576117b7b5ab4095d871e4d9c98f4ff3a110ae15b4cebf7501b319ea",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/test/java/com/servpp/petdemo/PetstoreTestSupport.java",
+      "sourceSha256": "c602b4889e7c5214332ac6d133944c19aac5de318781aa8f26424ff268650ad5",
+      "importedSha256": "c602b4889e7c5214332ac6d133944c19aac5de318781aa8f26424ff268650ad5",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/test/java/com/servpp/petdemo/SdkProfileTest.java",
+      "sourceSha256": "fe2a0594b34abac0ae6ef67727cd15207bafdd095fac746764ece351036d6967",
+      "importedSha256": "fe2a0594b34abac0ae6ef67727cd15207bafdd095fac746764ece351036d6967",
+      "executable": false
+    },
+    {
+      "path": "demos/petstore/src/test/resources/participant-names.json",
+      "sourceSha256": "3f035475ab88229c157f2bd249c039250f001ee6f8c3aa2826e5e7e81a378060",
+      "importedSha256": "3f035475ab88229c157f2bd249c039250f001ee6f8c3aa2826e5e7e81a378060",
+      "executable": false
+    },
+    {
+      "path": "docs/toolchain.md",
+      "sourceSha256": "3bbfd30d0f0ef05d3f2ab631e7900d26b0511e0a6f07b65f72e2160e87a6e2d7",
+      "importedSha256": "0aeacd5e2f9c95201a9ddbe7610003c5e0c8ccdbfde230e9f0f27b4edf6a2116",
+      "executable": false
+    },
+    {
+      "path": "pom.xml",
+      "sourceSha256": "ead4e2a4735640a272dd8eed8ce99019b65e8cfb33527101fa4b39e4f20117bd",
+      "importedSha256": "ead4e2a4735640a272dd8eed8ce99019b65e8cfb33527101fa4b39e4f20117bd",
+      "executable": false
+    },
+    {
+      "path": "tools/check_english_demo_docs.py",
+      "sourceSha256": "25a079f20bfc4248c3cb94a6b267a8528d5bbdeae668e03c914c692c260c179e",
+      "importedSha256": "25a079f20bfc4248c3cb94a6b267a8528d5bbdeae668e03c914c692c260c179e",
+      "executable": false
+    },
+    {
+      "path": "tools/install-local-sdk.sh",
+      "sourceSha256": "86bc9d454361e2eba1f837caa54c1c925f3194f52e3dae7c457c6401c68d6f2a",
+      "importedSha256": "86bc9d454361e2eba1f837caa54c1c925f3194f52e3dae7c457c6401c68d6f2a",
+      "executable": true
+    },
+    {
+      "path": "tools/test_english_demo_docs.py",
+      "sourceSha256": "228b7cedc221e34e1f36e53f3b84adf3701d0d6143c027dee0b31d0003f11417",
+      "importedSha256": "228b7cedc221e34e1f36e53f3b84adf3701d0d6143c027dee0b31d0003f11417",
+      "executable": false
+    }
+  ]
+}

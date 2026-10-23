@@ -1,0 +1,242 @@
+domain cboddeposit;
+
+// CSAQRY1 9704/9709: decoded account and operator facts, with business selection in SPP.
+
+Role DepositBankProfile {
+    boolean normalSavings;
+    boolean restrictedSubtype;
+    String openingBranch;
+    String openingProvince;
+    String subbranch;
+    String area;
+    String areaProvince;
+    String depositRange;
+    String proprietaryRange;
+    boolean cardLinked;
+    String accountSeries;
+    boolean cardRecordFound;
+    String cardLoss;
+    String cardStatus;
+    String passbookLoss;
+    boolean groupSubaccount;
+}
+
+Role DepositOperatorFacts {
+    String branch;
+    String province;
+    String subbranch;
+    String area;
+    String areaProvince;
+    boolean accountingCentre;
+    String transactionPrefix;
+    String operationCode;
+    String tellerFamily;
+    int tellerNumber;
+    boolean numericTeller;
+    String mode;
+    boolean agencySigned;
+    boolean corporateTransfer;
+    String settlementChannel;
+}
+
+Role DepositNotices {
+    String cardWarning;
+    String passbookWarning;
+}
+
+atomic calculate assessDepositDocumentNotices(
+    DepositBankProfile,
+    DepositOperatorFacts,
+    CashChannel,
+    DepositNotices
+) {
+    DepositNotices.cardWarning = "";
+    DepositNotices.passbookWarning = "";
+    boolean applies = !DepositOperatorFacts.agencySigned
+        && DepositOperatorFacts.numericTeller
+        && (DepositOperatorFacts.mode == "Online"
+        || DepositOperatorFacts.mode == "Mode8");
+    if (applies) {
+        if (DepositBankProfile.accountSeries == "49927"
+            && DepositBankProfile.cardLinked
+            && DepositBankProfile.cardRecordFound
+            && CashChannel.businessCode != "CR0"
+            && (DepositBankProfile.cardLoss == "Oral"
+            || DepositBankProfile.cardLoss == "Written")
+            && DepositBankProfile.cardStatus != "Cancelled") {
+            DepositNotices.cardWarning = "WN200";
+        }
+        if (DepositBankProfile.passbookLoss == "Oral" || DepositBankProfile.passbookLoss == "Written") {
+            DepositNotices.passbookWarning = "WN201";
+        }
+    }
+}
+
+atomic check checkDepositBranchRange(DepositBankProfile, DepositOperatorFacts, CashChannel) {
+    boolean specificPermission = DepositOperatorFacts.transactionPrefix == "FL06002"
+        || DepositOperatorFacts.transactionPrefix == "AG02891"
+        || DepositOperatorFacts.transactionPrefix == "SA01120"
+        || DepositOperatorFacts.transactionPrefix == "FL06615"
+        || DepositOperatorFacts.transactionPrefix == "FL06618";
+    boolean commonException = DepositOperatorFacts.transactionPrefix == "RE04081"
+        || DepositOperatorFacts.transactionPrefix == "RE04082"
+        || DepositOperatorFacts.transactionPrefix == "RE04001"
+        || DepositOperatorFacts.transactionPrefix == "RE04013"
+        || DepositOperatorFacts.transactionPrefix == "RE04047"
+        || DepositOperatorFacts.transactionPrefix == "RE04057"
+        || DepositOperatorFacts.transactionPrefix == "CR05220";
+    boolean agencyException = CashChannel.businessCode == "AG0"
+        && (DepositOperatorFacts.operationCode == "1732"
+        || DepositOperatorFacts.operationCode == "1762"
+        || DepositOperatorFacts.operationCode == "1725");
+    boolean outerException = DepositOperatorFacts.transactionPrefix == "RE04001"
+        || DepositOperatorFacts.transactionPrefix == "RE04013"
+        || DepositOperatorFacts.transactionPrefix == "RE04047"
+        || DepositOperatorFacts.transactionPrefix == "RE04057"
+        || DepositOperatorFacts.transactionPrefix == "RE04067"
+        || DepositOperatorFacts.transactionPrefix == "AG01765"
+        || DepositOperatorFacts.transactionPrefix == "AG02899"
+        || DepositOperatorFacts.transactionPrefix == "RE04066";
+    boolean specialTeller = DepositOperatorFacts.tellerFamily == "UH"
+        && DepositOperatorFacts.tellerNumber >= 0
+        && DepositOperatorFacts.tellerNumber <= 9;
+    if ((DepositOperatorFacts.operationCode == "1751"
+        || DepositOperatorFacts.operationCode == "1176"
+        || DepositOperatorFacts.operationCode == "1172")
+        && DepositOperatorFacts.tellerFamily == "O"
+        && DepositOperatorFacts.tellerNumber >= 56
+        && DepositOperatorFacts.tellerNumber <= 99) {
+        specialTeller = true;
+    }
+    if (DepositOperatorFacts.operationCode == "1751"
+        && DepositOperatorFacts.tellerFamily == "ZD"
+        && DepositOperatorFacts.tellerNumber >= 0
+        && DepositOperatorFacts.tellerNumber <= 9) {
+        specialTeller = true;
+    }
+    boolean applies = !DepositBankProfile.cardLinked
+        && CashChannel.businessCode != "FL0"
+        && CashChannel.businessCode != "RE0"
+        && CashChannel.businessCode != "AG0"
+        && (!DepositOperatorFacts.accountingCentre
+        || DepositBankProfile.openingProvince != DepositOperatorFacts.province)
+        && !outerException
+        && !specificPermission
+        && !specialTeller;
+    boolean groupException = DepositBankProfile.groupSubaccount
+        && (DepositOperatorFacts.settlementChannel == "HVP"
+        || DepositOperatorFacts.settlementChannel == "BEP"
+        || DepositOperatorFacts.settlementChannel == "NXY");
+    boolean checksRange = DepositOperatorFacts.mode != "CentralBatch"
+        && !DepositOperatorFacts.corporateTransfer
+        && DepositOperatorFacts.transactionPrefix != "CR05220"
+        && !groupException;
+    if (applies) {
+        if (DepositBankProfile.normalSavings) {
+            require(
+                DepositBankProfile.depositRange == "SameBranch"
+                    || DepositBankProfile.depositRange == "Subbranch"
+                    || DepositBankProfile.depositRange == "City"
+                    || DepositBankProfile.depositRange == "Province"
+                    || DepositBankProfile.depositRange == "All",
+                "INVALID_DEPOSIT_RANGE"
+            );
+            if (checksRange) {
+                if (DepositBankProfile.depositRange == "SameBranch"
+                    && DepositBankProfile.openingBranch != DepositOperatorFacts.branch
+                    && !commonException) {
+                    require(false, "EN134");
+                }
+                if (DepositBankProfile.depositRange == "Subbranch") {
+                    require(
+                        DepositBankProfile.subbranch != null
+                            && DepositBankProfile.subbranch != ""
+                            && DepositOperatorFacts.subbranch != null
+                            && DepositOperatorFacts.subbranch != "",
+                        "DEPOSIT_SUBBRANCH_RELATION_NOT_FOUND"
+                    );
+                    require(DepositBankProfile.subbranch == DepositOperatorFacts.subbranch, "EN470");
+                }
+                if (DepositBankProfile.depositRange == "City") {
+                    require(
+                        DepositBankProfile.area != null
+                            && DepositBankProfile.area != ""
+                            && DepositOperatorFacts.area != null
+                            && DepositOperatorFacts.area != "",
+                        "DEPOSIT_AREA_NOT_FOUND"
+                    );
+                    require(DepositBankProfile.area == DepositOperatorFacts.area, "EN470");
+                }
+                if (DepositBankProfile.depositRange == "Province") {
+                    require(
+                        DepositBankProfile.areaProvince != null
+                            && DepositBankProfile.areaProvince != ""
+                            && DepositOperatorFacts.areaProvince != null
+                            && DepositOperatorFacts.areaProvince != "",
+                        "DEPOSIT_AREA_NOT_FOUND"
+                    );
+                    require(DepositBankProfile.areaProvince == DepositOperatorFacts.areaProvince, "EN470");
+                }
+            }
+        } else {
+            if ((DepositBankProfile.proprietaryRange == "SameBranch"
+                || DepositBankProfile.proprietaryRange == "WithdrawOnly")
+                && DepositBankProfile.openingBranch != DepositOperatorFacts.branch
+                && DepositOperatorFacts.mode != "CentralBatch"
+                && !DepositOperatorFacts.corporateTransfer
+                && !commonException
+                && !(DepositBankProfile.restrictedSubtype
+                && agencyException)) {
+                require(false, "EN134");
+            }
+        }
+    }
+    // This subtype check is outside the outer range gate in the source.
+    if (DepositBankProfile.restrictedSubtype
+        && DepositBankProfile.openingBranch != DepositOperatorFacts.branch
+        && !agencyException
+        && !commonException
+        && DepositOperatorFacts.transactionPrefix != "AG01765"
+        && DepositOperatorFacts.transactionPrefix != "AG02899"
+        && DepositOperatorFacts.transactionPrefix != "RE04066"
+        && DepositOperatorFacts.transactionPrefix != "RE04035"
+        && !specificPermission) {
+        require(false, "EN134");
+    }
+}
+
+atomic calculate mergeDepositNotices(AdmissionDecision, DepositNotices) {
+    if (AdmissionDecision.executable
+        && (DepositNotices.cardWarning != ""
+        || DepositNotices.passbookWarning != "")) {
+        AdmissionDecision.status = AdmissionStatus.WARNING;
+    }
+}
+
+// KSADEP0:603 and CSAQRY1 5000/9751/9753. Reversal uses its own eligibility path.
+
+atomic check checkCoreDepositReversalEligibility(
+    CashAccountControl,
+    AccountEligibility,
+    DepositOperatorFacts
+) {
+    require(AccountEligibility.status != AccountStatus.CLOSED, "EO082");
+    require(CashAccountControl.cancelledOn == 0, "EN113");
+    require(
+        AccountEligibility.status != AccountStatus.FROZEN
+            || DepositOperatorFacts.transactionPrefix == "SA01116",
+        "EN111"
+    );
+}
+
+atomic check checkDepositOperatorBinding(DepositOperatorFacts, DepositFeeContext) {
+    require(
+        DepositOperatorFacts.branch == DepositFeeContext.branchNumber
+            && DepositOperatorFacts.area == DepositFeeContext.regionCode,
+        "DEPOSIT_OPERATOR_CONTEXT_MISMATCH"
+    );
+    require(
+        DepositOperatorFacts.operationCode == "1102" && DepositOperatorFacts.transactionPrefix == "SA01102",
+        "UNSUPPORTED_DEPOSIT_OPERATOR_PATH"
+    );
+}

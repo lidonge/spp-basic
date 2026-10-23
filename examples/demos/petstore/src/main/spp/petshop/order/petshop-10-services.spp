@@ -1,0 +1,31 @@
+domain petshop;
+
+atomic query listOrders(key Buyer, ShopOrder[]);
+
+atomic update releaseUnpaidInventory(StockLine[], UnpaidCancellationAgreement);
+
+atomic update releasePaidInventory(StockLine[], PaidCancellationAgreement);
+quantum update refundCancellationFunds(Buyer, Merchant, PaidCancellationAgreement) {
+    Buyer.wallet += PaidCancellationAgreement.refundAmount;
+    Merchant.cash -= PaidCancellationAgreement.refundAmount;
+}
+
+atomic calculate prepareOrderInventory(ShopOrder, StockLine[]) {
+    StockLine[] = new StockLine[] {
+    };
+    for (OrderLine line : ShopOrder.lines) {
+        boolean exists = false;
+        for (StockLine stock : StockLine[]) {
+            if (stock.goods.sku == line.goods.sku) {
+                exists = true;
+            }
+        }
+        if (!exists) {
+            StockLine stock = new StockLine();
+            stock.goods = line.goods;
+            StockLine[] = append(StockLine[], stock);
+        }
+    }
+}
+
+atomic update reserveInventory(StockLine[], ShopOrder);

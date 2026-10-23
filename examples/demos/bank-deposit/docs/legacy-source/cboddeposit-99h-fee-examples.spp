@@ -1,0 +1,105 @@
+domain cboddeposit;
+
+atomic update seedCashExampleTariff(DepositTariffRateRecord record);
+atomic calculate configureCrossBranchFeeExample(context CashExample example) {
+    example.seed.id = "SOURCE-FEE-A";
+    example.seed.eligibility.accountId = example.seed.id;
+    example.seed.feeParty.customerId = "SOURCE-FEE-C1";
+    example.command.id = "SOURCE-FEE-T";
+    example.command.attemptId = "SOURCE-FEE-COMMIT";
+    example.command.accountId = example.seed.id;
+    example.command.feeContext.branchId = "001001002";
+    example.observed.id = example.seed.id;
+    example.postingKey.tradeId = example.command.id;
+    example.tariffRecord = new DepositTariffRateRecord();
+    example.tariffRecord.customerId = example.seed.feeParty.customerId;
+    example.tariffRecord.tariff = "SAC00001";
+    example.tariffRecord.rate = new DepositFeeRate();
+    example.tariffRecord.rate.tariff = "SAC00001";
+    example.tariffRecord.rate.rate = 0.001;
+    example.tariffRecord.rate.discount = 1;
+    example.tariffRecord.rate.fixedAmount = 1;
+    example.tariffRecord.rate.minimum = 2;
+    example.tariffRecord.rate.maximum = 50;
+    example.auditKey = new CashAuditRecord();
+    example.auditKey.attemptId = example.command.attemptId;
+    example.tradeKey = new CashDepositTrade(); example.tradeKey.id = example.command.id;
+}
+atomic check verifyCrossBranchFeeExample(CashExample example) {
+    require(example.lifecycle.execution.status == "Committed", "EXAMPLE_FEE_NOT_COMMITTED");
+    require(example.lifecycle.execution.work.fee.applicable && example.lifecycle.execution.work.fee.range == 1
+        && example.lifecycle.execution.work.fee.tariff == "SAC00001"
+        && example.lifecycle.execution.work.fee.fee == 2, "EXAMPLE_CROSS_BRANCH_FEE");
+    require(example.observed.version == 1 && example.observed.eligibility.accountBalance == 700,
+        "EXAMPLE_FEE_ACCOUNT_BALANCE");
+    require(example.observed.account.interestBase == 700 && example.observed.eligibility.cashDepositedToday == 600
+        && example.observed.eligibility.detailCount == 11 && example.storedTrade != null
+        && example.storedTrade.fee.fee == 2 && example.storedTrade.original.eligibility.cashDepositedToday == 0,
+        "EXAMPLE_FEE_STORED_ORIGINAL_FACTS");
+    int count = 0;
+    double debit = 0;
+    double credit = 0;
+    for (CashPostingRecord posting : example.postings) {
+        count++;
+        if (posting.line.side == "Debit") { debit += posting.line.amount; }
+        else { credit += posting.line.amount; }
+        if (posting.slot == 7 || posting.slot == 8) {
+            require(posting.line.amount == 2, "EXAMPLE_FEE_POSTING");
+        }
+    }
+    require(count == 8 && debit == 602 && credit == 602, "EXAMPLE_FEE_LEDGER");
+}
+Scenario serial crossBranchFeeCashExample(context CashExample example) {
+    prepareOrdinaryCashExample(example);
+    configureCrossBranchFeeExample(example);
+    serial { transaction quantum {
+        seedCashExampleAccount(example.seed);
+        seedCashExampleTariff(example.tariffRecord);
+    } }
+    executeCashDeposit(example.command, example.lifecycle);
+    example.observed = queryCashAccount(example.observed);
+    example.postings = queryCashPostingRecords(example.postingKey);
+    example.storedTrade = lookupCashDepositTrade(example.tradeKey);
+    verifyCrossBranchFeeExample(example);
+}
+atomic calculate configureMissingFeeExample(context CashExample example) {
+    example.seed.id = "SOURCE-MISSING-FEE-A";
+    example.seed.eligibility.accountId = example.seed.id;
+    example.seed.feeParty.customerId = "SOURCE-MISSING-FEE-C1";
+    example.command.id = "SOURCE-MISSING-FEE-T";
+    example.command.attemptId = "SOURCE-MISSING-FEE-REJECT";
+    example.command.accountId = example.seed.id;
+    example.observed.id = example.seed.id;
+    example.postingKey.tradeId = example.command.id;
+    example.tradeKey = new CashDepositTrade();
+    example.tradeKey.id = example.command.id;
+    example.auditKey.attemptId = example.command.attemptId;
+    example.failure = null;
+}
+atomic check verifyMissingFeeExample(CashExample example) {
+    require(example.failure != null && example.failure.code == "DEPOSIT_FEE_RATE_NOT_FOUND", "EXAMPLE_MISSING_FEE_NOT_REJECTED");
+    require(example.observed.version == 0 && example.observed.eligibility.accountBalance == 100,
+        "EXAMPLE_MISSING_FEE_CHANGED_ACCOUNT");
+    require(example.storedTrade == null, "EXAMPLE_MISSING_FEE_HAS_TRADE");
+    int count = 0;
+    for (CashPostingRecord posting : example.postings) { count++; }
+    require(count == 0, "EXAMPLE_MISSING_FEE_HAS_POSTINGS");
+    require(example.audit != null && example.audit.event == "Rejected" && example.audit.code == "DEPOSIT_FEE_RATE_NOT_FOUND",
+        "EXAMPLE_MISSING_FEE_AUDIT");
+    require(example.lifecycle.requestRecord != null && example.lifecycle.requestRecord.id == example.command.id
+        && example.lifecycle.requestRecord.command.request.amount == example.command.request.amount, "EXAMPLE_MISSING_FEE_LOST_IDENTITY");
+}
+Scenario serial missingFeeCashExample(context CashExample example) {
+    prepareOrdinaryCashExample(example);
+    configureCrossBranchFeeExample(example);
+    configureMissingFeeExample(example);
+    serial { transaction quantum { seedCashExampleAccount(example.seed); } }
+    try { executeCashDeposit(example.command, example.lifecycle); }
+    catch (CashFailureFacts example.failure) {}
+    example.observed = queryCashAccount(example.observed);
+    example.storedTrade = lookupCashDepositTrade(example.tradeKey);
+    example.postings = queryCashPostingRecords(example.postingKey);
+    example.audit = lookupCashExampleAudit(example.auditKey);
+    example.lifecycle.requestRecord = queryCashDepositRequest(example.lifecycle.requestRecord);
+    verifyMissingFeeExample(example);
+}

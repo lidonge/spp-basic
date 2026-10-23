@@ -1,0 +1,29 @@
+domain cboddeposit;
+
+Scenario serial readDepositAccount(
+    DepositAccount,
+    AccountEligibility,
+    DepositAccrualState,
+    CashSettlementAccount,
+    InterestIncomeAccount,
+    CollectionInterestIncomeAccount,
+    PrincipalRecoveryAccount
+) {
+    parallel {
+        findDepositAccount;
+        findAccountEligibility;
+        findDepositAccrualState;
+        findCashSettlementAccount;
+        findInterestIncomeAccount;
+        findCollectionInterestIncomeAccount;
+        findPrincipalRecoveryAccount;
+    }
+    identify(DepositAccount);
+    identify(AccountEligibility);
+    identify(DepositAccrualState);
+    identify(CashSettlementAccount);
+    identify(InterestIncomeAccount);
+    identify(CollectionInterestIncomeAccount);
+    identify(PrincipalRecoveryAccount);
+    checkAccountParticipants;
+}

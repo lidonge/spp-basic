@@ -1,0 +1,18 @@
+domain petshop;
+
+Scenario serial deliverShopOrder(Buyer, ShopOrder, DeliveryAgreement) {
+    checkBuyerCredential;
+    initializeDeliveryAgreement;
+    findBuyer;
+    identify(Buyer);
+    findShopOrder;
+    identify(ShopOrder);
+    checkOrderOwner;
+    checkDeliveryEligibility;
+    prepareDelivery;
+    prepareDeliveryAgreementReceipt;
+    transaction {
+        updateShopOrder;
+        insertReceipt(DeliveryAgreement.receipt);
+    }
+}

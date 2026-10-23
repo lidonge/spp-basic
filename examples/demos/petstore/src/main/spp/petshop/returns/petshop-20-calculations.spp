@@ -1,0 +1,18 @@
+domain petshop;
+
+atomic calculate prepareReturnRefund(ShopOrder, ReturnRefundAgreement) {
+    ReturnRefundAgreement.refundAmount = ShopOrder.total;
+}
+
+atomic calculate prepareReturnRequest(ReturnRequestAgreement, ShopOrder) {
+    ShopOrder.status = OrderStatus.RETURN_REQUESTED;
+    ShopOrder.reason = ReturnRequestAgreement.reason;
+}
+
+atomic calculate prepareReturnApproval(ShopOrder, ReturnRefundAgreement) {
+    ReturnRefundAgreement.returnedQuantity = 0;
+    for (OrderLine line : ShopOrder.lines) {
+        ReturnRefundAgreement.returnedQuantity += line.quantity;
+    }
+    ShopOrder.status = OrderStatus.RETURNED;
+}

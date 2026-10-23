@@ -1,0 +1,6 @@
+domain petshop;
+
+atomic check checkPaymentEligibility(Buyer, ShopOrder) {
+    require(ShopOrder.status == OrderStatus.UNPAID, "ORDER_NOT_PAYABLE");
+    require(Buyer.wallet >= ShopOrder.total, "INSUFFICIENT_FUNDS");
+}

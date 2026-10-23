@@ -1,0 +1,200 @@
+domain cboddeposit;
+
+Role CashReversalCommand {
+    String id;
+    String attemptId;
+    String originalTradeId;
+    boolean overnightMode2;
+    BusinessDay day;
+    DepositReversalCapacity capacity;
+    DepositOperatorFacts operator;
+    CashChannel channel;
+}
+Contract CashReversalWork {
+    String status;
+    CashDepositTrade originalTrade;
+    CashOriginalEvidence originalEvidence;
+    CashAccountRecord current;
+    CashAccountRecord proposed;
+    CashTradeReversalLink originalLink;
+    CashTradeReversalLink proposedLink;
+    CashPostingRecord postingKey;
+    CashPostingRecord[] recordedPostings;
+    DepositPostingLine[] actualLines;
+    DepositPostingLine[] reversedLines;
+    DepositPostingTotals originalTotals;
+    DepositPostingTotals totals;
+    DepositAccounting accounting;
+    DepositReversalFeeDecision refund;
+    DepositReversalCapacity capacity;
+    OriginalDepositMovement movement;
+    DepositReversalAmountPlan amounts;
+    CashReversalJournal journal;
+    CashReversalContext execution;
+    CashReversalMetadataPlan metadata;
+    DepositNotices notices;
+    BankDate day;
+    CashReversalTrade reversal;
+    CashPostingRecord[] postings;
+    CashAuditRecord audit;
+    AccountEligibility quantumAccount;
+    CashQuantumClearing clearing;
+    CashQuantumMovement quantumMovement;
+}
+atomic query <CashPostingRecord[] records> queryCashPostingRecords(CashPostingRecord key);
+atomic calculate initializeCashReversalWork(CashReversalCommand command, context CashReversalWork work) {
+    require(command.id != null && command.id != "" && command.id != command.originalTradeId, "INVALID_REVERSAL_TRANSACTION_ID");
+    require(command.attemptId != null && command.attemptId != "", "MISSING_REVERSAL_ATTEMPT_ID");
+    require(command.originalTradeId != null && command.originalTradeId != "", "MISSING_ORIGINAL_TRANSACTION_ID");
+    require(command.day != null && command.capacity != null && command.operator != null && command.channel != null,
+        "MISSING_REVERSAL_FACTS");
+    work.status = "Preparing";
+    work.originalTrade = new CashDepositTrade();
+    work.originalTrade.id = command.originalTradeId;
+    work.originalEvidence = new CashOriginalEvidence();
+    work.current = new CashAccountRecord();
+    work.proposed = new CashAccountRecord();
+    work.originalLink = new CashTradeReversalLink();
+    work.originalLink.id = command.originalTradeId;
+    work.proposedLink = new CashTradeReversalLink();
+    work.postingKey = new CashPostingRecord();
+    work.postingKey.tradeId = command.originalTradeId;
+    work.actualLines = new DepositPostingLine[] { new DepositPostingLine(), new DepositPostingLine(),
+        new DepositPostingLine(), new DepositPostingLine(), new DepositPostingLine(), new DepositPostingLine(),
+        new DepositPostingLine(), new DepositPostingLine() };
+    work.reversedLines = copy(work.actualLines);
+    work.postings = new CashPostingRecord[] { new CashPostingRecord(), new CashPostingRecord(),
+        new CashPostingRecord(), new CashPostingRecord(), new CashPostingRecord(), new CashPostingRecord(),
+        new CashPostingRecord(), new CashPostingRecord() };
+    int slot = 1;
+    for (DepositPostingLine line : work.actualLines) { line.slot = slot; slot++; }
+    slot = 1;
+    for (DepositPostingLine line : work.reversedLines) { line.slot = slot; slot++; }
+    slot = 1;
+    for (CashPostingRecord posting : work.postings) { posting.slot = slot; slot++; }
+    work.originalTotals = new DepositPostingTotals();
+    work.totals = new DepositPostingTotals();
+    work.accounting = new DepositAccounting();
+    work.refund = new DepositReversalFeeDecision();
+    work.capacity = copy(command.capacity);
+    work.movement = new OriginalDepositMovement();
+    work.amounts = new DepositReversalAmountPlan();
+    work.journal = new CashReversalJournal();
+    work.execution = new CashReversalContext();
+    work.execution.businessDate = command.day.date;
+    work.execution.newDetailItems = 1;
+    work.execution.overnightMode2 = command.overnightMode2;
+    work.metadata = new CashReversalMetadataPlan();
+    work.notices = new DepositNotices();
+    work.day = new BankDate();
+    work.day.encoded = command.day.date;
+    work.reversal = new CashReversalTrade();
+    work.reversal.id = command.id;
+    work.audit = new CashAuditRecord();
+    work.audit.attemptId = command.attemptId;
+    work.quantumAccount = new AccountEligibility();
+    work.clearing = new CashQuantumClearing();
+    work.quantumMovement = new CashQuantumMovement();
+}
+atomic calculate prepareCashReversalQueries(context CashReversalWork work) {
+    require(work.originalTrade != null, "ORIGINAL_DEPOSIT_TRADE_NOT_FOUND");
+    require(work.originalTrade.original != null && work.originalTrade.settled != null
+        && work.originalTrade.request != null && work.originalTrade.plan != null && work.originalTrade.fee != null,
+        "MISSING_ORIGINAL_ACCOUNT_FACTS");
+    require(work.originalTrade.accountId == work.originalTrade.original.id
+        && work.originalTrade.accountId == work.originalTrade.settled.id, "INVALID_ORIGINAL_DEPOSIT_ACCOUNT");
+    work.current.id = work.originalTrade.accountId;
+}
+atomic check checkCashReversalCurrentFacts(context CashReversalWork work) {
+    require(work.current.bankProfile != null, "MISSING_REVERSAL_BANK_PROFILE");
+    require(work.current.accrual != null && work.current.accrual.state != null, "MISSING_REVERSAL_ACCRUAL_FACTS");
+}
+atomic calculate prepareCashReversalLedger(context CashReversalWork work) {
+    require(work.recordedPostings != null, "INVALID_ORIGINAL_DEPOSIT_POSTINGS");
+    int count = 0;
+    for (CashPostingRecord posting : work.recordedPostings) {
+        require(posting.tradeId == work.originalTrade.id && posting.slot >= 1 && posting.slot <= 8
+            && posting.line != null && posting.line.slot == posting.slot, "INVALID_ORIGINAL_DEPOSIT_POSTINGS");
+        count++;
+    }
+    require(count == 8, "INVALID_ORIGINAL_DEPOSIT_POSTINGS");
+    for (DepositPostingLine line : work.actualLines) {
+        int matches = 0;
+        for (CashPostingRecord posting : work.recordedPostings) {
+            if (posting.slot == line.slot) {
+                line.subject = posting.line.subject;
+                line.side = posting.line.side;
+                line.amount = posting.line.amount;
+                matches++;
+            }
+        }
+        require(matches == 1, "INVALID_ORIGINAL_DEPOSIT_POSTINGS");
+    }
+}
+atomic calculate prepareCashReversalMetadataFacts(context CashReversalWork work) {
+    work.journal.transactionDate = work.originalTrade.request.valueDate;
+    work.journal.previousTransactionDate = work.originalTrade.original.eligibility.lastTransactionDate;
+    work.journal.settledDetailCount = work.originalTrade.settled.eligibility.detailCount;
+    // Normal cash entry disallows backdated value dates; this is the original XBOD selected path.
+    work.journal.addedBackdatedProduct = 0;
+    work.proposed = copy(work.current);
+}
+atomic calculate describeCashReversalCommitted(context CashReversalWork work) { work.status = "Committed"; }
+atomic calculate markCashReversalCommitting(context CashReversalWork work) { work.status = "Committing"; }
+atomic calculate describeCashReversalPrepared(context CashReversalWork work) { work.status = "Prepared"; }
+atomic check checkPreparedCashReversal(CashReversalCommand command, context CashReversalWork work) {
+    require(work.status == "Prepared", "CASH_REVERSAL_NOT_PREPARED");
+    require(work.reversal.id == command.id && work.reversal.originalTradeId == command.originalTradeId
+        && work.execution.overnightMode2 == command.overnightMode2, "DEPOSIT_REQUEST_ID_REUSED");
+    require(sameFacts(work.originalEvidence.expected, work.reversal.originalDeposit)
+        && sameFacts(work.originalEvidence.expected, work.originalTrade), "ORIGINAL_DEPOSIT_RECEIPT_CHANGED");
+}
+Scenario serial prepareCashReversalAttempt(CashReversalCommand command, context CashReversalWork work) {
+    initializeCashReversalWork(command, work);
+    work.originalTrade = lookupCashDepositTrade(work.originalTrade);
+    prepareCashReversalQueries(work);
+    queryCashAccount(work.current);
+    queryCashTradeReversalLink(work.originalLink);
+    checkCashOriginalTrade(work.originalTrade, work.current, work.originalLink);
+    checkCashReversalCurrentFacts(work);
+    assessCoreDepositReversalEligibility(work.current.control, work.current.eligibility, work.current.bankProfile,
+        command.operator, command.channel, work.notices);
+    prepareRecordedDepositReversal(work.originalTrade.request, work.originalTrade.original.account,
+        work.originalTrade.settled.account, work.originalTrade.plan, work.current.account, work.capacity,
+        work.movement, work.amounts);
+    decodeBankDate(work.day);
+    checkCashAccountControl(work.current.control, work.current.eligibility);
+    checkXbodCashReversalPath(command.operator, command.channel);
+    selectXbodCashReversalFee(work.originalTrade.fee, work.refund);
+    work.recordedPostings = queryCashPostingRecords(work.postingKey);
+    prepareCashReversalLedger(work);
+    prepareRecordedDepositReversalPostings(work.originalTrade.request, work.originalTrade.plan, work.originalTrade.fee,
+        work.originalTrade.lines, work.actualLines, work.refund, work.accounting, work.originalTotals,
+        work.reversedLines, work.totals);
+    prepareCashReversalMetadataFacts(work);
+    calculateXbodCashReversalMetadata(work.originalTrade.request, work.journal, work.execution,
+        work.current.eligibility, work.current.accrual.state, work.metadata);
+    applyXbodCashReversal(work.current.account, work.movement, work.amounts, work.metadata,
+        work.proposed.account, work.proposed.eligibility, work.proposed.accrual.state);
+    prepareCashAccountRecord(work.current, work.proposed, work.proposed.account, work.proposed.eligibility,
+        work.proposed.accrual, work.proposed.bands);
+    prepareCashReversalRecord(work.reversal, work.originalTrade, work.current, work.proposed, work.movement,
+        work.amounts, work.refund, work.reversedLines, work.journal, work.execution, work.metadata, work.notices);
+    prepareCashReversalPostingRecords(work.reversal, work.postings);
+    prepareCashReversalLink(work.originalLink, work.proposedLink, work.reversal);
+    prepareCashReversalAudit(work.reversal, work.audit);
+    describeCashQuantumMovement(work.current.eligibility, work.proposed.eligibility, work.quantumMovement);
+    prepareCashOriginalEvidence(work.originalTrade, work.originalEvidence);
+    describeCashReversalPrepared(work);
+}
+Scenario serial submitPreparedCashReversal(CashReversalCommand command, context CashReversalWork work) {
+    checkPreparedCashReversal(command, work);
+    markCashReversalCommitting(work);
+    commitCashReversalRecords(work.current, work.proposed, work.reversal, work.postings, work.originalLink,
+        work.proposedLink, work.audit, work.quantumAccount, work.clearing, work.quantumMovement, work.originalEvidence);
+    describeCashReversalCommitted(work);
+}
+Scenario serial executeCashReversalAttempt(CashReversalCommand command, context CashReversalWork work) {
+    prepareCashReversalAttempt(command, work);
+    submitPreparedCashReversal(command, work);
+}

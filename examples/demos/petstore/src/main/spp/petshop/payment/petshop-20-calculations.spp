@@ -1,0 +1,6 @@
+domain petshop;
+
+atomic calculate preparePayment(ShopOrder, PaymentAgreement) {
+    PaymentAgreement.paymentAmount = ShopOrder.total;
+    ShopOrder.status = OrderStatus.PAID;
+}

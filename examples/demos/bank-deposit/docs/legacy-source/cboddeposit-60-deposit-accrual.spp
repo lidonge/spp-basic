@@ -1,0 +1,138 @@
+domain cboddeposit;
+
+// KSADEP0 4140/4150; normal and overdraft periods both use the pre-trade account.
+Role DepositInterestPolicy { boolean normalEnabled; double normalUnit; double overdraftUnit; }
+Role DepositAccrualState {
+    int lastProductDate;
+    double normalProduct;
+    double overdraftProduct;
+    double overdraftInterestProduct;
+    double actualProduct;
+    int overdraftDays;
+    int overdraftInterestDays;
+}
+Role DepositAccrualInput {
+    DepositAccrualState state;
+    DepositInterestPolicy policy;
+    InterestCalendar calendar;
+    AgreementTerm term;
+    AgreementPolicy agreement;
+}
+Role DepositAccrualWork {
+    BankDate start;
+    BankDate end;
+    BankDate clippedStart;
+    BankDate clippedEnd;
+    InterestPeriod normal;
+    InterestPeriod overlap;
+    InterestPeriod overdraft;
+    InterestCalendar overdraftCalendar;
+    AgreementPolicy agreement;
+    AgreementProduct products;
+}
+Contract DepositAccrualPlan {
+    int startDate;
+    int endDate;
+    int normalDays;
+    int overdraftPeriodDays;
+    double normalIncrement;
+    double agreementIncrement;
+    double overdraftIncrement;
+    double overdraftInterestIncrement;
+    int newOverdraftDays;
+    int newOverdraftInterestDays;
+}
+atomic calculate prepareDepositAccrualInputs(DepositAccount account, BusinessDay day,
+    DepositAccrualInput before, DepositAccrualWork work, context DepositAccrualPlan plan) {
+    require(before.policy.normalUnit > 0 && before.policy.overdraftUnit > 0, "INVALID_ACCRUAL_UNIT");
+    work.start.encoded = before.state.lastProductDate;
+    work.end.encoded = day.date;
+    work.normal.amount = 0;
+    if (before.policy.normalEnabled) { work.normal.amount = account.interestBase; }
+    work.normal.unit = before.policy.normalUnit;
+    work.overdraftCalendar.convention = "ACT";
+    work.agreement.mode = before.agreement.mode;
+    work.agreement.currency = before.agreement.currency;
+    work.agreement.enabled = before.policy.normalEnabled && before.agreement.enabled;
+    plan.startDate = before.state.lastProductDate;
+    plan.endDate = day.date;
+}
+// CSAPRD4 5100/5200/5300: ACT days, explicit unit quantization, and source day-counter conditions.
+atomic calculate calculateOverdraftAccrual(DepositAccount account, DepositAccrualInput before,
+    InterestPeriod period, context DepositAccrualPlan plan) {
+    require(account.overdraftPrincipal >= 0, "E1155");
+    plan.overdraftPeriodDays = period.days;
+    plan.overdraftIncrement = roundDown(account.overdraftPrincipal / before.policy.overdraftUnit, 0)
+        * before.policy.overdraftUnit * period.days;
+    plan.overdraftInterestIncrement = roundDown((account.overdraftInterest + account.collectionInterest)
+        / before.policy.overdraftUnit, 0) * before.policy.overdraftUnit * period.days;
+    plan.newOverdraftDays = before.state.overdraftDays;
+    plan.newOverdraftInterestDays = before.state.overdraftInterestDays;
+    if (account.overdraftPrincipal > 0) { plan.newOverdraftDays += period.days; }
+    // Collection-only interest contributes a product, but does not increment this source counter.
+    if (account.overdraftInterest > 0) { plan.newOverdraftInterestDays += period.days; }
+}
+atomic calculate accumulateDepositAccrual(DepositAccrualInput before, AgreementBand[] beforeBands,
+    DepositAccrualWork work, AgreementBand[] increments, DepositAccrualInput after,
+    AgreementBand[] afterBands, context DepositAccrualPlan plan) {
+    int expected = 5;
+    for (AgreementBand band : beforeBands) { require(band.slot == expected, "INVALID_ACCRUAL_BANDS"); expected--; }
+    require(expected == 0, "INVALID_ACCRUAL_BANDS");
+    expected = 5;
+    for (AgreementBand band : increments) { require(band.slot == expected, "INVALID_ACCRUAL_BANDS"); expected--; }
+    require(expected == 0, "INVALID_ACCRUAL_BANDS");
+    expected = 5;
+    for (AgreementBand band : afterBands) { require(band.slot == expected, "INVALID_ACCRUAL_BANDS"); expected--; }
+    require(expected == 0, "INVALID_ACCRUAL_BANDS");
+    for (AgreementBand oldBand : beforeBands) {
+        for (AgreementBand increment : increments) {
+            if (oldBand.slot == increment.slot) {
+                require(oldBand.threshold == increment.threshold, "ACCRUAL_THRESHOLD_MISMATCH");
+            }
+        }
+    }
+    plan.normalDays = work.normal.days;
+    plan.normalIncrement = work.products.normalProduct;
+    plan.agreementIncrement = work.products.bandProduct;
+    after.state.lastProductDate = plan.endDate;
+    after.state.normalProduct = before.state.normalProduct + plan.normalIncrement;
+    after.state.overdraftProduct = before.state.overdraftProduct + plan.overdraftIncrement;
+    after.state.overdraftInterestProduct = before.state.overdraftInterestProduct + plan.overdraftInterestIncrement;
+    after.state.actualProduct = after.state.normalProduct - after.state.overdraftProduct;
+    after.state.overdraftDays = plan.newOverdraftDays;
+    after.state.overdraftInterestDays = plan.newOverdraftInterestDays;
+    for (AgreementBand oldBand : beforeBands) {
+        for (AgreementBand increment : increments) {
+            if (oldBand.slot == increment.slot) {
+                for (AgreementBand newBand : afterBands) {
+                    if (newBand.slot == oldBand.slot) {
+                        newBand.threshold = oldBand.threshold;
+                        newBand.product = oldBand.product + increment.product;
+                    }
+                }
+            }
+        }
+    }
+}
+Scenario serial prepareDepositAccrual(DepositAccount account, BusinessDay day, DepositAccrualInput before,
+    AgreementBand[] beforeBands, DepositAccrualWork work, AgreementBand[] increments, DepositAccrualInput after,
+    AgreementBand[] afterBands, context DepositAccrualPlan plan) {
+    prepareDepositAccrualInputs(account, day, before, work, plan);
+    calculateDatedAgreement(work.start, work.end, before.term, work.clippedStart, work.clippedEnd,
+        before.calendar, work.normal, work.overlap, work.agreement, increments, work.products);
+    calculateBankPeriod(work.start, work.end, work.overdraftCalendar, work.overdraft);
+    calculateOverdraftAccrual(account, before, work.overdraft, plan);
+    accumulateDepositAccrual(before, beforeBands, work, increments, after, afterBands, plan);
+}
+Scenario serial prepareCashDepositWithAccrual(DepositRequest d, DepositAccount before, CashAccountControl control,
+    AccountEligibility eligibility, DepositProduct product, BusinessDay day, CashChannel channel,
+    CashAuthorizationPolicy authorizationPolicy, AuthorizationEvidence evidence, context AdmissionDecision admission,
+    DepositFeeParty feeParty, DepositFeeContext feeContext, DepositFeeRate rate, context DepositFeePlan fee,
+    context DepositPlan plan, context DepositAccounting amounts, DepositPostingLine[] lines,
+    context DepositPostingTotals totals, DepositDetailPolicy details, DepositAccount after, AccountEligibility afterEligibility,
+    DepositAccrualInput beforeAccrual, AgreementBand[] beforeBands, DepositAccrualWork work,
+    AgreementBand[] increments, DepositAccrualInput afterAccrual, AgreementBand[] afterBands, context DepositAccrualPlan accrual) {
+    prepareNormalCashDeposit(d, before, control, eligibility, product, day, channel, authorizationPolicy, evidence,
+        admission, feeParty, feeContext, rate, fee, plan, amounts, lines, totals, details, after, afterEligibility);
+    prepareDepositAccrual(before, day, beforeAccrual, beforeBands, work, increments, afterAccrual, afterBands, accrual);
+}

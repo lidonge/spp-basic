@@ -1,0 +1,159 @@
+domain cboddeposit;
+
+atomic calculate selectDepositReportNormal(context DepositCompleteReportExample example) {
+    example.report.normal = new DepositReportDebtEvidence(); example.report.normal.kind = 1;
+}
+atomic calculate selectDepositReportBad(context DepositCompleteReportExample example) {
+    example.report.bad = new DepositReportDebtEvidence(); example.report.bad.kind = 2;
+}
+atomic calculate selectDepositReportFractional(context DepositCompleteReportExample example) {
+    example.report.fractional = new DepositReportDebtEvidence(); example.report.fractional.kind = 3;
+}
+atomic calculate selectDepositReportRejection(context DepositCompleteReportExample example) {
+    example.rejection = new CashExample();
+}
+atomic calculate configureDepositReportRejection(context DepositCompleteReportExample example) {
+    String prefix = "SOURCE-REPORT-CONTROL";
+    if (example.rejectionSlot == 10) { prefix = "SOURCE-REPORT-DATE"; example.rejection.command.request.valueDate = 20261006; }
+    else { example.rejection.seed.control.controllingInstitution = "001"; example.rejection.seed.control.controlStatus = "Locked"; }
+    example.rejection.seed.id = prefix + "-A"; example.rejection.seed.eligibility.accountId = example.rejection.seed.id;
+    example.rejection.command.accountId = example.rejection.seed.id; example.rejection.observed.id = example.rejection.seed.id;
+    example.rejection.command.id = prefix + "-T"; example.rejection.command.attemptId = prefix + "-REJECT";
+    example.rejection.auditKey = new CashAuditRecord(); example.rejection.auditKey.tradeId = example.rejection.command.id;
+    example.rejection.auditKey.attemptId = example.rejection.command.attemptId;
+    example.rejection.tradeKey = new CashDepositTrade(); example.rejection.tradeKey.id = example.rejection.command.id;
+    example.rejection.postingKey.tradeId = example.rejection.command.id;
+}
+atomic calculate captureDepositReportRejection(context DepositCompleteReportExample example) {
+    String code = "EN432"; if (example.rejectionSlot == 10) { code = "E1043"; }
+    require(example.rejection.failure != null && example.rejection.failure.code == code, "REPORT_REJECTION_CODE");
+    require(example.rejection.observed.version == 0 && example.rejection.storedTrade == null
+        && sameFacts(example.rejection.seed, example.rejection.observed), "REPORT_REJECTION_CHANGED_ACCOUNT");
+    int lines = 0; for (CashPostingRecord posting : example.rejection.postings) { lines++; }
+    int audits = 0;
+    for (CashAuditRecord audit : example.rejection.history) { audits++; require(audit.event == "Rejected" && audit.code == code, "REPORT_REJECTION_AUDIT"); }
+    require(lines == 0 && audits == 1, "REPORT_REJECTION_PARTIAL_WRITE");
+    if (example.rejectionSlot == 9) { example.report.controlRejected = copy(example.rejection); }
+    else { example.report.dateRejected = copy(example.rejection); }
+}
+Scenario serial executeDepositReportRejection(context DepositCompleteReportExample example) {
+    selectDepositReportRejection(example); prepareOrdinaryCashExample(example.rejection); configureDepositReportRejection(example);
+    serial { transaction quantum { seedCashExampleAccount(example.rejection.seed); } }
+    try { executeCashDeposit(example.rejection.command, example.rejection.lifecycle); } catch (CashFailureFacts example.rejection.failure) {}
+    example.rejection.observed = queryCashAccount(example.rejection.observed);
+    example.rejection.storedTrade = lookupCashDepositTrade(example.rejection.tradeKey);
+    example.rejection.postings = queryCashPostingRecords(example.rejection.postingKey);
+    example.rejection.history = queryCoreReversalExampleAudits(example.rejection.auditKey);
+    captureDepositReportRejection(example);
+}
+atomic calculate selectDepositReportControlCase(context DepositCompleteReportExample example) { example.rejectionSlot = 9; }
+atomic calculate selectDepositReportDateCase(context DepositCompleteReportExample example) { example.rejectionSlot = 10; }
+atomic calculate assembleDepositReportCases(context DepositCompleteReportExample example) {
+    example.report.cash = copy(example.cashWork.report);
+    for (DepositReportCase item : example.report.cases) {
+        item.status = "Committed"; item.code = ""; item.evidence = "SOURCE_EXECUTION_AND_PERSISTED_FACTS";
+        if (item.slot == 1 || item.slot == 6 || item.slot == 8) {
+            int tradeSlot = 1; item.title = "现金存入600与手续费2";
+            if (item.slot == 6) { tradeSlot = 2; item.title = "授权通过后存入1500"; }
+            if (item.slot == 8) { tradeSlot = 3; item.title = "下一业务日存入100与积数"; }
+            for (DepositReportTradeEvidence trade : example.report.cash.actualTrades) {
+                if (trade.slot == tradeSlot) {
+                    item.before = copy(trade.trade.original); item.after = copy(trade.trade.settled);
+                    item.receipt = copy(trade.trade); item.history = copy(trade.history);
+                }
+            }
+        } else if (item.slot == 2 || item.slot == 3 || item.slot == 4) {
+            DepositReportDebtEvidence debt = example.report.normal;
+            if (item.slot == 3) { debt = example.report.bad; }
+            if (item.slot == 4) { debt = example.report.fractional; item.evidence = "BUSINESS_MATHEMATICS_WITH_DEMO_CONFIGURATION"; }
+            item.title = debt.title; item.before = copy(debt.original.original); item.after = copy(debt.settled); item.receipt = copy(debt.original);
+        } else if (item.slot == 5) {
+            item.title = "授权等待不改变账户"; item.status = example.report.cash.pendingStatus;
+            item.before = copy(example.report.cash.pendingAccount); item.after = copy(example.report.cash.pendingAccount);
+        } else if (item.slot == 7) {
+            item.title = "原身份重放保留后续成交"; item.status = "Replayed";
+            for (DepositReportTradeEvidence trade : example.report.cash.actualTrades) {
+                if (trade.slot == 1) { item.receipt = copy(trade.trade); item.history = copy(trade.history); }
+                if (trade.slot == 2) { item.before = copy(trade.trade.settled); item.after = copy(trade.trade.settled); }
+            }
+        } else {
+            CashExample rejected = example.report.controlRejected; item.title = "账户控制拒绝";
+            if (item.slot == 10) { rejected = example.report.dateRejected; item.title = "日期拒绝"; }
+            item.status = "Rejected"; item.code = rejected.failure.code;
+            item.before = copy(rejected.seed); item.after = copy(rejected.observed); item.history = copy(rejected.history);
+        }
+        item.sourceProgram = "GSA01102 / KSADEP0";
+        item.sourceParagraph = "KSADEP0:1481,1540-1768,1925-2067；详见docs/source-map.md";
+        item.expectedOrigin = "SOURCE_DERIVED_WITH_DEMO_CONFIGURATION";
+        item.businessDay = new BusinessDay(); item.authorizationLevel = "None";
+        if (item.receipt != null) { item.request = copy(item.receipt.request); item.businessDay.date = item.receipt.accrual.endDate; }
+        if (item.slot == 4) { item.expectedOrigin = "BUSINESS_MATHEMATICS_WITH_DEMO_CONFIGURATION"; }
+        if (item.slot == 5) {
+            item.request = copy(example.report.cash.pendingCommand.request); item.businessDay = copy(example.report.cash.pendingCommand.day);
+            item.authorizationLevel = example.report.cash.pendingCommand.evidence.grantedLevel;
+        }
+        if (item.slot == 6) { item.authorizationLevel = example.report.cash.authorizedCommand.evidence.grantedLevel; }
+        if (item.slot == 5 || item.slot == 6) { item.sourceParagraph = "KSADEP0:750-860；GSYSEHRT；详见docs/source-map.md"; }
+        if (item.slot == 7) {
+            item.request = copy(example.report.cash.replayCommand.request); item.businessDay = copy(example.report.cash.replayCommand.day);
+            item.authorizationLevel = example.report.cash.replayCommand.evidence.grantedLevel;
+            item.before = copy(example.report.cash.replayCurrent); item.after = copy(example.report.cash.replayCurrent);
+            item.sourceParagraph = "原成交身份与重放为demo执行契约；详见docs/cash-execution-contract.md";
+        }
+        if (item.slot == 8) { item.sourceParagraph = "KSADEP0:1802-1867,1990-2048；CSAPRD2/CSAPRD4；详见docs/source-map.md"; }
+        if (item.slot == 9 || item.slot == 10) {
+            CashExample rejected = example.report.controlRejected; if (item.slot == 10) { rejected = example.report.dateRejected; }
+            item.request = copy(rejected.command.request); item.businessDay = copy(rejected.command.day);
+            item.authorizationLevel = rejected.command.evidence.grantedLevel;
+            item.sourceParagraph = "前台日期/账户控制受理；详见docs/source-map.md和cash-execution-contract.md";
+        }
+    }
+}
+atomic check verifyDepositCompleteReport(DepositCompleteReportExample example) {
+    require(!example.report.cobolExecuted && !example.report.bankConfigurationObtained
+        && !example.report.productionReplacementVerified, "REPORT_FALSE_PRODUCTION_CLAIM");
+    int count = 0; int committed = 0; int rejected = 0; int pending = 0; int replayed = 0;
+    for (DepositReportCase item : example.report.cases) {
+        require(item.request != null && item.businessDay != null && item.sourceProgram != null
+            && item.sourceParagraph != null && item.expectedOrigin != null, "REPORT_CASE_PROVENANCE_MISSING");
+        count++; if (item.status == "Committed") { committed++; } if (item.status == "Rejected") { rejected++; }
+        if (item.status == "PendingAuthorization") { pending++; } if (item.status == "Replayed") { replayed++; }
+        if (item.slot == 7) { require(item.before.version == 2 && item.after.version == 2
+            && item.receipt.settled.version == 1 && item.receipt.settled.eligibility.accountBalance == 700, "REPORT_REPLAY_CASE_FACTS"); }
+    }
+    require(count == 10 && committed == 6 && rejected == 2 && pending == 1 && replayed == 1, "REPORT_TEN_CASES");
+    int trades = 0; int lines = 0; int candidates = 0;
+    for (DepositReportTradeEvidence trade : example.report.cash.actualTrades) {
+        trades++; for (CashPostingRecord posting : trade.postings) { lines++; }
+    }
+    for (DepositReportCandidateEvidence candidate : example.report.cash.candidates) { candidates++; require(!candidate.executed, "REPORT_CANDIDATE_EXECUTED"); }
+    for (CashPostingRecord posting : example.report.normal.originalPostings) { lines++; }
+    for (CashPostingRecord posting : example.report.bad.originalPostings) { lines++; }
+    for (CashPostingRecord posting : example.report.fractional.originalPostings) { lines++; }
+    require(trades + 3 == 6 && lines == 48 && candidates + 3 == 5 && !example.report.actualReversalsExecuted, "REPORT_AGGREGATE_COUNTS");
+    int rows = 0; double deltas = 0;
+    for (QuantumJournalEvidence row : example.report.journal) { rows++; deltas += row.deltaValue; require(row.status == "COMMITTED", "REPORT_QUANTUM_STATUS"); }
+    require(rows == 12 && deltas == 0, "REPORT_DEPOSIT_QUANTUM_EVIDENCE");
+}
+atomic calculate selectDepositReportBalanceValues(context DepositCompleteReportExample example) { example.valueKey.attributeId = "AccountEligibility.accountBalance"; }
+atomic calculate selectDepositReportClearingValues(context DepositCompleteReportExample example) { example.valueKey.attributeId = "CashQuantumClearing.amount"; }
+Scenario serial observeDepositCompleteReportQuantum(context DepositCompleteReportExample example) {
+    selectDepositReportBalanceValues(example);
+    example.report.journal = queryDepositReportJournal(example.journalKey);
+    example.report.values = queryDepositReportValues(example.valueKey);
+    selectDepositReportClearingValues(example);
+    example.report.clearingValues = queryDepositReportValues(example.valueKey);
+}
+Scenario serial createDepositCompleteReport(context DepositCompleteReportExample example) {
+    initializeDepositCompleteReport(example); createDepositCashReport(example.cashWork);
+    selectDepositReportNormal(example); prepareDepositReportDebt(example.report.normal);
+    selectDepositReportBad(example); prepareDepositReportDebt(example.report.bad);
+    selectDepositReportFractional(example); prepareDepositReportDebt(example.report.fractional);
+    selectDepositReportControlCase(example); executeDepositReportRejection(example);
+    selectDepositReportDateCase(example); executeDepositReportRejection(example);
+    assembleDepositReportCases(example); observeDepositCompleteReportQuantum(example); verifyDepositCompleteReport(example);
+}
+Scenario serial depositCompleteReportSetupExampleRun(context DepositCompleteReportExample example) {
+    createDepositCompleteReport(example);
+    transaction quantum { storeDepositCompleteSourceReport(example.report); }
+}

@@ -1,0 +1,62 @@
+domain cboddeposit;
+
+Contract ConcurrentCashExample {
+    CashExample first; CashExample second; CashAuditRecord auditKey; CashAuditRecord[] audits;
+}
+atomic calculate initializeConcurrentCashExample(context ConcurrentCashExample example) {
+    example.first = new CashExample(); example.second = new CashExample(); example.auditKey = new CashAuditRecord();
+}
+atomic calculate selectConcurrentCashExample(context ConcurrentCashExample example) {
+    example.first.seed.id = "SOURCE-CONCURRENT-A"; example.first.seed.eligibility.accountId = example.first.seed.id;
+    example.first.command.accountId = example.first.seed.id; example.second.command.accountId = example.first.seed.id;
+    example.first.command.id = "SOURCE-CONCURRENT-T"; example.second.command.id = example.first.command.id;
+    example.first.command.attemptId = "SOURCE-CONCURRENT-FIRST"; example.second.command.attemptId = "SOURCE-CONCURRENT-SECOND";
+    example.first.command.request.amount = 600.00; example.second.command.request.amount = 600;
+    example.first.observed.id = example.first.seed.id; example.first.postingKey.tradeId = example.first.command.id;
+    example.first.tradeKey = new CashDepositTrade(); example.first.tradeKey.id = example.first.command.id;
+    example.auditKey.tradeId = example.first.command.id;
+}
+atomic check verifyConcurrentCashExample(ConcurrentCashExample example) {
+    require(example.first.lifecycle.execution.status == "Committed" && example.second.lifecycle.execution.status == "Committed"
+        && example.first.lifecycle.execution.proposed.version == 1 && example.second.lifecycle.execution.proposed.version == 1
+        && example.first.lifecycle.execution.proposed.eligibility.accountBalance == 700
+        && example.second.lifecycle.execution.proposed.eligibility.accountBalance == 700, "EXAMPLE_CONCURRENT_RESULTS");
+    require(example.first.observed.version == 1 && example.first.observed.account.interestBase == 700
+        && example.first.observed.eligibility.accountBalance == 700 && example.first.observed.eligibility.cashDepositedToday == 600
+        && example.first.observed.eligibility.detailCount == 11, "EXAMPLE_CONCURRENT_DUPLICATE_ACCOUNT");
+    require(example.first.storedTrade != null && example.first.storedTrade.settled.version == 1, "EXAMPLE_CONCURRENT_ORIGINAL_TRADE");
+    int conflicts = 0;
+    if (example.first.lifecycle.submissionFailure != null) {
+        conflicts++; require(example.first.lifecycle.submissionFailure.code == "PERSISTENCE_ALREADY_EXISTS"
+            && example.first.lifecycle.submissionFailure.transactionOutcome == "ROLLED_BACK", "EXAMPLE_CONCURRENT_FIRST_FAILURE");
+    }
+    if (example.second.lifecycle.submissionFailure != null) {
+        conflicts++; require(example.second.lifecycle.submissionFailure.code == "PERSISTENCE_ALREADY_EXISTS"
+            && example.second.lifecycle.submissionFailure.transactionOutcome == "ROLLED_BACK", "EXAMPLE_CONCURRENT_SECOND_FAILURE");
+    }
+    require(conflicts == 1, "EXAMPLE_CONCURRENT_COLLISION_NOT_EXERCISED");
+    int count = 0; double debit = 0; double credit = 0;
+    for (CashPostingRecord posting : example.first.postings) {
+        count++; if (posting.line.side == "Debit") { debit += posting.line.amount; } else { credit += posting.line.amount; }
+    }
+    require(count == 8 && debit == 600 && credit == 600, "EXAMPLE_CONCURRENT_DUPLICATE_LEDGER");
+    int audits = 0; int committed = 0; int replayed = 0;
+    for (CashAuditRecord audit : example.audits) {
+        audits++; if (audit.event == "Committed") { committed++; } if (audit.event == "Replayed") { replayed++; }
+    }
+    require(audits == 2 && committed == 1 && replayed == 1, "EXAMPLE_CONCURRENT_ATTEMPT_HISTORY");
+}
+Scenario serial concurrentCashLifecycleExampleRun(context ConcurrentCashExample example) {
+    initializeConcurrentCashExample(example); prepareOrdinaryCashExample(example.first); prepareOrdinaryCashExample(example.second);
+    selectConcurrentCashExample(example);
+    serial { transaction quantum { seedCashExampleAccount(example.first.seed); } }
+    parallel {
+        executeCashDeposit(example.first.command, example.first.lifecycle);
+        executeCashDeposit(example.second.command, example.second.lifecycle);
+    }
+    example.first.observed = queryCashAccount(example.first.observed);
+    example.first.storedTrade = lookupCashDepositTrade(example.first.tradeKey);
+    example.first.postings = queryCashPostingRecords(example.first.postingKey);
+    example.audits = queryCoreReversalExampleAudits(example.auditKey);
+    verifyConcurrentCashExample(example);
+}

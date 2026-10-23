@@ -1,0 +1,145 @@
+domain cboddeposit;
+
+atomic calculate selectPendingDepositCashReport(context DepositCashReportExample example) {
+    example.stored.core.fixture.cash.command.id = "SOURCE-REPORT-CASH-AUTHORIZED";
+    example.stored.core.fixture.cash.command.attemptId = "SOURCE-REPORT-CASH-WAIT";
+    example.stored.core.fixture.cash.command.request.amount = 1500;
+    example.stored.core.fixture.cash.command.evidence.grantedLevel = "";
+}
+atomic calculate capturePendingDepositCashReport(context DepositCashReportExample example) {
+    example.report.pendingCommand = copy(example.stored.core.fixture.cash.command);
+    example.report.pendingStatus = example.stored.core.fixture.cash.lifecycle.execution.status;
+    example.report.pendingAccount = copy(example.stored.core.fixture.cash.observed);
+    require(example.report.pendingStatus == "PendingAuthorization"
+        && example.report.pendingAccount.version == 1
+        && example.report.pendingAccount.eligibility.accountBalance == 700, "REPORT_PENDING_CHANGED_ACCOUNT");
+}
+atomic calculate captureAuthorizedDepositCashReport(context DepositCashReportExample example) {
+    example.report.authorizedCommand = copy(example.stored.core.fixture.cash.command);
+}
+atomic calculate captureReplayedDepositCashReport(context DepositCashReportExample example) {
+    example.report.replayCommand = copy(example.stored.core.fixture.cash.command);
+    example.report.replayCurrent = copy(example.stored.core.fixture.cash.observed);
+    example.report.replayResult = copy(example.stored.core.fixture.cash.lifecycle.execution.proposed);
+}
+atomic calculate captureCurrentDepositCashReport(context DepositCashReportExample example) {
+    example.report.current = copy(example.stored.core.fixture.cash.observed); example.slot = 1;
+}
+atomic calculate selectDepositCashReportCandidate(context DepositCashReportExample example) {
+    if (example.slot == 1) { example.stored.core.request.feeDecision.refundAmount = 0; }
+    else { example.stored.core.request.feeDecision.refundAmount = 2; }
+}
+atomic calculate captureDepositCashReportCandidate(context DepositCashReportExample example) {
+    for (DepositReportCandidateEvidence evidence : example.report.candidates) {
+        if (evidence.slot == example.slot) {
+            evidence.executed = false;
+            if (example.slot == 1) { evidence.description = "不退手续费的反向候选，未执行"; }
+            else { evidence.description = "退原手续费2的反向候选，未执行"; }
+            evidence.facts = copy(example.stored.core.facts);
+        }
+    }
+    example.slot++;
+}
+Scenario serial prepareDepositCashReportCandidate(context DepositCashReportExample example) {
+    selectDepositCashReportCandidate(example);
+    prepareFinancialDepositReversalPostings(example.stored.core.request, example.stored.core.facts);
+    captureDepositCashReportCandidate(example);
+}
+atomic calculate resetDepositCashReportSlot(context DepositCashReportExample example) { example.slot = 1; }
+atomic check verifyDepositCashReport(DepositCashReportExample example) {
+    require(!example.report.cobolExecuted && !example.report.bankConfigurationObtained
+        && !example.report.productionReplacementVerified, "REPORT_PRODUCTION_SCOPE_INCORRECT");
+    require(example.report.current.version == 3 && example.report.current.eligibility.accountBalance == 2300
+        && example.report.current.eligibility.cashDepositedToday == 100
+        && example.report.current.accrual.state.normalProduct == 2200, "REPORT_CASH_CURRENT_FACTS");
+    require(example.report.pendingStatus == "PendingAuthorization" && example.report.pendingAccount.version == 1
+        && example.report.pendingAccount.eligibility.accountBalance == 700, "REPORT_PENDING_FACTS");
+    require(example.report.pendingCommand.request.amount == 1500 && example.report.pendingCommand.evidence.grantedLevel == ""
+        && example.report.authorizedCommand.request.amount == 1500 && example.report.authorizedCommand.evidence.grantedLevel == "B",
+        "REPORT_AUTHORIZATION_INPUTS");
+    require(example.report.replayCommand.request.amount == 600
+        && example.report.replayCurrent.version == 2 && example.report.replayCurrent.eligibility.accountBalance == 2200
+        && example.report.replayResult.version == 1 && example.report.replayResult.eligibility.accountBalance == 700,
+        "REPORT_REPLAY_EXECUTION_FACTS");
+    int count = 0; int lines = 0; int replayed = 0;
+    for (DepositReportTradeEvidence evidence : example.report.actualTrades) {
+        count++; require(evidence.trade.settled.version == evidence.slot, "REPORT_TRADE_VERSION");
+        double amount = 100; if (evidence.slot == 1) { amount = 600; } else if (evidence.slot == 2) { amount = 1500; }
+        require(evidence.trade.request.amount == amount, "REPORT_TRADE_AMOUNT");
+        int slots = 0; double debit = 0; double credit = 0;
+        for (CashPostingRecord posting : evidence.postings) {
+            slots++; lines++;
+            if (posting.line.side == "Debit") { debit += posting.line.amount; } else { credit += posting.line.amount; }
+        }
+        double fee = 2; if (evidence.slot == 2) { fee = 2.5; }
+        require(slots == 8 && debit == credit && debit == amount + fee
+            && evidence.trade.fee.fee == fee, "REPORT_TRADE_LEDGER");
+        for (CashAuditRecord audit : evidence.history) { if (audit.event == "Replayed") { replayed++; } }
+        if (evidence.slot == 1) {
+            require(evidence.trade.settled.eligibility.accountBalance == 700 && evidence.trade.fee.fee == 2,
+                "REPORT_ORIGINAL_CASH_AND_FEE");
+            require(evidence.trade.admission.warningCode == "F0554"
+                && evidence.trade.original.bankProfile.depositRange == "City"
+                && evidence.trade.original.bankProfile.openingBranch == "001001001"
+                && evidence.trade.operator.transactionPrefix == "SA01102"
+                && evidence.trade.operator.branch == "001001002"
+                && evidence.trade.notices.cardWarning == "", "REPORT_ORIGINAL_BANK_QUALIFICATION");
+        }
+    }
+    require(count == 3 && lines == 24 && replayed == 1, "REPORT_ACTUAL_CASH_COUNTS");
+    count = 0;
+    for (DepositReportCandidateEvidence evidence : example.report.candidates) {
+        count++;
+        double refund = 0; if (evidence.slot == 2) { refund = 2; }
+        require(!evidence.executed && evidence.facts.financial.amounts.accountBalance == 1700
+            && evidence.facts.financial.totals.fee == refund
+            && evidence.facts.financial.totals.debit == 600 + refund
+            && evidence.facts.financial.totals.credit == 600 + refund, "REPORT_CANDIDATE_FACTS");
+    }
+    require(count == 2, "REPORT_CANDIDATE_COUNT");
+    require(example.stored.core.link.version == 0 && example.stored.core.link.reversalId == ""
+        && sameFacts(example.report.current, example.stored.core.fixture.cash.observed), "REPORT_CANDIDATE_EXECUTED");
+}
+Scenario serial createDepositCashReport(context DepositCashReportExample example) {
+    initializeDepositCashReport(example); initializeStoredPreparationFixtureExample(example.stored);
+    serial { transaction quantum {
+        seedCashExampleAccount(example.stored.core.fixture.cash.seed);
+        seedCashExampleTariff(example.stored.core.fixture.cash.tariffRecord);
+    } }
+    executeCashDeposit(example.stored.core.fixture.cash.command, example.stored.core.fixture.cash.lifecycle);
+    selectPendingDepositCashReport(example);
+    executeCashDeposit(example.stored.core.fixture.cash.command, example.stored.core.fixture.cash.lifecycle);
+    example.stored.core.fixture.cash.observed = queryCashAccount(example.stored.core.fixture.cash.observed);
+    capturePendingDepositCashReport(example);
+    prepareStoredPreparationAuthorizedDepositExample(example.stored); captureAuthorizedDepositCashReport(example);
+    executeCashDeposit(example.stored.core.fixture.cash.command, example.stored.core.fixture.cash.lifecycle);
+    prepareStoredPreparationOriginalReplayExample(example.stored);
+    executeCashDeposit(example.stored.core.fixture.cash.command, example.stored.core.fixture.cash.lifecycle);
+    example.stored.core.fixture.cash.observed = queryCashAccount(example.stored.core.fixture.cash.observed);
+    captureReplayedDepositCashReport(example);
+    prepareStoredPreparationNextDayExample(example.stored);
+    executeCashDeposit(example.stored.core.fixture.cash.command, example.stored.core.fixture.cash.lifecycle);
+    observeStoredPreparationExample(example.stored); captureCurrentDepositCashReport(example);
+    readDepositCashReportTrade(example); readDepositCashReportTrade(example); readDepositCashReportTrade(example);
+    resetDepositCashReportSlot(example);
+    prepareDepositCashReportCandidate(example); prepareDepositCashReportCandidate(example);
+    observeStoredPreparationExample(example.stored); verifyDepositCashReport(example);
+}
+Scenario serial depositCashReportSetupExampleRun(context DepositCashReportExample example) {
+    createDepositCashReport(example);
+    transaction quantum { storeDepositSourceCashReport(example.report); }
+}
+atomic calculate restoreDepositCashReport(context DepositCashReportExample example) {
+    require(example.loaded != null, "REPORT_NOT_PERSISTED"); example.report = copy(example.loaded);
+    example.slot = 1;
+}
+atomic check verifyDepositCashReportRestart(DepositCashReportExample example) {
+    require(sameFacts(example.loaded, example.report), "REPORT_RESTART_FACTS_CHANGED");
+}
+Scenario serial depositCashReportResumeExampleRun(context DepositCashReportExample example) {
+    initializeDepositCashReport(example); initializeStoredPreparationFixtureExample(example.stored);
+    example.loaded = queryDepositSourceCashReport(example.report); restoreDepositCashReport(example);
+    observeStoredPreparationExample(example.stored);
+    readDepositCashReportTrade(example); readDepositCashReportTrade(example); readDepositCashReportTrade(example);
+    verifyDepositCashReportRestart(example); verifyDepositCashReport(example);
+}

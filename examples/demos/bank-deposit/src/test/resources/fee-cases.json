@@ -1,0 +1,554 @@
+[
+  {
+    "name": "01",
+    "input": {
+      "DepositRequest": {
+        "amount": 10000
+      },
+      "DepositFeeParty": {
+        "accountKind": "NormalSavings",
+        "branchNumber": "001001001",
+        "regionCode": "0001",
+        "customerNumber": "SOURCE-FEE-RULE-01"
+      },
+      "DepositFeeContext": {
+        "channel": "Teller",
+        "branchNumber": "001001001",
+        "regionCode": "0001"
+      },
+      "DepositFeeRate": {
+        "tariff": "SAC00001",
+        "rate": 0.001,
+        "discount": 0.5,
+        "fixedAmount": 1,
+        "minimum": 2,
+        "maximum": 50
+      }
+    },
+    "code": "",
+    "expected": {
+      "fee": 0,
+      "variableAmount": 0,
+      "range": 0,
+      "tariff": "",
+      "applicable": false
+    },
+    "service": "previewDepositFee"
+  },
+  {
+    "name": "02",
+    "input": {
+      "DepositRequest": {
+        "amount": 10000
+      },
+      "DepositFeeParty": {
+        "accountKind": "NormalSavings",
+        "branchNumber": "001001001",
+        "regionCode": "0001",
+        "customerNumber": "SOURCE-FEE-RULE-02"
+      },
+      "DepositFeeContext": {
+        "channel": "Teller",
+        "branchNumber": "001001002",
+        "regionCode": "0001"
+      },
+      "DepositFeeRate": {
+        "tariff": "SAC00001",
+        "rate": 0.001,
+        "discount": 0.5,
+        "fixedAmount": 1,
+        "minimum": 2,
+        "maximum": 50
+      }
+    },
+    "code": "",
+    "expected": {
+      "fee": 6,
+      "variableAmount": 5,
+      "range": 1,
+      "tariff": "SAC00001",
+      "applicable": true
+    },
+    "service": "previewDepositFee"
+  },
+  {
+    "name": "03",
+    "input": {
+      "DepositRequest": {
+        "amount": 10000
+      },
+      "DepositFeeParty": {
+        "accountKind": "NormalSavings",
+        "branchNumber": "001001001",
+        "regionCode": "0001",
+        "customerNumber": "SOURCE-FEE-RULE-03"
+      },
+      "DepositFeeContext": {
+        "channel": "Teller",
+        "branchNumber": "001001001",
+        "regionCode": "0002"
+      },
+      "DepositFeeRate": {
+        "tariff": "SAP00001",
+        "rate": 0.001,
+        "discount": 0.5,
+        "fixedAmount": 1,
+        "minimum": 2,
+        "maximum": 50
+      }
+    },
+    "code": "",
+    "expected": {
+      "fee": 6,
+      "variableAmount": 5,
+      "range": 2,
+      "tariff": "SAP00001",
+      "applicable": true
+    },
+    "service": "previewDepositFee"
+  },
+  {
+    "name": "04",
+    "input": {
+      "DepositRequest": {
+        "amount": 1
+      },
+      "DepositFeeParty": {
+        "accountKind": "NormalSavings",
+        "branchNumber": "001001001",
+        "regionCode": "0001",
+        "customerNumber": "SOURCE-FEE-RULE-04"
+      },
+      "DepositFeeContext": {
+        "channel": "Teller",
+        "branchNumber": "001001002",
+        "regionCode": "0001"
+      },
+      "DepositFeeRate": {
+        "tariff": "SAC00001",
+        "rate": 0.001,
+        "discount": 0.5,
+        "fixedAmount": 1,
+        "minimum": 2,
+        "maximum": 50
+      }
+    },
+    "code": "",
+    "expected": {
+      "fee": 2,
+      "variableAmount": 0,
+      "range": 1,
+      "tariff": "SAC00001",
+      "applicable": true
+    },
+    "service": "previewDepositFee"
+  },
+  {
+    "name": "05",
+    "input": {
+      "DepositRequest": {
+        "amount": 2000
+      },
+      "DepositFeeParty": {
+        "accountKind": "NormalSavings",
+        "branchNumber": "001001001",
+        "regionCode": "0001",
+        "customerNumber": "SOURCE-FEE-RULE-05"
+      },
+      "DepositFeeContext": {
+        "channel": "Teller",
+        "branchNumber": "001001002",
+        "regionCode": "0001"
+      },
+      "DepositFeeRate": {
+        "tariff": "SAC00001",
+        "rate": 0.001,
+        "discount": 0.5,
+        "fixedAmount": 1,
+        "minimum": 2,
+        "maximum": 50
+      }
+    },
+    "code": "",
+    "expected": {
+      "fee": 2,
+      "variableAmount": 1,
+      "range": 1,
+      "tariff": "SAC00001",
+      "applicable": true
+    },
+    "service": "previewDepositFee"
+  },
+  {
+    "name": "06",
+    "input": {
+      "DepositRequest": {
+        "amount": 10000
+      },
+      "DepositFeeParty": {
+        "accountKind": "NormalSavings",
+        "branchNumber": "001001001",
+        "regionCode": "0001",
+        "customerNumber": "SOURCE-FEE-RULE-06"
+      },
+      "DepositFeeContext": {
+        "channel": "Teller",
+        "branchNumber": "001001002",
+        "regionCode": "0001"
+      },
+      "DepositFeeRate": {
+        "tariff": "SAC00001",
+        "rate": 0.001,
+        "discount": 0.5,
+        "fixedAmount": 1,
+        "minimum": 2,
+        "maximum": 50
+      }
+    },
+    "code": "",
+    "expected": {
+      "fee": 6,
+      "variableAmount": 5,
+      "range": 1,
+      "tariff": "SAC00001",
+      "applicable": true
+    },
+    "service": "previewDepositFee"
+  },
+  {
+    "name": "07",
+    "input": {
+      "DepositRequest": {
+        "amount": 98000
+      },
+      "DepositFeeParty": {
+        "accountKind": "NormalSavings",
+        "branchNumber": "001001001",
+        "regionCode": "0001",
+        "customerNumber": "SOURCE-FEE-RULE-07"
+      },
+      "DepositFeeContext": {
+        "channel": "Teller",
+        "branchNumber": "001001002",
+        "regionCode": "0001"
+      },
+      "DepositFeeRate": {
+        "tariff": "SAC00001",
+        "rate": 0.001,
+        "discount": 0.5,
+        "fixedAmount": 1,
+        "minimum": 2,
+        "maximum": 50
+      }
+    },
+    "code": "",
+    "expected": {
+      "fee": 50,
+      "variableAmount": 49,
+      "range": 1,
+      "tariff": "SAC00001",
+      "applicable": true
+    },
+    "service": "previewDepositFee"
+  },
+  {
+    "name": "08",
+    "input": {
+      "DepositRequest": {
+        "amount": 100000
+      },
+      "DepositFeeParty": {
+        "accountKind": "NormalSavings",
+        "branchNumber": "001001001",
+        "regionCode": "0001",
+        "customerNumber": "SOURCE-FEE-RULE-08"
+      },
+      "DepositFeeContext": {
+        "channel": "Teller",
+        "branchNumber": "001001002",
+        "regionCode": "0001"
+      },
+      "DepositFeeRate": {
+        "tariff": "SAC00001",
+        "rate": 0.001,
+        "discount": 0.5,
+        "fixedAmount": 1,
+        "minimum": 2,
+        "maximum": 50
+      }
+    },
+    "code": "",
+    "expected": {
+      "fee": 50,
+      "variableAmount": 50,
+      "range": 1,
+      "tariff": "SAC00001",
+      "applicable": true
+    },
+    "service": "previewDepositFee"
+  },
+  {
+    "name": "09",
+    "input": {
+      "DepositRequest": {
+        "amount": 1
+      },
+      "DepositFeeParty": {
+        "accountKind": "NormalSavings",
+        "branchNumber": "001001001",
+        "regionCode": "0001",
+        "customerNumber": "SOURCE-FEE-RULE-09"
+      },
+      "DepositFeeContext": {
+        "channel": "Teller",
+        "branchNumber": "001001002",
+        "regionCode": "0001"
+      },
+      "DepositFeeRate": {
+        "tariff": "SAC00001",
+        "rate": 0.005,
+        "discount": 1,
+        "fixedAmount": 0.03,
+        "minimum": 0,
+        "maximum": 99
+      }
+    },
+    "code": "",
+    "expected": {
+      "fee": 0.04,
+      "variableAmount": 0.01,
+      "range": 1,
+      "tariff": "SAC00001",
+      "applicable": true
+    },
+    "service": "previewDepositFee"
+  },
+  {
+    "name": "10",
+    "input": {
+      "DepositRequest": {
+        "amount": 0.999
+      },
+      "DepositFeeParty": {
+        "accountKind": "NormalSavings",
+        "branchNumber": "001001001",
+        "regionCode": "0001",
+        "customerNumber": "SOURCE-FEE-RULE-10"
+      },
+      "DepositFeeContext": {
+        "channel": "Teller",
+        "branchNumber": "001001002",
+        "regionCode": "0001"
+      },
+      "DepositFeeRate": {
+        "tariff": "SAC00001",
+        "rate": 0.005,
+        "discount": 1,
+        "fixedAmount": 0.03,
+        "minimum": 0,
+        "maximum": 99
+      }
+    },
+    "code": "",
+    "expected": {
+      "fee": 0.03,
+      "variableAmount": 0,
+      "range": 1,
+      "tariff": "SAC00001",
+      "applicable": true
+    },
+    "service": "previewDepositFee"
+  },
+  {
+    "name": "11",
+    "input": {
+      "DepositRequest": {
+        "amount": 100
+      },
+      "DepositFeeParty": {
+        "accountKind": "NormalSavings",
+        "branchNumber": "001001001",
+        "regionCode": "0001",
+        "customerNumber": "SOURCE-FEE-RULE-11"
+      },
+      "DepositFeeContext": {
+        "channel": "Teller",
+        "branchNumber": "001001002",
+        "regionCode": "0001"
+      },
+      "DepositFeeRate": {
+        "tariff": "SAC00001",
+        "rate": 0.01,
+        "discount": 1,
+        "fixedAmount": 0,
+        "minimum": 0,
+        "maximum": 0
+      }
+    },
+    "code": "",
+    "expected": {
+      "fee": 0,
+      "variableAmount": 1,
+      "range": 1,
+      "tariff": "SAC00001",
+      "applicable": true
+    },
+    "service": "previewDepositFee"
+  },
+  {
+    "name": "12",
+    "input": {
+      "DepositRequest": {
+        "amount": 100
+      },
+      "DepositFeeParty": {
+        "accountKind": "NormalSavings",
+        "branchNumber": "001001001",
+        "regionCode": "0001",
+        "customerNumber": "SOURCE-FEE-RULE-12"
+      },
+      "DepositFeeContext": {
+        "channel": "Mobile",
+        "branchNumber": "001001002",
+        "regionCode": "0001"
+      },
+      "DepositFeeRate": {
+        "tariff": "SAC00001",
+        "rate": 0.001,
+        "discount": 0.5,
+        "fixedAmount": 1,
+        "minimum": 2,
+        "maximum": 50
+      }
+    },
+    "code": "",
+    "expected": {
+      "fee": 0,
+      "variableAmount": 0,
+      "range": 0,
+      "tariff": "",
+      "applicable": false
+    },
+    "service": "previewDepositFee"
+  },
+  {
+    "name": "13",
+    "input": {
+      "DepositRequest": {
+        "amount": 100
+      },
+      "DepositFeeParty": {
+        "accountKind": "MultiCurrencySavings",
+        "branchNumber": "001001001",
+        "regionCode": "0001",
+        "customerNumber": "SOURCE-FEE-RULE-13"
+      },
+      "DepositFeeContext": {
+        "channel": "Teller",
+        "branchNumber": "001001002",
+        "regionCode": "0001"
+      },
+      "DepositFeeRate": {
+        "tariff": "SAC00001",
+        "rate": 0.001,
+        "discount": 0.5,
+        "fixedAmount": 1,
+        "minimum": 2,
+        "maximum": 50
+      }
+    },
+    "code": "UNSUPPORTED_DEPOSIT_FEE_ACCOUNT",
+    "expected": {},
+    "service": "previewDepositFee"
+  },
+  {
+    "name": "14",
+    "input": {
+      "DepositRequest": {
+        "amount": 100
+      },
+      "DepositFeeParty": {
+        "accountKind": "NormalSavings",
+        "branchNumber": "001001001",
+        "regionCode": "0001",
+        "customerNumber": "SOURCE-FEE-RULE-14"
+      },
+      "DepositFeeContext": {
+        "channel": "Teller",
+        "branchNumber": "001001002",
+        "regionCode": "0001"
+      },
+      "DepositFeeRate": {
+        "tariff": "SAC00001",
+        "rate": 0.001,
+        "discount": 0.5,
+        "fixedAmount": 1,
+        "minimum": 2,
+        "maximum": 50
+      }
+    },
+    "code": "DEPOSIT_FEE_RATE_NOT_FOUND",
+    "expected": {},
+    "service": "quoteDepositFee"
+  },
+  {
+    "name": "15",
+    "input": {
+      "DepositRequest": {
+        "amount": 1
+      },
+      "DepositFeeParty": {
+        "accountKind": "NormalSavings",
+        "branchNumber": "001001001",
+        "regionCode": "0001",
+        "customerNumber": "SOURCE-FEE-RULE-15"
+      },
+      "DepositFeeContext": {
+        "channel": "Teller",
+        "branchNumber": "001001002",
+        "regionCode": "0001"
+      },
+      "DepositFeeRate": {
+        "tariff": "SAP00001",
+        "rate": 0.001,
+        "discount": 0.5,
+        "fixedAmount": 1,
+        "minimum": 2,
+        "maximum": 50
+      }
+    },
+    "code": "DEPOSIT_FEE_TARIFF_MISMATCH",
+    "expected": {},
+    "service": "previewDepositFee"
+  },
+  {
+    "name": "16",
+    "input": {
+      "DepositRequest": {
+        "amount": -1
+      },
+      "DepositFeeParty": {
+        "accountKind": "NormalSavings",
+        "branchNumber": "001001001",
+        "regionCode": "0001",
+        "customerNumber": "SOURCE-FEE-RULE-16"
+      },
+      "DepositFeeContext": {
+        "channel": "Teller",
+        "branchNumber": "001001002",
+        "regionCode": "0001"
+      },
+      "DepositFeeRate": {
+        "tariff": "SAC00001",
+        "rate": 0.001,
+        "discount": 0.5,
+        "fixedAmount": 1,
+        "minimum": 2,
+        "maximum": 50
+      }
+    },
+    "code": "EP192",
+    "expected": {},
+    "service": "previewDepositFee"
+  }
+]

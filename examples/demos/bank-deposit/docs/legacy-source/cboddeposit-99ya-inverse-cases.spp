@@ -1,0 +1,147 @@
+domain cboddeposit;
+
+atomic calculate configureFinancialInverseCase01(context FinancialInverseExampleFacts example) {
+    example.request.amount = 10;
+    example.before.interestBase = 200;
+    example.before.overdraftPrincipal = 0;
+    example.before.overdraftInterest = 0;
+    example.before.collectionInterest = 0;
+    example.before.overdraftExposure = 0;
+    example.before.loanState = "Normal";
+    example.current.interestBase = 110;
+    example.current.overdraftPrincipal = 0;
+    example.current.overdraftInterest = 0;
+    example.current.collectionInterest = 0;
+    example.current.overdraftExposure = 0;
+    example.current.loanState = "Normal";
+    example.snapshot = copy(example.current); example.capacity.overdraftPermitted = false; example.capacity.overdraftLimit = 0;
+    example.expectedCode = "";
+    example.expected.interestBase = 100;
+    example.expected.overdraftInterest = 0;
+    example.expected.collectionInterest = 0;
+    example.expected.overdraftPrincipal = 0;
+    example.expected.overdraftExposure = 0;
+    example.expected.availableBalance = 100;
+    example.expected.accountBalance = 100;
+}
+atomic calculate configureFinancialInverseCase02(context FinancialInverseExampleFacts example) {
+    example.request.amount = 10;
+    example.before.interestBase = 200;
+    example.before.overdraftPrincipal = 0;
+    example.before.overdraftInterest = 0;
+    example.before.collectionInterest = 0;
+    example.before.overdraftExposure = 0;
+    example.before.loanState = "Normal";
+    example.current.interestBase = 230;
+    example.current.overdraftPrincipal = 0;
+    example.current.overdraftInterest = 0;
+    example.current.collectionInterest = 0;
+    example.current.overdraftExposure = 0;
+    example.current.loanState = "Normal";
+    example.current.frozenAmount = 50; example.current.authorizedAmount = 20;
+    example.snapshot = copy(example.current); example.capacity.overdraftPermitted = false; example.capacity.overdraftLimit = 0;
+    example.expectedCode = "";
+    example.expected.interestBase = 220;
+    example.expected.overdraftInterest = 0;
+    example.expected.collectionInterest = 0;
+    example.expected.overdraftPrincipal = 0;
+    example.expected.overdraftExposure = 0;
+    example.expected.availableBalance = 150;
+    example.expected.accountBalance = 220;
+}
+atomic calculate configureFinancialInverseCase03(context FinancialInverseExampleFacts example) {
+    example.request.amount = 50;
+    example.before.interestBase = 0;
+    example.before.overdraftPrincipal = 100;
+    example.before.overdraftInterest = 30;
+    example.before.collectionInterest = 40;
+    example.before.overdraftExposure = 100;
+    example.before.loanState = "Normal";
+    example.current.interestBase = 0;
+    example.current.overdraftPrincipal = 80;
+    example.current.overdraftInterest = 0;
+    example.current.collectionInterest = 10;
+    example.current.overdraftExposure = 80;
+    example.current.loanState = "BadDebt";
+    example.snapshot = copy(example.current); example.capacity.overdraftPermitted = true; example.capacity.overdraftLimit = 100;
+    example.expectedCode = "";
+    example.expected.interestBase = 0;
+    example.expected.overdraftInterest = 30;
+    example.expected.collectionInterest = 30;
+    example.expected.overdraftPrincipal = 80;
+    example.expected.overdraftExposure = 80;
+    example.expected.availableBalance = 0;
+    example.expected.accountBalance = -140;
+}
+atomic calculate configureFinancialInverseCase04(context FinancialInverseExampleFacts example) {
+    example.request.amount = 50;
+    example.before.interestBase = 0;
+    example.before.overdraftPrincipal = 100;
+    example.before.overdraftInterest = 30;
+    example.before.collectionInterest = 40;
+    example.before.overdraftExposure = 100;
+    example.before.loanState = "BadDebt";
+    example.current.interestBase = 0;
+    example.current.overdraftPrincipal = 40;
+    example.current.overdraftInterest = 10;
+    example.current.collectionInterest = 20;
+    example.current.overdraftExposure = 40;
+    example.current.loanState = "Normal";
+    example.snapshot = copy(example.current); example.capacity.overdraftPermitted = true; example.capacity.overdraftLimit = 100;
+    example.expectedCode = "";
+    example.expected.interestBase = 0;
+    example.expected.overdraftInterest = 10;
+    example.expected.collectionInterest = 20;
+    example.expected.overdraftPrincipal = 90;
+    example.expected.overdraftExposure = 90;
+    example.expected.availableBalance = 0;
+    example.expected.accountBalance = -120;
+}
+atomic calculate configureFinancialInverseCase05(context FinancialInverseExampleFacts example) {
+    example.request.amount = 10;
+    example.before.interestBase = 0;
+    example.before.overdraftPrincipal = 20;
+    example.before.overdraftInterest = 0;
+    example.before.collectionInterest = 0;
+    example.before.overdraftExposure = 5;
+    example.before.loanState = "Normal";
+    example.current.interestBase = 0;
+    example.current.overdraftPrincipal = 10;
+    example.current.overdraftInterest = 0;
+    example.current.collectionInterest = 0;
+    example.current.overdraftExposure = 0;
+    example.current.loanState = "Normal";
+    example.snapshot = copy(example.current); example.capacity.overdraftPermitted = true; example.capacity.overdraftLimit = 20;
+    example.expectedCode = "";
+    example.expected.interestBase = 0;
+    example.expected.overdraftInterest = 0;
+    example.expected.collectionInterest = 0;
+    example.expected.overdraftPrincipal = 20;
+    example.expected.overdraftExposure = 5;
+    example.expected.availableBalance = 0;
+    example.expected.accountBalance = -20;
+}
+atomic calculate configureFinancialInverseCase06(context FinancialInverseExampleFacts example) {
+    example.request.amount = .01;
+    example.before.interestBase = 0;
+    example.before.overdraftPrincipal = .01;
+    example.before.overdraftInterest = .005;
+    example.before.collectionInterest = .004;
+    example.before.overdraftExposure = .01;
+    example.before.loanState = "Normal";
+    example.current.interestBase = 0;
+    example.current.overdraftPrincipal = .009;
+    example.current.overdraftInterest = 0;
+    example.current.collectionInterest = 0;
+    example.current.overdraftExposure = .009;
+    example.current.loanState = "Normal";
+    example.snapshot = copy(example.current); example.capacity.overdraftPermitted = true; example.capacity.overdraftLimit = 1;
+    example.expectedCode = "";
+    example.expected.interestBase = 0;
+    example.expected.overdraftInterest = .005;
+    example.expected.collectionInterest = .004;
+    example.expected.overdraftPrincipal = .01;
+    example.expected.overdraftExposure = .01;
+    example.expected.availableBalance = 0;
+    example.expected.accountBalance = -.019;
+}

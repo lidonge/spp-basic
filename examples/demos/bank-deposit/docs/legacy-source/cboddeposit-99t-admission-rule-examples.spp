@@ -1,0 +1,237 @@
+domain cboddeposit;
+Contract AdmissionRuleExampleFacts {
+    DepositRequest request; AccountEligibility account; DepositProduct product; BusinessDay day;
+    CashChannel channel; CashAuthorizationPolicy policy; AuthorizationEvidence evidence; AdmissionDecision decision;
+    CashAccountControl control; CashFailureFacts failure; String expectedCode;
+    InterestPeriod period; InterestProduct interest;
+}
+atomic calculate initializeAdmissionRuleExample(context AdmissionRuleExampleFacts example) {
+    example.request = new DepositRequest(); example.request.amount = 100; example.request.currency = "CNY"; example.request.valueDate = 20261007;
+    example.day = new BusinessDay(); example.day.date = 20261007;
+    example.account = new AccountEligibility(); example.account.status = "Normal"; example.account.temporary = false;
+    example.account.expiresOn = 20261007; example.account.temporaryOpen = false; example.account.detailCount = 10;
+    example.account.lastTransactionDate = 20261007; example.account.openedOn = 20261001;
+    example.account.cashDepositedToday = 0; example.account.transferredToday = 0; example.account.accountBalance = 0;
+    example.product = new DepositProduct(); example.product.minimumOpeningAmount = 100; example.product.maximumOpeningAmount = 5000; example.product.maximumBalance = 10000;
+    example.policy = new CashAuthorizationPolicy(); example.policy.warningThreshold = 500; example.policy.tellerLimit = 1000;
+    example.policy.levelAMultiplier = 2; example.policy.specialUsdLevelB = 1500; example.policy.specialUsdLevelA = 3000;
+    example.channel = new CashChannel(); example.channel.teller = true; example.channel.channel = "Teller";
+    example.channel.transactionId = "GSA01102"; example.channel.transactionFamily = "GSA0110"; example.channel.businessCode = "SA0";
+    example.evidence = new AuthorizationEvidence(); example.evidence.grantedLevel = "None";
+    example.decision = new AdmissionDecision(); example.failure = null; example.expectedCode = "";
+    example.control = new CashAccountControl(); example.control.controllingInstitution = ""; example.control.controlStatus = "Normal";
+    example.control.cancelledOn = 0; example.control.productKind = "DemandDeposit";
+    example.period = new InterestPeriod(); example.period.amount = 199.999; example.period.unit = 100; example.period.days = 3;
+    example.interest = new InterestProduct();
+}
+atomic check verifyAdmissionRuleFailureExample(AdmissionRuleExampleFacts example) {
+    require(example.failure != null && example.failure.code == example.expectedCode, "EXAMPLE_ADMISSION_RULE_REJECTION");
+}
+Scenario serial bankAdmissionRulesExampleRun(context AdmissionRuleExampleFacts example) {
+    initializeAdmissionRuleExample(example);
+    configureAdmissionRuleCase01(example);
+    try { checkCashInput(example.request, example.day); }
+    catch (CashFailureFacts example.failure) {}
+    verifyAdmissionRuleFailureExample(example);
+    initializeAdmissionRuleExample(example);
+    configureAdmissionRuleCase02(example);
+    try { checkCashInput(example.request, example.day); }
+    catch (CashFailureFacts example.failure) {}
+    verifyAdmissionRuleFailureExample(example);
+    initializeAdmissionRuleExample(example);
+    configureAdmissionRuleCase03(example);
+    try { checkCashInput(example.request, example.day); }
+    catch (CashFailureFacts example.failure) {}
+    verifyAdmissionRuleFailureExample(example);
+    initializeAdmissionRuleExample(example);
+    configureAdmissionRuleCase04(example);
+    checkCashInput(example.request, example.day);
+    initializeAdmissionRuleExample(example);
+    configureAdmissionRuleCase05(example);
+    try { checkDepositEligibility(example.request, example.account, example.product, example.day); }
+    catch (CashFailureFacts example.failure) {}
+    verifyAdmissionRuleFailureExample(example);
+    initializeAdmissionRuleExample(example);
+    configureAdmissionRuleCase06(example);
+    try { checkDepositEligibility(example.request, example.account, example.product, example.day); }
+    catch (CashFailureFacts example.failure) {}
+    verifyAdmissionRuleFailureExample(example);
+    initializeAdmissionRuleExample(example);
+    configureAdmissionRuleCase07(example);
+    checkDepositEligibility(example.request, example.account, example.product, example.day);
+    initializeAdmissionRuleExample(example);
+    configureAdmissionRuleCase08(example);
+    checkDepositEligibility(example.request, example.account, example.product, example.day);
+    initializeAdmissionRuleExample(example);
+    configureAdmissionRuleCase09(example);
+    try { checkDepositEligibility(example.request, example.account, example.product, example.day); }
+    catch (CashFailureFacts example.failure) {}
+    verifyAdmissionRuleFailureExample(example);
+    initializeAdmissionRuleExample(example);
+    configureAdmissionRuleCase10(example);
+    try { checkDepositEligibility(example.request, example.account, example.product, example.day); }
+    catch (CashFailureFacts example.failure) {}
+    verifyAdmissionRuleFailureExample(example);
+    initializeAdmissionRuleExample(example);
+    configureAdmissionRuleCase11(example);
+    checkDepositEligibility(example.request, example.account, example.product, example.day);
+    initializeAdmissionRuleExample(example);
+    configureAdmissionRuleCase12(example);
+    checkDepositEligibility(example.request, example.account, example.product, example.day);
+    initializeAdmissionRuleExample(example);
+    configureAdmissionRuleCase13(example);
+    try { checkDepositEligibility(example.request, example.account, example.product, example.day); }
+    catch (CashFailureFacts example.failure) {}
+    verifyAdmissionRuleFailureExample(example);
+    initializeAdmissionRuleExample(example);
+    configureAdmissionRuleCase14(example);
+    checkDepositEligibility(example.request, example.account, example.product, example.day);
+    initializeAdmissionRuleExample(example);
+    configureAdmissionRuleCase15(example);
+    checkDepositEligibility(example.request, example.account, example.product, example.day);
+    initializeAdmissionRuleExample(example);
+    configureAdmissionRuleCase16(example);
+    try { checkDepositEligibility(example.request, example.account, example.product, example.day); }
+    catch (CashFailureFacts example.failure) {}
+    verifyAdmissionRuleFailureExample(example);
+    initializeAdmissionRuleExample(example);
+    configureAdmissionRuleCase17(example);
+    checkDepositEligibility(example.request, example.account, example.product, example.day);
+    initializeAdmissionRuleExample(example);
+    configureAdmissionRuleCase18(example);
+    checkDepositEligibility(example.request, example.account, example.product, example.day);
+    initializeAdmissionRuleExample(example);
+    configureAdmissionRuleCase19(example);
+    assessCashDeposit(example.request, example.account, example.product, example.day, example.channel, example.policy, example.evidence, example.decision);
+    verifyAdmissionRuleCase19(example);
+    initializeAdmissionRuleExample(example);
+    configureAdmissionRuleCase20(example);
+    assessCashDeposit(example.request, example.account, example.product, example.day, example.channel, example.policy, example.evidence, example.decision);
+    verifyAdmissionRuleCase20(example);
+    initializeAdmissionRuleExample(example);
+    configureAdmissionRuleCase21(example);
+    assessCashDeposit(example.request, example.account, example.product, example.day, example.channel, example.policy, example.evidence, example.decision);
+    verifyAdmissionRuleCase21(example);
+    initializeAdmissionRuleExample(example);
+    configureAdmissionRuleCase22(example);
+    assessCashDeposit(example.request, example.account, example.product, example.day, example.channel, example.policy, example.evidence, example.decision);
+    verifyAdmissionRuleCase22(example);
+    initializeAdmissionRuleExample(example);
+    configureAdmissionRuleCase23(example);
+    assessCashDeposit(example.request, example.account, example.product, example.day, example.channel, example.policy, example.evidence, example.decision);
+    verifyAdmissionRuleCase23(example);
+    try { checkCashAuthorization(example.decision); }
+    catch (CashFailureFacts example.failure) {}
+    verifyAdmissionRuleFailureExample(example);
+    initializeAdmissionRuleExample(example);
+    configureAdmissionRuleCase24(example);
+    assessCashDeposit(example.request, example.account, example.product, example.day, example.channel, example.policy, example.evidence, example.decision);
+    verifyAdmissionRuleCase24(example);
+    initializeAdmissionRuleExample(example);
+    configureAdmissionRuleCase25(example);
+    assessCashDeposit(example.request, example.account, example.product, example.day, example.channel, example.policy, example.evidence, example.decision);
+    verifyAdmissionRuleCase25(example);
+    initializeAdmissionRuleExample(example);
+    configureAdmissionRuleCase26(example);
+    assessCashDeposit(example.request, example.account, example.product, example.day, example.channel, example.policy, example.evidence, example.decision);
+    verifyAdmissionRuleCase26(example);
+    initializeAdmissionRuleExample(example);
+    configureAdmissionRuleCase27(example);
+    assessCashDeposit(example.request, example.account, example.product, example.day, example.channel, example.policy, example.evidence, example.decision);
+    verifyAdmissionRuleCase27(example);
+    initializeAdmissionRuleExample(example);
+    configureAdmissionRuleCase28(example);
+    assessCashDeposit(example.request, example.account, example.product, example.day, example.channel, example.policy, example.evidence, example.decision);
+    verifyAdmissionRuleCase28(example);
+    initializeAdmissionRuleExample(example);
+    configureAdmissionRuleCase29(example);
+    assessCashDeposit(example.request, example.account, example.product, example.day, example.channel, example.policy, example.evidence, example.decision);
+    verifyAdmissionRuleCase29(example);
+    initializeAdmissionRuleExample(example);
+    configureAdmissionRuleCase30(example);
+    assessCashDeposit(example.request, example.account, example.product, example.day, example.channel, example.policy, example.evidence, example.decision);
+    verifyAdmissionRuleCase30(example);
+    initializeAdmissionRuleExample(example);
+    configureAdmissionRuleCase31(example);
+    assessCashDeposit(example.request, example.account, example.product, example.day, example.channel, example.policy, example.evidence, example.decision);
+    verifyAdmissionRuleCase31(example);
+    initializeAdmissionRuleExample(example);
+    configureAdmissionRuleCase32(example);
+    assessCashDeposit(example.request, example.account, example.product, example.day, example.channel, example.policy, example.evidence, example.decision);
+    verifyAdmissionRuleCase32(example);
+    initializeAdmissionRuleExample(example);
+    configureAdmissionRuleCase33(example);
+    assessCashDeposit(example.request, example.account, example.product, example.day, example.channel, example.policy, example.evidence, example.decision);
+    verifyAdmissionRuleCase33(example);
+    initializeAdmissionRuleExample(example);
+    configureAdmissionRuleCase34(example);
+    assessCashDeposit(example.request, example.account, example.product, example.day, example.channel, example.policy, example.evidence, example.decision);
+    verifyAdmissionRuleCase34(example);
+    initializeAdmissionRuleExample(example);
+    configureAdmissionRuleCase35(example);
+    assessCashDeposit(example.request, example.account, example.product, example.day, example.channel, example.policy, example.evidence, example.decision);
+    verifyAdmissionRuleCase35(example);
+    initializeAdmissionRuleExample(example);
+    configureAdmissionRuleCase36(example);
+    assessCashDeposit(example.request, example.account, example.product, example.day, example.channel, example.policy, example.evidence, example.decision);
+    verifyAdmissionRuleCase36(example);
+    initializeAdmissionRuleExample(example);
+    configureAdmissionRuleCase37(example);
+    assessCashDeposit(example.request, example.account, example.product, example.day, example.channel, example.policy, example.evidence, example.decision);
+    verifyAdmissionRuleCase37(example);
+    initializeAdmissionRuleExample(example);
+    configureAdmissionRuleCase38(example);
+    assessCashDeposit(example.request, example.account, example.product, example.day, example.channel, example.policy, example.evidence, example.decision);
+    verifyAdmissionRuleCase38(example);
+    initializeAdmissionRuleExample(example);
+    configureAdmissionRuleCase39(example);
+    assessCashAdmission(example.request, example.account, example.day, example.channel, example.policy, example.evidence, example.decision);
+    verifyAdmissionRuleCase39(example);
+    initializeAdmissionRuleExample(example);
+    configureAdmissionRuleCase40(example);
+    assessCashAdmission(example.request, example.account, example.day, example.channel, example.policy, example.evidence, example.decision);
+    verifyAdmissionRuleCase40(example);
+    initializeAdmissionRuleExample(example);
+    configureAdmissionRuleCase41(example);
+    assessCashAdmission(example.request, example.account, example.day, example.channel, example.policy, example.evidence, example.decision);
+    verifyAdmissionRuleCase41(example);
+    initializeAdmissionRuleExample(example);
+    configureAdmissionRuleCase42(example);
+    assessCashAdmission(example.request, example.account, example.day, example.channel, example.policy, example.evidence, example.decision);
+    verifyAdmissionRuleCase42(example);
+    initializeAdmissionRuleExample(example);
+    configureAdmissionRuleCase43(example);
+    calculateInterestProduct(example.period, example.interest);
+    verifyAdmissionRuleCase43(example);
+    initializeAdmissionRuleExample(example);
+    configureAdmissionRuleCase44(example);
+    calculateInterestProduct(example.period, example.interest);
+    verifyAdmissionRuleCase44(example);
+    initializeAdmissionRuleExample(example);
+    configureAdmissionRuleCase45(example);
+    try { calculateInterestProduct(example.period, example.interest); }
+    catch (CashFailureFacts example.failure) {}
+    verifyAdmissionRuleFailureExample(example);
+    initializeAdmissionRuleExample(example);
+    configureAdmissionRuleCase46(example);
+    assessNormalCashDeposit(example.request, example.control, example.account, example.product, example.day, example.channel, example.policy, example.evidence, example.decision);
+    verifyAdmissionRuleCase46(example);
+    initializeAdmissionRuleExample(example);
+    configureAdmissionRuleCase47(example);
+    try { assessNormalCashDeposit(example.request, example.control, example.account, example.product, example.day, example.channel, example.policy, example.evidence, example.decision); }
+    catch (CashFailureFacts example.failure) {}
+    verifyAdmissionRuleFailureExample(example);
+    verifyAdmissionRuleCase47(example);
+    initializeAdmissionRuleExample(example);
+    configureAdmissionRuleCase48(example);
+    try { assessNormalCashDeposit(example.request, example.control, example.account, example.product, example.day, example.channel, example.policy, example.evidence, example.decision); }
+    catch (CashFailureFacts example.failure) {}
+    verifyAdmissionRuleFailureExample(example);
+    verifyAdmissionRuleCase48(example);
+    initializeAdmissionRuleExample(example);
+    configureAdmissionRuleCase49(example);
+    try { assessNormalCashDeposit(example.request, example.control, example.account, example.product, example.day, example.channel, example.policy, example.evidence, example.decision); }
+    catch (CashFailureFacts example.failure) {}
+    verifyAdmissionRuleFailureExample(example);
+    verifyAdmissionRuleCase49(example);
+}

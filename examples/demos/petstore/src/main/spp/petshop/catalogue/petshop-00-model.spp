@@ -1,0 +1,39 @@
+domain petshop;
+
+Role Goods {
+    business("Goods number used for selection, inventory and settled order lines") String sku;
+    String category;
+    String name;
+    String description;
+    BigDecimal(19, 2) price;
+    boolean active;
+}
+
+take Product as Goods {
+    mapsame;
+    String sku = productCode;
+}
+
+Reference StockLine from inventory.StockLine {
+    Goods goods;
+    quantum int available;
+    quantum int reserved;
+    quantum int sold;
+}
+
+Reference StockSupply from inventory.StockSupply {
+    Goods goods;
+    quantum int balance;
+}
+
+Contract StockReceiptAgreement {
+    Goods goods;
+    StockLine stock;
+    StockSupply source;
+    int quantity;
+}
+
+Contract StoreOpeningAgreement {
+    String tradingName;
+    String shopName;
+}

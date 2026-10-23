@@ -1,0 +1,11 @@
+domain petshop;
+
+atomic check checkProfileAgreementInput(ProfileAgreement) {
+    require(ProfileAgreement.newName != null && ProfileAgreement.newName != "", "NAME_REQUIRED");
+    require(ProfileAgreement.newEmail != null && ProfileAgreement.newEmail != "", "EMAIL_REQUIRED");
+    require(ProfileAgreement.newAddress != null && ProfileAgreement.newAddress != "", "ADDRESS_REQUIRED");
+    require(
+        ProfileAgreement.newTier == MemberTier.NORMAL || ProfileAgreement.newTier == MemberTier.VIP,
+        "INVALID_MEMBER_TIER"
+    );
+}

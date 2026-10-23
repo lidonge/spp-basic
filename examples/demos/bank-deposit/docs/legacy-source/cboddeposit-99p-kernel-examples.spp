@@ -1,0 +1,106 @@
+domain cboddeposit;
+
+// Independent KSADEP0 expectations migrated from DepositKernelTest.
+// Negative amount is a kernel rejection; zero amount is valid for this calculation, not cash admission.
+Contract DepositKernelExampleFacts {
+    DepositRequest request;
+    DepositAccount account;
+    DepositAccount snapshot;
+    DepositPlan plan;
+    DepositPlan expected;
+    CashFailureFacts failure;
+    String caseName;
+}
+atomic check verifyDepositKernelPlanExample(DepositKernelExampleFacts example) {
+    require(example.plan.interestPaid == example.expected.interestPaid, "EXAMPLE_KERNEL_INTERESTPAID");
+    require(example.plan.collectionInterestPaid == example.expected.collectionInterestPaid, "EXAMPLE_KERNEL_COLLECTIONINTERESTPAID");
+    require(example.plan.principalPaid == example.expected.principalPaid, "EXAMPLE_KERNEL_PRINCIPALPAID");
+    require(example.plan.newInterestBase == example.expected.newInterestBase, "EXAMPLE_KERNEL_NEWINTERESTBASE");
+    require(example.plan.newAvailableBalance == example.expected.newAvailableBalance, "EXAMPLE_KERNEL_NEWAVAILABLEBALANCE");
+    require(example.plan.newOverdraftExposure == example.expected.newOverdraftExposure, "EXAMPLE_KERNEL_NEWOVERDRAFTEXPOSURE");
+    require(example.plan.newAccountBalance == example.expected.newAccountBalance, "EXAMPLE_KERNEL_NEWACCOUNTBALANCE");
+    require(example.plan.interestBaseIncrease == example.expected.interestBaseIncrease, "EXAMPLE_KERNEL_INTERESTBASEINCREASE");
+    require(example.plan.interestBaseDecrease == example.expected.interestBaseDecrease, "EXAMPLE_KERNEL_INTERESTBASEDECREASE");
+}
+atomic check verifyDepositKernelSnapshotExample(DepositKernelExampleFacts example) {
+    require(example.account.interestBase == example.snapshot.interestBase, "EXAMPLE_KERNEL_INPUT_INTERESTBASE");
+    require(example.account.frozenAmount == example.snapshot.frozenAmount, "EXAMPLE_KERNEL_INPUT_FROZENAMOUNT");
+    require(example.account.authorizedAmount == example.snapshot.authorizedAmount, "EXAMPLE_KERNEL_INPUT_AUTHORIZEDAMOUNT");
+    require(example.account.overdraftInterest == example.snapshot.overdraftInterest, "EXAMPLE_KERNEL_INPUT_OVERDRAFTINTEREST");
+    require(example.account.collectionInterest == example.snapshot.collectionInterest, "EXAMPLE_KERNEL_INPUT_COLLECTIONINTEREST");
+    require(example.account.overdraftPrincipal == example.snapshot.overdraftPrincipal, "EXAMPLE_KERNEL_INPUT_OVERDRAFTPRINCIPAL");
+    require(example.account.overdraftExposure == example.snapshot.overdraftExposure, "EXAMPLE_KERNEL_INPUT_OVERDRAFTEXPOSURE");
+    require(example.account.loanState == example.snapshot.loanState, "EXAMPLE_KERNEL_INPUT_LOANSTATE");
+}
+atomic check verifyDepositKernelRejectionExample(DepositKernelExampleFacts example) {
+    require(example.failure != null && example.failure.code == "E1095", "EXAMPLE_KERNEL_NEGATIVE_REJECTION");
+    require(example.plan.newAccountBalance == null, "EXAMPLE_KERNEL_REJECTED_PLAN");
+}
+
+Scenario serial depositKernelExampleRun(context DepositKernelExampleFacts example) {
+    prepareDepositKernelCase01(example);
+    depositKernel(example.request, example.account, example.plan);
+    verifyDepositKernelPlanExample(example);
+    verifyDepositKernelSnapshotExample(example);
+    prepareDepositKernelCase02(example);
+    depositKernel(example.request, example.account, example.plan);
+    verifyDepositKernelPlanExample(example);
+    verifyDepositKernelSnapshotExample(example);
+    prepareDepositKernelCase03(example);
+    depositKernel(example.request, example.account, example.plan);
+    verifyDepositKernelPlanExample(example);
+    verifyDepositKernelSnapshotExample(example);
+    prepareDepositKernelCase04(example);
+    depositKernel(example.request, example.account, example.plan);
+    verifyDepositKernelPlanExample(example);
+    verifyDepositKernelSnapshotExample(example);
+    prepareDepositKernelCase05(example);
+    depositKernel(example.request, example.account, example.plan);
+    verifyDepositKernelPlanExample(example);
+    verifyDepositKernelSnapshotExample(example);
+    prepareDepositKernelCase06(example);
+    depositKernel(example.request, example.account, example.plan);
+    verifyDepositKernelPlanExample(example);
+    verifyDepositKernelSnapshotExample(example);
+    prepareDepositKernelCase07(example);
+    depositKernel(example.request, example.account, example.plan);
+    verifyDepositKernelPlanExample(example);
+    verifyDepositKernelSnapshotExample(example);
+    prepareDepositKernelCase08(example);
+    depositKernel(example.request, example.account, example.plan);
+    verifyDepositKernelPlanExample(example);
+    verifyDepositKernelSnapshotExample(example);
+    prepareDepositKernelCase09(example);
+    depositKernel(example.request, example.account, example.plan);
+    verifyDepositKernelPlanExample(example);
+    verifyDepositKernelSnapshotExample(example);
+    prepareDepositKernelCase10(example);
+    depositKernel(example.request, example.account, example.plan);
+    verifyDepositKernelPlanExample(example);
+    verifyDepositKernelSnapshotExample(example);
+    prepareDepositKernelCase11(example);
+    depositKernel(example.request, example.account, example.plan);
+    verifyDepositKernelPlanExample(example);
+    verifyDepositKernelSnapshotExample(example);
+    prepareDepositKernelCase12(example);
+    depositKernel(example.request, example.account, example.plan);
+    verifyDepositKernelPlanExample(example);
+    verifyDepositKernelSnapshotExample(example);
+    prepareDepositKernelCase13(example);
+    depositKernel(example.request, example.account, example.plan);
+    verifyDepositKernelPlanExample(example);
+    verifyDepositKernelSnapshotExample(example);
+    prepareDepositKernelCase14(example);
+    depositKernel(example.request, example.account, example.plan);
+    verifyDepositKernelPlanExample(example);
+    verifyDepositKernelSnapshotExample(example);
+    prepareDepositKernelCase15(example);
+    depositKernel(example.request, example.account, example.plan);
+    verifyDepositKernelPlanExample(example);
+    verifyDepositKernelSnapshotExample(example);
+    prepareDepositKernelCase16(example);
+    try { depositKernel(example.request, example.account, example.plan); }
+    catch (CashFailureFacts example.failure) {}
+    verifyDepositKernelRejectionExample(example);
+    verifyDepositKernelSnapshotExample(example);
+}

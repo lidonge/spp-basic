@@ -1,0 +1,39 @@
+domain cboddeposit;
+
+// Business audit classification consumes measured transaction evidence; no inferred rollback.
+atomic calculate prepareCashDepositFailureAudit(CashDepositCommand command, context CashDepositLifecycle lifecycle) {
+    lifecycle.failureAudit = new CashAuditRecord();
+    lifecycle.failureAudit.attemptId = command.attemptId;
+    lifecycle.failureAudit.tradeId = command.id;
+    lifecycle.failureAudit.accountId = command.accountId;
+    lifecycle.failureAudit.event = "Rejected";
+    lifecycle.failureAudit.code = lifecycle.failure.code;
+    if (lifecycle.execution != null) {
+        lifecycle.failureAudit.deposit = copy(lifecycle.execution.trade);
+        if (lifecycle.execution.status == "Committing") {
+            lifecycle.failureAudit.event = "CommitFailed";
+            if (lifecycle.failure.transactionOutcome == "ROLLED_BACK") { lifecycle.failureAudit.event = "RolledBack"; }
+            if (lifecycle.failure.transactionOutcome == "UNKNOWN") { lifecycle.failureAudit.event = "CommitUnknown"; }
+            if (lifecycle.failure.transactionOutcome == "COMMITTED") { lifecycle.failureAudit.event = "CommittedResponseFailed"; }
+        }
+        if (lifecycle.execution.status == "Committed") { lifecycle.failureAudit.event = "ReplayAuditFailed"; }
+    }
+}
+atomic calculate prepareCashReversalFailureAudit(CashReversalCommand command, context CashReversalLifecycle lifecycle) {
+    lifecycle.failureAudit = new CashAuditRecord();
+    lifecycle.failureAudit.attemptId = command.attemptId;
+    lifecycle.failureAudit.tradeId = command.id;
+    lifecycle.failureAudit.event = "ReversalRejected";
+    lifecycle.failureAudit.code = lifecycle.failure.code;
+    if (lifecycle.work != null) {
+        lifecycle.failureAudit.reversal = copy(lifecycle.work.reversal);
+        if (lifecycle.work.current != null) { lifecycle.failureAudit.accountId = lifecycle.work.current.id; }
+        if (lifecycle.work.status == "Committing") {
+            lifecycle.failureAudit.event = "ReversalCommitFailed";
+            if (lifecycle.failure.transactionOutcome == "ROLLED_BACK") { lifecycle.failureAudit.event = "ReversalRolledBack"; }
+            if (lifecycle.failure.transactionOutcome == "UNKNOWN") { lifecycle.failureAudit.event = "ReversalCommitUnknown"; }
+            if (lifecycle.failure.transactionOutcome == "COMMITTED") { lifecycle.failureAudit.event = "ReversalCommittedResponseFailed"; }
+        }
+        if (lifecycle.work.status == "Committed") { lifecycle.failureAudit.event = "ReversalReplayAuditFailed"; }
+    }
+}

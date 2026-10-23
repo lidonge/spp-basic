@@ -1,0 +1,46 @@
+domain cboddeposit;
+
+atomic calculate configureFeeRuleCase09(context FeeRuleExampleFacts example) {
+    example.party.customerId = "SOURCE-FEE-RULE-09"; example.record.customerId = example.party.customerId;
+    example.request.amount = 1;example.record.rate.rate = 0.005; example.record.rate.discount = 1; example.record.rate.fixedAmount = 0.03; example.record.rate.minimum = 0; example.record.rate.maximum = 99;
+    example.expectedCode = "";
+    example.expected.fee = .04; example.expected.variableAmount = .01; example.expected.range = 1; example.expected.tariff = "SAC00001"; example.expected.applicable = true;
+}
+atomic calculate configureFeeRuleCase10(context FeeRuleExampleFacts example) {
+    example.party.customerId = "SOURCE-FEE-RULE-10"; example.record.customerId = example.party.customerId;
+    example.request.amount = .999;example.record.rate.rate = 0.005; example.record.rate.discount = 1; example.record.rate.fixedAmount = 0.03; example.record.rate.minimum = 0; example.record.rate.maximum = 99;
+    example.expectedCode = "";
+    example.expected.fee = .03; example.expected.variableAmount = 0; example.expected.range = 1; example.expected.tariff = "SAC00001"; example.expected.applicable = true;
+}
+atomic calculate configureFeeRuleCase11(context FeeRuleExampleFacts example) {
+    example.party.customerId = "SOURCE-FEE-RULE-11"; example.record.customerId = example.party.customerId;
+    example.request.amount = 100; example.record.rate.rate = 0.01; example.record.rate.discount = 1; example.record.rate.fixedAmount = 0; example.record.rate.minimum = 0; example.record.rate.maximum = 0;
+    example.expectedCode = "";
+    example.expected.fee = 0; example.expected.variableAmount = 1; example.expected.range = 1; example.expected.tariff = "SAC00001"; example.expected.applicable = true;
+}
+atomic calculate configureFeeRuleCase12(context FeeRuleExampleFacts example) {
+    example.party.customerId = "SOURCE-FEE-RULE-12"; example.record.customerId = example.party.customerId;
+    example.request.amount = 100; example.channel.channel = "Mobile";
+    example.expectedCode = "";
+    example.expected.fee = 0; example.expected.variableAmount = 0; example.expected.range = 0; example.expected.tariff = ""; example.expected.applicable = false;
+}
+atomic calculate configureFeeRuleCase13(context FeeRuleExampleFacts example) {
+    example.party.customerId = "SOURCE-FEE-RULE-13"; example.record.customerId = example.party.customerId;
+    example.request.amount = 100; example.party.accountKind = "MultiCurrencySavings";
+    example.expectedCode = "UNSUPPORTED_DEPOSIT_FEE_ACCOUNT";
+}
+atomic calculate configureFeeRuleCase14(context FeeRuleExampleFacts example) {
+    example.party.customerId = "SOURCE-FEE-RULE-14"; example.record.customerId = example.party.customerId;
+    example.request.amount = 100;
+    example.expectedCode = "DEPOSIT_FEE_RATE_NOT_FOUND";
+}
+atomic calculate configureFeeRuleCase15(context FeeRuleExampleFacts example) {
+    example.party.customerId = "SOURCE-FEE-RULE-15"; example.record.customerId = example.party.customerId;
+    example.request.amount = 1; example.plan.applicable = true; example.plan.tariff = "SAC00001"; example.plan.fee = 0; example.rate.tariff = "SAP00001";
+    example.expectedCode = "DEPOSIT_FEE_TARIFF_MISMATCH";
+}
+atomic calculate configureFeeRuleCase16(context FeeRuleExampleFacts example) {
+    example.party.customerId = "SOURCE-FEE-RULE-16"; example.record.customerId = example.party.customerId;
+    example.request.amount = -1;
+    example.expectedCode = "EP192";
+}

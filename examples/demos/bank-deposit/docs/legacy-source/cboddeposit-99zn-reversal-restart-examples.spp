@@ -1,0 +1,101 @@
+domain cboddeposit;
+
+Contract ReversalRestartExample {
+    ReversalFaultExample facts; CashReversalTrade duplicateKey; CashReversalTrade duplicate;
+    CashAuditRecord duplicateAuditKey; CashAuditRecord duplicateAudit;
+}
+atomic check verifyReversalRestartStoredHistory(ReversalFaultExample example) {
+    int count = 0;
+    for (CashAuditRecord audit : example.history) {
+        count++; require(audit.event == "ReversalCommitted" && audit.attemptId == example.prefix + "-FIRST", "EXAMPLE_REV_RESTART_INITIAL_EVENT");
+    }
+    require(count == 1, "EXAMPLE_REV_RESTART_INITIAL_HISTORY");
+}
+Scenario serial reversalRestartSetupExampleRun(context ReversalFaultExample example) {
+    selectRestartReversalExample(example); seedReversalFaultBusiness(example);
+    executeCashReversal(example.reversal.command, example.reversal.lifecycle);
+    observeReversalFaultBusiness(example); verifyReversalFaultIndependentBusiness(example);
+    verifyReversalFaultCommitted(example); verifyReversalRestartStoredHistory(example);
+}
+atomic calculate initializeReversalRestartExample(context ReversalRestartExample example) {
+    example.facts = new ReversalFaultExample(); example.duplicateKey = new CashReversalTrade(); example.duplicateAuditKey = new CashAuditRecord();
+}
+atomic calculate selectAfterRestartDeposit(context ReversalRestartExample example) {
+    example.facts.reversal.cash.command.id = example.facts.prefix + "-AFTER";
+    example.facts.reversal.cash.command.attemptId = example.facts.prefix + "-AFTER-COMMIT";
+    example.facts.reversal.cash.command.request.amount = 25;
+    example.facts.reversal.cash.command.request.valueDate = 20261009; example.facts.reversal.cash.command.day.date = 20261009;
+    example.facts.reversal.command.attemptId = example.facts.prefix + "-REPLAY"; example.facts.reversal.command.day.date = 20261009;
+}
+atomic check verifyReversalRestartLaterAccount(ReversalRestartExample example) {
+    require(example.facts.reversal.cash.observed.version == 4 && example.facts.reversal.cash.observed.account.interestBase == 225
+        && example.facts.reversal.cash.observed.eligibility.accountBalance == 225
+        && example.facts.reversal.cash.observed.eligibility.cashDepositedToday == 25
+        && example.facts.reversal.cash.observed.eligibility.detailCount == 14
+        && example.facts.reversal.cash.observed.eligibility.lastTransactionDate == 20261009
+        && example.facts.reversal.cash.observed.accrual.state.normalProduct == 1000,
+        "EXAMPLE_REV_RESTART_REPLAY_OVERWROTE_LATER");
+    require(example.facts.reversal.record.settled.version == 3 && example.facts.reversal.record.settled.eligibility.accountBalance == 200
+        && example.facts.reversal.link.version == 1 && example.facts.reversal.link.reversalId == example.facts.prefix + "-R",
+        "EXAMPLE_REV_RESTART_RECEIPT_CHANGED");
+    int lines = 0; for (CashPostingRecord posting : example.facts.reversal.cash.postings) { lines++; }
+    require(lines == 8, "EXAMPLE_REV_RESTART_REPEATED_LEDGER");
+}
+atomic check verifyReversalRestartReplayResult(ReversalRestartExample example) {
+    require(example.facts.reversal.lifecycle.work.status == "Committed" && example.facts.reversal.lifecycle.work.proposed.version == 3
+        && example.facts.reversal.lifecycle.work.proposed.eligibility.accountBalance == 200
+        && example.facts.reversal.lifecycle.work.execution.businessDate == 20261008, "EXAMPLE_REV_RESTART_REPLAY_RESULT");
+}
+atomic calculate selectReversalRestartChangedOriginal(context ReversalRestartExample example) {
+    example.facts.reversal.command.originalTradeId = example.facts.laterKey.id;
+    example.facts.reversal.command.attemptId = example.facts.prefix + "-CHANGED-ORIGINAL";
+}
+atomic calculate selectReversalRestartChangedMode(context ReversalRestartExample example) {
+    example.facts.reversal.command.originalTradeId = example.facts.prefix + "-T";
+    example.facts.reversal.command.overnightMode2 = true;
+    example.facts.reversal.command.attemptId = example.facts.prefix + "-CHANGED-MODE";
+}
+atomic check verifyReversalRestartIdentityRejected(ReversalRestartExample example) {
+    require(example.facts.reversal.failure != null && example.facts.reversal.failure.code == "DEPOSIT_REQUEST_ID_REUSED",
+        "EXAMPLE_REV_RESTART_CHANGED_IDENTITY_ALLOWED");
+}
+atomic check verifyReversalRestartResolvedHistory(ReversalRestartExample example) {
+    int count = 0; int committed = 0; int replayed = 0; int rejected = 0;
+    for (CashAuditRecord audit : example.facts.history) {
+        count++; if (audit.event == "ReversalCommitted") { committed++; }
+        if (audit.event == "ReversalReplayed") { replayed++; }
+        if (audit.event == "ReversalRejected") { rejected++; require(audit.code == "DEPOSIT_REQUEST_ID_REUSED", "EXAMPLE_REV_RESTART_REJECTION_CODE"); }
+    }
+    require(count == 4 && committed == 1 && replayed == 1 && rejected == 2, "EXAMPLE_REV_RESTART_RESOLVED_HISTORY");
+}
+atomic calculate selectReversalRestartDuplicate(context ReversalRestartExample example) {
+    example.facts.reversal.command.overnightMode2 = false;
+    example.facts.reversal.command.id = example.facts.prefix + "-DUPLICATE";
+    example.facts.reversal.command.attemptId = example.facts.prefix + "-DUPLICATE-ATTEMPT";
+    example.duplicateKey.id = example.facts.reversal.command.id; example.duplicateAuditKey.attemptId = example.facts.reversal.command.attemptId;
+}
+atomic check verifyReversalRestartDuplicateRejected(ReversalRestartExample example) {
+    require(example.facts.reversal.failure != null && example.facts.reversal.failure.code == "ORIGINAL_DEPOSIT_ALREADY_REVERSED"
+        && example.duplicate == null && example.duplicateAudit != null && example.duplicateAudit.event == "ReversalRejected"
+        && example.duplicateAudit.code == "ORIGINAL_DEPOSIT_ALREADY_REVERSED", "EXAMPLE_REV_RESTART_DUPLICATE_ALLOWED");
+}
+Scenario serial reversalRestartResumeExampleRun(context ReversalRestartExample example) {
+    initializeReversalRestartExample(example); selectRestartReversalExample(example.facts); prepareReversalFaultFacts(example.facts);
+    observeReversalFaultBusiness(example.facts); verifyReversalFaultIndependentBusiness(example.facts);
+    verifyReversalFaultCommitted(example.facts); verifyReversalRestartStoredHistory(example.facts);
+    selectAfterRestartDeposit(example); executeCashDeposit(example.facts.reversal.cash.command, example.facts.reversal.cash.lifecycle);
+    executeCashReversal(example.facts.reversal.command, example.facts.reversal.lifecycle);
+    observeReversalFaultBusiness(example.facts); verifyReversalFaultIndependentBusiness(example.facts);
+    verifyReversalRestartLaterAccount(example); verifyReversalRestartReplayResult(example);
+    selectReversalRestartChangedOriginal(example);
+    try { executeCashReversal(example.facts.reversal.command, example.facts.reversal.lifecycle); } catch (CashFailureFacts example.facts.reversal.failure) {}
+    verifyReversalRestartIdentityRejected(example);
+    selectReversalRestartChangedMode(example);
+    try { executeCashReversal(example.facts.reversal.command, example.facts.reversal.lifecycle); } catch (CashFailureFacts example.facts.reversal.failure) {}
+    verifyReversalRestartIdentityRejected(example);
+    observeReversalFaultBusiness(example.facts); verifyReversalRestartLaterAccount(example); verifyReversalRestartResolvedHistory(example);
+    selectReversalRestartDuplicate(example);
+    try { executeCashReversal(example.facts.reversal.command, example.facts.reversal.lifecycle); } catch (CashFailureFacts example.facts.reversal.failure) {}
+    example.duplicate = lookupCashReversalTrade(example.duplicateKey); example.duplicateAudit = lookupCashExampleAudit(example.duplicateAuditKey);
+    observeReversalFaultBusiness(example.facts); verifyReversalRestartLaterAccount(example); verifyReversalRestartDuplicateRejected(example);
+}

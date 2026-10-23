@@ -1,0 +1,158 @@
+[
+  {
+    "name": "postingRulesCase1",
+    "request": {
+      "amount": 50
+    },
+    "account": {
+      "interestBase": 100,
+      "overdraftInterest": 0,
+      "collectionInterest": 0,
+      "overdraftPrincipal": 0,
+      "overdraftExposure": 0,
+      "loanState": "NORMAL"
+    },
+    "fee": 2,
+    "expected": [
+      50,
+      0,
+      50,
+      0,
+      0,
+      0,
+      2,
+      2
+    ],
+    "total": 52
+  },
+  {
+    "name": "postingRulesCase2",
+    "request": {
+      "amount": 50
+    },
+    "account": {
+      "interestBase": 0,
+      "overdraftInterest": 30,
+      "collectionInterest": 40,
+      "overdraftPrincipal": 100,
+      "overdraftExposure": 100,
+      "loanState": "NORMAL"
+    },
+    "fee": 0,
+    "expected": [
+      50,
+      0,
+      0,
+      0,
+      30,
+      20,
+      0,
+      0
+    ],
+    "total": 50
+  },
+  {
+    "name": "postingRulesCase3",
+    "request": {
+      "amount": 50
+    },
+    "account": {
+      "interestBase": 0,
+      "overdraftInterest": 30,
+      "collectionInterest": 40,
+      "overdraftPrincipal": 100,
+      "overdraftExposure": 100,
+      "loanState": "BAD_DEBT"
+    },
+    "fee": 0,
+    "expected": [
+      50,
+      0,
+      0,
+      50,
+      0,
+      0,
+      0,
+      0
+    ],
+    "total": 50
+  },
+  {
+    "name": "postingRulesCase4",
+    "request": {
+      "amount": 0
+    },
+    "account": {
+      "interestBase": 100,
+      "overdraftInterest": 10,
+      "collectionInterest": 20,
+      "overdraftPrincipal": 30,
+      "overdraftExposure": 30,
+      "loanState": "NORMAL"
+    },
+    "fee": 0,
+    "expected": [
+      0,
+      60,
+      0,
+      30,
+      10,
+      20,
+      0,
+      0
+    ],
+    "total": 60
+  },
+  {
+    "name": "postingRulesCase5",
+    "request": {
+      "amount": 10
+    },
+    "account": {
+      "interestBase": 100,
+      "overdraftInterest": 10,
+      "collectionInterest": 20,
+      "overdraftPrincipal": 30,
+      "overdraftExposure": 30,
+      "loanState": "NORMAL"
+    },
+    "fee": 1,
+    "expected": [
+      10,
+      50,
+      0,
+      30,
+      10,
+      20,
+      1,
+      1
+    ],
+    "total": 61
+  },
+  {
+    "name": "postingRulesCase6",
+    "request": {
+      "amount": "0.01"
+    },
+    "account": {
+      "interestBase": 0,
+      "overdraftInterest": "0.005",
+      "collectionInterest": "0.004",
+      "overdraftPrincipal": "0.01",
+      "overdraftExposure": "0.01",
+      "loanState": "NORMAL"
+    },
+    "fee": 0,
+    "expected": [
+      "0.01",
+      0,
+      0,
+      "0.001",
+      "0.005",
+      "0.004",
+      0,
+      0
+    ],
+    "total": "0.01"
+  }
+]

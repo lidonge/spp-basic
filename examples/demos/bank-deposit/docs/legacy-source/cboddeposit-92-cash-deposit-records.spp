@@ -1,0 +1,62 @@
+domain cboddeposit;
+
+atomic calculate prepareCashDepositRecord(CashDepositTrade trade, CashAccountRecord original,
+    CashAccountRecord proposed, DepositRequest request, context DepositPlan plan,
+    context AdmissionDecision admission, context DepositFeePlan fee, DepositPostingLine[] lines,
+    context DepositAccrualPlan accrual, AgreementBand[] increments, DepositOperatorFacts operator,
+    context DepositNotices notices) {
+    require(trade.id != null && trade.id != "", "MISSING_DEPOSIT_TRANSACTION_ID");
+    trade.accountId = original.id;
+    trade.original = copy(original);
+    trade.settled = copy(proposed);
+    trade.request = copy(request);
+    trade.plan = copy(plan);
+    trade.admission = copy(admission);
+    trade.fee = copy(fee);
+    trade.lines = copy(lines);
+    trade.accrual = copy(accrual);
+    trade.increments = copy(increments);
+    trade.operator = copy(operator);
+    trade.notices = copy(notices);
+}
+atomic calculate prepareCashPostingRecords(CashDepositTrade trade, CashPostingRecord[] postings) {
+    int count = 0;
+    for (CashPostingRecord posting : postings) {
+        posting.tradeId = trade.id;
+        for (DepositPostingLine line : trade.lines) {
+            if (posting.slot == line.slot) { posting.line = copy(line); count++; }
+        }
+        require(posting.line != null, "MISSING_DEPOSIT_POSTING_SLOT");
+    }
+    require(count == 8, "INVALID_DEPOSIT_POSTING_SLOTS");
+}
+atomic calculate prepareCashInitialReversalLink(CashDepositTrade trade, CashTradeReversalLink link) {
+    link.id = trade.id;
+    link.version = 0;
+    link.reversalId = "";
+}
+atomic calculate prepareCashCommittedAudit(CashDepositTrade trade, CashAuditRecord audit) {
+    audit.tradeId = trade.id;
+    audit.accountId = trade.accountId;
+    audit.event = "Committed";
+    audit.code = "";
+    audit.deposit = copy(trade);
+}
+// All business records and quantum amount effects belong to this single visible boundary.
+Scenario serial commitCashDepositRecords(CashAccountRecord original, CashAccountRecord proposed,
+    CashDepositTrade trade, CashPostingRecord[] postings, CashTradeReversalLink link,
+    CashAuditRecord audit, AccountEligibility quantumAccount, CashQuantumClearing clearing,
+    context CashQuantumMovement movement) {
+    prepareCashQuantumParticipants(original, quantumAccount, clearing);
+    transaction quantum {
+        storeCashDepositTrade(trade);
+        movement.current = lookupCashAccountForCommit(original);
+        checkCashAccountForCommit(original, movement.current);
+        storeCashAccount(original, proposed);
+        storeCashPostingRecords(postings);
+        createCashTradeReversalLink(link);
+        moveCashQuantumValue(quantumAccount, clearing, movement);
+        checkCashSettledQuantumBalance(proposed, quantumAccount);
+        storeCashAudit(audit);
+    }
+}

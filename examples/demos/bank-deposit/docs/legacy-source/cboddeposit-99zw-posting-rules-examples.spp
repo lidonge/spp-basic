@@ -1,0 +1,137 @@
+domain cboddeposit;
+
+Contract PostingRulesExample {
+    int caseNo; DepositRequest request; DepositAccount account; DepositPlan plan;
+    DepositAccounting amounts; DepositFeePlan fee; DepositPostingLine[] lines; DepositPostingLine[] expected;
+    DepositPostingLine[] snapshot; DepositPostingTotals totals; double expectedTotal;
+    CashFailureFacts failure;
+}
+atomic calculate initializePostingRulesExample(context PostingRulesExample example) {
+    example.request = new DepositRequest(); example.request.amount = 50;
+    example.account = new DepositAccount(); example.account.interestBase = 100;
+    example.account.frozenAmount = 0; example.account.authorizedAmount = 0;
+    example.account.overdraftInterest = 0; example.account.collectionInterest = 0;
+    example.account.overdraftPrincipal = 0; example.account.overdraftExposure = 0;
+    example.account.loanState = "Normal";
+    example.plan = new DepositPlan(); example.amounts = new DepositAccounting(); example.fee = new DepositFeePlan();
+    example.fee.fee = 2; example.totals = new DepositPostingTotals(); example.failure = null;
+    example.lines = new DepositPostingLine[] {
+        new DepositPostingLine(), new DepositPostingLine(), new DepositPostingLine(), new DepositPostingLine(),
+        new DepositPostingLine(), new DepositPostingLine(), new DepositPostingLine(), new DepositPostingLine()
+    };
+    int slot = 1;
+    for (DepositPostingLine line : example.lines) {
+        line.slot = slot; line.amount = 999; line.subject = "DEMO.DEPOSIT_LIABILITY"; line.side = "Credit";
+        if (slot == 1 || slot == 2 || slot == 7) { line.side = "Debit"; }
+        if (slot == 1 || slot == 7) { line.subject = "DEMO.CASH"; }
+        if (slot == 4) { line.subject = "DEMO.OVERDRAFT_PRINCIPAL"; }
+        if (slot == 5) { line.subject = "DEMO.OVERDRAFT_INTEREST"; }
+        if (slot == 6) { line.subject = "DEMO.COLLECTION_INTEREST"; }
+        if (slot == 8) { line.subject = "DEMO.FEE_INCOME"; }
+        slot++;
+    }
+    example.expected = copy(example.lines);
+    for (DepositPostingLine line : example.expected) { line.amount = 0; }
+}
+atomic calculate selectPostingRulesCase(context PostingRulesExample example) {
+    if (example.caseNo == 1) {
+        example.expectedTotal = 52;
+        for (DepositPostingLine line : example.expected) {
+            if (line.slot == 1 || line.slot == 3) { line.amount = 50; }
+            if (line.slot == 7 || line.slot == 8) { line.amount = 2; }
+        }
+    } else if (example.caseNo == 2 || example.caseNo == 3) {
+        example.account.interestBase = 0; example.account.overdraftInterest = 30;
+        example.account.collectionInterest = 40; example.account.overdraftPrincipal = 100;
+        example.account.overdraftExposure = 100; example.fee.fee = 0; example.expectedTotal = 50;
+        if (example.caseNo == 3) { example.account.loanState = "BadDebt"; }
+        for (DepositPostingLine line : example.expected) {
+            if (line.slot == 1) { line.amount = 50; }
+            if (example.caseNo == 2 && line.slot == 5) { line.amount = 30; }
+            if (example.caseNo == 2 && line.slot == 6) { line.amount = 20; }
+            if (example.caseNo == 3 && line.slot == 4) { line.amount = 50; }
+        }
+    } else if (example.caseNo == 4 || example.caseNo == 5) {
+        example.account.overdraftInterest = 10; example.account.collectionInterest = 20;
+        example.account.overdraftPrincipal = 30; example.account.overdraftExposure = 30;
+        example.request.amount = 0; example.fee.fee = 0; example.expectedTotal = 60;
+        if (example.caseNo == 5) { example.request.amount = 10; example.fee.fee = 1; example.expectedTotal = 61; }
+        for (DepositPostingLine line : example.expected) {
+            if (line.slot == 2) { line.amount = 60; if (example.caseNo == 5) { line.amount = 50; } }
+            if (line.slot == 4) { line.amount = 30; }
+            if (line.slot == 5) { line.amount = 10; }
+            if (line.slot == 6) { line.amount = 20; }
+            if (example.caseNo == 5 && line.slot == 1) { line.amount = 10; }
+            if (example.caseNo == 5 && (line.slot == 7 || line.slot == 8)) { line.amount = 1; }
+        }
+    } else {
+        example.request.amount = 0.01; example.account.interestBase = 0;
+        example.account.overdraftInterest = 0.005; example.account.collectionInterest = 0.004;
+        example.account.overdraftPrincipal = 0.01; example.account.overdraftExposure = 0.01;
+        example.fee.fee = 0; example.expectedTotal = 0.01;
+        for (DepositPostingLine line : example.expected) {
+            if (line.slot == 1) { line.amount = 0.01; }
+            if (line.slot == 4) { line.amount = 0.001; }
+            if (line.slot == 5) { line.amount = 0.005; }
+            if (line.slot == 6) { line.amount = 0.004; }
+        }
+    }
+}
+atomic check verifyPostingRulesCase(PostingRulesExample example) {
+    require(sameFacts(example.lines, example.expected), "EXAMPLE_POSTING_SLOT_ALLOCATION");
+    require(example.totals.debit == example.expectedTotal && example.totals.credit == example.expectedTotal
+        && example.amounts.fundingTotal == example.amounts.allocationTotal, "EXAMPLE_POSTING_TOTAL");
+}
+atomic calculate startPostingRulesCases(context PostingRulesExample example) { example.caseNo = 1; }
+atomic calculate advancePostingRulesCase(context PostingRulesExample example) { example.caseNo++; }
+Scenario serial executePostingRulesCase(context PostingRulesExample example) {
+    initializePostingRulesExample(example); selectPostingRulesCase(example);
+    prepareDepositPostings(example.request, example.account, example.plan, example.amounts, example.fee, example.lines, example.totals);
+    verifyPostingRulesCase(example); advancePostingRulesCase(example);
+}
+atomic calculate corruptPostingRulesSide(context PostingRulesExample example) {
+    for (DepositPostingLine line : example.lines) { if (line.slot == 1) { line.side = "Credit"; } }
+    example.snapshot = copy(example.lines);
+}
+atomic check verifyPostingRulesSideRejected(PostingRulesExample example) {
+    require(example.failure != null && example.failure.code == "INVALID_DEPOSIT_POSTING_SIDE"
+        && sameFacts(example.lines, example.snapshot) && example.totals.debit == null, "EXAMPLE_POSTING_SIDE_MUTATION");
+}
+atomic calculate corruptPostingRulesSubject(context PostingRulesExample example) {
+    for (DepositPostingLine line : example.lines) { if (line.slot == 1) { line.side = "Debit"; line.subject = null; } }
+    example.snapshot = copy(example.lines); example.failure = null;
+}
+atomic check verifyPostingRulesSubjectRejected(PostingRulesExample example) {
+    require(example.failure != null && example.failure.code == "INVALID_DEPOSIT_POSTING_RULES"
+        && sameFacts(example.lines, example.snapshot) && example.totals.debit == null, "EXAMPLE_POSTING_SUBJECT_MUTATION");
+}
+atomic calculate forgePostingRulesAccounting(context PostingRulesExample example) {
+    example.amounts.transactionAmount = 10; example.amounts.depositIncrease = 0; example.amounts.depositDecrease = 0;
+    example.amounts.principalPaid = 0; example.amounts.interestPaid = 0; example.amounts.collectionPaid = 0;
+    example.amounts.fundingTotal = 0; example.amounts.allocationTotal = 0; example.failure = null;
+}
+atomic check verifyPostingRulesForgedTotal(PostingRulesExample example) {
+    require(example.failure != null && example.failure.code == "DEPOSIT_ACCOUNTING_TOTAL_MISMATCH", "EXAMPLE_POSTING_FORGED_TOTAL");
+}
+atomic calculate exposePostingRulesMissingAllocation(context PostingRulesExample example) {
+    example.amounts.fundingTotal = 10; example.failure = null;
+}
+atomic check verifyPostingRulesMissingAllocation(PostingRulesExample example) {
+    require(example.failure != null && example.failure.code == "DEPOSIT_ACCOUNTING_NOT_BALANCED", "EXAMPLE_POSTING_MISSING_ALLOCATION");
+}
+Scenario serial postingRulesExampleRun(context PostingRulesExample example) {
+    startPostingRulesCases(example);
+    executePostingRulesCase(example); executePostingRulesCase(example); executePostingRulesCase(example);
+    executePostingRulesCase(example); executePostingRulesCase(example); executePostingRulesCase(example);
+    initializePostingRulesExample(example); corruptPostingRulesSide(example);
+    try { calculateDepositPostings(example.amounts, example.fee, example.lines, example.totals); }
+    catch (CashFailureFacts example.failure) {}
+    verifyPostingRulesSideRejected(example); corruptPostingRulesSubject(example);
+    try { calculateDepositPostings(example.amounts, example.fee, example.lines, example.totals); }
+    catch (CashFailureFacts example.failure) {}
+    verifyPostingRulesSubjectRejected(example); forgePostingRulesAccounting(example);
+    try { checkDepositAccounting(example.amounts); } catch (CashFailureFacts example.failure) {}
+    verifyPostingRulesForgedTotal(example); exposePostingRulesMissingAllocation(example);
+    try { checkDepositAccounting(example.amounts); } catch (CashFailureFacts example.failure) {}
+    verifyPostingRulesMissingAllocation(example);
+}

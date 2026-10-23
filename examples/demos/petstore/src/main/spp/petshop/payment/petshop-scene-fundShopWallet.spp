@@ -1,0 +1,34 @@
+domain petshop;
+
+atomic check checkFundingAmount(WalletFundingAgreement) {
+    require(WalletFundingAgreement.amount > 0, "INVALID_FUNDING_AMOUNT");
+}
+
+atomic calculate prepareWalletFunding(Buyer, SettlementAccount, WalletFundingAgreement) {
+    SettlementAccount.accountNumber = "EXTERNAL-SETTLEMENT";
+    WalletFundingAgreement.buyer = Buyer;
+    WalletFundingAgreement.source = SettlementAccount;
+}
+
+quantum update transferWalletFunds(Buyer, SettlementAccount, WalletFundingAgreement) {
+    SettlementAccount.balance -= WalletFundingAgreement.amount;
+    Buyer.wallet += WalletFundingAgreement.amount;
+}
+
+Scenario serial fundShopWallet(Buyer, SettlementAccount, WalletFundingAgreement) {
+    checkBuyerCredential;
+    checkFundingAmount;
+    prepareWalletFunding;
+    parallel {
+        findBuyer;
+        findSettlementAccount;
+    }
+    identify(Buyer);
+    identify(SettlementAccount);
+    transaction {
+        transferWalletFunds bounds {
+            SettlementAccount.balance: [null, null];
+            Buyer.wallet: [0, null];
+        };
+    }
+}

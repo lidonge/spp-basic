@@ -1,0 +1,25 @@
+domain petshop;
+
+Contract GoodsPriceRevisionAgreement {
+    Goods goods;
+    BigDecimal(19, 2) unitPrice;
+}
+
+atomic check checkGoodsPriceRevision(GoodsPriceRevisionAgreement) {
+    require(GoodsPriceRevisionAgreement.unitPrice >= 0, "INVALID_GOODS_PRICE");
+}
+
+atomic calculate applyGoodsPriceRevision(Goods, GoodsPriceRevisionAgreement) {
+    Goods.price = GoodsPriceRevisionAgreement.unitPrice;
+    GoodsPriceRevisionAgreement.goods = Goods;
+}
+
+Scenario serial reviseShopGoodsPrice(Goods, GoodsPriceRevisionAgreement) {
+    findGoods;
+    identify(Goods);
+    checkGoodsPriceRevision;
+    applyGoodsPriceRevision;
+    transaction {
+        updateGoods;
+    }
+}

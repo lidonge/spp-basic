@@ -1,0 +1,61 @@
+domain cboddeposit;
+
+atomic check verifyConcurrentReversalCollision(ConcurrentReversalExample example) {
+    int conflicts = 0;
+    if (example.facts.reversal.lifecycle.submissionFailure != null) {
+        conflicts++; require(example.facts.reversal.lifecycle.submissionFailure.transactionOutcome == "ROLLED_BACK"
+            && (example.facts.reversal.lifecycle.submissionFailure.code == "PERSISTENCE_ALREADY_EXISTS"
+                || example.facts.reversal.lifecycle.submissionFailure.code == "PERSISTENCE_VERSION_CONFLICT"), "EXAMPLE_CONCURRENT_REV_FIRST_COLLISION");
+    }
+    if (example.secondLifecycle.submissionFailure != null) {
+        conflicts++; require(example.secondLifecycle.submissionFailure.transactionOutcome == "ROLLED_BACK"
+            && (example.secondLifecycle.submissionFailure.code == "PERSISTENCE_ALREADY_EXISTS"
+                || example.secondLifecycle.submissionFailure.code == "PERSISTENCE_VERSION_CONFLICT"), "EXAMPLE_CONCURRENT_REV_SECOND_COLLISION");
+    }
+    require(conflicts == 1, "EXAMPLE_CONCURRENT_REV_COLLISION_NOT_EXERCISED");
+}
+atomic check verifySameIdentityConcurrentReversal(ConcurrentReversalExample example) {
+    require(example.firstFailure == null && example.secondFailure == null
+        && example.facts.reversal.lifecycle.work.status == "Committed" && example.secondLifecycle.work.status == "Committed"
+        && example.facts.reversal.lifecycle.work.proposed.version == 3 && example.secondLifecycle.work.proposed.version == 3
+        && example.secondLifecycle.work.proposed.eligibility.accountBalance == 200
+        && example.secondRecord != null && example.secondRecord.id == example.facts.reversal.command.id,
+        "EXAMPLE_CONCURRENT_REV_SAME_RESULTS");
+    int committed = 0; int replayed = 0; int count = 0;
+    for (CashAuditRecord audit : example.facts.history) {
+        count++; if (audit.event == "ReversalCommitted") { committed++; } if (audit.event == "ReversalReplayed") { replayed++; }
+    }
+    require(count == 2 && committed == 1 && replayed == 1, "EXAMPLE_CONCURRENT_REV_SAME_HISTORY");
+}
+atomic check verifyDifferentIdentityConcurrentReversal(ConcurrentReversalExample example) {
+    int succeeded = 0; int rejected = 0; int receipts = 0; int lines = 0; double debit = 0; double credit = 0;
+    if (example.firstFailure == null) { succeeded++; require(example.facts.reversal.lifecycle.work.status == "Committed", "EXAMPLE_CONCURRENT_REV_FIRST_RESULT"); }
+    else { rejected++; require(example.firstFailure.code == "ORIGINAL_DEPOSIT_ALREADY_REVERSED", "EXAMPLE_CONCURRENT_REV_FIRST_REJECTION"); }
+    if (example.secondFailure == null) { succeeded++; require(example.secondLifecycle.work.status == "Committed", "EXAMPLE_CONCURRENT_REV_SECOND_RESULT"); }
+    else { rejected++; require(example.secondFailure.code == "ORIGINAL_DEPOSIT_ALREADY_REVERSED", "EXAMPLE_CONCURRENT_REV_SECOND_REJECTION"); }
+    require(succeeded == 1 && rejected == 1, "EXAMPLE_CONCURRENT_REV_BOTH_COMMITTED");
+    if (example.facts.reversal.record != null) { receipts++; require(example.facts.reversal.link.reversalId == example.facts.reversal.record.id, "EXAMPLE_CONCURRENT_REV_FIRST_LINK"); }
+    if (example.secondRecord != null) { receipts++; require(example.facts.reversal.link.reversalId == example.secondRecord.id, "EXAMPLE_CONCURRENT_REV_SECOND_LINK"); }
+    require(receipts == 1 && example.facts.reversal.link.version == 1, "EXAMPLE_CONCURRENT_REV_TWO_RECEIPTS");
+    for (CashPostingRecord posting : example.facts.reversal.cash.postings) {
+        lines++; if (posting.line.side == "Debit") { debit += posting.line.amount; } else { credit += posting.line.amount; }
+    }
+    for (CashPostingRecord posting : example.secondPostings) {
+        lines++; if (posting.line.side == "Debit") { debit += posting.line.amount; } else { credit += posting.line.amount; }
+    }
+    require(lines == 8 && debit == 602 && credit == 602, "EXAMPLE_CONCURRENT_REV_TWO_LEDGERS");
+    int committed = 0; int failures = 0; int count = 0;
+    for (CashAuditRecord audit : example.facts.history) {
+        count++; if (audit.event == "ReversalCommitted") { committed++; }
+        if (audit.event == "ReversalRejected") { failures++; require(audit.code == "ORIGINAL_DEPOSIT_ALREADY_REVERSED", "EXAMPLE_CONCURRENT_REV_FIRST_AUDIT"); }
+    }
+    for (CashAuditRecord audit : example.secondHistory) {
+        count++; if (audit.event == "ReversalCommitted") { committed++; }
+        if (audit.event == "ReversalRejected") { failures++; require(audit.code == "ORIGINAL_DEPOSIT_ALREADY_REVERSED", "EXAMPLE_CONCURRENT_REV_SECOND_AUDIT"); }
+    }
+    require(count == 2 && committed == 1 && failures == 1, "EXAMPLE_CONCURRENT_REV_DIFFERENT_HISTORY");
+    require(example.facts.reversal.cash.observed.version == 3 && example.facts.reversal.cash.observed.eligibility.accountBalance == 200
+        && example.facts.reversal.cash.observed.account.interestBase == 200
+        && example.facts.reversal.cash.observed.accrual.state.normalProduct == 800
+        && example.facts.reversal.cash.observed.eligibility.detailCount == 13, "EXAMPLE_CONCURRENT_REV_DIFFERENT_ACCOUNT");
+}

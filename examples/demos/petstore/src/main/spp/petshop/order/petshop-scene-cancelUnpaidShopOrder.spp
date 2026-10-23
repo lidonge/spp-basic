@@ -1,0 +1,31 @@
+domain petshop;
+
+Scenario serial cancelUnpaidShopOrder(Buyer, StockLine[], ShopOrder, UnpaidCancellationAgreement) {
+    checkBuyerCredential;
+    initializeUnpaidCancellationAgreement;
+    checkUnpaidCancellationAgreementInput;
+
+    parallel {
+        findBuyer;
+        findShopOrder;
+    }
+    identify(Buyer);
+    identify(ShopOrder);
+    checkOrderOwner;
+    prepareOrderInventory;
+    findStockLine;
+    identify(StockLine[]);
+    checkUnpaidCancellation;
+    checkReservedInventory;
+    prepareUnpaidCancellation;
+    prepareUnpaidCancellationAgreementReceipt;
+    transaction {
+        releaseUnpaidInventory bounds {
+            StockLine[].available: [0, null];
+            StockLine[].reserved: [0, null];
+        };
+        updateShopOrder;
+
+        insertReceipt(UnpaidCancellationAgreement.receipt);
+    }
+}

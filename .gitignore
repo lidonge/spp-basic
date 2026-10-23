@@ -6,6 +6,8 @@ lang/gen/
 
 # Editor dependencies and release artifacts
 node_modules/
+__pycache__/
+*.pyc
 sdk-tools/vscode/client-dist/
 *.vsix
 

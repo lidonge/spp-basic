@@ -1,0 +1,144 @@
+domain cboddeposit;
+Contract BankQualificationCashExampleFacts {
+    CashReversalExample fixture;
+    CashDepositTrade originalReceipt;
+    CashFailureFacts failure;
+}
+atomic calculate initializeBankQualificationCashExample(context BankQualificationCashExampleFacts example) {
+    example.fixture = new CashReversalExample(); example.failure = null;
+}
+atomic calculate configureBankWarningCashExample(context BankQualificationCashExampleFacts example) {
+    example.fixture.cash.seed.id = "SOURCE-BANK-WARN-A";
+    example.fixture.cash.seed.eligibility.accountId = example.fixture.cash.seed.id;
+    example.fixture.cash.seed.eligibility.lastTransactionDate = 20261007;
+    example.fixture.cash.seed.accrual.state.lastProductDate = 20261007;
+    example.fixture.cash.seed.feeParty.customerId = "SOURCE-BANK-WARN-C1";
+    example.fixture.cash.command.id = "SOURCE-BANK-WARN-T";
+    example.fixture.cash.command.attemptId = "SOURCE-BANK-WARN-COMMIT";
+    example.fixture.cash.command.accountId = example.fixture.cash.seed.id;
+    example.fixture.cash.observed.id = example.fixture.cash.seed.id;
+    example.fixture.cash.postingKey.tradeId = example.fixture.cash.command.id;
+    example.fixture.cash.tradeKey.id = example.fixture.cash.command.id;
+    example.fixture.cash.auditKey.attemptId = example.fixture.cash.command.attemptId;
+    example.fixture.cash.tariffRecord.customerId = example.fixture.cash.seed.feeParty.customerId;
+    example.fixture.cash.seed.bankProfile.accountSeries = "49927";
+    example.fixture.cash.seed.bankProfile.cardLinked = true;
+    example.fixture.cash.seed.bankProfile.cardRecordFound = true;
+    example.fixture.cash.seed.bankProfile.cardLoss = "Oral";
+    example.fixture.cash.seed.bankProfile.passbookLoss = "Written";
+}
+atomic check verifyBankWarningCashExample(BankQualificationCashExampleFacts example) {
+    require(example.fixture.cash.lifecycle.execution.status == "Committed"
+        && example.fixture.cash.lifecycle.execution.work.admission.status == "Warning"
+        && example.fixture.cash.lifecycle.execution.work.admission.warningCode == "F0554", "EXAMPLE_BANK_WARNING_ADMISSION");
+    require(example.fixture.cash.lifecycle.execution.work.notices.cardWarning == "WN200"
+        && example.fixture.cash.lifecycle.execution.work.notices.passbookWarning == "WN201", "EXAMPLE_BANK_WARNING_NOTICES");
+    require(example.fixture.cash.storedTrade != null && example.fixture.cash.storedTrade.notices.cardWarning == "WN200"
+        && example.fixture.cash.storedTrade.notices.passbookWarning == "WN201"
+        && example.fixture.cash.storedTrade.operator.transactionPrefix == "SA01102"
+        && example.fixture.cash.storedTrade.original.bankProfile.accountSeries == "49927", "EXAMPLE_BANK_WARNING_RECORDED");
+    require(example.fixture.cash.observed.version == 1 && example.fixture.cash.observed.eligibility.accountBalance == 700,
+        "EXAMPLE_BANK_WARNING_ACCOUNT");
+}
+atomic calculate prepareBankWarningReplayExample(context BankQualificationCashExampleFacts example) {
+    example.originalReceipt = copy(example.fixture.cash.storedTrade);
+    example.fixture.cash.command.operator.agencySigned = true;
+    example.fixture.cash.command.attemptId = "SOURCE-BANK-WARN-REPLAY";
+    example.fixture.cash.auditKey.attemptId = example.fixture.cash.command.attemptId;
+}
+atomic check verifyBankWarningReplayExample(BankQualificationCashExampleFacts example) {
+    require(example.fixture.cash.lifecycle.execution.trade.id == example.originalReceipt.id
+        && example.fixture.cash.lifecycle.execution.trade.settled.version == example.originalReceipt.settled.version
+        && example.fixture.cash.lifecycle.execution.work.notices.cardWarning == "WN200"
+        && example.fixture.cash.lifecycle.execution.trade.operator.agencySigned == false, "EXAMPLE_BANK_WARNING_REPLAY_ORIGINAL");
+    require(example.fixture.cash.observed.version == 1 && example.fixture.cash.observed.eligibility.accountBalance == 700
+        && example.fixture.cash.audit.event == "Replayed", "EXAMPLE_BANK_WARNING_REPLAY_UNCHANGED");
+}
+Scenario serial observeBankQualificationCashExample(context BankQualificationCashExampleFacts example) {
+    example.fixture.cash.observed = queryCashAccount(example.fixture.cash.observed);
+    example.fixture.cash.storedTrade = lookupCashDepositTrade(example.fixture.cash.tradeKey);
+    example.fixture.cash.postings = queryCashPostingRecords(example.fixture.cash.postingKey);
+    example.fixture.cash.audit = lookupCashExampleAudit(example.fixture.cash.auditKey);
+}
+Scenario serial bankWarningCashExampleRun(context BankQualificationCashExampleFacts example) {
+    initializeBankQualificationCashExample(example);
+    initializeCashReversalExample(example.fixture);
+    prepareOrdinaryCashExample(example.fixture.cash);
+    configureCrossBranchFeeExample(example.fixture.cash);
+    configureCashReversalExample(example.fixture);
+    configureBankWarningCashExample(example);
+    serial { transaction quantum {
+        seedCashExampleAccount(example.fixture.cash.seed);
+        seedCashExampleTariff(example.fixture.cash.tariffRecord);
+    } }
+    executeCashDeposit(example.fixture.cash.command, example.fixture.cash.lifecycle);
+    observeBankQualificationCashExample(example);
+    verifyBankWarningCashExample(example);
+    verifyCrossBranchFeeExample(example.fixture.cash);
+    prepareBankWarningReplayExample(example);
+    executeCashDeposit(example.fixture.cash.command, example.fixture.cash.lifecycle);
+    observeBankQualificationCashExample(example);
+    verifyBankWarningReplayExample(example);
+    verifyCrossBranchFeeExample(example.fixture.cash);
+}
+atomic calculate configureBankRejectedCashExample(context BankQualificationCashExampleFacts example) {
+    example.fixture.cash.seed.id = "SOURCE-BANK-REJECT-A";
+    example.fixture.cash.seed.eligibility.accountId = example.fixture.cash.seed.id;
+    example.fixture.cash.command.accountId = example.fixture.cash.seed.id;
+    example.fixture.cash.observed.id = example.fixture.cash.seed.id;
+    example.fixture.cash.seed.bankProfile.depositRange = "SameBranch";
+    example.fixture.cash.seed.bankProfile.cardLinked = false;
+    example.fixture.cash.command.id = "SOURCE-BANK-REJECT-T";
+    example.fixture.cash.command.attemptId = "SOURCE-BANK-REJECT-ATTEMPT";
+    example.fixture.cash.command.request.amount = 100;
+    example.fixture.cash.tradeKey.id = example.fixture.cash.command.id;
+    example.fixture.cash.postingKey.tradeId = example.fixture.cash.command.id;
+    example.fixture.cash.auditKey.attemptId = example.fixture.cash.command.attemptId;
+}
+atomic check verifyBankRejectedCashExample(BankQualificationCashExampleFacts example) {
+    require(example.failure != null && example.failure.code == "EN134", "EXAMPLE_BANK_RANGE_REJECTION");
+    require(example.fixture.cash.audit != null && example.fixture.cash.audit.event == "Rejected"
+        && example.fixture.cash.audit.code == "EN134", "EXAMPLE_BANK_RANGE_REJECTION_AUDIT");
+}
+atomic check verifyBankRejectedCashUnchangedExample(BankQualificationCashExampleFacts example) {
+    require(example.fixture.cash.observed.version == 0 && example.fixture.cash.observed.eligibility.accountBalance == 100
+        && example.fixture.cash.storedTrade == null, "EXAMPLE_BANK_REJECTION_CHANGED_ACCOUNT_OR_TRADE");
+    int count = 0;
+    for (CashPostingRecord posting : example.fixture.cash.postings) { count++; }
+    require(count == 0, "EXAMPLE_BANK_REJECTION_POSTINGS");
+}
+atomic calculate prepareBankOperatorMismatchExample(context BankQualificationCashExampleFacts example) {
+    example.fixture.cash.command.id = "SOURCE-BANK-MISMATCH-T";
+    example.fixture.cash.command.attemptId = "SOURCE-BANK-MISMATCH-ATTEMPT";
+    example.fixture.cash.command.operator.area = "0002";
+    example.fixture.cash.tradeKey.id = example.fixture.cash.command.id;
+    example.fixture.cash.postingKey.tradeId = example.fixture.cash.command.id;
+    example.fixture.cash.auditKey.attemptId = example.fixture.cash.command.attemptId;
+    example.failure = null;
+}
+atomic check verifyBankOperatorMismatchExample(BankQualificationCashExampleFacts example) {
+    require(example.failure != null && example.failure.code == "DEPOSIT_OPERATOR_CONTEXT_MISMATCH",
+        "EXAMPLE_BANK_OPERATOR_MISMATCH");
+    require(example.fixture.cash.audit != null && example.fixture.cash.audit.event == "Rejected"
+        && example.fixture.cash.audit.code == "DEPOSIT_OPERATOR_CONTEXT_MISMATCH", "EXAMPLE_BANK_OPERATOR_MISMATCH_AUDIT");
+}
+Scenario serial bankRejectedCashExampleRun(context BankQualificationCashExampleFacts example) {
+    initializeBankQualificationCashExample(example);
+    initializeCashReversalExample(example.fixture);
+    prepareOrdinaryCashExample(example.fixture.cash);
+    configureCrossBranchFeeExample(example.fixture.cash);
+    configureCashReversalExample(example.fixture);
+    configureBankRejectedCashExample(example);
+    serial { transaction quantum { seedCashExampleAccount(example.fixture.cash.seed); } }
+    try { executeCashDeposit(example.fixture.cash.command, example.fixture.cash.lifecycle); }
+    catch (CashFailureFacts example.failure) {}
+    observeBankQualificationCashExample(example);
+    verifyBankRejectedCashExample(example);
+    verifyBankRejectedCashUnchangedExample(example);
+    prepareBankOperatorMismatchExample(example);
+    try { executeCashDeposit(example.fixture.cash.command, example.fixture.cash.lifecycle); }
+    catch (CashFailureFacts example.failure) {}
+    observeBankQualificationCashExample(example);
+    verifyBankOperatorMismatchExample(example);
+    verifyBankRejectedCashUnchangedExample(example);
+}

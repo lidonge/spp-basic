@@ -1,0 +1,85 @@
+// Run with Playwright available on NODE_PATH, against an isolated demo database.
+const {chromium}=require('playwright');
+const assert=require('node:assert/strict');
+(async()=>{
+ const browser=await chromium.launch({headless:true,executablePath:process.env.CHROME_BIN||'/usr/bin/google-chrome',args:['--no-sandbox']});
+ const page=await browser.newPage({viewport:{width:1440,height:1080}}),errors=[];
+ page.on('pageerror',e=>errors.push(e.message));page.on('dialog',dialog=>dialog.accept());
+ async function clickService(name,expected='Success'){
+  await page.locator(`[data-service="${name}"]`).click();
+  await page.waitForFunction(()=>document.querySelector('#status').textContent!=='Processing');
+  assert.equal(await page.locator('#status').textContent(),expected,await page.locator('#message').textContent());
+ }
+ try {
+  await page.goto(process.env.DEMO_URL||'http://127.0.0.1:18089',{waitUntil:'networkidle'});
+  assert.equal(await page.locator('html').getAttribute('lang'),'en-US');
+  assert.equal(await page.locator('#currency').inputValue(),'USD');
+  await page.locator('.settings summary').click();
+  const unique=Date.now().toString();
+  for(const key of ['account','cash','interest','collection','principal'])await page.locator('#'+key).fill(key.toUpperCase()+'-'+unique);
+  await page.locator('#date').fill('2026-10-13');
+  await clickService('openBankRepaymentAccounts');await clickService('openDepositAccount');
+  await page.locator('[data-page="deposit"]').click();await page.locator('#amount').fill('100.005');
+  await clickService('depositCash');
+  const original=await page.locator('#original').inputValue();assert.match(original,/DEPOSIT/);
+  assert.equal(await page.locator('#lines tr').count(),8);
+  assert.equal(await page.locator('.balance strong').first().textContent(),'USD 100.005000');
+  await page.locator('#amount').fill('-1');await clickService('depositCash','Not completed');
+  assert.equal(await page.locator('.balance').count(),0,'rejected input is not a confirmed balance');
+  assert.equal(await page.locator('#lines tr').count(),1,'rejected input does not display candidate postings');
+  await page.locator('#refresh').click();await page.waitForFunction(()=>document.querySelector('#status').textContent!=='Processing');
+  assert.equal(await page.locator('.balance strong').first().textContent(),'USD 100.005000');
+  await page.locator('#currency').selectOption('CNY');
+  await page.locator('[data-page="reversal"]').click();
+  await clickService('previewCashReversal','Preview completed');
+  assert.equal(await page.locator('.balance strong').first().textContent(),'USD 100.005000','reversal display uses the original receipt currency');
+  await page.locator('[data-page="deposit"]').click();
+  await page.locator('#currency').selectOption('USD');
+  await page.locator('[data-page="reversal"]').click();
+  await page.screenshot({path:process.env.SCREENSHOT||'/tmp/xbod-web-desktop.png',fullPage:true});
+  await clickService('reverseCash');
+  assert.match(await page.locator('#lookup').inputValue(),/REVERSAL/);
+  await page.locator('[data-page="query"]').click();await clickService('readCashReversal');
+  assert.equal(await page.locator('#lines tr').count(),8);
+  await clickService('readDepositAccount');assert.match(await page.locator('.balance strong').first().textContent(),/^USD 0(?:\.0+)?$/);
+  await page.locator('#lookup').fill(original);await clickService('readCashDeposit');assert.match(await page.locator('#receipt').textContent(),/Reversed/);
+  await page.reload({waitUntil:'networkidle'});await page.locator('[data-page="query"]').click();assert.equal(await page.locator('#history li').count(),2);
+  const account=await page.locator('#account').inputValue(), cash=await page.locator('#cash').inputValue();
+  await page.locator('#account').fill('OTHER-ACCOUNT');await page.locator('#cash').fill('OTHER-CASH');
+  await page.locator('#history button').filter({hasText:original}).click();
+  assert.equal(await page.locator('#account').inputValue(),account);
+  assert.equal(await page.locator('#cash').inputValue(),cash);
+  await page.locator('.advanced summary').click();
+  await page.locator('#service').selectOption('readCashDeposit');await page.locator('#prepare').click();
+  const payload=JSON.parse(await page.locator('#payload').inputValue());
+  payload.CashDepositAgreement.depositNumber='MISSING';
+  await page.locator('#payload').fill(JSON.stringify(payload));await page.locator('#execute').click();
+  await page.waitForFunction(()=>document.querySelector('#status').textContent!=='Processing');
+  assert.equal(await page.locator('#status').textContent(),'Not completed');
+  assert.match(await page.locator('#message').textContent(),/PARTICIPANT_NOT_IDENTIFIED/);
+  await page.locator('#service').selectOption('readDepositAccount');await page.locator('#prepare').click();
+  let captured, release;
+  const intercepted=new Promise(resolve=>captured=resolve), gate=new Promise(resolve=>release=resolve);
+  const queryPath='**/api/cboddeposit.readDepositAccount';
+  const hold=async route=>{captured();await gate;await route.continue();};
+  await page.route(queryPath,hold);await page.locator('#execute').click();await intercepted;
+  assert.equal(await page.locator('#account').isDisabled(),true,'account fixed during invocation');
+  assert.equal(await page.locator('#payload').isDisabled(),true,'JSON fixed during invocation');
+  release();await page.waitForFunction(()=>document.querySelector('#status').textContent!=='Processing');
+  assert.equal(await page.locator('#status').textContent(),'Success');
+  await page.unroute(queryPath,hold);
+  await page.route(queryPath,route=>route.abort('failed'));
+  await page.locator('#refresh').click();await page.waitForFunction(()=>document.querySelector('#status').textContent!=='Processing');
+  assert.equal(await page.locator('#status').textContent(),'Outcome unconfirmed');
+  assert.equal(await page.locator('.balance').count(),0,'network failure clears previous result');
+  assert.equal(await page.locator('#account').isDisabled(),false,'controls recover after failure');
+  await page.unroute(queryPath);
+  await clickService('readDepositAccount');
+  await page.locator('.advanced summary').click();
+
+  await page.setViewportSize({width:390,height:844});
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),true,'mobile overflow');
+  await page.screenshot({path:'/tmp/xbod-web-mobile.png',fullPage:true});
+  assert.deepEqual(errors,[]);console.log('PASS: opening, exact-decimal deposit, rejection, preview, reversal, stored queries, reload, account history, advanced JSON, in-flight controls, network failure, mobile; no page errors');
+ } finally {await browser.close();}
+})().catch(error=>{console.error(error);process.exit(1);});

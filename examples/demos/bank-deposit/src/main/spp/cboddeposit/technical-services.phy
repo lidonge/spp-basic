@@ -1,0 +1,8 @@
+domain cboddeposit;
+
+phy {
+    technical service invocationTrace {
+        implementation: "com.servpp.service.technical.InvocationTraceService";
+        config logger = "spp.xbod.invocations";
+    }
+}

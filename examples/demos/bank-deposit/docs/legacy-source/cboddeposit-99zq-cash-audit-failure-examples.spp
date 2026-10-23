@@ -1,0 +1,73 @@
+domain cboddeposit;
+
+atomic calculate configureCashAuditUnavailableExample(context CashExample example) {
+    example.seed.id = "SOURCE-AUDIT-CASH-A"; example.seed.eligibility.accountId = example.seed.id;
+    example.command.id = "SOURCE-AUDIT-CASH-T"; example.command.attemptId = "SOURCE-AUDIT-CASH-FIRST";
+    example.command.accountId = example.seed.id; example.observed.id = example.seed.id;
+    example.tradeKey = new CashDepositTrade(); example.tradeKey.id = example.command.id;
+    example.postingKey.tradeId = example.command.id; example.auditKey = new CashAuditRecord();
+    example.auditKey.attemptId = example.command.attemptId; example.auditKey.tradeId = example.command.id;
+}
+atomic calculate configureRejectedAuditUnavailableExample(context CashExample example) {
+    example.seed.id = "SOURCE-AUDIT-REJECT-A"; example.seed.eligibility.accountId = example.seed.id;
+    example.seed.feeParty.customerId = "SOURCE-AUDIT-REJECT-C";
+    example.command.id = "SOURCE-AUDIT-REJECT-T"; example.command.attemptId = "SOURCE-AUDIT-REJECT-FIRST";
+    example.command.accountId = example.seed.id; example.observed.id = example.seed.id;
+    example.tradeKey = new CashDepositTrade(); example.tradeKey.id = example.command.id;
+    example.postingKey.tradeId = example.command.id; example.auditKey = new CashAuditRecord();
+    example.auditKey.attemptId = example.command.attemptId; example.auditKey.tradeId = example.command.id;
+}
+Scenario serial observeCashAuditUnavailableExample(context CashExample example) {
+    example.observed = queryCashAccount(example.observed); example.storedTrade = lookupCashDepositTrade(example.tradeKey);
+    example.postings = queryCashPostingRecords(example.postingKey); example.history = queryCashExampleHistory(example.auditKey);
+}
+atomic check verifyCashAuditUnavailableState(CashExample example) {
+    require(example.observed.version == 0 && example.observed.eligibility.accountBalance == 100
+        && example.observed.account.interestBase == 100 && example.observed.eligibility.detailCount == 10
+        && example.storedTrade == null, "EXAMPLE_AUDIT_CASH_PARTIAL_COMMIT");
+    int lines = 0; int history = 0; int secondary = 0;
+    for (CashPostingRecord posting : example.postings) { lines++; }
+    for (CashAuditRecord audit : example.history) { history++; }
+    for (String code : example.failure.suppressedCodes) {
+        secondary++; require(code == "EXAMPLE_SERVICE_FAULT", "EXAMPLE_AUDIT_SECONDARY_CODE");
+    }
+    require(lines == 0 && history == 0 && secondary == 1, "EXAMPLE_AUDIT_CASH_RESIDUE_OR_PRIMARY_MASKED");
+}
+atomic check verifyCashSuccessAuditFailure(CashExample example) {
+    require(example.failure != null && example.failure.code == "EXAMPLE_SERVICE_FAULT"
+        && example.failure.transactionOutcome == "ROLLED_BACK", "EXAMPLE_AUDIT_CASH_OUTCOME");
+}
+atomic check verifyCashRejectedAuditFailure(CashExample example) {
+    require(example.failure != null && example.failure.code == "DEPOSIT_FEE_RATE_NOT_FOUND",
+        "EXAMPLE_AUDIT_REJECT_PRIMARY_MASKED");
+}
+atomic calculate selectCashAuditRetry(context CashExample example) {
+    example.command.attemptId = "SOURCE-AUDIT-CASH-RETRY"; example.auditKey.attemptId = example.command.attemptId;
+}
+atomic check verifyCashAuditRetry(CashExample example) {
+    require(example.lifecycle.execution.status == "Committed" && example.observed.version == 1
+        && example.observed.eligibility.accountBalance == 700 && example.storedTrade != null,
+        "EXAMPLE_AUDIT_CASH_RETRY");
+    int lines = 0; double debit = 0; double credit = 0; int audits = 0;
+    for (CashPostingRecord posting : example.postings) {
+        lines++; if (posting.line.side == "Debit") { debit += posting.line.amount; } else { credit += posting.line.amount; }
+    }
+    for (CashAuditRecord audit : example.history) {
+        audits++; require(audit.event == "Committed" && audit.attemptId == example.command.attemptId, "EXAMPLE_AUDIT_CASH_RETRY_EVENT");
+    }
+    require(lines == 8 && debit == 600 && credit == 600 && audits == 1, "EXAMPLE_AUDIT_CASH_RETRY_EVIDENCE");
+}
+Scenario serial depositAuditUnavailableExampleRun(context CashExample example) {
+    prepareOrdinaryCashExample(example); configureCashAuditUnavailableExample(example);
+    serial { transaction quantum { seedCashExampleAccount(example.seed); } }
+    try { executeCashDeposit(example.command, example.lifecycle); } catch (CashFailureFacts example.failure) {}
+    verifyCashSuccessAuditFailure(example); observeCashAuditUnavailableExample(example); verifyCashAuditUnavailableState(example);
+    selectCashAuditRetry(example); executeCashDeposit(example.command, example.lifecycle);
+    observeCashAuditUnavailableExample(example); verifyCashAuditRetry(example);
+}
+Scenario serial rejectedDepositAuditUnavailableExampleRun(context CashExample example) {
+    prepareOrdinaryCashExample(example); configureCrossBranchFeeExample(example); configureRejectedAuditUnavailableExample(example);
+    serial { transaction quantum { seedCashExampleAccount(example.seed); } }
+    try { executeCashDeposit(example.command, example.lifecycle); } catch (CashFailureFacts example.failure) {}
+    verifyCashRejectedAuditFailure(example); observeCashAuditUnavailableExample(example); verifyCashAuditUnavailableState(example);
+}

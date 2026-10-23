@@ -1,0 +1,30 @@
+domain cboddeposit;
+
+Scenario serial openBankRepaymentAccounts(
+    BankAccount interestSubject,
+    BankAccount collectionSubject,
+    BankAccount principalSubject,
+    InterestIncomeAccount,
+    CollectionInterestIncomeAccount,
+    PrincipalRecoveryAccount,
+    InternalAccountOpeningAgreement
+) {
+    checkInternalAccountNumbers(interestSubject, collectionSubject, principalSubject);
+    prepareInternalAccounts(
+        interestSubject,
+        collectionSubject,
+        principalSubject,
+        InterestIncomeAccount,
+        CollectionInterestIncomeAccount,
+        PrincipalRecoveryAccount,
+        InternalAccountOpeningAgreement
+    );
+    transaction {
+        insertBankAccount(interestSubject);
+        insertBankAccount(collectionSubject);
+        insertBankAccount(principalSubject);
+        insertInterestIncomeAccount;
+        insertCollectionInterestIncomeAccount;
+        insertPrincipalRecoveryAccount;
+    }
+}

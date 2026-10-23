@@ -1,0 +1,90 @@
+domain customer;
+
+Entity Person {
+    business("Customer-domain subject registration number") String customerNumber;
+    String name;
+    String email;
+    String address;
+}
+
+Contract SubjectRegistrationAgreement {
+    Person subject;
+}
+
+Contract SubjectProfileAgreement {
+    Person subject;
+    String name;
+    String email;
+    String address;
+}
+
+Role RegisteredSubject {
+}
+
+take Person as RegisteredSubject {
+    takeall;
+}
+
+Scenario serial readRegisteredSubject(RegisteredSubject) {
+    findRegisteredSubject;
+}
+
+atomic check checkSubjectFacts(Person) {
+    require(Person.name != null && Person.name != "", "SUBJECT_NAME_REQUIRED");
+    require(Person.email != null && Person.email != "", "SUBJECT_EMAIL_REQUIRED");
+    require(Person.address != null && Person.address != "", "SUBJECT_ADDRESS_REQUIRED");
+}
+
+atomic check checkSubjectAbsent(Person) {
+    require(!Person, "SUBJECT_EXISTS");
+}
+
+atomic calculate prepareSubjectRegistration(Person, SubjectRegistrationAgreement) {
+    SubjectRegistrationAgreement.subject = Person;
+}
+
+atomic calculate applySubjectProfile(Person, SubjectProfileAgreement) {
+    Person.name = SubjectProfileAgreement.name;
+    Person.email = SubjectProfileAgreement.email;
+    Person.address = SubjectProfileAgreement.address;
+    SubjectProfileAgreement.subject = Person;
+}
+
+Scenario serial registerSubject(Person, SubjectRegistrationAgreement) {
+    checkSubjectFacts;
+    prepareSubjectRegistration;
+    findPerson;
+    checkSubjectAbsent;
+    transaction {
+        insertPerson;
+    }
+}
+
+Scenario serial updateSubjectProfile(Person, SubjectProfileAgreement) {
+    findPerson;
+    identify(Person);
+    applySubjectProfile;
+    checkSubjectFacts;
+    transaction {
+        updatePerson;
+    }
+}
+
+atomic calculate configureMerchantSubject(Person) {
+    Person.customerNumber = "MERCHANT-001";
+    Person.name = "Pet shop merchant";
+    Person.email = "merchant@example.test";
+    Person.address = "Pet Lane shop, Demo City";
+}
+
+Scenario serial initializeCustomerDomain(Person, SubjectRegistrationAgreement) {
+    configureMerchantSubject;
+    prepareSubjectRegistration;
+    findPerson;
+    if (!Person) {
+        checkSubjectFacts;
+        transaction {
+            insertPerson;
+        }
+    }
+}

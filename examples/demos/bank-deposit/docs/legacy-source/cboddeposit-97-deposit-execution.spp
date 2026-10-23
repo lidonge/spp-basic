@@ -1,0 +1,122 @@
+domain cboddeposit;
+
+Role CashDepositCommand {
+    String id;
+    String attemptId;
+    String accountId;
+    DepositRequest request;
+    BusinessDay day;
+    CashChannel channel;
+    CashAuthorizationPolicy authorizationPolicy;
+    AuthorizationEvidence evidence;
+    DepositDetailPolicy details;
+    DepositFeeContext feeContext;
+    CashPostingSubjects subjects;
+    DepositOperatorFacts operator;
+}
+Contract CashDepositExecution {
+    String status;
+    CashAccountRecord original;
+    CashAccountRecord proposed;
+    CashDepositWork work;
+    CashDepositTrade trade;
+    CashPostingRecord[] postings;
+    CashTradeReversalLink reversalLink;
+    CashAuditRecord audit;
+    AccountEligibility quantumAccount;
+    CashQuantumClearing clearing;
+    CashQuantumMovement movement;
+}
+atomic calculate initializeCashDepositExecution(CashDepositCommand command, context CashDepositExecution execution) {
+    require(command.id != null && command.id != "", "MISSING_DEPOSIT_TRANSACTION_ID");
+    require(command.attemptId != null && command.attemptId != "", "MISSING_DEPOSIT_ATTEMPT_ID");
+    require(command.accountId != null && command.accountId != "", "MISSING_DEPOSIT_ACCOUNT_ID");
+    require(command.request != null && command.day != null && command.channel != null
+        && command.authorizationPolicy != null && command.evidence != null && command.details != null
+        && command.feeContext != null && command.subjects != null, "MISSING_DEPOSIT_FACTS");
+    execution.status = "Preparing";
+    execution.original = new CashAccountRecord();
+    execution.original.id = command.accountId;
+    execution.proposed = new CashAccountRecord();
+    execution.work = new CashDepositWork();
+    execution.trade = new CashDepositTrade();
+    execution.trade.id = command.id;
+    execution.postings = new CashPostingRecord[] {
+        new CashPostingRecord(), new CashPostingRecord(), new CashPostingRecord(), new CashPostingRecord(),
+        new CashPostingRecord(), new CashPostingRecord(), new CashPostingRecord(), new CashPostingRecord()
+    };
+    int slot = 1;
+    for (CashPostingRecord posting : execution.postings) { posting.slot = slot; slot++; }
+    execution.reversalLink = new CashTradeReversalLink();
+    execution.audit = new CashAuditRecord();
+    execution.audit.attemptId = command.attemptId;
+    execution.quantumAccount = new AccountEligibility();
+    execution.clearing = new CashQuantumClearing();
+    execution.movement = new CashQuantumMovement();
+}
+atomic calculate describeCashPendingAuthorization(CashDepositCommand command, context CashDepositExecution execution) {
+    execution.status = "PendingAuthorization";
+    execution.audit.tradeId = command.id;
+    execution.audit.accountId = command.accountId;
+    execution.audit.event = "PendingAuthorization";
+    execution.audit.code = "PENDING_AUTHORIZATION";
+    execution.trade.accountId = command.accountId;
+    execution.trade.request = copy(command.request);
+    execution.trade.admission = copy(execution.work.admission);
+    execution.audit.deposit = copy(execution.trade);
+}
+atomic calculate describeCashDepositCommitted(context CashDepositExecution execution) {
+    execution.status = "Committed";
+}
+atomic calculate markCashDepositCommitting(context CashDepositExecution execution) { execution.status = "Committing"; }
+
+// One attempt: business identity/replay and failure auditing will wrap this scene explicitly.
+// Waiting for authorization commits only its audit, never account or amount changes.
+Scenario serial prepareCashDepositAttempt(CashDepositCommand command, context CashDepositExecution execution) {
+    initializeCashDepositExecution(command, execution);
+    queryCashAccount(execution.original);
+    initializeCashDepositWork(execution.original, command.subjects, execution.work);
+    if (execution.original.bankProfile != null) {
+        checkDepositOperatorBinding(command.operator, command.feeContext);
+        assessDepositBankQualification(execution.original.bankProfile, command.operator, command.channel, execution.work.notices);
+    }
+    checkNormalCashDemoPath(command.channel, command.feeContext);
+    assessNormalCashDeposit(command.request, execution.original.control, execution.original.eligibility,
+        execution.original.product, command.day, command.channel, command.authorizationPolicy,
+        command.evidence, execution.work.admission);
+    if (execution.work.admission.executable) {
+        prepareSelectedCashDeposit(command.request, execution.original.account, execution.original.control,
+            execution.original.eligibility, execution.original.product, command.day, command.channel,
+            command.authorizationPolicy, command.evidence, execution.work.admission,
+            execution.original.feeParty, command.feeContext, execution.work.rate, execution.work.fee,
+            execution.work.plan, execution.work.amounts, execution.work.lines, execution.work.totals,
+            command.details, execution.work.afterAccount, execution.work.afterEligibility,
+            execution.original.accrual, execution.original.bands, execution.work.accrualWork,
+            execution.work.increments, execution.work.afterAccrual, execution.work.afterBands, execution.work.accrual,
+            execution.original.bankProfile, command.operator, execution.work.notices);
+        prepareCashAccountRecord(execution.original, execution.proposed, execution.work.afterAccount,
+            execution.work.afterEligibility, execution.work.afterAccrual, execution.work.afterBands);
+        prepareCashDepositRecord(execution.trade, execution.original, execution.proposed, command.request,
+            execution.work.plan, execution.work.admission, execution.work.fee, execution.work.lines,
+            execution.work.accrual, execution.work.increments, command.operator, execution.work.notices);
+        prepareCashPostingRecords(execution.trade, execution.postings);
+        prepareCashInitialReversalLink(execution.trade, execution.reversalLink);
+        prepareCashCommittedAudit(execution.trade, execution.audit);
+        describeCashQuantumMovement(execution.original.eligibility, execution.proposed.eligibility, execution.movement);
+    } else {
+        describeCashPendingAuthorization(command, execution);
+    }
+}
+
+// Preparation reads current facts and constructs a candidate; this scene owns the actual commit decision.
+Scenario serial executeCashDepositAttempt(CashDepositCommand command, context CashDepositExecution execution) {
+    prepareCashDepositAttempt(command, execution);
+    if (execution.work.admission.executable) {
+        markCashDepositCommitting(execution);
+        commitCashDepositRecords(execution.original, execution.proposed, execution.trade, execution.postings,
+            execution.reversalLink, execution.audit, execution.quantumAccount, execution.clearing, execution.movement);
+        describeCashDepositCommitted(execution);
+    } else {
+        transaction quantum { storeCashAudit(execution.audit); }
+    }
+}

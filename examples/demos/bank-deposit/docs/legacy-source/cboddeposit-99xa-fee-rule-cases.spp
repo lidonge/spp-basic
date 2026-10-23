@@ -1,0 +1,50 @@
+domain cboddeposit;
+
+atomic calculate configureFeeRuleCase01(context FeeRuleExampleFacts example) {
+    example.party.customerId = "SOURCE-FEE-RULE-01"; example.record.customerId = example.party.customerId;
+    example.channel.branchId = "001001001";
+    example.expectedCode = "";
+    example.expected.fee = 0; example.expected.variableAmount = 0; example.expected.range = 0; example.expected.tariff = ""; example.expected.applicable = false;
+}
+atomic calculate configureFeeRuleCase02(context FeeRuleExampleFacts example) {
+    example.party.customerId = "SOURCE-FEE-RULE-02"; example.record.customerId = example.party.customerId;
+
+    example.expectedCode = "";
+    example.expected.fee = 6; example.expected.variableAmount = 5; example.expected.range = 1; example.expected.tariff = "SAC00001"; example.expected.applicable = true;
+}
+atomic calculate configureFeeRuleCase03(context FeeRuleExampleFacts example) {
+    example.party.customerId = "SOURCE-FEE-RULE-03"; example.record.customerId = example.party.customerId;
+    example.channel.branchId = "001001001"; example.channel.regionCode = "0002"; example.record.tariff = "SAP00001"; example.record.rate.tariff = "SAP00001";
+    example.expectedCode = "";
+    example.expected.fee = 6; example.expected.variableAmount = 5; example.expected.range = 2; example.expected.tariff = "SAP00001"; example.expected.applicable = true;
+}
+atomic calculate configureFeeRuleCase04(context FeeRuleExampleFacts example) {
+    example.party.customerId = "SOURCE-FEE-RULE-04"; example.record.customerId = example.party.customerId;
+    example.request.amount = 1;
+    example.expectedCode = "";
+    example.expected.fee = 2; example.expected.variableAmount = 0; example.expected.range = 1; example.expected.tariff = "SAC00001"; example.expected.applicable = true;
+}
+atomic calculate configureFeeRuleCase05(context FeeRuleExampleFacts example) {
+    example.party.customerId = "SOURCE-FEE-RULE-05"; example.record.customerId = example.party.customerId;
+    example.request.amount = 2000;
+    example.expectedCode = "";
+    example.expected.fee = 2; example.expected.variableAmount = 1; example.expected.range = 1; example.expected.tariff = "SAC00001"; example.expected.applicable = true;
+}
+atomic calculate configureFeeRuleCase06(context FeeRuleExampleFacts example) {
+    example.party.customerId = "SOURCE-FEE-RULE-06"; example.record.customerId = example.party.customerId;
+    example.request.amount = 10000;
+    example.expectedCode = "";
+    example.expected.fee = 6; example.expected.variableAmount = 5; example.expected.range = 1; example.expected.tariff = "SAC00001"; example.expected.applicable = true;
+}
+atomic calculate configureFeeRuleCase07(context FeeRuleExampleFacts example) {
+    example.party.customerId = "SOURCE-FEE-RULE-07"; example.record.customerId = example.party.customerId;
+    example.request.amount = 98000;
+    example.expectedCode = "";
+    example.expected.fee = 50; example.expected.variableAmount = 49; example.expected.range = 1; example.expected.tariff = "SAC00001"; example.expected.applicable = true;
+}
+atomic calculate configureFeeRuleCase08(context FeeRuleExampleFacts example) {
+    example.party.customerId = "SOURCE-FEE-RULE-08"; example.record.customerId = example.party.customerId;
+    example.request.amount = 100000;
+    example.expectedCode = "";
+    example.expected.fee = 50; example.expected.variableAmount = 50; example.expected.range = 1; example.expected.tariff = "SAC00001"; example.expected.applicable = true;
+}

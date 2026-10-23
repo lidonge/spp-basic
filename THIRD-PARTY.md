@@ -5,6 +5,7 @@ It does not replace third-party terms or authorize separate closed components.
 
 | Source input | Origin and terms |
 | --- | --- |
+| `examples/` | Imported public `lidonge/spp-examples` demo sources and documentation retain their scoped MIT license in `examples/LICENSE`. The book is not bundled; its reserved-rights notice remains in `examples/book/COPYRIGHT.md`. See `examples/IMPORT.json` for provenance. The SDK root Apache-2.0 license does not replace these terms. |
 | `lang/src/main/resources/Java.g4` | ANTLR Java grammar, copyright 2013 Terence Parr and Sam Harwell. The full BSD notice remains in the file and in `licenses/ANTLR-Java-BSD.txt`. |
 | `generator/src/main/resources/JavaSpring/methodBody.mustache` | Modified counterpart of the OpenAPI Generator 6.5.0 JavaSpring template, Apache-2.0. S++ customizes generated method dispatch. The original license and copyright notices are retained in `licenses/OpenAPI-Generator-6.5.0.txt`. See the [fixed upstream license](https://github.com/OpenAPITools/openapi-generator/blob/v6.5.0/LICENSE). |
 | `generator/src/main/resources/spp.mustache` | OpenAPI sample-shaped output template, retaining its upstream-style sample metadata. This metadata is not a license grant for a user's business application. |

@@ -1,0 +1,195 @@
+domain cboddeposit;
+
+Contract CashStoreBoundaryExample {
+    CashExample first; CashExample second; CashDepositLifecycle prepared;
+    CashTradeReversalLink firstLinkKey; CashTradeReversalLink firstLink; CashTradeReversalLink secondLinkKey; CashTradeReversalLink secondLink;
+    QuantumLifecycleExample evidence; double expectedFirstBalance; double expectedSecondBalance;
+}
+atomic calculate initializeCashStoreBoundaryExample(context CashStoreBoundaryExample example) {
+    example.first = new CashExample(); example.second = new CashExample(); example.prepared = new CashDepositLifecycle();
+    example.firstLinkKey = new CashTradeReversalLink(); example.secondLinkKey = new CashTradeReversalLink();
+    example.evidence = new QuantumLifecycleExample();
+}
+atomic calculate selectSnapshotCashStoreBoundary(context CashStoreBoundaryExample example) {
+    example.first.seed.id = "SOURCE-CASH-SNAPSHOT-A"; example.first.seed.eligibility.accountId = example.first.seed.id;
+    example.first.command.id = "SOURCE-CASH-SNAPSHOT-T"; example.first.command.attemptId = "SOURCE-CASH-SNAPSHOT-FAIL";
+    example.first.command.accountId = example.first.seed.id; example.first.observed.id = example.first.seed.id;
+    example.first.tradeKey = new CashDepositTrade(); example.first.tradeKey.id = example.first.command.id;
+    example.first.postingKey.tradeId = example.first.command.id;
+    example.first.auditKey = new CashAuditRecord(); example.first.auditKey.tradeId = example.first.command.id;
+    example.firstLinkKey.id = example.first.command.id;
+    example.evidence.expectedObject = example.first.seed.id;
+    example.evidence.subject.journalKey.objectId = example.first.seed.id; example.evidence.subject.valueKey.objectId = example.first.seed.id;
+}
+atomic calculate forgeCashStoreSnapshot(context CashStoreBoundaryExample example) {
+    require(example.prepared.execution.original.version == 0 && example.prepared.execution.original.account.interestBase == 100
+        && example.prepared.execution.proposed.version == 1 && example.prepared.execution.proposed.account.interestBase == 700,
+        "EXAMPLE_SNAPSHOT_CANDIDATE");
+    example.prepared.execution.original.account.interestBase = 999;
+}
+Scenario serial observeCashStoreFirst(context CashStoreBoundaryExample example) {
+    example.first.observed = queryCashAccount(example.first.observed);
+    example.first.storedTrade = lookupCashDepositTrade(example.first.tradeKey);
+    example.first.postings = queryCashPostingRecords(example.first.postingKey);
+    example.first.history = queryCashExampleHistory(example.first.auditKey);
+    example.firstLink = lookupCashExampleLink(example.firstLinkKey);
+    observeQuantumEvidenceExample(example.evidence.subject);
+}
+atomic check verifyForgedCashSnapshotRejected(CashStoreBoundaryExample example) {
+    require(example.prepared.failure != null && example.prepared.failure.code == "CASH_ACCOUNT_SNAPSHOT_CHANGED"
+        && example.prepared.failure.transactionOutcome == "ROLLED_BACK", "EXAMPLE_SNAPSHOT_NOT_REJECTED");
+    require(example.first.observed.version == 0 && example.first.observed.account.interestBase == 100
+        && example.first.observed.eligibility.accountBalance == 100 && example.first.storedTrade == null
+        && example.firstLink == null, "EXAMPLE_SNAPSHOT_PARTIAL_BUSINESS");
+    int lines = 0; int rows = 0; int values = 0; int audits = 0;
+    for (CashPostingRecord posting : example.first.postings) { lines++; }
+    for (QuantumJournalEvidence row : example.evidence.subject.journal) { rows++; }
+    for (QuantumValueEvidence value : example.evidence.subject.values) { values++; }
+    for (CashAuditRecord audit : example.first.history) {
+        audits++; require(audit.event == "RolledBack" && audit.code == "CASH_ACCOUNT_SNAPSHOT_CHANGED", "EXAMPLE_SNAPSHOT_FAILURE_AUDIT");
+    }
+    require(lines == 0 && rows == 0 && values == 0 && audits == 1, "EXAMPLE_SNAPSHOT_ROLLBACK_RESIDUE");
+}
+atomic calculate retryCashStoreSnapshot(context CashStoreBoundaryExample example) {
+    example.first.command.attemptId = "SOURCE-CASH-SNAPSHOT-RETRY";
+    example.evidence.expectedRows = 2; example.evidence.expectedBalance = 700; example.evidence.expectedClearing = -600;
+}
+atomic check verifyCashStoreSnapshotRetry(CashStoreBoundaryExample example) {
+    require(example.first.observed.version == 1 && example.first.observed.account.interestBase == 700
+        && example.first.storedTrade.original.account.interestBase == 100
+        && example.first.storedTrade.settled.account.interestBase == 700 && example.firstLink.version == 0,
+        "EXAMPLE_SNAPSHOT_RETRY_COMMIT");
+    int lines = 0; double debit = 0; double credit = 0; int audits = 0; int commits = 0; int failures = 0;
+    for (CashPostingRecord posting : example.first.postings) {
+        lines++; if (posting.line.side == "Debit") { debit += posting.line.amount; } else { credit += posting.line.amount; }
+    }
+    for (CashAuditRecord audit : example.first.history) {
+        audits++; if (audit.event == "Committed") { commits++; } if (audit.event == "RolledBack") { failures++; }
+    }
+    require(lines == 8 && debit == 600 && credit == 600 && audits == 2 && commits == 1 && failures == 1,
+        "EXAMPLE_SNAPSHOT_RETRY_EVIDENCE");
+}
+Scenario serial forgedCashSnapshotExampleRun(context CashStoreBoundaryExample example) {
+    initializeCashStoreBoundaryExample(example); prepareOrdinaryCashExample(example.first);
+    initializeQuantumLifecycleExample(example.evidence); initializeQuantumEvidenceExample(example.evidence.subject);
+    selectSnapshotCashStoreBoundary(example);
+    serial { transaction quantum { seedCashExampleAccount(example.first.seed); } }
+    initializeCashDepositLifecycle(example.first.command, example.prepared);
+    prepareCashDepositAttempt(example.first.command, example.prepared.execution); forgeCashStoreSnapshot(example);
+    try {
+        markCashDepositCommitting(example.prepared.execution);
+        commitCashDepositRecords(example.prepared.execution.original, example.prepared.execution.proposed,
+            example.prepared.execution.trade, example.prepared.execution.postings, example.prepared.execution.reversalLink,
+            example.prepared.execution.audit, example.prepared.execution.quantumAccount,
+            example.prepared.execution.clearing, example.prepared.execution.movement);
+    } catch (CashFailureFacts example.prepared.failure) {
+        prepareCashDepositFailureAudit(example.first.command, example.prepared);
+        transaction quantum { storeCashAudit(example.prepared.failureAudit); }
+    }
+    observeCashStoreFirst(example); verifyForgedCashSnapshotRejected(example);
+    retryCashStoreSnapshot(example); executeCashDeposit(example.first.command, example.first.lifecycle);
+    observeCashStoreFirst(example); verifyCashStoreSnapshotRetry(example); verifyQuantumLifecycleEvidence(example.evidence);
+}
+
+atomic calculate selectDifferentCashStoreBoundary(context CashStoreBoundaryExample example) {
+    example.first.seed.id = "SOURCE-CASH-COMPETING-A"; example.first.seed.eligibility.accountId = example.first.seed.id;
+    example.first.command.accountId = example.first.seed.id; example.second.command.accountId = example.first.seed.id;
+    example.first.command.id = "SOURCE-CASH-COMPETING-T1"; example.first.command.attemptId = "SOURCE-CASH-COMPETING-TRY1";
+    example.second.command.id = "SOURCE-CASH-COMPETING-T2"; example.second.command.attemptId = "SOURCE-CASH-COMPETING-TRY2";
+    example.second.command.request.amount = 100;
+    example.first.observed.id = example.first.seed.id;
+    example.first.tradeKey = new CashDepositTrade(); example.first.tradeKey.id = example.first.command.id;
+    example.second.tradeKey = new CashDepositTrade(); example.second.tradeKey.id = example.second.command.id;
+    example.first.postingKey.tradeId = example.first.command.id; example.second.postingKey.tradeId = example.second.command.id;
+    example.first.auditKey = new CashAuditRecord(); example.first.auditKey.tradeId = example.first.command.id;
+    example.second.auditKey = new CashAuditRecord(); example.second.auditKey.tradeId = example.second.command.id;
+    example.firstLinkKey.id = example.first.command.id; example.secondLinkKey.id = example.second.command.id;
+    example.evidence.expectedObject = example.first.seed.id;
+    example.evidence.subject.journalKey.objectId = example.first.seed.id; example.evidence.subject.valueKey.objectId = example.first.seed.id;
+}
+Scenario serial submitFirstDifferentCashStore(context CashStoreBoundaryExample example) {
+    try { executeCashDeposit(example.first.command, example.first.lifecycle); } catch (CashFailureFacts example.first.failure) {}
+}
+Scenario serial submitSecondDifferentCashStore(context CashStoreBoundaryExample example) {
+    try { executeCashDeposit(example.second.command, example.second.lifecycle); } catch (CashFailureFacts example.second.failure) {}
+}
+Scenario serial observeDifferentCashStore(context CashStoreBoundaryExample example) {
+    observeCashStoreFirst(example);
+    example.second.storedTrade = lookupCashDepositTrade(example.second.tradeKey);
+    example.second.postings = queryCashPostingRecords(example.second.postingKey);
+    example.second.history = queryCashExampleHistory(example.second.auditKey);
+    example.secondLink = lookupCashExampleLink(example.secondLinkKey);
+}
+atomic calculate selectDifferentCashWinner(context CashStoreBoundaryExample example) {
+    example.evidence.expectedRows = 2;
+    if (example.first.failure == null) {
+        require(example.second.failure != null && example.second.failure.code == "PERSISTENCE_VERSION_CONFLICT"
+            && example.second.failure.transactionOutcome == "ROLLED_BACK", "EXAMPLE_CASH_SECOND_CONFLICT");
+        require(example.first.storedTrade != null && example.firstLink != null && example.second.storedTrade == null
+            && example.secondLink == null, "EXAMPLE_CASH_FIRST_WINNER");
+        example.evidence.expectedBalance = 700; example.evidence.expectedClearing = -600;
+    } else {
+        require(example.second.failure == null && example.first.failure.code == "PERSISTENCE_VERSION_CONFLICT"
+            && example.first.failure.transactionOutcome == "ROLLED_BACK", "EXAMPLE_CASH_FIRST_CONFLICT");
+        require(example.second.storedTrade != null && example.secondLink != null && example.first.storedTrade == null
+            && example.firstLink == null, "EXAMPLE_CASH_SECOND_WINNER");
+        example.evidence.expectedBalance = 200; example.evidence.expectedClearing = -100;
+    }
+}
+atomic check verifyDifferentCashWinner(CashStoreBoundaryExample example) {
+    require(example.first.observed.version == 1 && example.first.observed.eligibility.accountBalance == example.evidence.expectedBalance
+        && example.first.observed.account.interestBase == example.evidence.expectedBalance
+        && example.first.observed.eligibility.detailCount == 11, "EXAMPLE_CASH_COMPETING_ACCOUNT");
+    int firstLines = 0; int secondLines = 0; double firstDebit = 0; double firstCredit = 0; double secondDebit = 0; double secondCredit = 0;
+    for (CashPostingRecord posting : example.first.postings) {
+        firstLines++; if (posting.line.side == "Debit") { firstDebit += posting.line.amount; } else { firstCredit += posting.line.amount; }
+    }
+    for (CashPostingRecord posting : example.second.postings) {
+        secondLines++; if (posting.line.side == "Debit") { secondDebit += posting.line.amount; } else { secondCredit += posting.line.amount; }
+    }
+    if (example.first.failure == null) { require(firstLines == 8 && firstDebit == 600 && firstCredit == 600 && secondLines == 0, "EXAMPLE_CASH_FIRST_LEDGER"); }
+    else { require(secondLines == 8 && secondDebit == 100 && secondCredit == 100 && firstLines == 0, "EXAMPLE_CASH_SECOND_LEDGER"); }
+    int audits = 0; int commits = 0; int conflicts = 0;
+    for (CashAuditRecord audit : example.first.history) {
+        audits++; if (audit.event == "Committed") { commits++; }
+        if (audit.event == "RolledBack" && audit.code == "PERSISTENCE_VERSION_CONFLICT") { conflicts++; }
+    }
+    for (CashAuditRecord audit : example.second.history) {
+        audits++; if (audit.event == "Committed") { commits++; }
+        if (audit.event == "RolledBack" && audit.code == "PERSISTENCE_VERSION_CONFLICT") { conflicts++; }
+    }
+    require(audits == 2 && commits == 1 && conflicts == 1, "EXAMPLE_CASH_COMPETING_HISTORY");
+}
+atomic calculate selectDifferentCashRetry(context CashStoreBoundaryExample example) {
+    example.first.command.attemptId = "SOURCE-CASH-COMPETING-RETRY1"; example.second.command.attemptId = "SOURCE-CASH-COMPETING-RETRY2";
+    example.evidence.expectedRows = 4; example.evidence.expectedBalance = 800; example.evidence.expectedClearing = -700;
+}
+atomic check verifyDifferentCashRetry(CashStoreBoundaryExample example) {
+    require(example.first.observed.version == 2 && example.first.observed.account.interestBase == 800
+        && example.first.observed.eligibility.accountBalance == 800 && example.first.observed.eligibility.cashDepositedToday == 700
+        && example.first.observed.eligibility.detailCount == 12, "EXAMPLE_CASH_COMPETING_RETRY_ACCOUNT");
+    require(example.first.storedTrade != null && example.second.storedTrade != null
+        && example.first.storedTrade.request.amount == 600 && example.second.storedTrade.request.amount == 100
+        && example.first.storedTrade.settled.version + example.second.storedTrade.settled.version == 3,
+        "EXAMPLE_CASH_COMPETING_RETRY_RECEIPTS");
+    int firstLines = 0; int secondLines = 0; double debit = 0; double credit = 0;
+    for (CashPostingRecord posting : example.first.postings) {
+        firstLines++; if (posting.line.side == "Debit") { debit += posting.line.amount; } else { credit += posting.line.amount; }
+    }
+    for (CashPostingRecord posting : example.second.postings) {
+        secondLines++; if (posting.line.side == "Debit") { debit += posting.line.amount; } else { credit += posting.line.amount; }
+    }
+    require(firstLines == 8 && secondLines == 8 && debit == 700 && credit == 700, "EXAMPLE_CASH_COMPETING_RETRY_LEDGER");
+}
+Scenario serial differentIdentityConcurrentCashExampleRun(context CashStoreBoundaryExample example) {
+    initializeCashStoreBoundaryExample(example); prepareOrdinaryCashExample(example.first); prepareOrdinaryCashExample(example.second);
+    initializeQuantumLifecycleExample(example.evidence); initializeQuantumEvidenceExample(example.evidence.subject);
+    selectDifferentCashStoreBoundary(example);
+    serial { transaction quantum { seedCashExampleAccount(example.first.seed); } }
+    parallel { submitFirstDifferentCashStore(example); submitSecondDifferentCashStore(example); }
+    observeDifferentCashStore(example); selectDifferentCashWinner(example); verifyDifferentCashWinner(example);
+    verifyQuantumLifecycleEvidence(example.evidence); selectDifferentCashRetry(example);
+    if (example.first.failure != null) { executeCashDeposit(example.first.command, example.first.lifecycle); }
+    else { executeCashDeposit(example.second.command, example.second.lifecycle); }
+    observeDifferentCashStore(example); verifyDifferentCashRetry(example); verifyQuantumLifecycleEvidence(example.evidence);
+}

@@ -1,0 +1,117 @@
+domain cboddeposit;
+
+Contract DepositReportDebtEvidence {
+    int kind; String title; boolean candidateExecuted; CashReversalExample fixture;
+    CashAccountRecord settled; CashDepositTrade original; CashPostingRecord[] originalPostings;
+    DepositReversalPreparationRequest candidateRequest; DepositReversalPreparationFacts candidate;
+}
+Contract DepositReportCase {
+    int slot; String title; String status; String code; String evidence;
+    DepositRequest request; BusinessDay businessDay; String authorizationLevel;
+    String sourceProgram; String sourceParagraph; String expectedOrigin;
+    CashAccountRecord before; CashAccountRecord after; CashDepositTrade receipt; CashAuditRecord[] history;
+}
+Role DepositCompleteSourceReport {
+    String id; String title; String scope; boolean cobolExecuted; boolean bankConfigurationObtained;
+    boolean productionReplacementVerified; String candidateDescription;
+    DepositSourceCashReport cash; DepositReportDebtEvidence normal; DepositReportDebtEvidence bad; DepositReportDebtEvidence fractional;
+    DepositReportCase[] cases; CashExample controlRejected; CashExample dateRejected;
+    CashReversalExample cashReversal; CashReversalExample replay; CashReversalExample duplicateRejected;
+    QuantumJournalEvidence[] cashOnlyJournal; boolean actualReversalsExecuted;
+    QuantumJournalEvidence[] journal; QuantumValueEvidence[] values; QuantumValueEvidence[] clearingValues;
+}
+Contract DepositCompleteReportExample {
+    DepositCompleteSourceReport report; DepositCompleteSourceReport loaded;
+    DepositCashReportExample cashWork; DepositReportDebtEvidence debt;
+    CashExample rejection; int rejectionSlot; CashAuditRecord historyKey; CashAuditRecord[] history;
+    QuantumJournalEvidence journalKey; QuantumValueEvidence valueKey;
+}
+atomic query <QuantumJournalEvidence[] records> queryDepositReportJournal(QuantumJournalEvidence key);
+atomic query <QuantumValueEvidence[] records> queryDepositReportValues(QuantumValueEvidence key);
+atomic update storeDepositCompleteSourceReport(DepositCompleteSourceReport report);
+atomic query <DepositCompleteSourceReport report> queryDepositCompleteSourceReport(DepositCompleteSourceReport key);
+atomic calculate initializeDepositCompleteReport(context DepositCompleteReportExample example) {
+    example.report = new DepositCompleteSourceReport(); example.report.id = "SOURCE-REPORT-COMPLETE";
+    example.report.title = "存款业务完整证据：十案例、六笔成交、五个未执行候选";
+    example.report.scope = "Goal 尚未完成：指生产替代验证；COBOL未执行、生产银行配置未取得";
+    example.report.cobolExecuted = false; example.report.bankConfigurationObtained = false;
+    example.report.productionReplacementVerified = false; example.report.actualReversalsExecuted = false;
+    example.report.candidateDescription = "金融与分录反向候选（未执行），预期净余额1700";
+    example.report.cases = new DepositReportCase[] {
+        new DepositReportCase(), new DepositReportCase(), new DepositReportCase(), new DepositReportCase(), new DepositReportCase(),
+        new DepositReportCase(), new DepositReportCase(), new DepositReportCase(), new DepositReportCase(), new DepositReportCase() };
+    int slot = 1; for (DepositReportCase item : example.report.cases) { item.slot = slot; slot++; }
+    example.cashWork = new DepositCashReportExample();
+    example.historyKey = new CashAuditRecord(); example.journalKey = new QuantumJournalEvidence(); example.journalKey.status = "COMMITTED"; example.valueKey = new QuantumValueEvidence();
+}
+atomic calculate initializeDepositReportDebt(context DepositReportDebtEvidence debt) {
+    debt.fixture = new CashReversalExample(); debt.candidateRequest = new DepositReversalPreparationRequest();
+    debt.candidate = new DepositReversalPreparationFacts(); debt.candidateExecuted = false;
+}
+atomic calculate configureDepositReportDebt(context DepositReportDebtEvidence debt) {
+    String prefix = "SOURCE-REPORT-NORMAL"; debt.title = "普通债务：利息优先";
+    if (debt.kind == 2) { prefix = "SOURCE-REPORT-BAD"; debt.title = "不良债务：本金优先"; debt.fixture.cash.seed.account.loanState = "BadDebt"; }
+    if (debt.kind == 3) {
+        prefix = "SOURCE-REPORT-FRACTIONAL"; debt.title = "业务数学小数偿还";
+        debt.fixture.cash.seed.account.overdraftInterest = 0.005; debt.fixture.cash.seed.account.collectionInterest = 0.004;
+        debt.fixture.cash.seed.account.overdraftPrincipal = 0.01; debt.fixture.cash.seed.account.overdraftExposure = 0.01;
+        debt.fixture.cash.seed.eligibility.accountBalance = -0.019; debt.fixture.cash.command.request.amount = 0.01;
+    }
+    debt.fixture.cash.seed.id = prefix + "-A"; debt.fixture.cash.command.id = prefix + "-T";
+    debt.fixture.cash.command.attemptId = prefix + "-COMMIT"; debt.fixture.command.id = prefix + "-R";
+    debt.fixture.command.attemptId = prefix + "-REVERSE";
+    // Same branch has no fee; qualification remains explicit business facts.
+    debt.fixture.cash.command.operator.branch = debt.fixture.cash.seed.bankProfile.openingBranch;
+    debt.fixture.cash.command.feeContext.branchId = debt.fixture.cash.seed.bankProfile.openingBranch;
+    debt.fixture.cash.postingKey.tradeId = debt.fixture.cash.command.id;
+    debt.fixture.command.operator = copy(debt.fixture.cash.command.operator);
+    debt.candidateRequest.capacity = new DepositReversalCapacity();
+    debt.candidateRequest.capacity.overdraftPermitted = true; debt.candidateRequest.capacity.overdraftLimit = 1000;
+    debt.candidateRequest.feeDecision = new DepositReversalFeeDecision(); debt.candidateRequest.feeDecision.refundAmount = 0;
+    debt.candidateRequest.operator = copy(debt.fixture.cash.command.operator);
+    debt.candidateRequest.channel = copy(debt.fixture.cash.command.channel);
+    debt.candidateRequest.originalTradeId = debt.fixture.cash.command.id;
+}
+atomic calculate captureDepositReportDebt(context DepositReportDebtEvidence debt) {
+    debt.settled = copy(debt.fixture.cash.observed); debt.original = copy(debt.fixture.cash.storedTrade);
+    debt.originalPostings = copy(debt.fixture.cash.postings);
+}
+atomic check verifyDepositReportDebt(DepositReportDebtEvidence debt) {
+    require(debt.original != null && debt.original.settled.version == 1 && debt.settled.version == 1, "REPORT_DEBT_NOT_COMMITTED");
+    double amount = 50; double balance = -120; double originalBalance = -170;
+    if (debt.kind == 1) {
+        require(debt.original.plan.interestPaid == 30 && debt.original.plan.collectionInterestPaid == 20
+            && debt.original.plan.principalPaid == 0, "REPORT_NORMAL_DEBT_ORDER");
+    } else if (debt.kind == 2) {
+        require(debt.original.plan.interestPaid == 0 && debt.original.plan.principalPaid == 50, "REPORT_BAD_DEBT_ORDER");
+    } else {
+        amount = 0.01; balance = -0.009; originalBalance = -0.019;
+        require(debt.original.plan.interestPaid == 0.005 && debt.original.plan.collectionInterestPaid == 0.004
+            && debt.original.plan.principalPaid == 0.001, "REPORT_FRACTIONAL_DEBT_ORDER");
+    }
+    require(debt.settled.eligibility.accountBalance == balance && debt.original.fee.fee == 0, "REPORT_DEBT_BALANCE_FEE");
+    int count = 0; double debit = 0; double credit = 0;
+    for (CashPostingRecord posting : debt.originalPostings) {
+        count++; if (posting.line.side == "Debit") { debit += posting.line.amount; } else { credit += posting.line.amount; }
+    }
+    require(count == 8 && debit == amount && credit == amount, "REPORT_DEBT_POSTINGS");
+    require(!debt.candidateExecuted && debt.candidate.financial.amounts.accountBalance == originalBalance
+        && debt.candidate.financial.totals.debit == amount && debt.candidate.financial.totals.credit == amount,
+        "REPORT_DEBT_UNEXECUTED_CANDIDATE");
+}
+Scenario serial prepareDepositReportDebt(context DepositReportDebtEvidence debt) {
+    initializeDepositReportDebt(debt); initializeCashReversalExample(debt.fixture);
+    prepareOrdinaryCashExample(debt.fixture.cash); configureCrossBranchFeeExample(debt.fixture.cash);
+    configureCashReversalExample(debt.fixture); configureDebtCashReversalExample(debt.fixture);
+    configureDepositReportDebt(debt); alignCashReversalExampleKeys(debt.fixture);
+    serial { transaction quantum {
+        seedCashExampleAccount(debt.fixture.cash.seed); seedCashExampleTariff(debt.fixture.cash.tariffRecord);
+    } }
+    executeCashDeposit(debt.fixture.cash.command, debt.fixture.cash.lifecycle);
+    debt.fixture.cash.observed = queryCashAccount(debt.fixture.cash.observed);
+    debt.fixture.cash.storedTrade = queryCashDepositTrade(debt.fixture.cash.tradeKey);
+    debt.fixture.cash.postings = queryCashPostingRecords(debt.fixture.cash.postingKey);
+    captureDepositReportDebt(debt);
+    prepareFinancialDepositReversalPostings(debt.candidateRequest, debt.candidate);
+    verifyDepositReportDebt(debt);
+}

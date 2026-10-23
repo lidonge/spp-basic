@@ -1,0 +1,42 @@
+domain cboddeposit;
+// Domain entry. Scenario sources are compiled together in this directory.
+// 00 kernel, 10 admission, 20 calendar, 30/45 agreement, 40 fee,
+// 50 cash deposit, 60 accrual, 70 financial inverse, 80 qualification,
+// 85 preparation route, 90 XBOD cash reversal, 91 storage facts/identity,
+// 92 deposit commit, 93 reversal commit, 95 amount movement, 96 calculation work, 97 deposit attempt, 98 identity/replay, 99 cash reversal attempt, 99b reversal identity/replay, 99c failure audit.
+// 99d ordinary source fixture/acceptance, 99e debt order, 99f authorization,
+// 99g replay, 99h stored fee query/rejection, 99i current-account revalidation.
+// 99j complete cash reversal with subsequent trade/replay, 99k same-day/Mode2 dates.
+// 99l debt/fractional cash inverses, 99m stale-version commit and independent failure audit, 99n write fault and retry.
+// 99o Gregorian/deposit calendar and explicit interest-unit rounding acceptance.
+// 99p kernel acceptance, 99pa repayment fixtures, 99pb boundary/rejection fixtures.
+// 99q agreement acceptance, 99qa modes, 99qb precision/inactive edges, 99qc rejections.
+// 99r dated-agreement windows, 99s account control, 99t admission-rule acceptance.
+// 99ta input/eligibility cases, 99tb warning/authorization/channel cases, 99tc USD/interest/control cases.
+// 99u bank-qualification predicates, 99ua/b/c relationship/permission/notice fixtures.
+// 99v qualified cash commits/replay and rejection, 99w XBOD cash reversal metadata/fee policy.
+// 99x fee rules with stored rates, 99xa/b classification/rounding/failure fixtures.
+// 99y financial inverse rules, 99ya current-state/precision fixtures, 99yb capacity/forgery fixtures.
+// 99ca read-only financial/core/posting reversal candidates, after shared work declarations.
+// 99z accrual rules, 99za real accrual commits/faults, 99zb failure-audit policy.
+// 99zc core reversal eligibility, 99zd stored current-facts candidate acceptance.
+// 99ze stored financial/refund preparation, 99zf rejection/debt/fractional evidence,
+// 99zg actual stored settlement/account/ledger corruption and missing-posting deletion.
+// 99zh persisted daily rollover, 99zi concurrent equivalent requests with APP barrier.
+// 99zj pending identity across two JVM stages, 99zk collision without a committed receipt.
+// 99zl JDBC commit-point cash faults, actual outcomes and source retry/replay.
+// 99zm/99zma/99zmb cash reversal fault fixtures, stored assertions and runs.
+// 99zn persisted cash reversal across JVMs, later deposit and identity rejections.
+// 99zo/99zoa/99zob same/different reversal identity concurrency and stored results.
+// 99zp native quantum journal/value evidence and exact tiny amount acceptance.
+// APP deployment and PHY storage are separate.
+
+// 99zpa：量子账户隔离、显式事务失败与过期业务计划拒绝后的再次提交。
+
+// 99zq：审计不可用与已成交结果查询；99zr：冲正分录中途冲突；99zs：存款分录中途冲突。
+// 99zu：准备结果的原凭证/版本/身份复核；99zv：显式Saga业务恢复；99zw：分录独立预期。
+// 99zx：账户同版本事实篡改与不同存款身份竞争。
+// 99zya/b：现金聚合报告模型、候选与跨JVM读回。
+// 99zyc/d：完整报告模型、债务、十案例和六笔成交。
+// 99zyda/e：现金冲正重放/重复拒绝、四笔实际冲正及量子证据。
+// 99zyf：完整存款与实际冲正报告的独立JVM持久读回。

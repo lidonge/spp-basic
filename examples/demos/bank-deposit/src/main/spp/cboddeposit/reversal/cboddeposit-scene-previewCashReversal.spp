@@ -1,0 +1,54 @@
+domain cboddeposit;
+
+Scenario serial previewCashReversal(
+    DepositAccount,
+    CashSettlementAccount,
+    InterestIncomeAccount,
+    CollectionInterestIncomeAccount,
+    PrincipalRecoveryAccount,
+    AccountEligibility,
+    CashAccountControl,
+    CashDepositAgreement,
+    CashReversalAgreement,
+    DepositReversalCapacity,
+    DepositAccrualState,
+    CashReversalMetadataPlan,
+    DepositOperatorFacts,
+    CashChannel,
+    DepositPostingLine[],
+    CashReversalPostingLine[],
+    DepositPostingTotals
+) {
+    parallel {
+        findDepositAccount;
+        findCashSettlementAccount;
+        findInterestIncomeAccount;
+        findCollectionInterestIncomeAccount;
+        findPrincipalRecoveryAccount;
+        findAccountEligibility;
+        findCashDepositAgreement;
+        findDepositAccrualState;
+    }
+    identify(DepositAccount);
+    identify(CashSettlementAccount);
+    identify(InterestIncomeAccount);
+    identify(CollectionInterestIncomeAccount);
+    identify(PrincipalRecoveryAccount);
+    identify(AccountEligibility);
+    identify(CashDepositAgreement);
+    identify(DepositAccrualState);
+    checkAccountParticipants;
+    checkOriginalDepositAccount;
+    checkOriginalSettlementAccounts;
+    checkXbodCashReversalPath;
+    checkCoreDepositReversalEligibility;
+    checkOriginalCashMovement;
+    listDepositPostings;
+    checkOriginalDepositPostings;
+    checkCashReversalCapacity;
+    checkCashReversalFacts;
+    calculateXbodCashReversalMetadata;
+    prepareCashReversalAgreement;
+    prepareCashReversalPostings;
+    checkDepositPostings;
+}

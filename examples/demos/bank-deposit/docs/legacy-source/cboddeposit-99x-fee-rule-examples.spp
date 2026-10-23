@@ -1,0 +1,110 @@
+domain cboddeposit;
+Contract FeeRuleExampleFacts {
+    DepositRequest request; DepositFeeParty party; DepositFeeContext channel; DepositFeeRate rate;
+    DepositTariffRateRecord record; DepositFeePlan plan; DepositFeePlan expected; CashFailureFacts failure; String expectedCode;
+}
+atomic calculate initializeFeeRuleExample(context FeeRuleExampleFacts example) {
+    example.request = new DepositRequest(); example.request.amount = 10000;
+    example.party = new DepositFeeParty(); example.party.accountKind = "NormalSavings";
+    example.party.branchId = "001001001"; example.party.regionCode = "0001";
+    example.channel = new DepositFeeContext(); example.channel.channel = "Teller"; example.channel.branchId = "001001002"; example.channel.regionCode = "0001";
+    example.rate = new DepositFeeRate(); example.plan = new DepositFeePlan(); example.expected = new DepositFeePlan();
+    example.record = new DepositTariffRateRecord(); example.record.tariff = "SAC00001";
+    example.record.rate = new DepositFeeRate(); example.record.rate.tariff = "SAC00001";
+    example.record.rate.rate = 0.001; example.record.rate.discount = 0.5; example.record.rate.fixedAmount = 1;
+    example.record.rate.minimum = 2; example.record.rate.maximum = 50;
+    example.failure = null; example.expectedCode = "";
+}
+atomic check verifyFeeRuleExample(FeeRuleExampleFacts example) {
+    require(example.plan.fee == example.expected.fee && example.plan.variableAmount == example.expected.variableAmount,
+        "EXAMPLE_FEE_RULE_AMOUNTS");
+    require(example.plan.range == example.expected.range && example.plan.tariff == example.expected.tariff
+        && example.plan.applicable == example.expected.applicable, "EXAMPLE_FEE_RULE_CLASSIFICATION");
+}
+atomic check verifyFeeRuleFailureExample(FeeRuleExampleFacts example) {
+    require(example.failure != null && example.failure.code == example.expectedCode, "EXAMPLE_FEE_RULE_REJECTION");
+}
+atomic check verifyFeeTariffMismatchUnchangedExample(FeeRuleExampleFacts example) {
+    require(example.plan.fee == 0, "EXAMPLE_FEE_TARIFF_MISMATCH_MUTATION");
+}
+Scenario serial depositFeeRulesExampleRun(context FeeRuleExampleFacts example) {
+    initializeFeeRuleExample(example);
+    configureFeeRuleCase01(example);
+    prepareDepositFee(example.request, example.party, example.channel, example.rate, example.plan);
+    verifyFeeRuleExample(example);
+    initializeFeeRuleExample(example);
+    configureFeeRuleCase02(example);
+    serial { transaction quantum { seedCashExampleTariff(example.record); } }
+    prepareDepositFee(example.request, example.party, example.channel, example.rate, example.plan);
+    verifyFeeRuleExample(example);
+    initializeFeeRuleExample(example);
+    configureFeeRuleCase03(example);
+    serial { transaction quantum { seedCashExampleTariff(example.record); } }
+    prepareDepositFee(example.request, example.party, example.channel, example.rate, example.plan);
+    verifyFeeRuleExample(example);
+    initializeFeeRuleExample(example);
+    configureFeeRuleCase04(example);
+    serial { transaction quantum { seedCashExampleTariff(example.record); } }
+    prepareDepositFee(example.request, example.party, example.channel, example.rate, example.plan);
+    verifyFeeRuleExample(example);
+    initializeFeeRuleExample(example);
+    configureFeeRuleCase05(example);
+    serial { transaction quantum { seedCashExampleTariff(example.record); } }
+    prepareDepositFee(example.request, example.party, example.channel, example.rate, example.plan);
+    verifyFeeRuleExample(example);
+    initializeFeeRuleExample(example);
+    configureFeeRuleCase06(example);
+    serial { transaction quantum { seedCashExampleTariff(example.record); } }
+    prepareDepositFee(example.request, example.party, example.channel, example.rate, example.plan);
+    verifyFeeRuleExample(example);
+    initializeFeeRuleExample(example);
+    configureFeeRuleCase07(example);
+    serial { transaction quantum { seedCashExampleTariff(example.record); } }
+    prepareDepositFee(example.request, example.party, example.channel, example.rate, example.plan);
+    verifyFeeRuleExample(example);
+    initializeFeeRuleExample(example);
+    configureFeeRuleCase08(example);
+    serial { transaction quantum { seedCashExampleTariff(example.record); } }
+    prepareDepositFee(example.request, example.party, example.channel, example.rate, example.plan);
+    verifyFeeRuleExample(example);
+    initializeFeeRuleExample(example);
+    configureFeeRuleCase09(example);
+    serial { transaction quantum { seedCashExampleTariff(example.record); } }
+    prepareDepositFee(example.request, example.party, example.channel, example.rate, example.plan);
+    verifyFeeRuleExample(example);
+    initializeFeeRuleExample(example);
+    configureFeeRuleCase10(example);
+    serial { transaction quantum { seedCashExampleTariff(example.record); } }
+    prepareDepositFee(example.request, example.party, example.channel, example.rate, example.plan);
+    verifyFeeRuleExample(example);
+    initializeFeeRuleExample(example);
+    configureFeeRuleCase11(example);
+    serial { transaction quantum { seedCashExampleTariff(example.record); } }
+    prepareDepositFee(example.request, example.party, example.channel, example.rate, example.plan);
+    verifyFeeRuleExample(example);
+    initializeFeeRuleExample(example);
+    configureFeeRuleCase12(example);
+    prepareDepositFee(example.request, example.party, example.channel, example.rate, example.plan);
+    verifyFeeRuleExample(example);
+    initializeFeeRuleExample(example);
+    configureFeeRuleCase13(example);
+    try { prepareDepositFee(example.request, example.party, example.channel, example.rate, example.plan); }
+    catch (CashFailureFacts example.failure) {}
+    verifyFeeRuleFailureExample(example);
+    initializeFeeRuleExample(example);
+    configureFeeRuleCase14(example);
+    try { prepareDepositFee(example.request, example.party, example.channel, example.rate, example.plan); }
+    catch (CashFailureFacts example.failure) {}
+    verifyFeeRuleFailureExample(example);
+    initializeFeeRuleExample(example);
+    configureFeeRuleCase15(example);
+    try { calculateDepositFee(example.request, example.rate, example.plan); }
+    catch (CashFailureFacts example.failure) {}
+    verifyFeeRuleFailureExample(example);
+    verifyFeeTariffMismatchUnchangedExample(example);
+    initializeFeeRuleExample(example);
+    configureFeeRuleCase16(example);
+    try { prepareDepositFee(example.request, example.party, example.channel, example.rate, example.plan); }
+    catch (CashFailureFacts example.failure) {}
+    verifyFeeRuleFailureExample(example);
+}

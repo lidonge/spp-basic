@@ -1,0 +1,37 @@
+domain cboddeposit;
+
+Contract ConcurrentReversalExample {
+    ReversalFaultExample facts; CashReversalCommand second; CashReversalLifecycle secondLifecycle;
+    CashFailureFacts firstFailure; CashFailureFacts secondFailure; CashReversalTrade secondKey; CashReversalTrade secondRecord;
+    CashAuditRecord secondAuditKey; CashAuditRecord[] secondHistory; CashPostingRecord secondPostingKey; CashPostingRecord[] secondPostings;
+    boolean sameIdentity;
+}
+atomic calculate initializeConcurrentReversalExample(context ConcurrentReversalExample example) {
+    example.facts = new ReversalFaultExample(); example.secondLifecycle = new CashReversalLifecycle();
+    example.secondKey = new CashReversalTrade(); example.secondAuditKey = new CashAuditRecord(); example.secondPostingKey = new CashPostingRecord();
+}
+atomic calculate selectSameIdentityReversalExample(context ConcurrentReversalExample example) {
+    example.sameIdentity = true; example.facts.prefix = "SOURCE-CONCURRENT-REV-SAME";
+}
+atomic calculate selectDifferentIdentityReversalExample(context ConcurrentReversalExample example) {
+    example.sameIdentity = false; example.facts.prefix = "SOURCE-CONCURRENT-REV-DIFFERENT";
+}
+atomic calculate configureConcurrentReversalExample(context ConcurrentReversalExample example) {
+    example.second = copy(example.facts.reversal.command); example.second.attemptId = example.facts.prefix + "-SECOND";
+    if (!example.sameIdentity) { example.second.id = example.facts.prefix + "-R2"; }
+    example.secondKey.id = example.second.id; example.secondAuditKey.tradeId = example.second.id; example.secondPostingKey.tradeId = example.second.id;
+}
+Scenario serial submitFirstConcurrentReversal(context ConcurrentReversalExample example) {
+    try { executeCashReversal(example.facts.reversal.command, example.facts.reversal.lifecycle); }
+    catch (CashFailureFacts example.firstFailure) {}
+}
+Scenario serial submitSecondConcurrentReversal(context ConcurrentReversalExample example) {
+    try { executeCashReversal(example.second, example.secondLifecycle); }
+    catch (CashFailureFacts example.secondFailure) {}
+}
+Scenario serial observeConcurrentReversal(context ConcurrentReversalExample example) {
+    observeReversalFaultBusiness(example.facts);
+    example.secondRecord = lookupCashReversalTrade(example.secondKey);
+    example.secondHistory = queryCashExampleHistory(example.secondAuditKey);
+    example.secondPostings = queryCashPostingRecords(example.secondPostingKey);
+}

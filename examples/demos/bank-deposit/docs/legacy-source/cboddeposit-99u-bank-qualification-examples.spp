@@ -1,0 +1,240 @@
+domain cboddeposit;
+Contract BankQualificationExampleFacts { DepositBankProfile profile; DepositOperatorFacts operator; CashChannel channel; DepositNotices notices; CashFailureFacts failure; String expectedCode; }
+atomic calculate initializeBankQualificationExample(context BankQualificationExampleFacts example) {
+    example.profile = new DepositBankProfile(); example.operator = new DepositOperatorFacts();
+    example.channel = new CashChannel(); example.channel.teller = true; example.channel.channel = "Teller";
+    example.channel.transactionId = "GSA01102"; example.channel.transactionFamily = "GSA0110"; example.channel.businessCode = "SA0";
+    example.notices = new DepositNotices(); example.failure = null; example.expectedCode = "";
+    example.profile.normalSavings = true;
+    example.profile.restrictedSubtype = false;
+    example.profile.openingBranch = "001001001";
+    example.profile.openingProvince = "001";
+    example.profile.subbranch = "SB001";
+    example.profile.area = "0001";
+    example.profile.areaProvince = "00";
+    example.profile.depositRange = "City";
+    example.profile.proprietaryRange = "Open";
+    example.profile.cardLinked = false;
+    example.profile.accountSeries = "General";
+    example.profile.cardRecordFound = false;
+    example.profile.cardLoss = "None";
+    example.profile.cardStatus = "Normal";
+    example.profile.passbookLoss = "None";
+    example.profile.groupSubaccount = false;
+    example.operator.branch = "001001002";
+    example.operator.province = "001";
+    example.operator.subbranch = "SB001";
+    example.operator.area = "0001";
+    example.operator.areaProvince = "00";
+    example.operator.accountingCentre = false;
+    example.operator.transactionPrefix = "SA01102";
+    example.operator.operationCode = "1102";
+    example.operator.tellerFamily = "Ordinary";
+    example.operator.tellerNumber = 0;
+    example.operator.numericTeller = true;
+    example.operator.mode = "Online";
+    example.operator.agencySigned = false;
+    example.operator.corporateTransfer = false;
+    example.operator.settlementChannel = "Teller";
+}
+atomic check verifyBankQualificationFailureExample(BankQualificationExampleFacts example) {
+    require(example.failure != null && example.failure.code == example.expectedCode, "EXAMPLE_BANK_QUALIFICATION_REJECTION");
+}
+Scenario serial bankQualificationRulesExampleRun(context BankQualificationExampleFacts example) {
+    initializeBankQualificationExample(example);
+    configureBankQualificationCase01(example);
+    try { checkDepositBranchRange(example.profile, example.operator, example.channel); }
+    catch (CashFailureFacts example.failure) {}
+    verifyBankQualificationFailureExample(example);
+    initializeBankQualificationExample(example);
+    configureBankQualificationCase02(example);
+    checkDepositBranchRange(example.profile, example.operator, example.channel);
+    initializeBankQualificationExample(example);
+    configureBankQualificationCase03(example);
+    try { checkDepositBranchRange(example.profile, example.operator, example.channel); }
+    catch (CashFailureFacts example.failure) {}
+    verifyBankQualificationFailureExample(example);
+    initializeBankQualificationExample(example);
+    configureBankQualificationCase04(example);
+    checkDepositBranchRange(example.profile, example.operator, example.channel);
+    initializeBankQualificationExample(example);
+    configureBankQualificationCase05(example);
+    try { checkDepositBranchRange(example.profile, example.operator, example.channel); }
+    catch (CashFailureFacts example.failure) {}
+    verifyBankQualificationFailureExample(example);
+    initializeBankQualificationExample(example);
+    configureBankQualificationCase06(example);
+    checkDepositBranchRange(example.profile, example.operator, example.channel);
+    initializeBankQualificationExample(example);
+    configureBankQualificationCase07(example);
+    try { checkDepositBranchRange(example.profile, example.operator, example.channel); }
+    catch (CashFailureFacts example.failure) {}
+    verifyBankQualificationFailureExample(example);
+    initializeBankQualificationExample(example);
+    configureBankQualificationCase08(example);
+    checkDepositBranchRange(example.profile, example.operator, example.channel);
+    initializeBankQualificationExample(example);
+    configureBankQualificationCase09(example);
+    checkDepositBranchRange(example.profile, example.operator, example.channel);
+    initializeBankQualificationExample(example);
+    configureBankQualificationCase10(example);
+    checkDepositBranchRange(example.profile, example.operator, example.channel);
+    initializeBankQualificationExample(example);
+    configureBankQualificationCase11(example);
+    try { checkDepositBranchRange(example.profile, example.operator, example.channel); }
+    catch (CashFailureFacts example.failure) {}
+    verifyBankQualificationFailureExample(example);
+    initializeBankQualificationExample(example);
+    configureBankQualificationCase12(example);
+    checkDepositBranchRange(example.profile, example.operator, example.channel);
+    initializeBankQualificationExample(example);
+    configureBankQualificationCase13(example);
+    checkDepositBranchRange(example.profile, example.operator, example.channel);
+    initializeBankQualificationExample(example);
+    configureBankQualificationCase14(example);
+    checkDepositBranchRange(example.profile, example.operator, example.channel);
+    initializeBankQualificationExample(example);
+    configureBankQualificationCase15(example);
+    checkDepositBranchRange(example.profile, example.operator, example.channel);
+    initializeBankQualificationExample(example);
+    configureBankQualificationCase16(example);
+    checkDepositBranchRange(example.profile, example.operator, example.channel);
+    initializeBankQualificationExample(example);
+    configureBankQualificationCase17(example);
+    checkDepositBranchRange(example.profile, example.operator, example.channel);
+    initializeBankQualificationExample(example);
+    configureBankQualificationCase18(example);
+    checkDepositBranchRange(example.profile, example.operator, example.channel);
+    initializeBankQualificationExample(example);
+    configureBankQualificationCase19(example);
+    checkDepositBranchRange(example.profile, example.operator, example.channel);
+    initializeBankQualificationExample(example);
+    configureBankQualificationCase20(example);
+    checkDepositBranchRange(example.profile, example.operator, example.channel);
+    initializeBankQualificationExample(example);
+    configureBankQualificationCase21(example);
+    checkDepositBranchRange(example.profile, example.operator, example.channel);
+    initializeBankQualificationExample(example);
+    configureBankQualificationCase22(example);
+    checkDepositBranchRange(example.profile, example.operator, example.channel);
+    initializeBankQualificationExample(example);
+    configureBankQualificationCase23(example);
+    checkDepositBranchRange(example.profile, example.operator, example.channel);
+    initializeBankQualificationExample(example);
+    configureBankQualificationCase24(example);
+    checkDepositBranchRange(example.profile, example.operator, example.channel);
+    initializeBankQualificationExample(example);
+    configureBankQualificationCase25(example);
+    checkDepositBranchRange(example.profile, example.operator, example.channel);
+    initializeBankQualificationExample(example);
+    configureBankQualificationCase26(example);
+    checkDepositBranchRange(example.profile, example.operator, example.channel);
+    initializeBankQualificationExample(example);
+    configureBankQualificationCase27(example);
+    checkDepositBranchRange(example.profile, example.operator, example.channel);
+    initializeBankQualificationExample(example);
+    configureBankQualificationCase28(example);
+    checkDepositBranchRange(example.profile, example.operator, example.channel);
+    initializeBankQualificationExample(example);
+    configureBankQualificationCase29(example);
+    checkDepositBranchRange(example.profile, example.operator, example.channel);
+    initializeBankQualificationExample(example);
+    configureBankQualificationCase30(example);
+    try { checkDepositBranchRange(example.profile, example.operator, example.channel); }
+    catch (CashFailureFacts example.failure) {}
+    verifyBankQualificationFailureExample(example);
+    initializeBankQualificationExample(example);
+    configureBankQualificationCase31(example);
+    checkDepositBranchRange(example.profile, example.operator, example.channel);
+    initializeBankQualificationExample(example);
+    configureBankQualificationCase32(example);
+    checkDepositBranchRange(example.profile, example.operator, example.channel);
+    initializeBankQualificationExample(example);
+    configureBankQualificationCase33(example);
+    try { checkDepositBranchRange(example.profile, example.operator, example.channel); }
+    catch (CashFailureFacts example.failure) {}
+    verifyBankQualificationFailureExample(example);
+    initializeBankQualificationExample(example);
+    configureBankQualificationCase34(example);
+    try { checkDepositBranchRange(example.profile, example.operator, example.channel); }
+    catch (CashFailureFacts example.failure) {}
+    verifyBankQualificationFailureExample(example);
+    initializeBankQualificationExample(example);
+    configureBankQualificationCase35(example);
+    checkDepositBranchRange(example.profile, example.operator, example.channel);
+    initializeBankQualificationExample(example);
+    configureBankQualificationCase36(example);
+    try { checkDepositBranchRange(example.profile, example.operator, example.channel); }
+    catch (CashFailureFacts example.failure) {}
+    verifyBankQualificationFailureExample(example);
+    initializeBankQualificationExample(example);
+    configureBankQualificationCase37(example);
+    checkDepositBranchRange(example.profile, example.operator, example.channel);
+    initializeBankQualificationExample(example);
+    configureBankQualificationCase38(example);
+    checkDepositBranchRange(example.profile, example.operator, example.channel);
+    initializeBankQualificationExample(example);
+    configureBankQualificationCase39(example);
+    checkDepositBranchRange(example.profile, example.operator, example.channel);
+    initializeBankQualificationExample(example);
+    configureBankQualificationCase40(example);
+    checkDepositBranchRange(example.profile, example.operator, example.channel);
+    initializeBankQualificationExample(example);
+    configureBankQualificationCase41(example);
+    checkDepositBranchRange(example.profile, example.operator, example.channel);
+    initializeBankQualificationExample(example);
+    configureBankQualificationCase42(example);
+    try { checkDepositBranchRange(example.profile, example.operator, example.channel); }
+    catch (CashFailureFacts example.failure) {}
+    verifyBankQualificationFailureExample(example);
+    initializeBankQualificationExample(example);
+    configureBankQualificationCase43(example);
+    checkDepositBranchRange(example.profile, example.operator, example.channel);
+    initializeBankQualificationExample(example);
+    configureBankQualificationCase44(example);
+    try { checkDepositBranchRange(example.profile, example.operator, example.channel); }
+    catch (CashFailureFacts example.failure) {}
+    verifyBankQualificationFailureExample(example);
+    initializeBankQualificationExample(example);
+    configureBankQualificationCase45(example);
+    assessDepositDocumentNotices(example.profile, example.operator, example.channel, example.notices);
+    verifyBankQualificationCase45(example);
+    initializeBankQualificationExample(example);
+    configureBankQualificationCase46(example);
+    assessDepositDocumentNotices(example.profile, example.operator, example.channel, example.notices);
+    verifyBankQualificationCase46(example);
+    initializeBankQualificationExample(example);
+    configureBankQualificationCase47(example);
+    assessDepositDocumentNotices(example.profile, example.operator, example.channel, example.notices);
+    verifyBankQualificationCase47(example);
+    initializeBankQualificationExample(example);
+    configureBankQualificationCase48(example);
+    assessDepositDocumentNotices(example.profile, example.operator, example.channel, example.notices);
+    verifyBankQualificationCase48(example);
+    initializeBankQualificationExample(example);
+    configureBankQualificationCase49(example);
+    assessDepositDocumentNotices(example.profile, example.operator, example.channel, example.notices);
+    verifyBankQualificationCase49(example);
+    initializeBankQualificationExample(example);
+    configureBankQualificationCase50(example);
+    assessDepositDocumentNotices(example.profile, example.operator, example.channel, example.notices);
+    verifyBankQualificationCase50(example);
+    initializeBankQualificationExample(example);
+    configureBankQualificationCase51(example);
+    assessDepositDocumentNotices(example.profile, example.operator, example.channel, example.notices);
+    verifyBankQualificationCase51(example);
+    initializeBankQualificationExample(example);
+    configureBankQualificationCase52(example);
+    assessDepositDocumentNotices(example.profile, example.operator, example.channel, example.notices);
+    verifyBankQualificationCase52(example);
+    initializeBankQualificationExample(example);
+    configureBankQualificationCase53(example);
+    try { checkDepositBranchRange(example.profile, example.operator, example.channel); }
+    catch (CashFailureFacts example.failure) {}
+    verifyBankQualificationFailureExample(example);
+    initializeBankQualificationExample(example);
+    configureBankQualificationCase54(example);
+    try { checkDepositBranchRange(example.profile, example.operator, example.channel); }
+    catch (CashFailureFacts example.failure) {}
+    verifyBankQualificationFailureExample(example);
+}

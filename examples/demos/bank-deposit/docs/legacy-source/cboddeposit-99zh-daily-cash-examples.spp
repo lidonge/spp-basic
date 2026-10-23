@@ -1,0 +1,69 @@
+domain cboddeposit;
+
+Contract DailyCashExample {
+    CashExample cash; int step; String expectedStatus; double expectedBalance; double expectedDaily;
+}
+atomic calculate initializeDailyCashExample(context DailyCashExample example) {
+    example.cash = new CashExample(); example.step = 1;
+}
+atomic calculate selectDailyCashExample(context DailyCashExample example) {
+    example.cash.seed.id = "SOURCE-DAILY-A"; example.cash.seed.eligibility.accountId = example.cash.seed.id;
+    example.cash.command.accountId = example.cash.seed.id; example.cash.observed.id = example.cash.seed.id;
+    example.cash.command.id = "SOURCE-DAILY-FIRST"; example.cash.command.attemptId = "SOURCE-DAILY-FIRST-COMMIT";
+    example.cash.command.request.amount = 300; example.expectedStatus = "Ready";
+    example.expectedBalance = 400; example.expectedDaily = 300;
+    example.cash.auditKey = new CashAuditRecord(); example.cash.tradeKey = new CashDepositTrade();
+}
+atomic calculate prepareDailyCashObservationExample(context DailyCashExample example) {
+    example.cash.postingKey.tradeId = example.cash.command.id; example.cash.auditKey.attemptId = example.cash.command.attemptId;
+    example.cash.tradeKey.id = example.cash.command.id;
+}
+atomic check verifyDailyCashCommitExample(DailyCashExample example) {
+    require(example.cash.lifecycle.execution.status == "Committed"
+        && example.cash.lifecycle.execution.work.admission.status == example.expectedStatus, "EXAMPLE_DAILY_ADMISSION");
+    require(example.cash.observed.version == example.step && example.cash.observed.eligibility.accountBalance == example.expectedBalance
+        && example.cash.observed.account.interestBase == example.expectedBalance
+        && example.cash.observed.eligibility.cashDepositedToday == example.expectedDaily
+        && example.cash.observed.eligibility.detailCount == 10 + example.step, "EXAMPLE_DAILY_ACCOUNT");
+    require(example.cash.audit != null && example.cash.audit.event == "Committed", "EXAMPLE_DAILY_AUDIT");
+    require(example.cash.storedTrade != null && example.cash.storedTrade.settled.version == example.step
+        && example.cash.storedTrade.admission.status == example.expectedStatus, "EXAMPLE_DAILY_STORED_FACTS");
+    if (example.step == 2) {
+        require(example.cash.storedTrade.original.eligibility.cashDepositedToday == 300
+            && example.cash.storedTrade.admission.warningCode == "F0554", "EXAMPLE_DAILY_ACCUMULATED_WARNING");
+    }
+    if (example.step == 3) {
+        require(example.cash.observed.eligibility.lastTransactionDate == 20261008
+            && example.cash.observed.eligibility.transferredToday == 0
+            && example.cash.storedTrade.original.eligibility.cashDepositedToday == 600, "EXAMPLE_DAILY_ROLLOVER");
+    }
+    int count = 0; double debit = 0; double credit = 0;
+    for (CashPostingRecord posting : example.cash.postings) {
+        count++; if (posting.line.side == "Debit") { debit += posting.line.amount; } else { credit += posting.line.amount; }
+    }
+    require(count == 8 && debit == example.cash.command.request.amount && credit == debit, "EXAMPLE_DAILY_LEDGER");
+}
+Scenario serial observeDailyCashExample(context DailyCashExample example) {
+    prepareDailyCashObservationExample(example);
+    example.cash.observed = queryCashAccount(example.cash.observed);
+    example.cash.audit = lookupCashExampleAudit(example.cash.auditKey);
+    example.cash.storedTrade = lookupCashDepositTrade(example.cash.tradeKey);
+    example.cash.postings = queryCashPostingRecords(example.cash.postingKey);
+    verifyDailyCashCommitExample(example);
+}
+atomic calculate selectSecondDailyCashExample(context DailyCashExample example) {
+    example.step = 2; example.cash.command.id = "SOURCE-DAILY-SECOND"; example.cash.command.attemptId = "SOURCE-DAILY-SECOND-COMMIT";
+    example.expectedStatus = "Warning"; example.expectedBalance = 700; example.expectedDaily = 600;
+}
+atomic calculate selectNextDayDailyCashExample(context DailyCashExample example) {
+    example.step = 3; example.cash.command.id = "SOURCE-DAILY-NEXT"; example.cash.command.attemptId = "SOURCE-DAILY-NEXT-COMMIT";
+    example.cash.command.request.amount = 100; example.cash.command.day.date = 20261008; example.cash.command.request.valueDate = 20261008;
+    example.expectedStatus = "Ready"; example.expectedBalance = 800; example.expectedDaily = 100;
+}
+Scenario serial dailyCashLifecycleExampleRun(context DailyCashExample example) {
+    initializeDailyCashExample(example); prepareOrdinaryCashExample(example.cash); selectDailyCashExample(example);
+    serial { transaction quantum { seedCashExampleAccount(example.cash.seed); } }
+    executeCashDeposit(example.cash.command, example.cash.lifecycle); observeDailyCashExample(example);
+    selectSecondDailyCashExample(example); executeCashDeposit(example.cash.command, example.cash.lifecycle); observeDailyCashExample(example);
+    selectNextDayDailyCashExample(example); executeCashDeposit(example.cash.command, example.cash.lifecycle); observeDailyCashExample(example);
+}

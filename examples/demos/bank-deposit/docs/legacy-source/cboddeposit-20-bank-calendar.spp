@@ -1,0 +1,40 @@
+domain cboddeposit;
+
+// Business interest-unit quantization, CSAPRD2 5300; dates supplied by shared calendar service.
+Role InterestPeriod { double amount; double unit; int days; }
+Contract InterestProduct { double qualifiedAmount; double product; }
+atomic calculate calculateInterestProduct(InterestPeriod period, context InterestProduct result) {
+    require(period.amount >= 0 && period.unit > 0 && period.days >= 0, "INVALID_INTEREST_PERIOD");
+    result.qualifiedAmount = roundDown(period.amount / period.unit, 0) * period.unit;
+    result.product = result.qualifiedAmount * period.days;
+}
+
+// CSAPRD2/CCMDAT1 function O: start included, end excluded.
+// The shared Gregorian functions decode representation; business selects ACT or deposit 360-day policy.
+Role BankDate { int encoded; int year; int month; int day; int epochDay; }
+Role InterestCalendar { String convention; }
+atomic calculate decodeBankDate(BankDate date) {
+    require(date.encoded != null && date.encoded != 0, "EEC28");
+    require(date.encoded >= 10000101 && date.encoded <= 99991231, "EE374");
+    require(isGregorianDate(date.encoded), "EE374");
+    date.year = dateYear(date.encoded);
+    date.month = dateMonth(date.encoded);
+    date.day = dateDay(date.encoded);
+    date.epochDay = dateEpochDay(date.encoded);
+}
+atomic calculate calculateBankDays(BankDate start, BankDate end, InterestCalendar calendar, InterestPeriod period) {
+    require(start.epochDay <= end.epochDay, "E1175");
+    require(calendar.convention == "ACT" || calendar.convention == "360365"
+        || calendar.convention == "360360", "EEC28");
+    if (calendar.convention == "ACT") {
+        period.days = end.epochDay - start.epochDay;
+    } else {
+        period.days = 360 * (end.year - start.year) + 30 * (end.month - start.month)
+            + min(end.day, 30) - min(start.day, 30);
+    }
+}
+Scenario serial calculateBankPeriod(BankDate start, BankDate end, InterestCalendar calendar, InterestPeriod period) {
+    decodeBankDate(start);
+    decodeBankDate(end);
+    calculateBankDays(start, end, calendar, period);
+}

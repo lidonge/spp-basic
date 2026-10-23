@@ -1,0 +1,278 @@
+domain cboddeposit;
+
+atomic calculate prepareAgreementProductCase08(context AgreementProductExampleFacts example) {
+    example.normal = new InterestPeriod();
+    example.normal.amount = 650;
+    example.normal.unit = 1;
+    example.normal.days = 10;
+    example.overlap = copy(example.normal);
+    example.overlap.days = 4;
+    example.policy = new AgreementPolicy();
+    example.policy.mode = "2";
+    example.policy.currency = "CNY";
+    example.policy.enabled = false;
+    example.result = new AgreementProduct();
+    example.expected = new AgreementProduct();
+    example.failure = null;
+    example.expectedCount = 5;
+    example.expectedCode = "";
+    AgreementBand[] bands = new AgreementBand[] { new AgreementBand(), new AgreementBand(), new AgreementBand(), new AgreementBand(), new AgreementBand() };
+    int index = 0;
+    for (AgreementBand band : bands) {
+        band.product = 999;
+        switch (index) {
+            case 0: band.slot = 5; band.threshold = 500; break;
+            case 1: band.slot = 4; band.threshold = 400; break;
+            case 2: band.slot = 3; band.threshold = 300; break;
+            case 3: band.slot = 2; band.threshold = 200; break;
+            case 4: band.slot = 1; band.threshold = 100; break;
+        }
+        index++;
+    }
+    example.bands = bands;
+    example.expected.normalProduct = 6500;
+    example.expected.bandProduct = 0;
+    example.expected.remainingAmount = 650;
+    example.expected.selectedSlot = 0;
+    example.expected.appliedMode = "2";
+    example.band0 = 0;
+    example.band1 = 0;
+    example.band2 = 0;
+    example.band3 = 0;
+    example.band4 = 0;
+    example.result.normalProduct = 999;
+    example.result.bandProduct = 999;
+    example.result.remainingAmount = 999;
+    example.result.selectedSlot = 999;
+    example.result.appliedMode = "OLD";
+}
+atomic calculate prepareAgreementProductCase09(context AgreementProductExampleFacts example) {
+    example.normal = new InterestPeriod();
+    example.normal.amount = 650;
+    example.normal.unit = 1;
+    example.normal.days = 10;
+    example.overlap = copy(example.normal);
+    example.overlap.days = 0;
+    example.policy = new AgreementPolicy();
+    example.policy.mode = "2";
+    example.policy.currency = "CNY";
+    example.policy.enabled = true;
+    example.result = new AgreementProduct();
+    example.expected = new AgreementProduct();
+    example.failure = null;
+    example.expectedCount = 5;
+    example.expectedCode = "";
+    AgreementBand[] bands = new AgreementBand[] { new AgreementBand(), new AgreementBand(), new AgreementBand(), new AgreementBand(), new AgreementBand() };
+    int index = 0;
+    for (AgreementBand band : bands) {
+        band.product = 999;
+        switch (index) {
+            case 0: band.slot = 5; band.threshold = 500; break;
+            case 1: band.slot = 4; band.threshold = 400; break;
+            case 2: band.slot = 3; band.threshold = 300; break;
+            case 3: band.slot = 2; band.threshold = 200; break;
+            case 4: band.slot = 1; band.threshold = 100; break;
+        }
+        index++;
+    }
+    example.bands = bands;
+    example.expected.normalProduct = 6500;
+    example.expected.bandProduct = 0;
+    example.expected.remainingAmount = 650;
+    example.expected.selectedSlot = 0;
+    example.expected.appliedMode = "2";
+    example.band0 = 0;
+    example.band1 = 0;
+    example.band2 = 0;
+    example.band3 = 0;
+    example.band4 = 0;
+    example.result.normalProduct = 999;
+    example.result.bandProduct = 999;
+    example.result.remainingAmount = 999;
+    example.result.selectedSlot = 999;
+    example.result.appliedMode = "OLD";
+}
+atomic calculate prepareAgreementProductCase10(context AgreementProductExampleFacts example) {
+    example.normal = new InterestPeriod();
+    example.normal.amount = 99;
+    example.normal.unit = 1;
+    example.normal.days = 10;
+    example.overlap = copy(example.normal);
+    example.overlap.days = 4;
+    example.policy = new AgreementPolicy();
+    example.policy.mode = "1";
+    example.policy.currency = "CNY";
+    example.policy.enabled = true;
+    example.result = new AgreementProduct();
+    example.expected = new AgreementProduct();
+    example.failure = null;
+    example.expectedCount = 5;
+    example.expectedCode = "";
+    AgreementBand[] bands = new AgreementBand[] { new AgreementBand(), new AgreementBand(), new AgreementBand(), new AgreementBand(), new AgreementBand() };
+    int index = 0;
+    for (AgreementBand band : bands) {
+        band.product = 999;
+        switch (index) {
+            case 0: band.slot = 5; band.threshold = 500; break;
+            case 1: band.slot = 4; band.threshold = 400; break;
+            case 2: band.slot = 3; band.threshold = 300; break;
+            case 3: band.slot = 2; band.threshold = 200; break;
+            case 4: band.slot = 1; band.threshold = 100; break;
+        }
+        index++;
+    }
+    example.bands = bands;
+    example.expected.normalProduct = 990;
+    example.expected.bandProduct = 0;
+    example.expected.remainingAmount = 99;
+    example.expected.selectedSlot = 0;
+    example.expected.appliedMode = "1";
+    example.band0 = 0;
+    example.band1 = 0;
+    example.band2 = 0;
+    example.band3 = 0;
+    example.band4 = 0;
+    example.result.normalProduct = 999;
+    example.result.bandProduct = 999;
+    example.result.remainingAmount = 999;
+    example.result.selectedSlot = 999;
+    example.result.appliedMode = "OLD";
+}
+atomic calculate prepareAgreementProductCase11(context AgreementProductExampleFacts example) {
+    example.normal = new InterestPeriod();
+    example.normal.amount = 99;
+    example.normal.unit = 1;
+    example.normal.days = 10;
+    example.overlap = copy(example.normal);
+    example.overlap.days = 4;
+    example.policy = new AgreementPolicy();
+    example.policy.mode = "2";
+    example.policy.currency = "CNY";
+    example.policy.enabled = true;
+    example.result = new AgreementProduct();
+    example.expected = new AgreementProduct();
+    example.failure = null;
+    example.expectedCount = 5;
+    example.expectedCode = "";
+    AgreementBand[] bands = new AgreementBand[] { new AgreementBand(), new AgreementBand(), new AgreementBand(), new AgreementBand(), new AgreementBand() };
+    int index = 0;
+    for (AgreementBand band : bands) {
+        band.product = 999;
+        switch (index) {
+            case 0: band.slot = 5; band.threshold = 500; break;
+            case 1: band.slot = 4; band.threshold = 400; break;
+            case 2: band.slot = 3; band.threshold = 300; break;
+            case 3: band.slot = 2; band.threshold = 200; break;
+            case 4: band.slot = 1; band.threshold = 100; break;
+        }
+        index++;
+    }
+    example.bands = bands;
+    example.expected.normalProduct = 990;
+    example.expected.bandProduct = 0;
+    example.expected.remainingAmount = 99;
+    example.expected.selectedSlot = 0;
+    example.expected.appliedMode = "2";
+    example.band0 = 0;
+    example.band1 = 0;
+    example.band2 = 0;
+    example.band3 = 0;
+    example.band4 = 0;
+    example.result.normalProduct = 999;
+    example.result.bandProduct = 999;
+    example.result.remainingAmount = 999;
+    example.result.selectedSlot = 999;
+    example.result.appliedMode = "OLD";
+}
+atomic calculate prepareAgreementProductCase12(context AgreementProductExampleFacts example) {
+    example.normal = new InterestPeriod();
+    example.normal.amount = 250;
+    example.normal.unit = 100;
+    example.normal.days = 1;
+    example.overlap = copy(example.normal);
+    example.overlap.days = 1;
+    example.policy = new AgreementPolicy();
+    example.policy.mode = "2";
+    example.policy.currency = "CNY";
+    example.policy.enabled = true;
+    example.result = new AgreementProduct();
+    example.expected = new AgreementProduct();
+    example.failure = null;
+    example.expectedCount = 5;
+    example.expectedCode = "";
+    AgreementBand[] bands = new AgreementBand[] { new AgreementBand(), new AgreementBand(), new AgreementBand(), new AgreementBand(), new AgreementBand() };
+    int index = 0;
+    for (AgreementBand band : bands) {
+        band.product = 999;
+        switch (index) {
+            case 0: band.slot = 5; band.threshold = 3000; break;
+            case 1: band.slot = 4; band.threshold = 2000; break;
+            case 2: band.slot = 3; band.threshold = 1000; break;
+            case 3: band.slot = 2; band.threshold = 125; break;
+            case 4: band.slot = 1; band.threshold = 50; break;
+        }
+        index++;
+    }
+    example.bands = bands;
+    example.expected.normalProduct = 0;
+    example.expected.bandProduct = 100;
+    example.expected.remainingAmount = 50;
+    example.expected.selectedSlot = 0;
+    example.expected.appliedMode = "2";
+    example.band0 = 0;
+    example.band1 = 0;
+    example.band2 = 0;
+    example.band3 = 100;
+    example.band4 = 0;
+    example.result.normalProduct = 999;
+    example.result.bandProduct = 999;
+    example.result.remainingAmount = 999;
+    example.result.selectedSlot = 999;
+    example.result.appliedMode = "OLD";
+}
+atomic calculate prepareAgreementProductCase13(context AgreementProductExampleFacts example) {
+    example.normal = new InterestPeriod();
+    example.normal.amount = 250;
+    example.normal.unit = 3;
+    example.normal.days = 1;
+    example.overlap = copy(example.normal);
+    example.overlap.days = 1;
+    example.policy = new AgreementPolicy();
+    example.policy.mode = "1";
+    example.policy.currency = "USD";
+    example.policy.enabled = true;
+    example.result = new AgreementProduct();
+    example.expected = new AgreementProduct();
+    example.failure = null;
+    example.expectedCount = 5;
+    example.expectedCode = "";
+    AgreementBand[] bands = new AgreementBand[] { new AgreementBand(), new AgreementBand(), new AgreementBand(), new AgreementBand(), new AgreementBand() };
+    int index = 0;
+    for (AgreementBand band : bands) {
+        band.product = 999;
+        switch (index) {
+            case 0: band.slot = 5; band.threshold = 3000; break;
+            case 1: band.slot = 4; band.threshold = 2000; break;
+            case 2: band.slot = 3; band.threshold = 1000; break;
+            case 3: band.slot = 2; band.threshold = 125; break;
+            case 4: band.slot = 1; band.threshold = 50; break;
+        }
+        index++;
+    }
+    example.bands = bands;
+    example.expected.normalProduct = 0;
+    example.expected.bandProduct = 249;
+    example.expected.remainingAmount = 250;
+    example.expected.selectedSlot = 2;
+    example.expected.appliedMode = "1";
+    example.band0 = 0;
+    example.band1 = 0;
+    example.band2 = 0;
+    example.band3 = 249;
+    example.band4 = 0;
+    example.result.normalProduct = 999;
+    example.result.bandProduct = 999;
+    example.result.remainingAmount = 999;
+    example.result.selectedSlot = 999;
+    example.result.appliedMode = "OLD";
+}

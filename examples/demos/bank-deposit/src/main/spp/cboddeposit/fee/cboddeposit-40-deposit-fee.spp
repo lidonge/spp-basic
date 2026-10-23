@@ -1,0 +1,100 @@
+domain cboddeposit;
+
+Role DepositFeeParty {
+    String accountKind;
+    String customerNumber;
+    String branchNumber;
+    String regionCode;
+}
+
+Role DepositFeeContext {
+    String channel;
+    String branchNumber;
+    String regionCode;
+}
+
+Role DepositFeeRate {
+    String customerNumber;
+    String tariff;
+    BigDecimal(19, 6) rate;
+    BigDecimal(19, 6) discount;
+    BigDecimal(19, 2) fixedAmount;
+    BigDecimal(19, 2) minimum;
+    BigDecimal(19, 2) maximum;
+}
+
+Role DepositFeePlan {
+    int range;
+    String tariff;
+    boolean applicable;
+    BigDecimal(19, 2) variableAmount;
+    BigDecimal(19, 2) fee;
+}
+
+atomic check checkFeeAccount(DepositFeeParty, DepositFeeContext) {
+    require(
+        DepositFeeContext.channel != "Teller" || DepositFeeParty.accountKind == "NormalSavings",
+        "UNSUPPORTED_DEPOSIT_FEE_ACCOUNT"
+    );
+}
+
+atomic calculate classifyDepositFee(DepositFeeParty, DepositFeeContext, DepositFeePlan) {
+    DepositFeePlan.range = 0;
+    DepositFeePlan.tariff = "";
+    DepositFeePlan.applicable = false;
+    DepositFeePlan.variableAmount = 0;
+    DepositFeePlan.fee = 0;
+    if (DepositFeeContext.channel == "Teller") {
+        if (DepositFeeParty.regionCode != DepositFeeContext.regionCode) {
+            DepositFeePlan.range = 2;
+            DepositFeePlan.tariff = "SAP00001";
+        } else {
+            if (DepositFeeParty.branchNumber != DepositFeeContext.branchNumber) {
+                DepositFeePlan.range = 1;
+                DepositFeePlan.tariff = "SAC00001";
+            }
+        }
+        DepositFeePlan.applicable = DepositFeePlan.range > 0;
+    }
+}
+
+atomic calculate prepareFeeLookup(DepositFeeParty, DepositFeePlan, DepositFeeRate) {
+    DepositFeeRate.customerNumber = DepositFeeParty.customerNumber;
+    DepositFeeRate.tariff = DepositFeePlan.tariff;
+}
+
+atomic check checkFeeRate(DepositFeePlan, DepositFeeRate) {
+    require(
+        !DepositFeePlan.applicable || DepositFeeRate.tariff == DepositFeePlan.tariff,
+        "DEPOSIT_FEE_TARIFF_MISMATCH"
+    );
+    require(
+        !DepositFeePlan.applicable
+            || (DepositFeeRate.rate >= 0
+            && DepositFeeRate.discount >= 0
+            && DepositFeeRate.minimum >= 0
+            && DepositFeeRate.maximum >= DepositFeeRate.minimum),
+        "INVALID_DEPOSIT_FEE_RATE"
+    );
+}
+
+atomic calculate calculateDepositFee(DepositRequest, DepositFeeRate, DepositFeePlan) {
+    if (DepositFeePlan.applicable) {
+        DepositFeePlan.variableAmount = roundHalfUp(
+            DepositRequest.amount * DepositFeeRate.rate * DepositFeeRate.discount,
+            2
+        );
+        DepositFeePlan.fee = DepositFeePlan.variableAmount + DepositFeeRate.fixedAmount;
+        if (DepositFeePlan.fee > DepositFeeRate.maximum) {
+            DepositFeePlan.fee = DepositFeeRate.maximum;
+        } else {
+            if (DepositFeePlan.fee < DepositFeeRate.minimum) {
+                DepositFeePlan.fee = DepositFeeRate.minimum;
+            }
+        }
+    }
+}
+
+atomic check checkRequiredFeeIdentified(DepositFeePlan, DepositFeeRate) {
+    require(!DepositFeePlan.applicable || DepositFeeRate, "DEPOSIT_FEE_RATE_NOT_FOUND");
+}

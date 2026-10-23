@@ -1,0 +1,86 @@
+domain cboddeposit;
+
+Contract CashOriginalEvidence { CashDepositTrade expected; CashDepositTrade key; CashDepositTrade actual; }
+atomic query <CashDepositTrade trade> lookupCashOriginalForCommit(CashDepositTrade key);
+atomic calculate prepareCashOriginalEvidence(CashDepositTrade original, context CashOriginalEvidence evidence) {
+    evidence.expected = copy(original);
+    evidence.key = new CashDepositTrade(); evidence.key.id = original.id;
+    evidence.actual = null;
+}
+atomic check checkCashOriginalEvidence(context CashOriginalEvidence evidence) {
+    require(evidence.actual != null, "ORIGINAL_DEPOSIT_TRADE_NOT_FOUND");
+    require(sameFacts(evidence.expected, evidence.actual), "ORIGINAL_DEPOSIT_RECEIPT_CHANGED");
+}
+
+atomic check checkCashOriginalTrade(CashDepositTrade trade, CashAccountRecord current,
+    CashTradeReversalLink link) {
+    require(trade.id != null && trade.id != "", "MISSING_ORIGINAL_TRANSACTION_ID");
+    require(trade.accountId == current.id && trade.original.id == current.id
+        && trade.settled.id == current.id && link.id == trade.id, "INVALID_ORIGINAL_DEPOSIT_ACCOUNT");
+    require(link.reversalId == "", "ORIGINAL_DEPOSIT_ALREADY_REVERSED");
+    require(current.version >= trade.settled.version, "DEPOSIT_VERSION_CONFLICT");
+}
+atomic calculate prepareCashReversalRecord(CashReversalTrade reversal, CashDepositTrade trade,
+    CashAccountRecord current, CashAccountRecord proposed, context OriginalDepositMovement movement,
+    context DepositReversalAmountPlan amounts, DepositReversalFeeDecision fee,
+    DepositPostingLine[] lines, CashReversalJournal journal, CashReversalContext execution,
+    CashReversalMetadataPlan metadata, context DepositNotices notices) {
+    require(reversal.id != null && reversal.id != "" && reversal.id != trade.id, "INVALID_REVERSAL_TRANSACTION_ID");
+    reversal.originalTradeId = trade.id;
+    reversal.originalDeposit = copy(trade);
+    reversal.accountId = current.id;
+    reversal.original = copy(current);
+    reversal.settled = copy(proposed);
+    reversal.movement = copy(movement);
+    reversal.amounts = copy(amounts);
+    reversal.fee = copy(fee);
+    reversal.lines = copy(lines);
+    reversal.journal = copy(journal);
+    reversal.execution = copy(execution);
+    reversal.metadata = copy(metadata);
+    reversal.notices = copy(notices);
+}
+atomic calculate prepareCashReversalPostingRecords(CashReversalTrade trade, CashPostingRecord[] postings) {
+    int count = 0;
+    for (CashPostingRecord posting : postings) {
+        posting.tradeId = trade.id;
+        for (DepositPostingLine line : trade.lines) {
+            if (posting.slot == line.slot) { posting.line = copy(line); count++; }
+        }
+        require(posting.line != null, "MISSING_REVERSAL_POSTING_SLOT");
+    }
+    require(count == 8, "INVALID_REVERSAL_POSTING_SLOTS");
+}
+atomic calculate prepareCashReversalLink(CashTradeReversalLink original, CashTradeReversalLink proposed,
+    CashReversalTrade reversal) {
+    require(original.id == reversal.originalTradeId && original.reversalId == "", "ORIGINAL_DEPOSIT_ALREADY_REVERSED");
+    proposed.id = original.id;
+    proposed.version = original.version + 1;
+    proposed.reversalId = reversal.id;
+}
+atomic calculate prepareCashReversalAudit(CashReversalTrade trade, CashAuditRecord audit) {
+    audit.tradeId = trade.id;
+    audit.accountId = trade.accountId;
+    audit.event = "ReversalCommitted";
+    audit.code = "";
+    audit.reversal = copy(trade);
+}
+Scenario serial commitCashReversalRecords(CashAccountRecord original, CashAccountRecord proposed,
+    CashReversalTrade reversal, CashPostingRecord[] postings, CashTradeReversalLink originalLink,
+    CashTradeReversalLink proposedLink, CashAuditRecord audit, AccountEligibility quantumAccount,
+    CashQuantumClearing clearing, context CashQuantumMovement movement, context CashOriginalEvidence evidence) {
+    prepareCashQuantumParticipants(original, quantumAccount, clearing);
+    transaction quantum {
+        evidence.actual = lookupCashOriginalForCommit(evidence.key);
+        checkCashOriginalEvidence(evidence);
+        storeCashReversalTrade(reversal);
+        movement.current = lookupCashAccountForCommit(original);
+        checkCashAccountForCommit(original, movement.current);
+        storeCashAccount(original, proposed);
+        storeCashPostingRecords(postings);
+        storeCashTradeReversalLink(originalLink, proposedLink);
+        moveCashQuantumValue(quantumAccount, clearing, movement);
+        checkCashSettledQuantumBalance(proposed, quantumAccount);
+        storeCashAudit(audit);
+    }
+}

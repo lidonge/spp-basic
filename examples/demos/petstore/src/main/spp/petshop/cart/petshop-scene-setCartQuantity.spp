@@ -1,0 +1,28 @@
+domain petshop;
+
+Scenario serial setCartQuantity(Buyer, Cart, Goods, CartQuantityAgreement, CartLine[]) {
+    checkBuyerCredential;
+    checkGoodsCredential;
+    initializeCartQuantityAgreement;
+    checkCartQuantityAgreementInput;
+    parallel {
+        findBuyer;
+        findGoods;
+    }
+    identify(Buyer);
+    identify(Goods);
+    checkGoodsSale;
+    locateBuyerCart;
+    prepareCartQuantityAgreementReceipt;
+    findCart;
+    identify(Cart);
+    checkCart;
+    captureCartLines;
+    setCartProductQuantity;
+    transaction {
+        deleteCartLine;
+        insertCartLine(Cart.lines);
+        updateCart;
+        insertReceipt(CartQuantityAgreement.receipt);
+    }
+}

@@ -1,0 +1,17 @@
+domain petshop;
+
+Contract ReturnRequestAgreement {
+    Buyer;
+    ShopOrder;
+    String reason;
+    Receipt;
+}
+
+Contract ReturnRefundAgreement {
+    Buyer buyer;
+    Merchant seller;
+    ShopOrder order;
+    Receipt receipt;
+    int returnedQuantity;
+    BigDecimal(19, 2) refundAmount;
+}

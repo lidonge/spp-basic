@@ -1,0 +1,135 @@
+domain cboddeposit;
+
+Contract QuantumLifecycleExample {
+    QuantumEvidenceExample subject; QuantumEvidenceExample other; CashFailureFacts failure;
+    CashAccountRecord proposed;
+    String expectedObject; double expectedBalance; double expectedClearing; int expectedRows;
+}
+atomic calculate initializeQuantumLifecycleExample(context QuantumLifecycleExample example) {
+    example.subject = new QuantumEvidenceExample(); example.other = new QuantumEvidenceExample(); example.failure = null;
+}
+atomic calculate selectIsolatedQuantumExample(context QuantumLifecycleExample example) {
+    example.expectedObject = "SOURCE-Q-ISOLATED-A";
+    example.subject.account.accountId = example.expectedObject; example.subject.clearing.accountId = example.expectedObject;
+    example.subject.journalKey.objectId = example.expectedObject; example.subject.valueKey.objectId = example.expectedObject;
+    example.other.account.accountId = "SOURCE-Q-ISOLATED-B"; example.other.clearing.accountId = example.other.account.accountId;
+    example.other.journalKey.objectId = example.other.account.accountId; example.other.valueKey.objectId = example.other.account.accountId;
+    example.other.account.accountBalance = 0; example.other.movement.amount = 25;
+    example.expectedBalance = 100.0000000000000000000000001;
+    example.expectedClearing = -0.0000000000000000000000001; example.expectedRows = 2;
+}
+atomic calculate selectRollbackQuantumExample(context QuantumLifecycleExample example) {
+    example.expectedObject = "SOURCE-Q-ROLLBACK-A";
+    example.subject.account.accountId = example.expectedObject; example.subject.clearing.accountId = example.expectedObject;
+    example.subject.journalKey.objectId = example.expectedObject; example.subject.valueKey.objectId = example.expectedObject;
+    example.subject.movement.amount = 10; example.expectedBalance = 110; example.expectedClearing = -10; example.expectedRows = 2;
+}
+atomic calculate selectStaleQuantumExample(context QuantumLifecycleExample example) {
+    example.expectedObject = "SOURCE-Q-STALE-A";
+    example.subject.account.accountId = example.expectedObject; example.subject.clearing.accountId = example.expectedObject;
+    example.subject.journalKey.objectId = example.expectedObject; example.subject.valueKey.objectId = example.expectedObject;
+    example.subject.movement.amount = 10; example.expectedBalance = 110; example.expectedClearing = -10; example.expectedRows = 2;
+}
+atomic check verifyQuantumLifecycleEvidence(QuantumLifecycleExample example) {
+    int values = 0; int balances = 0; int clearings = 0;
+    for (QuantumValueEvidence value : example.subject.values) {
+        values++; require(value.objectId == example.expectedObject, "EXAMPLE_Q_LIFECYCLE_OBJECT");
+        if (value.attributeId == "AccountEligibility.accountBalance") {
+            balances++; require(value.currentValue == example.expectedBalance, "EXAMPLE_Q_LIFECYCLE_BALANCE");
+        } else if (value.attributeId == "CashQuantumClearing.amount") {
+            clearings++; require(value.currentValue == example.expectedClearing, "EXAMPLE_Q_LIFECYCLE_CLEARING");
+        } else { require(false, "EXAMPLE_Q_LIFECYCLE_UNKNOWN_VALUE"); }
+    }
+    require(values == 2 && balances == 1 && clearings == 1, "EXAMPLE_Q_LIFECYCLE_VALUES");
+    int rows = 0; int balanceRows = 0; int clearingRows = 0; double deltas = 0;
+    for (QuantumJournalEvidence row : example.subject.journal) {
+        rows++; deltas += row.deltaValue;
+        require(row.objectId == example.expectedObject && row.status == "COMMITTED"
+            && row.beforeValue + row.deltaValue == row.afterValue, "EXAMPLE_Q_LIFECYCLE_JOURNAL");
+        if (row.attributeId == "AccountEligibility.accountBalance") { balanceRows++; }
+        else if (row.attributeId == "CashQuantumClearing.amount") { clearingRows++; }
+        else { require(false, "EXAMPLE_Q_LIFECYCLE_UNKNOWN_RECORD"); }
+    }
+    require(rows == example.expectedRows && balanceRows == clearingRows && deltas == 0, "EXAMPLE_Q_LIFECYCLE_RECORDS");
+}
+atomic check verifyOtherQuantumObject(QuantumLifecycleExample example) {
+    int values = 0; int balances = 0; int clearings = 0; int rows = 0; double deltas = 0;
+    for (QuantumValueEvidence value : example.other.values) {
+        values++; require(value.objectId == "SOURCE-Q-ISOLATED-B", "EXAMPLE_Q_OTHER_OBJECT");
+        if (value.attributeId == "AccountEligibility.accountBalance") { balances++; require(value.currentValue == 25, "EXAMPLE_Q_OTHER_BALANCE"); }
+        else if (value.attributeId == "CashQuantumClearing.amount") { clearings++; require(value.currentValue == -25, "EXAMPLE_Q_OTHER_CLEARING"); }
+        else { require(false, "EXAMPLE_Q_OTHER_UNKNOWN_VALUE"); }
+    }
+    for (QuantumJournalEvidence row : example.other.journal) {
+        rows++; deltas += row.deltaValue;
+        require(row.objectId == "SOURCE-Q-ISOLATED-B" && row.status == "COMMITTED" && row.beforeValue == 0
+            && row.beforeValue + row.deltaValue == row.afterValue, "EXAMPLE_Q_OTHER_JOURNAL");
+    }
+    require(values == 2 && balances == 1 && clearings == 1 && rows == 2 && deltas == 0, "EXAMPLE_Q_OTHER_COUNTS");
+}
+atomic check rejectQuantumEvidenceBoundary(QuantumEvidenceExample example) { require(false, "EXAMPLE_Q_BOUNDARY_FAILURE"); }
+Scenario serial failQuantumEvidenceBoundary(context QuantumEvidenceExample example) {
+    transaction quantum {
+        moveCashQuantumValue(example.account, example.clearing, example.movement);
+        rejectQuantumEvidenceBoundary(example);
+    }
+}
+atomic check verifyEmptyQuantumRollback(QuantumLifecycleExample example) {
+    require(example.failure != null && example.failure.code == "EXAMPLE_Q_BOUNDARY_FAILURE"
+        && example.failure.transactionOutcome == "ROLLED_BACK", "EXAMPLE_Q_ROLLBACK_OUTCOME");
+    int values = 0; int rows = 0;
+    for (QuantumValueEvidence value : example.subject.values) { values++; }
+    for (QuantumJournalEvidence row : example.subject.journal) { rows++; }
+    require(values == 0 && rows == 0, "EXAMPLE_Q_ROLLBACK_RESIDUE");
+}
+atomic calculate resetQuantumRollbackRetry(context QuantumLifecycleExample example) {
+    example.subject.account.accountBalance = 100; example.subject.clearing.amount = 0; example.subject.movement.amount = 10;
+}
+atomic calculate selectWrongBeforeQuantumUpdate(context QuantumLifecycleExample example) {
+    example.subject.account.accountBalance = 100; example.subject.clearing.amount = 0; example.subject.movement.amount = 20;
+    example.proposed = new CashAccountRecord(); example.proposed.eligibility = new AccountEligibility();
+    example.proposed.id = example.expectedObject; example.proposed.eligibility.accountBalance = 120;
+}
+// Quantum increments use the locked current value; the business plan must still agree with the resulting balance.
+Scenario serial commitCheckedQuantumEvidence(context QuantumLifecycleExample example) {
+    transaction quantum {
+        moveCashQuantumValue(example.subject.account, example.subject.clearing, example.subject.movement);
+        checkCashSettledQuantumBalance(example.proposed, example.subject.account);
+    }
+}
+atomic check verifyWrongBeforeQuantumFailure(QuantumLifecycleExample example) {
+    require(example.failure != null && example.failure.transactionOutcome == "ROLLED_BACK"
+        && example.failure.code == "QUANTUM_CASH_BALANCE_MISMATCH",
+        "EXAMPLE_Q_STALE_FAILURE");
+}
+atomic calculate selectValidQuantumRetry(context QuantumLifecycleExample example) {
+    example.subject.account.accountBalance = 110; example.subject.clearing.amount = -10; example.subject.movement.amount = 5;
+    example.expectedBalance = 115; example.expectedClearing = -15; example.expectedRows = 4;
+}
+Scenario serial quantumIsolationExampleRun(context QuantumLifecycleExample example) {
+    initializeQuantumLifecycleExample(example); initializeQuantumEvidenceExample(example.subject); initializeQuantumEvidenceExample(example.other);
+    selectIsolatedQuantumExample(example);
+    commitCashQuantumValue(example.subject.account, example.subject.clearing, example.subject.movement);
+    commitCashQuantumValue(example.other.account, example.other.clearing, example.other.movement);
+    observeQuantumEvidenceExample(example.subject); observeQuantumEvidenceExample(example.other);
+    verifyQuantumLifecycleEvidence(example); verifyOtherQuantumObject(example);
+}
+Scenario serial quantumRollbackExampleRun(context QuantumLifecycleExample example) {
+    initializeQuantumLifecycleExample(example); initializeQuantumEvidenceExample(example.subject); selectRollbackQuantumExample(example);
+    try { failQuantumEvidenceBoundary(example.subject); } catch (CashFailureFacts example.failure) {}
+    observeQuantumEvidenceExample(example.subject); verifyEmptyQuantumRollback(example);
+    resetQuantumRollbackRetry(example);
+    commitCashQuantumValue(example.subject.account, example.subject.clearing, example.subject.movement);
+    observeQuantumEvidenceExample(example.subject); verifyQuantumLifecycleEvidence(example);
+}
+Scenario serial quantumStaleValueExampleRun(context QuantumLifecycleExample example) {
+    initializeQuantumLifecycleExample(example); initializeQuantumEvidenceExample(example.subject); selectStaleQuantumExample(example);
+    commitCashQuantumValue(example.subject.account, example.subject.clearing, example.subject.movement);
+    observeQuantumEvidenceExample(example.subject); verifyQuantumLifecycleEvidence(example);
+    selectWrongBeforeQuantumUpdate(example);
+    try { commitCheckedQuantumEvidence(example); } catch (CashFailureFacts example.failure) {}
+    verifyWrongBeforeQuantumFailure(example); observeQuantumEvidenceExample(example.subject); verifyQuantumLifecycleEvidence(example);
+    selectValidQuantumRetry(example);
+    commitCashQuantumValue(example.subject.account, example.subject.clearing, example.subject.movement);
+    observeQuantumEvidenceExample(example.subject); verifyQuantumLifecycleEvidence(example);
+}

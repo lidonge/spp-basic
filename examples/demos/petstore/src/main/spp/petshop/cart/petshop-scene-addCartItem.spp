@@ -1,0 +1,30 @@
+domain petshop;
+
+Scenario serial addCartItem(Buyer, Cart, Goods, CartAdditionAgreement, CartLine[]) {
+    checkBuyerCredential;
+    checkGoodsCredential;
+    initializeCartAdditionAgreement;
+    checkCartAdditionAgreementInput;
+
+    parallel {
+        findBuyer;
+        findGoods;
+    }
+
+    identify(Buyer);
+    identify(Goods);
+    checkGoodsSale;
+    locateBuyerCart;
+    prepareCartAdditionAgreementReceipt;
+    findCart;
+    identify(Cart);
+    checkCart;
+    captureCartLines;
+    addCartProduct;
+    transaction {
+        deleteCartLine;
+        insertCartLine(Cart.lines);
+        updateCart;
+        insertReceipt(CartAdditionAgreement.receipt);
+    }
+}

@@ -1,0 +1,942 @@
+{
+  "openDepositAccount": {
+    "BankAccount": {
+      "accountNumber": ""
+    },
+    "DepositAccount": {
+      "accountNumber": "",
+      "interestBase": 0,
+      "frozenAmount": 0,
+      "authorizedAmount": 0,
+      "overdraftInterest": 0,
+      "collectionInterest": 0,
+      "overdraftPrincipal": 0,
+      "overdraftExposure": 0,
+      "loanState": "NORMAL"
+    },
+    "AccountEligibility": {
+      "accountNumber": "",
+      "status": "ACTIVE",
+      "temporary": false,
+      "expiresOn": 0,
+      "temporaryOpen": false,
+      "detailCount": 0,
+      "lastTransactionDate": 0,
+      "openedOn": 0,
+      "cashDepositedToday": 0,
+      "transferredToday": 0,
+      "accountBalance": 0
+    },
+    "CashSettlementAccount": {
+      "accountNumber": "",
+      "balance": 0
+    },
+    "DepositAccrualState": {
+      "accountNumber": "",
+      "lastProductDate": 0,
+      "normalProduct": 0,
+      "overdraftProduct": 0,
+      "overdraftInterestProduct": 0,
+      "actualProduct": 0,
+      "agreementProduct": 0,
+      "overdraftDays": 0,
+      "overdraftInterestDays": 0
+    },
+    "AccountOpeningAgreement": {
+      "openingNumber": ""
+    }
+  },
+  "readDepositAccount": {
+    "DepositAccount": {
+      "accountNumber": "",
+      "interestBase": 0,
+      "frozenAmount": 0,
+      "authorizedAmount": 0,
+      "overdraftInterest": 0,
+      "collectionInterest": 0,
+      "overdraftPrincipal": 0,
+      "overdraftExposure": 0,
+      "loanState": "NORMAL"
+    },
+    "AccountEligibility": {
+      "accountNumber": "",
+      "status": "ACTIVE",
+      "temporary": false,
+      "expiresOn": 0,
+      "temporaryOpen": false,
+      "detailCount": 0,
+      "lastTransactionDate": 0,
+      "openedOn": 0,
+      "cashDepositedToday": 0,
+      "transferredToday": 0,
+      "accountBalance": 0
+    },
+    "DepositAccrualState": {
+      "accountNumber": "",
+      "lastProductDate": 0,
+      "normalProduct": 0,
+      "overdraftProduct": 0,
+      "overdraftInterestProduct": 0,
+      "actualProduct": 0,
+      "agreementProduct": 0,
+      "overdraftDays": 0,
+      "overdraftInterestDays": 0
+    },
+    "CashSettlementAccount": {
+      "accountNumber": "",
+      "balance": 0
+    },
+    "InterestIncomeAccount": {
+      "accountNumber": "",
+      "balance": 0
+    },
+    "CollectionInterestIncomeAccount": {
+      "accountNumber": "",
+      "balance": 0
+    },
+    "PrincipalRecoveryAccount": {
+      "accountNumber": "",
+      "balance": 0
+    }
+  },
+  "openBankRepaymentAccounts": {
+    "interestSubject": {
+      "accountNumber": ""
+    },
+    "collectionSubject": {
+      "accountNumber": ""
+    },
+    "principalSubject": {
+      "accountNumber": ""
+    },
+    "InterestIncomeAccount": {
+      "accountNumber": "",
+      "balance": 0
+    },
+    "CollectionInterestIncomeAccount": {
+      "accountNumber": "",
+      "balance": 0
+    },
+    "PrincipalRecoveryAccount": {
+      "accountNumber": "",
+      "balance": 0
+    },
+    "InternalAccountOpeningAgreement": {}
+  },
+  "readCashDeposit": {
+    "CashDepositAgreement": {
+      "postingEvidence": [],
+      "depositNumber": "",
+      "amount": 0,
+      "currency": "USD",
+      "valueDate": 0,
+      "interestBaseDelta": 0,
+      "interestPaid": 0,
+      "collectionPaid": 0,
+      "principalPaid": 0,
+      "exposureDelta": 0,
+      "fee": 0,
+      "transactionDate": 0,
+      "previousTransactionDate": 0,
+      "settledDetailCount": 0,
+      "addedBackdatedProduct": 0,
+      "reversed": false
+    },
+    "DepositPostingLineArray": []
+  },
+  "depositCash": {
+    "DepositRequest": {
+      "amount": 0,
+      "currency": "USD",
+      "valueDate": 0
+    },
+    "DepositAccount": {
+      "accountNumber": "",
+      "interestBase": 0,
+      "frozenAmount": 0,
+      "authorizedAmount": 0,
+      "overdraftInterest": 0,
+      "collectionInterest": 0,
+      "overdraftPrincipal": 0,
+      "overdraftExposure": 0,
+      "loanState": "NORMAL"
+    },
+    "CashSettlementAccount": {
+      "accountNumber": "",
+      "balance": 0
+    },
+    "InterestIncomeAccount": {
+      "accountNumber": "",
+      "balance": 0
+    },
+    "CollectionInterestIncomeAccount": {
+      "accountNumber": "",
+      "balance": 0
+    },
+    "PrincipalRecoveryAccount": {
+      "accountNumber": "",
+      "balance": 0
+    },
+    "AccountEligibility": {
+      "accountNumber": "",
+      "status": "ACTIVE",
+      "temporary": false,
+      "expiresOn": 0,
+      "temporaryOpen": false,
+      "detailCount": 0,
+      "lastTransactionDate": 0,
+      "openedOn": 0,
+      "cashDepositedToday": 0,
+      "transferredToday": 0,
+      "accountBalance": 0
+    },
+    "CashAccountControl": {
+      "controllingInstitution": "",
+      "controlStatus": "",
+      "cancelledOn": 0,
+      "productKind": ""
+    },
+    "DepositProduct": {
+      "minimumOpeningAmount": 0,
+      "maximumOpeningAmount": 0,
+      "maximumBalance": 0
+    },
+    "BusinessDay": {
+      "date": 0
+    },
+    "CashChannel": {
+      "teller": false,
+      "channel": "",
+      "transactionId": "",
+      "transactionFamily": "",
+      "businessCode": ""
+    },
+    "CashAuthorizationPolicy": {
+      "warningThreshold": 0,
+      "tellerLimit": 0,
+      "levelAMultiplier": 0,
+      "specialUsdLevelB": 0,
+      "specialUsdLevelA": 0
+    },
+    "AuthorizationEvidence": {
+      "grantedLevel": "NONE"
+    },
+    "AdmissionDecision": {
+      "warningCode": "",
+      "authorizationCode": "",
+      "requiredLevel": "NONE",
+      "status": "READY",
+      "executable": false,
+      "dayCashTotal": 0
+    },
+    "DepositFeeParty": {
+      "accountKind": "",
+      "customerNumber": "",
+      "branchNumber": "",
+      "regionCode": ""
+    },
+    "DepositFeeContext": {
+      "channel": "",
+      "branchNumber": "",
+      "regionCode": ""
+    },
+    "DepositFeeRate": {
+      "customerNumber": "",
+      "tariff": "",
+      "rate": 0,
+      "discount": 0,
+      "fixedAmount": 0,
+      "minimum": 0,
+      "maximum": 0
+    },
+    "DepositFeePlan": {
+      "range": 0,
+      "tariff": "",
+      "applicable": false,
+      "variableAmount": 0,
+      "fee": 0
+    },
+    "DepositPlan": {
+      "interestPaid": 0,
+      "collectionInterestPaid": 0,
+      "principalPaid": 0,
+      "newInterestBase": 0,
+      "newAvailableBalance": 0,
+      "newOverdraftExposure": 0,
+      "newAccountBalance": 0,
+      "interestBaseIncrease": 0,
+      "interestBaseDecrease": 0
+    },
+    "DepositDetailPolicy": {
+      "itemCount": 0
+    },
+    "CashDepositAgreement": {
+      "postingEvidence": [],
+      "depositNumber": "",
+      "amount": 0,
+      "currency": "USD",
+      "valueDate": 0,
+      "interestBaseDelta": 0,
+      "interestPaid": 0,
+      "collectionPaid": 0,
+      "principalPaid": 0,
+      "exposureDelta": 0,
+      "fee": 0,
+      "transactionDate": 0,
+      "previousTransactionDate": 0,
+      "settledDetailCount": 0,
+      "addedBackdatedProduct": 0,
+      "reversed": false
+    },
+    "DepositBankProfile": {
+      "normalSavings": false,
+      "restrictedSubtype": false,
+      "openingBranch": "",
+      "openingProvince": "",
+      "subbranch": "",
+      "area": "",
+      "areaProvince": "",
+      "depositRange": "",
+      "proprietaryRange": "",
+      "cardLinked": false,
+      "accountSeries": "",
+      "cardRecordFound": false,
+      "cardLoss": "",
+      "cardStatus": "",
+      "passbookLoss": "",
+      "groupSubaccount": false
+    },
+    "DepositOperatorFacts": {
+      "branch": "",
+      "province": "",
+      "subbranch": "",
+      "area": "",
+      "areaProvince": "",
+      "accountingCentre": false,
+      "transactionPrefix": "",
+      "operationCode": "",
+      "tellerFamily": "",
+      "tellerNumber": 0,
+      "numericTeller": false,
+      "mode": "",
+      "agencySigned": false,
+      "corporateTransfer": false,
+      "settlementChannel": ""
+    },
+    "DepositNotices": {
+      "cardWarning": "",
+      "passbookWarning": ""
+    },
+    "CashFailureRecord": {
+      "handlingNumber": "",
+      "handlingState": "NOT_COMPLETED"
+    },
+    "DepositAccounting": {
+      "transactionAmount": 0,
+      "depositIncrease": 0,
+      "depositDecrease": 0,
+      "principalPaid": 0,
+      "interestPaid": 0,
+      "collectionPaid": 0,
+      "fundingTotal": 0,
+      "allocationTotal": 0
+    },
+    "DepositPostingLineArray": [],
+    "DepositPostingTotals": {
+      "debit": 0,
+      "credit": 0,
+      "fee": 0
+    },
+    "DepositAccrualState": {
+      "accountNumber": "",
+      "lastProductDate": 0,
+      "normalProduct": 0,
+      "overdraftProduct": 0,
+      "overdraftInterestProduct": 0,
+      "actualProduct": 0,
+      "agreementProduct": 0,
+      "overdraftDays": 0,
+      "overdraftInterestDays": 0
+    },
+    "DepositInterestPolicy": {
+      "normalEnabled": false,
+      "normalUnit": 0,
+      "overdraftUnit": 0
+    },
+    "InterestCalendar": {
+      "convention": ""
+    },
+    "AgreementTerm": {
+      "effectiveDate": 0,
+      "cancelDate": 0
+    },
+    "AgreementPolicy": {
+      "mode": "",
+      "currency": "USD",
+      "enabled": false
+    },
+    "AgreementBandArray": [],
+    "DepositAccrualPlan": {
+      "endDate": 0,
+      "normalDays": 0,
+      "overdraftDays": 0,
+      "normalIncrement": 0,
+      "agreementIncrement": 0,
+      "principalDays": 0,
+      "interestDays": 0,
+      "overdraftIncrement": 0,
+      "overdraftInterestIncrement": 0
+    }
+  },
+  "assessBankQualification": {
+    "DepositBankProfile": {
+      "normalSavings": false,
+      "restrictedSubtype": false,
+      "openingBranch": "",
+      "openingProvince": "",
+      "subbranch": "",
+      "area": "",
+      "areaProvince": "",
+      "depositRange": "",
+      "proprietaryRange": "",
+      "cardLinked": false,
+      "accountSeries": "",
+      "cardRecordFound": false,
+      "cardLoss": "",
+      "cardStatus": "",
+      "passbookLoss": "",
+      "groupSubaccount": false
+    },
+    "DepositOperatorFacts": {
+      "branch": "",
+      "province": "",
+      "subbranch": "",
+      "area": "",
+      "areaProvince": "",
+      "accountingCentre": false,
+      "transactionPrefix": "",
+      "operationCode": "",
+      "tellerFamily": "",
+      "tellerNumber": 0,
+      "numericTeller": false,
+      "mode": "",
+      "agencySigned": false,
+      "corporateTransfer": false,
+      "settlementChannel": ""
+    },
+    "CashChannel": {
+      "teller": false,
+      "channel": "",
+      "transactionId": "",
+      "transactionFamily": "",
+      "businessCode": ""
+    },
+    "DepositNotices": {
+      "cardWarning": "",
+      "passbookWarning": ""
+    }
+  },
+  "assessCashDeposit": {
+    "DepositRequest": {
+      "amount": 0,
+      "currency": "USD",
+      "valueDate": 0
+    },
+    "AccountEligibility": {
+      "accountNumber": "",
+      "status": "ACTIVE",
+      "temporary": false,
+      "expiresOn": 0,
+      "temporaryOpen": false,
+      "detailCount": 0,
+      "lastTransactionDate": 0,
+      "openedOn": 0,
+      "cashDepositedToday": 0,
+      "transferredToday": 0,
+      "accountBalance": 0
+    },
+    "DepositProduct": {
+      "minimumOpeningAmount": 0,
+      "maximumOpeningAmount": 0,
+      "maximumBalance": 0
+    },
+    "BusinessDay": {
+      "date": 0
+    },
+    "CashChannel": {
+      "teller": false,
+      "channel": "",
+      "transactionId": "",
+      "transactionFamily": "",
+      "businessCode": ""
+    },
+    "CashAuthorizationPolicy": {
+      "warningThreshold": 0,
+      "tellerLimit": 0,
+      "levelAMultiplier": 0,
+      "specialUsdLevelB": 0,
+      "specialUsdLevelA": 0
+    },
+    "AuthorizationEvidence": {
+      "grantedLevel": "NONE"
+    },
+    "AdmissionDecision": {
+      "warningCode": "",
+      "authorizationCode": "",
+      "requiredLevel": "NONE",
+      "status": "READY",
+      "executable": false,
+      "dayCashTotal": 0
+    },
+    "CashAccountControl": {
+      "controllingInstitution": "",
+      "controlStatus": "",
+      "cancelledOn": 0,
+      "productKind": ""
+    }
+  },
+  "registerFeeSchedule": {
+    "DepositFeeRate": {
+      "customerNumber": "",
+      "tariff": "",
+      "rate": 0,
+      "discount": 0,
+      "fixedAmount": 0,
+      "minimum": 0,
+      "maximum": 0
+    },
+    "FeeScheduleAgreement": {}
+  },
+  "quoteDepositFee": {
+    "DepositRequest": {
+      "amount": 0,
+      "currency": "USD",
+      "valueDate": 0
+    },
+    "DepositFeeParty": {
+      "accountKind": "",
+      "customerNumber": "",
+      "branchNumber": "",
+      "regionCode": ""
+    },
+    "DepositFeeContext": {
+      "channel": "",
+      "branchNumber": "",
+      "regionCode": ""
+    },
+    "DepositFeeRate": {
+      "customerNumber": "",
+      "tariff": "",
+      "rate": 0,
+      "discount": 0,
+      "fixedAmount": 0,
+      "minimum": 0,
+      "maximum": 0
+    },
+    "DepositFeePlan": {
+      "range": 0,
+      "tariff": "",
+      "applicable": false,
+      "variableAmount": 0,
+      "fee": 0
+    }
+  },
+  "previewDepositFee": {
+    "DepositRequest": {
+      "amount": 0,
+      "currency": "USD",
+      "valueDate": 0
+    },
+    "DepositFeeParty": {
+      "accountKind": "",
+      "customerNumber": "",
+      "branchNumber": "",
+      "regionCode": ""
+    },
+    "DepositFeeContext": {
+      "channel": "",
+      "branchNumber": "",
+      "regionCode": ""
+    },
+    "DepositFeeRate": {
+      "customerNumber": "",
+      "tariff": "",
+      "rate": 0,
+      "discount": 0,
+      "fixedAmount": 0,
+      "minimum": 0,
+      "maximum": 0
+    },
+    "DepositFeePlan": {
+      "range": 0,
+      "tariff": "",
+      "applicable": false,
+      "variableAmount": 0,
+      "fee": 0
+    }
+  },
+  "reverseCash": {
+    "DepositAccount": {
+      "accountNumber": "",
+      "interestBase": 0,
+      "frozenAmount": 0,
+      "authorizedAmount": 0,
+      "overdraftInterest": 0,
+      "collectionInterest": 0,
+      "overdraftPrincipal": 0,
+      "overdraftExposure": 0,
+      "loanState": "NORMAL"
+    },
+    "CashSettlementAccount": {
+      "accountNumber": "",
+      "balance": 0
+    },
+    "InterestIncomeAccount": {
+      "accountNumber": "",
+      "balance": 0
+    },
+    "CollectionInterestIncomeAccount": {
+      "accountNumber": "",
+      "balance": 0
+    },
+    "PrincipalRecoveryAccount": {
+      "accountNumber": "",
+      "balance": 0
+    },
+    "AccountEligibility": {
+      "accountNumber": "",
+      "status": "ACTIVE",
+      "temporary": false,
+      "expiresOn": 0,
+      "temporaryOpen": false,
+      "detailCount": 0,
+      "lastTransactionDate": 0,
+      "openedOn": 0,
+      "cashDepositedToday": 0,
+      "transferredToday": 0,
+      "accountBalance": 0
+    },
+    "CashAccountControl": {
+      "controllingInstitution": "",
+      "controlStatus": "",
+      "cancelledOn": 0,
+      "productKind": ""
+    },
+    "CashDepositAgreement": {
+      "postingEvidence": [],
+      "depositNumber": "",
+      "amount": 0,
+      "currency": "USD",
+      "valueDate": 0,
+      "interestBaseDelta": 0,
+      "interestPaid": 0,
+      "collectionPaid": 0,
+      "principalPaid": 0,
+      "exposureDelta": 0,
+      "fee": 0,
+      "transactionDate": 0,
+      "previousTransactionDate": 0,
+      "settledDetailCount": 0,
+      "addedBackdatedProduct": 0,
+      "reversed": false
+    },
+    "CashReversalAgreement": {
+      "reversalNumber": "",
+      "businessDate": 0,
+      "newDetailItems": 0,
+      "overnightMode2": false,
+      "refundAmount": 0,
+      "reverseInstitutionLimit": false
+    },
+    "DepositReversalCapacity": {
+      "overdraftPermitted": false,
+      "overdraftLimit": 0
+    },
+    "DepositAccrualState": {
+      "accountNumber": "",
+      "lastProductDate": 0,
+      "normalProduct": 0,
+      "overdraftProduct": 0,
+      "overdraftInterestProduct": 0,
+      "actualProduct": 0,
+      "agreementProduct": 0,
+      "overdraftDays": 0,
+      "overdraftInterestDays": 0
+    },
+    "CashReversalMetadataPlan": {
+      "detailCount": 0,
+      "lastTransactionDate": 0,
+      "cashDepositedToday": 0,
+      "normalProduct": 0,
+      "actualProduct": 0,
+      "reverseInstitutionLimit": false
+    },
+    "DepositOperatorFacts": {
+      "branch": "",
+      "province": "",
+      "subbranch": "",
+      "area": "",
+      "areaProvince": "",
+      "accountingCentre": false,
+      "transactionPrefix": "",
+      "operationCode": "",
+      "tellerFamily": "",
+      "tellerNumber": 0,
+      "numericTeller": false,
+      "mode": "",
+      "agencySigned": false,
+      "corporateTransfer": false,
+      "settlementChannel": ""
+    },
+    "CashChannel": {
+      "teller": false,
+      "channel": "",
+      "transactionId": "",
+      "transactionFamily": "",
+      "businessCode": ""
+    },
+    "CashFailureRecord": {
+      "handlingNumber": "",
+      "handlingState": "NOT_COMPLETED"
+    },
+    "DepositPostingLineArray": [],
+    "CashReversalPostingLineArray": [],
+    "DepositPostingTotals": {
+      "debit": 0,
+      "credit": 0,
+      "fee": 0
+    }
+  },
+  "readCashReversal": {
+    "CashReversalAgreement": {
+      "reversalNumber": "",
+      "businessDate": 0,
+      "newDetailItems": 0,
+      "overnightMode2": false,
+      "refundAmount": 0,
+      "reverseInstitutionLimit": false
+    },
+    "CashReversalPostingLineArray": []
+  },
+  "previewCashReversal": {
+    "DepositAccount": {
+      "accountNumber": "",
+      "interestBase": 0,
+      "frozenAmount": 0,
+      "authorizedAmount": 0,
+      "overdraftInterest": 0,
+      "collectionInterest": 0,
+      "overdraftPrincipal": 0,
+      "overdraftExposure": 0,
+      "loanState": "NORMAL"
+    },
+    "CashSettlementAccount": {
+      "accountNumber": "",
+      "balance": 0
+    },
+    "InterestIncomeAccount": {
+      "accountNumber": "",
+      "balance": 0
+    },
+    "CollectionInterestIncomeAccount": {
+      "accountNumber": "",
+      "balance": 0
+    },
+    "PrincipalRecoveryAccount": {
+      "accountNumber": "",
+      "balance": 0
+    },
+    "AccountEligibility": {
+      "accountNumber": "",
+      "status": "ACTIVE",
+      "temporary": false,
+      "expiresOn": 0,
+      "temporaryOpen": false,
+      "detailCount": 0,
+      "lastTransactionDate": 0,
+      "openedOn": 0,
+      "cashDepositedToday": 0,
+      "transferredToday": 0,
+      "accountBalance": 0
+    },
+    "CashAccountControl": {
+      "controllingInstitution": "",
+      "controlStatus": "",
+      "cancelledOn": 0,
+      "productKind": ""
+    },
+    "CashDepositAgreement": {
+      "postingEvidence": [],
+      "depositNumber": "",
+      "amount": 0,
+      "currency": "USD",
+      "valueDate": 0,
+      "interestBaseDelta": 0,
+      "interestPaid": 0,
+      "collectionPaid": 0,
+      "principalPaid": 0,
+      "exposureDelta": 0,
+      "fee": 0,
+      "transactionDate": 0,
+      "previousTransactionDate": 0,
+      "settledDetailCount": 0,
+      "addedBackdatedProduct": 0,
+      "reversed": false
+    },
+    "CashReversalAgreement": {
+      "reversalNumber": "",
+      "businessDate": 0,
+      "newDetailItems": 0,
+      "overnightMode2": false,
+      "refundAmount": 0,
+      "reverseInstitutionLimit": false
+    },
+    "DepositReversalCapacity": {
+      "overdraftPermitted": false,
+      "overdraftLimit": 0
+    },
+    "DepositAccrualState": {
+      "accountNumber": "",
+      "lastProductDate": 0,
+      "normalProduct": 0,
+      "overdraftProduct": 0,
+      "overdraftInterestProduct": 0,
+      "actualProduct": 0,
+      "agreementProduct": 0,
+      "overdraftDays": 0,
+      "overdraftInterestDays": 0
+    },
+    "CashReversalMetadataPlan": {
+      "detailCount": 0,
+      "lastTransactionDate": 0,
+      "cashDepositedToday": 0,
+      "normalProduct": 0,
+      "actualProduct": 0,
+      "reverseInstitutionLimit": false
+    },
+    "DepositOperatorFacts": {
+      "branch": "",
+      "province": "",
+      "subbranch": "",
+      "area": "",
+      "areaProvince": "",
+      "accountingCentre": false,
+      "transactionPrefix": "",
+      "operationCode": "",
+      "tellerFamily": "",
+      "tellerNumber": 0,
+      "numericTeller": false,
+      "mode": "",
+      "agencySigned": false,
+      "corporateTransfer": false,
+      "settlementChannel": ""
+    },
+    "CashChannel": {
+      "teller": false,
+      "channel": "",
+      "transactionId": "",
+      "transactionFamily": "",
+      "businessCode": ""
+    },
+    "DepositPostingLineArray": [],
+    "CashReversalPostingLineArray": [],
+    "DepositPostingTotals": {
+      "debit": 0,
+      "credit": 0,
+      "fee": 0
+    }
+  },
+  "previewUnitInterest": {
+    "InterestPeriod": {
+      "amount": 0,
+      "unit": 0,
+      "days": 0
+    },
+    "InterestProduct": {
+      "qualifiedAmount": 0,
+      "product": 0
+    }
+  },
+  "previewInterestProduct": {
+    "start": {
+      "encoded": 0,
+      "year": 0,
+      "month": 0,
+      "day": 0,
+      "epochDay": 0
+    },
+    "end": {
+      "encoded": 0,
+      "year": 0,
+      "month": 0,
+      "day": 0,
+      "epochDay": 0
+    },
+    "InterestCalendar": {
+      "convention": ""
+    },
+    "InterestPeriod": {
+      "amount": 0,
+      "unit": 0,
+      "days": 0
+    },
+    "InterestProduct": {
+      "qualifiedAmount": 0,
+      "product": 0
+    }
+  },
+  "previewAgreementProduct": {
+    "normal": {
+      "amount": 0,
+      "unit": 0,
+      "days": 0
+    },
+    "overlap": {
+      "amount": 0,
+      "unit": 0,
+      "days": 0
+    },
+    "AgreementPolicy": {
+      "mode": "",
+      "currency": "USD",
+      "enabled": false
+    },
+    "AgreementBandArray": [],
+    "AgreementProduct": {
+      "normalProduct": 0,
+      "bandProduct": 0,
+      "remainingAmount": 0,
+      "selectedSlot": 0,
+      "appliedMode": ""
+    }
+  },
+  "previewDeposit": {
+    "DepositRequest": {
+      "amount": 0,
+      "currency": "USD",
+      "valueDate": 0
+    },
+    "DepositAccount": {
+      "accountNumber": "",
+      "interestBase": 0,
+      "frozenAmount": 0,
+      "authorizedAmount": 0,
+      "overdraftInterest": 0,
+      "collectionInterest": 0,
+      "overdraftPrincipal": 0,
+      "overdraftExposure": 0,
+      "loanState": "NORMAL"
+    },
+    "DepositPlan": {
+      "interestPaid": 0,
+      "collectionInterestPaid": 0,
+      "principalPaid": 0,
+      "newInterestBase": 0,
+      "newAvailableBalance": 0,
+      "newOverdraftExposure": 0,
+      "newAccountBalance": 0,
+      "interestBaseIncrease": 0,
+      "interestBaseDecrease": 0
+    }
+  }
+}

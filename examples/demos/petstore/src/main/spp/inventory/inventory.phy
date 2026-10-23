@@ -1,0 +1,66 @@
+domain inventory;
+
+phy {
+    environment develop {
+        repository shopRecords {
+            adapter jdbcObjectRepository;
+            config default = true;
+
+            config appDdlTables = true;
+            config datasourceUrl = "${spp.petstore.datasource-url:jdbc:h2:mem:petstore;DB_CLOSE_DELAY=-1}";
+            config driverClassName = "org.h2.Driver";
+            config table = "petstore_records";
+        }
+        backend shopDatabase {
+            adapter localJdbc;
+            at shopRecordsResource;
+            repository shopRecords;
+            quantumStore shopLedger;
+            config datasourceUrl = "${spp.petstore.datasource-url:jdbc:h2:mem:petstore;DB_CLOSE_DELAY=-1}";
+            config driverClassName = "org.h2.Driver";
+        }
+        quantumStore shopLedger {
+            adapter jdbcQuantum;
+            config datasourceUrl = "${spp.petstore.datasource-url:jdbc:h2:mem:petstore;DB_CLOSE_DELAY=-1}";
+            config driverClassName = "org.h2.Driver";
+            config journalStore = "com.servpp.service.transaction.JdbcQuantumJournalStore";
+            config journalTable = "petstore_quantum_journal";
+            config valueTable = "petstore_quantum_value";
+            config decimalStorage = "text";
+        }
+    }
+    environment testing {
+        config domainRpcToken = "${spp.petstore.testing.rpc-token}";
+        repository shopRecords {
+            adapter jdbcObjectRepository;
+            config default = true;
+            config appDdlTables = true;
+            config datasourceUrl = "${spp.petstore.testing.shop-url:jdbc:h2:file:./demos/petstore/target/testing-shop;DB_CLOSE_DELAY=-1}";
+            config driverClassName = "org.h2.Driver";
+            config table = "petstore_records";
+        }
+        backend shopDatabase {
+            adapter localJdbc;
+            saga shopRecordsResource;
+            repository shopRecords;
+            config datasourceUrl = "${spp.petstore.testing.shop-url:jdbc:h2:file:./demos/petstore/target/testing-shop;DB_CLOSE_DELAY=-1}";
+            config driverClassName = "org.h2.Driver";
+        }
+        backend sharedLedger {
+            adapter localJdbc;
+            quantum shopLedger;
+            quantumStore shopLedger;
+            config datasourceUrl = "${spp.petstore.testing.ledger-url:jdbc:h2:file:./demos/petstore/target/testing-ledger;DB_CLOSE_DELAY=-1}";
+            config driverClassName = "org.h2.Driver";
+        }
+        quantumStore shopLedger {
+            adapter jdbcQuantum;
+            config datasourceUrl = "${spp.petstore.testing.ledger-url:jdbc:h2:file:./demos/petstore/target/testing-ledger;DB_CLOSE_DELAY=-1}";
+            config driverClassName = "org.h2.Driver";
+            config journalStore = "com.servpp.service.transaction.JdbcQuantumJournalStore";
+            config journalTable = "petstore_quantum_journal";
+            config valueTable = "petstore_quantum_value";
+            config decimalStorage = "text";
+        }
+    }
+}

@@ -1,0 +1,18 @@
+domain petshop;
+
+Scenario serial requestShopReturn(Buyer, ShopOrder, ReturnRequestAgreement) {
+    checkReturnRequestAgreementInput;
+    initializeReturnRequestAgreement;
+    findBuyer;
+    identify(Buyer);
+    findShopOrder;
+    identify(ShopOrder);
+    checkOrderOwner;
+    checkReturnRequest;
+    prepareReturnRequest;
+    prepareReturnRequestReceipt;
+    transaction {
+        updateShopOrder;
+        insertReceipt(ReturnRequestAgreement.Receipt);
+    }
+}

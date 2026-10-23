@@ -1,0 +1,36 @@
+domain cboddeposit;
+
+// Optional business facts choose the preparation scene in SPP, not in Java.
+Scenario serial prepareSelectedCashDeposit(DepositRequest d, DepositAccount before, CashAccountControl control,
+    AccountEligibility eligibility, DepositProduct product, BusinessDay day, CashChannel channel,
+    CashAuthorizationPolicy authorizationPolicy, AuthorizationEvidence evidence, context AdmissionDecision admission,
+    DepositFeeParty feeParty, DepositFeeContext feeContext, DepositFeeRate rate, context DepositFeePlan fee,
+    context DepositPlan plan, context DepositAccounting amounts, DepositPostingLine[] lines,
+    context DepositPostingTotals totals, DepositDetailPolicy details, DepositAccount after, AccountEligibility afterEligibility,
+    DepositAccrualInput beforeAccrual, AgreementBand[] beforeBands, DepositAccrualWork work,
+    AgreementBand[] increments, DepositAccrualInput afterAccrual, AgreementBand[] afterBands, context DepositAccrualPlan accrual,
+    DepositBankProfile bankProfile, DepositOperatorFacts operator, context DepositNotices notices) {
+    if (bankProfile != null) {
+        if (beforeAccrual != null) {
+            prepareQualifiedCashDepositWithAccrual(d, before, control, eligibility, product, day, channel,
+                authorizationPolicy, evidence, admission, feeParty, feeContext, rate, fee, plan, amounts, lines,
+                totals, details, after, afterEligibility, beforeAccrual, beforeBands, work, increments,
+                afterAccrual, afterBands, accrual, bankProfile, operator, notices);
+        } else {
+            prepareQualifiedCashDeposit(d, before, control, eligibility, product, day, channel,
+                authorizationPolicy, evidence, admission, feeParty, feeContext, rate, fee, plan, amounts, lines,
+                totals, details, after, afterEligibility, bankProfile, operator, notices);
+        }
+    } else {
+        if (beforeAccrual != null) {
+            prepareCashDepositWithAccrual(d, before, control, eligibility, product, day, channel,
+                authorizationPolicy, evidence, admission, feeParty, feeContext, rate, fee, plan, amounts, lines,
+                totals, details, after, afterEligibility, beforeAccrual, beforeBands, work, increments,
+                afterAccrual, afterBands, accrual);
+        } else {
+            prepareNormalCashDeposit(d, before, control, eligibility, product, day, channel,
+                authorizationPolicy, evidence, admission, feeParty, feeContext, rate, fee, plan, amounts, lines,
+                totals, details, after, afterEligibility);
+        }
+    }
+}

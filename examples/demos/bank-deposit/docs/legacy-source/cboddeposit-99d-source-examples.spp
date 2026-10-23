@@ -1,0 +1,143 @@
+domain cboddeposit;
+
+// All fixture facts, transaction calls and independent expectations are business source.
+Contract CashExample {
+    CashAccountRecord seed;
+    CashDepositCommand command;
+    CashDepositLifecycle lifecycle;
+    CashAccountRecord observed;
+    CashPostingRecord postingKey;
+    CashPostingRecord[] postings;
+    CashDepositCommand originalCommand;
+    CashDepositTrade tradeKey;
+    CashDepositTrade storedTrade;
+    CashAuditRecord auditKey;
+    CashAuditRecord audit;
+    CashAuditRecord[] history;
+    CashFailureFacts failure;
+    DepositTariffRateRecord tariffRecord;
+}
+atomic update seedCashExampleAccount(CashAccountRecord account);
+atomic query <CashAuditRecord[] audits> queryCashExampleHistory(CashAuditRecord key);
+atomic calculate prepareOrdinaryCashExample(context CashExample example) {
+    example.seed = new CashAccountRecord();
+    example.seed.id = "SOURCE-ORDINARY-A";
+    example.seed.version = 0;
+    example.seed.account = new DepositAccount();
+    example.seed.account.interestBase = 100;
+    example.seed.account.frozenAmount = 0;
+    example.seed.account.authorizedAmount = 0;
+    example.seed.account.overdraftInterest = 0;
+    example.seed.account.collectionInterest = 0;
+    example.seed.account.overdraftPrincipal = 0;
+    example.seed.account.overdraftExposure = 0;
+    example.seed.account.loanState = "Normal";
+    example.seed.eligibility = new AccountEligibility();
+    example.seed.eligibility.accountId = example.seed.id;
+    example.seed.eligibility.status = "Normal";
+    example.seed.eligibility.temporary = false;
+    example.seed.eligibility.expiresOn = 20261007;
+    example.seed.eligibility.temporaryOpen = false;
+    example.seed.eligibility.detailCount = 10;
+    example.seed.eligibility.lastTransactionDate = 20261007;
+    example.seed.eligibility.openedOn = 20261001;
+    example.seed.eligibility.cashDepositedToday = 0;
+    example.seed.eligibility.transferredToday = 4;
+    example.seed.eligibility.accountBalance = 100;
+    example.seed.control = new CashAccountControl();
+    example.seed.control.controllingInstitution = "";
+    example.seed.control.controlStatus = "Normal";
+    example.seed.control.cancelledOn = 0;
+    example.seed.control.productKind = "DemandDeposit";
+    example.seed.product = new DepositProduct();
+    example.seed.product.minimumOpeningAmount = 0;
+    example.seed.product.maximumOpeningAmount = 0;
+    example.seed.product.maximumBalance = 10000;
+    example.seed.feeParty = new DepositFeeParty();
+    example.seed.feeParty.accountKind = "NormalSavings";
+    example.seed.feeParty.customerId = "SOURCE-C1";
+    example.seed.feeParty.branchId = "001001001";
+    example.seed.feeParty.regionCode = "0001";
+    example.command = new CashDepositCommand();
+    example.command.id = "SOURCE-ORDINARY-T";
+    example.command.attemptId = "SOURCE-ORDINARY-ATTEMPT";
+    example.command.accountId = example.seed.id;
+    example.command.request = new DepositRequest();
+    example.command.request.amount = 600;
+    example.command.request.currency = "CNY";
+    example.command.request.valueDate = 20261007;
+    example.command.day = new BusinessDay();
+    example.command.day.date = 20261007;
+    example.command.channel = new CashChannel();
+    example.command.channel.teller = true;
+    example.command.channel.channel = "Teller";
+    example.command.channel.transactionId = "GSA01102";
+    example.command.channel.transactionFamily = "GSA0110";
+    example.command.channel.businessCode = "SA0";
+    example.command.authorizationPolicy = new CashAuthorizationPolicy();
+    example.command.authorizationPolicy.warningThreshold = 500;
+    example.command.authorizationPolicy.tellerLimit = 1000;
+    example.command.authorizationPolicy.levelAMultiplier = 2;
+    example.command.authorizationPolicy.specialUsdLevelB = 1500;
+    example.command.authorizationPolicy.specialUsdLevelA = 3000;
+    example.command.evidence = new AuthorizationEvidence();
+    example.command.evidence.grantedLevel = "None";
+    example.command.details = new DepositDetailPolicy();
+    example.command.details.itemCount = 1;
+    example.command.feeContext = new DepositFeeContext();
+    example.command.feeContext.channel = "Teller";
+    // Same branch: no tariff lookup is required in this first acceptance scenario.
+    example.command.feeContext.branchId = "001001001";
+    example.command.feeContext.regionCode = "0001";
+    example.command.subjects = new CashPostingSubjects();
+    example.command.subjects.lines = new DepositPostingLine[] {
+        new DepositPostingLine(), new DepositPostingLine(), new DepositPostingLine(), new DepositPostingLine(),
+        new DepositPostingLine(), new DepositPostingLine(), new DepositPostingLine(), new DepositPostingLine()
+    };
+    int slot = 1;
+    for (DepositPostingLine line : example.command.subjects.lines) {
+        line.slot = slot;
+        line.amount = 0;
+        line.side = "Credit";
+        line.subject = "DEMO.DEPOSIT_LIABILITY";
+        if (slot == 1 || slot == 2 || slot == 7) { line.side = "Debit"; }
+        if (slot == 1 || slot == 7) { line.subject = "DEMO.CASH"; }
+        if (slot == 4) { line.subject = "DEMO.OVERDRAFT_PRINCIPAL"; }
+        if (slot == 5) { line.subject = "DEMO.OVERDRAFT_INTEREST"; }
+        if (slot == 6) { line.subject = "DEMO.COLLECTION_INTEREST"; }
+        if (slot == 8) { line.subject = "DEMO.FEE_INCOME"; }
+        slot++;
+    }
+    example.lifecycle = new CashDepositLifecycle();
+    example.observed = new CashAccountRecord();
+    example.observed.id = example.seed.id;
+    example.postingKey = new CashPostingRecord();
+    example.postingKey.tradeId = example.command.id;
+}
+atomic check verifyOrdinaryCashExample(CashExample example) {
+    require(example.lifecycle.execution.status == "Committed", "EXAMPLE_DEPOSIT_NOT_COMMITTED");
+    require(example.lifecycle.execution.work.admission.warningCode == "F0554", "EXAMPLE_WARNING_MISSING");
+    require(example.observed.version == 1, "EXAMPLE_ACCOUNT_VERSION");
+    require(example.observed.account.interestBase == 700, "EXAMPLE_INTEREST_BASE");
+    require(example.observed.eligibility.accountBalance == 700, "EXAMPLE_ACCOUNT_BALANCE");
+    require(example.observed.eligibility.cashDepositedToday == 600, "EXAMPLE_DAILY_CASH");
+    require(example.observed.eligibility.detailCount == 11, "EXAMPLE_DETAIL_COUNT");
+    require(example.lifecycle.execution.work.fee.fee == 0, "EXAMPLE_SAME_BRANCH_FEE");
+    int count = 0;
+    double debit = 0;
+    double credit = 0;
+    for (CashPostingRecord posting : example.postings) {
+        count++;
+        if (posting.line.side == "Debit") { debit += posting.line.amount; }
+        else { credit += posting.line.amount; }
+    }
+    require(count == 8 && debit == 600 && credit == 600, "EXAMPLE_LEDGER_BALANCE");
+}
+Scenario serial ordinaryCashExample(context CashExample example) {
+    prepareOrdinaryCashExample(example);
+    serial { transaction quantum { seedCashExampleAccount(example.seed); } }
+    executeCashDeposit(example.command, example.lifecycle);
+    example.observed = queryCashAccount(example.observed);
+    example.postings = queryCashPostingRecords(example.postingKey);
+    verifyOrdinaryCashExample(example);
+}

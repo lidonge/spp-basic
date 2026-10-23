@@ -1,0 +1,78 @@
+domain cboddeposit;
+
+// A candidate is business evidence, never a committed reversal.
+Contract DepositReversalPreparationRequest {
+    String originalTradeId; DepositReversalCapacity capacity; DepositReversalFeeDecision feeDecision;
+    DepositOperatorFacts operator; CashChannel channel;
+}
+Contract DepositReversalPreparationFacts {
+    CashReversalWork financial; DepositOperatorFacts operator; CashChannel channel;
+}
+atomic calculate initializeDepositReversalPreparation(DepositReversalPreparationRequest request,
+    context DepositReversalPreparationFacts facts) {
+    require(request.originalTradeId != null && request.originalTradeId != "", "MISSING_ORIGINAL_TRANSACTION_ID");
+    require(request.capacity != null, "MISSING_REVERSAL_CAPACITY");
+    facts.operator = null; facts.channel = null;
+    facts.financial = new CashReversalWork();
+    facts.financial.status = "Preparing";
+    facts.financial.originalTrade = new CashDepositTrade(); facts.financial.originalTrade.id = request.originalTradeId;
+    facts.financial.current = new CashAccountRecord(); facts.financial.capacity = copy(request.capacity);
+    facts.financial.movement = new OriginalDepositMovement(); facts.financial.amounts = new DepositReversalAmountPlan();
+    facts.financial.postingKey = new CashPostingRecord(); facts.financial.postingKey.tradeId = request.originalTradeId;
+    facts.financial.actualLines = new DepositPostingLine[] { new DepositPostingLine(), new DepositPostingLine(), new DepositPostingLine(),
+        new DepositPostingLine(), new DepositPostingLine(), new DepositPostingLine(), new DepositPostingLine(), new DepositPostingLine() };
+    int slot = 1; for (DepositPostingLine line : facts.financial.actualLines) { line.slot = slot; slot++; }
+    facts.financial.reversedLines = copy(facts.financial.actualLines);
+    facts.financial.originalTotals = new DepositPostingTotals(); facts.financial.totals = new DepositPostingTotals();
+    facts.financial.accounting = new DepositAccounting(); facts.financial.notices = new DepositNotices();
+}
+atomic calculate prepareCoreReversalQualificationFacts(DepositReversalPreparationRequest request,
+    context DepositReversalPreparationFacts facts) {
+    require(request.operator != null, "MISSING_REVERSAL_OPERATOR");
+    require(request.channel != null, "MISSING_REVERSAL_CHANNEL");
+    require(facts.financial.current.control != null && facts.financial.current.eligibility != null, "MISSING_REVERSAL_ELIGIBILITY_FACTS");
+    require(facts.financial.current.bankProfile != null, "MISSING_REVERSAL_BANK_PROFILE");
+    facts.operator = copy(request.operator); facts.channel = copy(request.channel);
+}
+atomic calculate prepareExplicitReversalRefundFacts(DepositReversalPreparationRequest request,
+    context DepositReversalPreparationFacts facts) {
+    require(request.feeDecision != null, "MISSING_REVERSAL_FEE_DECISION");
+    facts.financial.refund = copy(request.feeDecision);
+}
+atomic check checkRequiredReversalRefundDecision(DepositReversalPreparationRequest request) {
+    require(request.feeDecision != null, "MISSING_REVERSAL_FEE_DECISION");
+}
+Scenario serial loadDepositReversalPreparation(context DepositReversalPreparationFacts facts) {
+    facts.financial.originalTrade = lookupCashDepositTrade(facts.financial.originalTrade);
+    prepareCashReversalQueries(facts.financial);
+    facts.financial.current = queryCashAccount(facts.financial.current);
+}
+Scenario serial calculateStoredDepositReversalCandidate(context DepositReversalPreparationFacts facts) {
+    prepareRecordedDepositReversal(facts.financial.originalTrade.request, facts.financial.originalTrade.original.account,
+        facts.financial.originalTrade.settled.account, facts.financial.originalTrade.plan, facts.financial.current.account,
+        facts.financial.capacity, facts.financial.movement, facts.financial.amounts);
+}
+Scenario serial prepareFinancialDepositReversal(DepositReversalPreparationRequest request,
+    context DepositReversalPreparationFacts facts) {
+    initializeDepositReversalPreparation(request, facts); loadDepositReversalPreparation(facts);
+    calculateStoredDepositReversalCandidate(facts);
+}
+Scenario serial prepareCoreQualifiedDepositReversal(DepositReversalPreparationRequest request,
+    context DepositReversalPreparationFacts facts) {
+    initializeDepositReversalPreparation(request, facts); loadDepositReversalPreparation(facts);
+    prepareCoreReversalQualificationFacts(request, facts);
+    assessCoreDepositReversalEligibility(facts.financial.current.control, facts.financial.current.eligibility,
+        facts.financial.current.bankProfile, facts.operator, facts.channel, facts.financial.notices);
+    calculateStoredDepositReversalCandidate(facts);
+}
+Scenario serial prepareFinancialDepositReversalPostings(DepositReversalPreparationRequest request,
+    context DepositReversalPreparationFacts facts) {
+    checkRequiredReversalRefundDecision(request);
+    prepareFinancialDepositReversal(request, facts); prepareExplicitReversalRefundFacts(request, facts);
+    facts.financial.recordedPostings = queryCashPostingRecords(facts.financial.postingKey);
+    prepareCashReversalLedger(facts.financial);
+    prepareRecordedDepositReversalPostings(facts.financial.originalTrade.request, facts.financial.originalTrade.plan,
+        facts.financial.originalTrade.fee, facts.financial.originalTrade.lines, facts.financial.actualLines,
+        facts.financial.refund, facts.financial.accounting, facts.financial.originalTotals,
+        facts.financial.reversedLines, facts.financial.totals);
+}

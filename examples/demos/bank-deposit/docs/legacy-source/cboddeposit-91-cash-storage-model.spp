@@ -1,0 +1,109 @@
+domain cboddeposit;
+
+Contract CashFailureFacts { String code; String transactionOutcome; String[] suppressedCodes; }
+
+// Stored business facts replace the former Java AccountFacts/Snapshot/Prepared wrappers.
+Role CashAccountRecord {
+    String id;
+    long version;
+    DepositAccount account;
+    AccountEligibility eligibility;
+    CashAccountControl control;
+    DepositProduct product;
+    DepositFeeParty feeParty;
+    DepositAccrualInput accrual;
+    AgreementBand[] bands;
+    DepositBankProfile bankProfile;
+}
+Role CashDepositTrade {
+    String id;
+    String accountId;
+    CashAccountRecord original;
+    CashAccountRecord settled;
+    DepositRequest request;
+    DepositPlan plan;
+    AdmissionDecision admission;
+    DepositFeePlan fee;
+    DepositPostingLine[] lines;
+    DepositAccrualPlan accrual;
+    AgreementBand[] increments;
+    DepositOperatorFacts operator;
+    DepositNotices notices;
+}
+// Amount remains a quantum property of the contained DepositPostingLine.
+Role CashPostingRecord { String tradeId; int slot; DepositPostingLine line; }
+Role CashTradeReversalLink { String id; long version; String reversalId; }
+Role CashReversalTrade {
+    String id;
+    String accountId;
+    String originalTradeId;
+    CashDepositTrade originalDeposit;
+    CashAccountRecord original;
+    CashAccountRecord settled;
+    OriginalDepositMovement movement;
+    DepositReversalAmountPlan amounts;
+    DepositReversalFeeDecision fee;
+    DepositPostingLine[] lines;
+    CashReversalJournal journal;
+    CashReversalContext execution;
+    CashReversalMetadataPlan metadata;
+    DepositNotices notices;
+}
+Role CashAuditRecord {
+    String attemptId;
+    String tradeId;
+    String accountId;
+    String event;
+    String code;
+    CashDepositTrade deposit;
+    CashReversalTrade reversal;
+}
+
+atomic query <CashAccountRecord account> queryCashAccount(CashAccountRecord key);
+atomic query <CashDepositTrade trade> queryCashDepositTrade(CashDepositTrade key);
+atomic query <CashTradeReversalLink link> queryCashTradeReversalLink(CashTradeReversalLink key);
+atomic query <CashReversalTrade trade> queryCashReversalTrade(CashReversalTrade key);
+
+atomic update storeCashAccount(CashAccountRecord original, CashAccountRecord proposed);
+atomic update storeCashDepositTrade(CashDepositTrade trade);
+atomic update storeCashPostingRecords(CashPostingRecord[] postings);
+atomic update storeCashTradeReversalLink(CashTradeReversalLink original, CashTradeReversalLink proposed);
+atomic update createCashTradeReversalLink(CashTradeReversalLink link);
+atomic update storeCashReversalTrade(CashReversalTrade trade);
+atomic update storeCashAudit(CashAuditRecord audit);
+
+atomic calculate prepareCashAccountRecord(CashAccountRecord original, CashAccountRecord proposed,
+    DepositAccount afterAccount, AccountEligibility afterEligibility,
+    DepositAccrualInput afterAccrual, AgreementBand[] afterBands) {
+    proposed.id = original.id;
+    proposed.version = original.version + 1;
+    proposed.account = copy(afterAccount);
+    proposed.eligibility = copy(afterEligibility);
+    proposed.eligibility.accountId = original.id;
+    proposed.control = copy(original.control);
+    proposed.product = copy(original.product);
+    proposed.feeParty = copy(original.feeParty);
+    proposed.accrual = copy(afterAccrual);
+    proposed.bands = copy(afterBands);
+    proposed.bankProfile = copy(original.bankProfile);
+}
+atomic calculate prepareCashQuantumParticipants(CashAccountRecord original, AccountEligibility quantumAccount,
+    CashQuantumClearing clearing) {
+    quantumAccount.accountId = original.id;
+    quantumAccount.accountBalance = original.eligibility.accountBalance;
+    clearing.accountId = original.id;
+    // PHY refreshes an existing counterparty value under the journal lock; a new ledger starts at zero.
+    clearing.amount = 0;
+}
+atomic check checkCashSettledQuantumBalance(CashAccountRecord proposed, AccountEligibility quantumAccount) {
+    require(proposed.eligibility.accountBalance == quantumAccount.accountBalance, "QUANTUM_CASH_BALANCE_MISMATCH");
+}
+
+// Candidate account facts are verified inside the complete source transaction.
+Contract CashQuantumMovement { double amount; CashAccountRecord current; }
+atomic query <CashAccountRecord account> lookupCashAccountForCommit(CashAccountRecord key);
+atomic check checkCashAccountForCommit(CashAccountRecord expected, CashAccountRecord current) {
+    require(current != null && current.id == expected.id && current.version == expected.version,
+        "PERSISTENCE_VERSION_CONFLICT");
+    require(sameFacts(expected, current), "CASH_ACCOUNT_SNAPSHOT_CHANGED");
+}

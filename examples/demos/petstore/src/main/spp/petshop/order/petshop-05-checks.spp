@@ -1,0 +1,59 @@
+domain petshop;
+
+atomic check checkQuotationInput(Cart, Goods[]) {
+    require(Cart.lines != null, "EMPTY_CART");
+    int count = 0;
+    for (CartLine line : Cart.lines) {
+        require(line != null && line.quantity != null && line.quantity > 0, "INVALID_QUANTITY");
+        boolean found = false;
+        for (Goods product : Goods[]) {
+            if (product.sku == line.goods.sku) {
+                found = true;
+            }
+        }
+        require(found, "PRODUCT_UNAVAILABLE");
+        count++;
+    }
+    require(count > 0, "EMPTY_CART");
+}
+
+atomic check checkUnpaidCancellationAgreementInput(UnpaidCancellationAgreement) {
+    require(
+        UnpaidCancellationAgreement.reason != null && UnpaidCancellationAgreement.reason != "",
+        "REASON_REQUIRED"
+    );
+}
+
+atomic check checkUnpaidCancellation(ShopOrder) {
+    require(ShopOrder.status == OrderStatus.UNPAID, "ORDER_NOT_CANCELLABLE");
+}
+
+atomic check checkPaidCancellationAgreementInput(PaidCancellationAgreement) {
+    require(
+        PaidCancellationAgreement.reason != null && PaidCancellationAgreement.reason != "",
+        "REASON_REQUIRED"
+    );
+}
+
+atomic check checkPaidCancellation(ShopOrder) {
+    require(ShopOrder.status == OrderStatus.PAID, "ORDER_NOT_CANCELLABLE");
+}
+
+atomic check checkOrderReservation(ShopOrder, StockLine[]) {
+    for (OrderLine line : ShopOrder.lines) {
+        boolean found = false;
+        for (StockLine stock : StockLine[]) {
+            if (stock.goods.sku == line.goods.sku) {
+                int needed = 0;
+                for (OrderLine ordered : ShopOrder.lines) {
+                    if (ordered.goods.sku == line.goods.sku) {
+                        needed += ordered.quantity;
+                    }
+                }
+                require(stock.available >= needed, "INSUFFICIENT_STOCK");
+                found = true;
+            }
+        }
+        require(found, "INVENTORY_ITEM_NOT_FOUND");
+    }
+}

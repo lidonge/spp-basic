@@ -1,0 +1,67 @@
+domain cboddeposit;
+
+// XBOD cash reversal policy: KSADEP0 4600/4630/4640, KSAFEE0 5500.
+// Original journal facts are immutable; counters/products start from CURRENT facts.
+Role CashReversalJournal {
+    int transactionDate;
+    int previousTransactionDate;
+    int settledDetailCount;
+    double addedBackdatedProduct;
+}
+Role CashReversalContext { int businessDate; int newDetailItems; boolean overnightMode2; }
+Role CashReversalMetadataPlan {
+    int detailCount;
+    int lastTransactionDate;
+    double cashDepositedToday;
+    double normalProduct;
+    double actualProduct;
+    boolean reverseInstitutionLimit;
+}
+atomic calculate selectXbodCashReversalFee(context DepositFeePlan original, DepositReversalFeeDecision decision) {
+    require(original.fee >= 0, "INVALID_ORIGINAL_DEPOSIT_FEE");
+    decision.refundAmount = original.fee;
+}
+atomic calculate calculateXbodCashReversalMetadata(DepositRequest original, CashReversalJournal journal,
+    CashReversalContext execution, AccountEligibility current, DepositAccrualState accrual,
+    CashReversalMetadataPlan plan) {
+    require(execution.newDetailItems > 0 && journal.addedBackdatedProduct >= 0, "INVALID_CASH_REVERSAL_FACTS");
+    require(accrual.normalProduct >= journal.addedBackdatedProduct, "EN097");
+    plan.normalProduct = accrual.normalProduct - journal.addedBackdatedProduct;
+    plan.actualProduct = plan.normalProduct - accrual.overdraftProduct;
+    plan.detailCount = current.detailCount + execution.newDetailItems;
+    if (current.detailCount == journal.settledDetailCount) {
+        plan.lastTransactionDate = journal.previousTransactionDate;
+    } else {
+        plan.lastTransactionDate = execution.businessDate;
+    }
+    if (execution.overnightMode2) plan.lastTransactionDate = execution.businessDate;
+    plan.cashDepositedToday = current.cashDepositedToday - original.amount;
+    if (plan.cashDepositedToday < 0) plan.cashDepositedToday = 0;
+    plan.reverseInstitutionLimit = journal.transactionDate == execution.businessDate
+        && current.detailCount == journal.settledDetailCount;
+}
+// Cash compatibility policy deliberately differs from generic actual-delta inversion.
+atomic calculate applyXbodCashReversal(DepositAccount current, context OriginalDepositMovement original,
+    context DepositReversalAmountPlan amounts, CashReversalMetadataPlan metadata,
+    DepositAccount after, AccountEligibility afterEligibility, DepositAccrualState afterAccrual) {
+    amounts.overdraftExposure = current.overdraftExposure + original.principalPaid;
+    after.interestBase = amounts.interestBase;
+    after.overdraftPrincipal = amounts.overdraftPrincipal;
+    after.overdraftInterest = amounts.overdraftInterest;
+    after.collectionInterest = amounts.collectionInterest;
+    after.overdraftExposure = amounts.overdraftExposure;
+    after.frozenAmount = current.frozenAmount;
+    after.authorizedAmount = current.authorizedAmount;
+    after.loanState = current.loanState;
+    afterEligibility.detailCount = metadata.detailCount;
+    afterEligibility.lastTransactionDate = metadata.lastTransactionDate;
+    afterEligibility.cashDepositedToday = metadata.cashDepositedToday;
+    afterEligibility.accountBalance = amounts.accountBalance;
+    afterAccrual.normalProduct = metadata.normalProduct;
+    afterAccrual.actualProduct = metadata.actualProduct;
+}
+
+atomic check checkXbodCashReversalPath(DepositOperatorFacts operator, CashChannel channel) {
+    require(channel.teller && channel.channel == "Teller" && channel.transactionId == "GSA01102"
+        && operator.operationCode == "1102" && operator.transactionPrefix == "SA01102", "UNSUPPORTED_CASH_REVERSAL_PATH");
+}

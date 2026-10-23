@@ -1,0 +1,29 @@
+domain petshop;
+
+Scenario serial payShopOrder(Buyer, Merchant, ShopOrder, PaymentAgreement) {
+    checkBuyerCredential;
+    initializePaymentAgreement;
+    configureMerchantLookup;
+    parallel {
+        findBuyer;
+        findMerchant;
+    }
+    identify(Buyer);
+    identify(Merchant);
+    findShopOrder;
+    identify(ShopOrder);
+    checkOrderOwner;
+    checkPaymentEligibility;
+    preparePayment;
+    preparePaymentAgreementReceipt;
+    transaction {
+        transaction REQUIRED {
+            payOrderFunds bounds {
+                Buyer.wallet: [0, null];
+                Merchant.cash: [0, null];
+            };
+        }
+        updateShopOrder;
+        insertReceipt(PaymentAgreement.receipt);
+    }
+}

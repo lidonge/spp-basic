@@ -1,0 +1,16 @@
+domain cboddeposit;
+
+Scenario serial sameIdentityConcurrentReversalExampleRun(context ConcurrentReversalExample example) {
+    initializeConcurrentReversalExample(example); selectSameIdentityReversalExample(example);
+    seedReversalFaultBusiness(example.facts); configureConcurrentReversalExample(example);
+    parallel { submitFirstConcurrentReversal(example); submitSecondConcurrentReversal(example); }
+    observeConcurrentReversal(example); verifyReversalFaultIndependentBusiness(example.facts);
+    verifyConcurrentReversalCollision(example); verifySameIdentityConcurrentReversal(example); verifyReversalFaultCommitted(example.facts);
+}
+Scenario serial differentIdentityConcurrentReversalExampleRun(context ConcurrentReversalExample example) {
+    initializeConcurrentReversalExample(example); selectDifferentIdentityReversalExample(example);
+    seedReversalFaultBusiness(example.facts); configureConcurrentReversalExample(example);
+    parallel { submitFirstConcurrentReversal(example); submitSecondConcurrentReversal(example); }
+    observeConcurrentReversal(example); verifyReversalFaultIndependentBusiness(example.facts);
+    verifyConcurrentReversalCollision(example); verifyDifferentIdentityConcurrentReversal(example);
+}

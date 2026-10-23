@@ -1,0 +1,67 @@
+domain cboddeposit;
+
+atomic calculate configureReplayExample(context CashExample example) {
+    example.seed.id = "SOURCE-REPLAY-A";
+    example.seed.eligibility.accountId = example.seed.id;
+    example.command.id = "SOURCE-REPLAY-FIRST";
+    example.command.attemptId = "SOURCE-REPLAY-FIRST-COMMIT";
+    example.command.accountId = example.seed.id;
+    example.observed.id = example.seed.id;
+    example.originalCommand = copy(example.command);
+    example.auditKey = new CashAuditRecord();
+}
+atomic calculate prepareLaterCashExample(context CashExample example) {
+    example.command.id = "SOURCE-REPLAY-LATER";
+    example.command.attemptId = "SOURCE-REPLAY-LATER-COMMIT";
+    example.command.request.amount = 100;
+}
+atomic calculate prepareOriginalReplayExample(context CashExample example) {
+    example.command = copy(example.originalCommand);
+    example.command.attemptId = "SOURCE-REPLAY-RETRY";
+    example.command.day.date = 20261008;
+    example.command.authorizationPolicy.tellerLimit = 1;
+    example.auditKey.attemptId = example.command.attemptId;
+    example.postingKey.tradeId = example.command.id;
+}
+atomic check verifyOriginalReplayExample(CashExample example) {
+    require(example.lifecycle.execution.status == "Committed" && example.lifecycle.execution.proposed.version == 1
+        && example.lifecycle.execution.proposed.eligibility.accountBalance == 700, "EXAMPLE_REPLAY_ORIGINAL_RESULT");
+    require(example.observed.version == 2 && example.observed.eligibility.accountBalance == 800
+        && example.observed.eligibility.cashDepositedToday == 700, "EXAMPLE_REPLAY_OVERWROTE_LATER_TRADE");
+    require(example.audit != null && example.audit.event == "Replayed", "EXAMPLE_REPLAY_AUDIT");
+    int count = 0;
+    for (CashPostingRecord posting : example.postings) { count++; }
+    require(count == 8, "EXAMPLE_REPLAY_DUPLICATE_POSTINGS");
+}
+atomic calculate prepareReusedIdentityExample(context CashExample example) {
+    example.command.attemptId = "SOURCE-REPLAY-REUSED-IDENTITY";
+    example.command.request.amount = 601;
+    example.auditKey.attemptId = example.command.attemptId;
+    example.failure = null;
+}
+atomic check verifyReusedIdentityExample(CashExample example) {
+    require(example.failure != null && example.failure.code == "DEPOSIT_REQUEST_ID_REUSED", "EXAMPLE_REUSED_ID_NOT_REJECTED");
+    require(example.observed.version == 2 && example.observed.eligibility.accountBalance == 800, "EXAMPLE_REJECTED_ID_CHANGED_ACCOUNT");
+    require(example.audit != null && example.audit.event == "Rejected" && example.audit.code == "DEPOSIT_REQUEST_ID_REUSED",
+        "EXAMPLE_REJECTED_ID_AUDIT");
+}
+Scenario serial replayCashExample(context CashExample example) {
+    prepareOrdinaryCashExample(example);
+    configureReplayExample(example);
+    serial { transaction quantum { seedCashExampleAccount(example.seed); } }
+    executeCashDeposit(example.command, example.lifecycle);
+    prepareLaterCashExample(example);
+    executeCashDeposit(example.command, example.lifecycle);
+    prepareOriginalReplayExample(example);
+    executeCashDeposit(example.command, example.lifecycle);
+    example.observed = queryCashAccount(example.observed);
+    example.postings = queryCashPostingRecords(example.postingKey);
+    example.audit = lookupCashExampleAudit(example.auditKey);
+    verifyOriginalReplayExample(example);
+    prepareReusedIdentityExample(example);
+    try { executeCashDeposit(example.command, example.lifecycle); }
+    catch (CashFailureFacts example.failure) {}
+    example.observed = queryCashAccount(example.observed);
+    example.audit = lookupCashExampleAudit(example.auditKey);
+    verifyReusedIdentityExample(example);
+}

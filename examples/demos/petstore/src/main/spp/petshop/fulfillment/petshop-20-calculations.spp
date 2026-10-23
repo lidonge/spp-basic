@@ -1,0 +1,14 @@
+domain petshop;
+
+atomic calculate prepareShipment(ShopOrder, ShipmentAgreement) {
+    ShipmentAgreement.shippedQuantity = 0;
+    for (OrderLine line : ShopOrder.lines) {
+        ShipmentAgreement.shippedQuantity += line.quantity;
+    }
+    ShopOrder.status = OrderStatus.SHIPPED;
+    ShopOrder.tracking = ShipmentAgreement.tracking;
+}
+
+atomic calculate prepareDelivery(ShopOrder) {
+    ShopOrder.status = OrderStatus.DELIVERED;
+}

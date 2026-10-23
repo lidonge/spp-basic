@@ -1,0 +1,108 @@
+domain cboddeposit;
+
+atomic calculate selectPreparedReplayExample(context PreparedReversalExample example) {
+    example.facts.business.prefix = "SOURCE-PREP-REPLAY";
+}
+atomic calculate saveCommittedPreparedReceipt(context PreparedReversalExample example) {
+    example.committed = copy(example.facts.business.reversal.record);
+    example.facts.business.reversal.cash.command.id = example.extraKey.id;
+    example.facts.business.reversal.cash.command.attemptId = example.facts.business.prefix + "-AFTER-COMMIT";
+    example.facts.business.reversal.cash.command.request.amount = 25;
+    example.expectedVersion = 4; example.expectedBalance = 225; example.expectedClearing = -125; example.expectedQuantumRows = 8;
+}
+atomic calculate selectPreparedReplayAttempt(context PreparedReversalExample example) {
+    example.facts.business.reversal.lifecycle.work = copy(example.saved);
+    example.facts.business.reversal.command.attemptId = example.facts.business.prefix + "-REPLAY";
+    example.facts.business.reversal.command.day.date = 20301231;
+}
+atomic calculate changePreparedReplayReceipt(context PreparedReversalExample example) {
+    example.facts.business.reversal.lifecycle.work = copy(example.saved);
+    example.facts.business.reversal.lifecycle.work.originalEvidence.expected.settled.version = 99;
+    example.facts.business.reversal.lifecycle.work.originalTrade.settled.version = 99;
+    example.facts.business.reversal.lifecycle.work.reversal.originalDeposit.settled.version = 99;
+    example.facts.business.reversal.command.attemptId = example.facts.business.prefix + "-CHANGED";
+}
+atomic calculate selectPreparedReplayConfirmation(context PreparedReversalExample example) {
+    example.facts.business.reversal.lifecycle.work = copy(example.saved);
+    example.facts.business.reversal.command.attemptId = example.facts.business.prefix + "-CONFIRM";
+    example.facts.business.reversal.command.overnightMode2 = false;
+}
+atomic calculate changePreparedReplayRequest(context PreparedReversalExample example) {
+    example.facts.business.reversal.lifecycle.work = copy(example.saved);
+    example.facts.business.reversal.command.attemptId = example.facts.business.prefix + "-CHANGED-MODE";
+    example.facts.business.reversal.command.overnightMode2 = true;
+}
+atomic check verifyPreparedReplayState(PreparedReversalExample example) {
+    require(example.facts.business.reversal.cash.observed.version == 4
+        && example.facts.business.reversal.cash.observed.eligibility.accountBalance == 225
+        && example.facts.business.reversal.cash.observed.account.interestBase == 225
+        && sameFacts(example.facts.business.reversal.record, example.committed)
+        && example.facts.business.reversal.record.settled.version == 3
+        && example.facts.business.reversal.record.settled.eligibility.accountBalance == 200
+        && example.facts.business.reversal.link.version == 1
+        && example.facts.business.reversal.link.reversalId == example.facts.business.reversal.command.id,
+        "EXAMPLE_PREPARED_REPLAY_CHANGED_COMMITTED_BUSINESS");
+    int rows = 0; double debit = 0; double credit = 0;
+    for (CashPostingRecord posting : example.facts.business.reversal.cash.postings) {
+        rows++; if (posting.line.side == "Debit") { debit += posting.line.amount; } else { credit += posting.line.amount; }
+    }
+    require(rows == 8 && debit == 602 && credit == 602, "EXAMPLE_PREPARED_REPLAY_DUPLICATED_LEDGER");
+    require(example.extra.id == example.extraKey.id && example.extra.request.amount == 25 && example.extra.fee.fee == 2
+        && example.extra.original.version == 3 && example.extra.original.eligibility.accountBalance == 200
+        && example.extra.settled.version == 4 && example.extra.settled.eligibility.accountBalance == 225,
+        "EXAMPLE_PREPARED_REPLAY_OVERWROTE_FOLLOWING_TRADE");
+    rows = 0; debit = 0; credit = 0;
+    for (CashPostingRecord posting : example.extraPostings) {
+        rows++; require(posting.tradeId == example.extraKey.id, "EXAMPLE_PREPARED_REPLAY_FOLLOWING_ID");
+        if (posting.line.side == "Debit") { debit += posting.line.amount; } else { credit += posting.line.amount; }
+    }
+    require(rows == 8 && debit == 27 && credit == 27, "EXAMPLE_PREPARED_REPLAY_FOLLOWING_LEDGER");
+}
+atomic check verifyPreparedReplayResult(PreparedReversalExample example) {
+    require(example.facts.business.reversal.lifecycle.work.status == "Committed"
+        && example.facts.business.reversal.lifecycle.work.proposed.version == 3
+        && example.facts.business.reversal.lifecycle.work.proposed.eligibility.accountBalance == 200
+        && example.facts.business.reversal.lifecycle.work.execution.businessDate == 20261008
+        && sameFacts(example.facts.business.reversal.lifecycle.work.reversal, example.committed),
+        "EXAMPLE_PREPARED_REPLAY_RECALCULATED_RESULT");
+}
+atomic check verifyPreparedReplayRejection(PreparedReversalExample example) {
+    require(example.facts.business.reversal.failure != null && example.facts.business.reversal.failure.code == "DEPOSIT_REQUEST_ID_REUSED",
+        "EXAMPLE_PREPARED_REPLAY_ORIGINAL_IDENTITY_NOT_CHECKED");
+}
+atomic check verifyPreparedReplayHistory(PreparedReversalExample example) {
+    int rows = 0; int committed = 0; int replayed = 0; int rejected = 0;
+    for (CashAuditRecord audit : example.facts.business.history) {
+        rows++;
+        if (audit.event == "ReversalCommitted") { committed++; require(audit.code == "", "EXAMPLE_PREPARED_REPLAY_COMMIT_CODE"); }
+        else if (audit.event == "ReversalReplayed") { replayed++; require(audit.code == "", "EXAMPLE_PREPARED_REPLAY_CONFIRM_CODE"); }
+        else if (audit.event == "ReversalRejected") { rejected++; require(audit.code == "DEPOSIT_REQUEST_ID_REUSED", "EXAMPLE_PREPARED_REPLAY_REJECT_CODE"); }
+        else { require(false, "EXAMPLE_PREPARED_REPLAY_UNEXPECTED_AUDIT"); }
+    }
+    require(rows == 5 && committed == 1 && replayed == 2 && rejected == 2, "EXAMPLE_PREPARED_REPLAY_AUDIT_COUNTS");
+}
+Scenario serial observePreparedReplayExample(context PreparedReversalExample example) {
+    observePreparedReversalExample(example);
+    example.extra = queryCashDepositTrade(example.extraKey); example.extraPostings = queryCashPostingRecords(example.extraPostingKey);
+    verifyReversalFaultIndependentBusiness(example.facts.business);
+    verifyPreparedReplayState(example); verifyPreparedReversalQuantum(example);
+}
+Scenario serial preparedReversalReplayExampleRun(context PreparedReversalExample example) {
+    initializePreparedReversalExample(example); selectPreparedReplayExample(example); prepareReversalCandidateExample(example);
+    executePreparedCashReversal(example.facts.business.reversal.command, example.facts.business.reversal.lifecycle);
+    observePreparedReversalExample(example); verifyReversalFaultCommitted(example.facts.business); saveCommittedPreparedReceipt(example);
+    executeCashDeposit(example.facts.business.reversal.cash.command, example.facts.business.reversal.cash.lifecycle);
+    selectPreparedReplayAttempt(example); executePreparedCashReversal(example.facts.business.reversal.command, example.facts.business.reversal.lifecycle);
+    observePreparedReplayExample(example); verifyPreparedReplayResult(example);
+    changePreparedReplayReceipt(example);
+    try { executePreparedCashReversal(example.facts.business.reversal.command, example.facts.business.reversal.lifecycle); }
+    catch (CashFailureFacts example.facts.business.reversal.failure) {}
+    observePreparedReplayExample(example); verifyPreparedReplayRejection(example);
+    changePreparedReplayRequest(example);
+    try { executePreparedCashReversal(example.facts.business.reversal.command, example.facts.business.reversal.lifecycle); }
+    catch (CashFailureFacts example.facts.business.reversal.failure) {}
+    observePreparedReplayExample(example); verifyPreparedReplayRejection(example);
+    selectPreparedReplayConfirmation(example);
+    executePreparedCashReversal(example.facts.business.reversal.command, example.facts.business.reversal.lifecycle);
+    observePreparedReplayExample(example); verifyPreparedReplayResult(example); verifyPreparedReplayHistory(example);
+}

@@ -1,0 +1,12 @@
+domain cboddeposit;
+
+Scenario serial previewAgreementProduct(
+    InterestPeriod normal,
+    InterestPeriod overlap,
+    AgreementPolicy,
+    AgreementBand[],
+    AgreementProduct
+) {
+    checkAgreementProductInput(normal, overlap, AgreementBand[]);
+    calculateAgreementProduct(normal, overlap, AgreementPolicy, AgreementBand[], AgreementProduct);
+}

@@ -1,0 +1,6 @@
+domain petshop;
+
+Scenario serial readShopCustomer(Buyer) {
+    findBuyer;
+    identify(Buyer);
+}

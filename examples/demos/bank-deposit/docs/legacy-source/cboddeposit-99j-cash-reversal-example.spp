@@ -1,0 +1,233 @@
+domain cboddeposit;
+
+Contract CashReversalExample {
+    CashExample cash;
+    CashReversalCommand command;
+    CashReversalLifecycle lifecycle;
+    CashReversalTrade recordKey;
+    CashReversalTrade record;
+    CashTradeReversalLink linkKey;
+    CashTradeReversalLink link;
+    CashFailureFacts failure;
+}
+atomic calculate initializeCashReversalExample(context CashReversalExample example) {
+    example.cash = new CashExample();
+}
+atomic calculate configureCashReversalExample(context CashReversalExample example) {
+    example.cash.seed.id = "SOURCE-REVERSAL-A";
+    example.cash.seed.eligibility.accountId = example.cash.seed.id;
+    example.cash.seed.eligibility.lastTransactionDate = 20261006;
+    example.cash.seed.feeParty.customerId = "SOURCE-REVERSAL-C1";
+    example.cash.command.id = "SOURCE-REVERSAL-ORIGINAL";
+    example.cash.command.attemptId = "SOURCE-REVERSAL-ORIGINAL-COMMIT";
+    example.cash.command.accountId = example.cash.seed.id;
+    example.cash.observed.id = example.cash.seed.id;
+    example.cash.tariffRecord.customerId = example.cash.seed.feeParty.customerId;
+    example.cash.seed.bankProfile = new DepositBankProfile();
+    example.cash.seed.bankProfile.normalSavings = true;
+    example.cash.seed.bankProfile.restrictedSubtype = false;
+    example.cash.seed.bankProfile.openingBranch = "001001001";
+    example.cash.seed.bankProfile.openingProvince = "001";
+    example.cash.seed.bankProfile.subbranch = "SB001";
+    example.cash.seed.bankProfile.area = "0001";
+    example.cash.seed.bankProfile.areaProvince = "00";
+    example.cash.seed.bankProfile.depositRange = "City";
+    example.cash.seed.bankProfile.proprietaryRange = "Open";
+    example.cash.seed.bankProfile.cardLinked = false;
+    example.cash.seed.bankProfile.accountSeries = "General";
+    example.cash.seed.bankProfile.cardRecordFound = false;
+    example.cash.seed.bankProfile.cardLoss = "None";
+    example.cash.seed.bankProfile.cardStatus = "Normal";
+    example.cash.seed.bankProfile.passbookLoss = "None";
+    example.cash.seed.bankProfile.groupSubaccount = false;
+    example.cash.command.operator = new DepositOperatorFacts();
+    example.cash.command.operator.branch = "001001002";
+    example.cash.command.operator.province = "001";
+    example.cash.command.operator.subbranch = "SB001";
+    example.cash.command.operator.area = "0001";
+    example.cash.command.operator.areaProvince = "00";
+    example.cash.command.operator.accountingCentre = false;
+    example.cash.command.operator.transactionPrefix = "SA01102";
+    example.cash.command.operator.operationCode = "1102";
+    example.cash.command.operator.tellerFamily = "Ordinary";
+    example.cash.command.operator.tellerNumber = 0;
+    example.cash.command.operator.numericTeller = true;
+    example.cash.command.operator.mode = "Online";
+    example.cash.command.operator.agencySigned = false;
+    example.cash.command.operator.corporateTransfer = false;
+    example.cash.command.operator.settlementChannel = "Teller";
+    example.cash.seed.accrual = new DepositAccrualInput();
+    example.cash.seed.accrual.state = new DepositAccrualState();
+    example.cash.seed.accrual.state.lastProductDate = 20261006;
+    example.cash.seed.accrual.state.normalProduct = 0;
+    example.cash.seed.accrual.state.overdraftProduct = 0;
+    example.cash.seed.accrual.state.overdraftInterestProduct = 0;
+    example.cash.seed.accrual.state.actualProduct = 0;
+    example.cash.seed.accrual.state.overdraftDays = 0;
+    example.cash.seed.accrual.state.overdraftInterestDays = 0;
+    example.cash.seed.accrual.policy = new DepositInterestPolicy();
+    example.cash.seed.accrual.policy.normalEnabled = true;
+    example.cash.seed.accrual.policy.normalUnit = 1;
+    example.cash.seed.accrual.policy.overdraftUnit = 0.01;
+    example.cash.seed.accrual.calendar = new InterestCalendar();
+    example.cash.seed.accrual.calendar.convention = "ACT";
+    example.cash.seed.accrual.term = new AgreementTerm();
+    example.cash.seed.accrual.term.effectiveDate = 0;
+    example.cash.seed.accrual.term.cancelDate = 0;
+    example.cash.seed.accrual.agreement = new AgreementPolicy();
+    example.cash.seed.accrual.agreement.enabled = false;
+    example.cash.seed.accrual.agreement.mode = "2";
+    example.cash.seed.accrual.agreement.currency = "CNY";
+    example.cash.seed.bands = new AgreementBand[] {
+        new AgreementBand(), new AgreementBand(), new AgreementBand(), new AgreementBand(), new AgreementBand()
+    };
+    int slot = 5;
+    for (AgreementBand band : example.cash.seed.bands) {
+        band.slot = slot;
+        band.threshold = 0;
+        band.product = 0;
+        slot--;
+    }
+    example.cash.originalCommand = copy(example.cash.command);
+    example.cash.tradeKey = new CashDepositTrade();
+    example.cash.tradeKey.id = example.cash.command.id;
+    example.command = new CashReversalCommand();
+    example.command.id = "SOURCE-REVERSAL-R";
+    example.command.attemptId = "SOURCE-REVERSAL-COMMIT";
+    example.command.originalTradeId = example.cash.command.id;
+    example.command.overnightMode2 = false;
+    example.command.day = new BusinessDay();
+    example.command.day.date = 20261008;
+    example.command.capacity = new DepositReversalCapacity();
+    example.command.capacity.overdraftPermitted = true;
+    example.command.capacity.overdraftLimit = 1000;
+    example.command.operator = copy(example.cash.command.operator);
+    example.command.channel = copy(example.cash.command.channel);
+    example.lifecycle = new CashReversalLifecycle();
+    example.recordKey = new CashReversalTrade();
+    example.recordKey.id = example.command.id;
+    example.linkKey = new CashTradeReversalLink();
+    example.linkKey.id = example.command.originalTradeId;
+}
+atomic check verifyOriginalQualifiedCashExample(CashReversalExample example) {
+    require(example.cash.lifecycle.execution.status == "Committed"
+        && example.cash.lifecycle.execution.work.fee.fee == 2, "EXAMPLE_QUALIFIED_ORIGINAL");
+    require(example.cash.observed.version == 1 && example.cash.observed.eligibility.accountBalance == 700
+        && example.cash.observed.accrual.state.normalProduct == 100, "EXAMPLE_ORIGINAL_ACCRUAL");
+}
+atomic calculate prepareCashReversalLaterTradeExample(context CashReversalExample example) {
+    example.cash.command.id = "SOURCE-REVERSAL-LATER";
+    example.cash.command.attemptId = "SOURCE-REVERSAL-LATER-COMMIT";
+    example.cash.command.request.amount = 100;
+    example.cash.command.request.valueDate = 20261008;
+    example.cash.command.day.date = 20261008;
+}
+atomic check verifyBeforeCashReversalExample(CashReversalExample example) {
+    require(example.cash.observed.version == 2 && example.cash.observed.eligibility.accountBalance == 800
+        && example.cash.observed.eligibility.cashDepositedToday == 100
+        && example.cash.observed.accrual.state.normalProduct == 800, "EXAMPLE_BEFORE_REVERSAL");
+}
+atomic calculate prepareCashReversalObservationsExample(context CashReversalExample example) {
+    example.cash.postingKey.tradeId = example.command.id;
+    example.cash.auditKey.attemptId = example.command.attemptId;
+}
+atomic check verifyCommittedCashReversalExample(CashReversalExample example) {
+    require(example.lifecycle.work.status == "Committed", "EXAMPLE_REVERSAL_NOT_COMMITTED");
+    require(example.cash.observed.version == 3 && example.cash.observed.eligibility.accountBalance == 200
+        && example.cash.observed.account.interestBase == 200, "EXAMPLE_REVERSAL_OVERWROTE_LATER_TRADE");
+    require(example.cash.observed.eligibility.detailCount == 13
+        && example.cash.observed.eligibility.lastTransactionDate == 20261008
+        && example.cash.observed.eligibility.cashDepositedToday == 0, "EXAMPLE_XBOD_REVERSAL_METADATA");
+    require(example.cash.observed.accrual.state.normalProduct == 800
+        && example.cash.observed.accrual.state.actualProduct == 800, "EXAMPLE_REVERSAL_OVERWROTE_ACCRUAL");
+    require(example.record.fee.refundAmount == 2 && example.record.originalTradeId == example.command.originalTradeId
+        && example.record.settled.version == 3, "EXAMPLE_ORIGINAL_FEE_REFUND");
+    require(example.link.version == 1 && example.link.reversalId == example.command.id, "EXAMPLE_REVERSAL_LINK");
+    require(example.cash.storedTrade.settled.version == 1
+        && example.cash.storedTrade.settled.eligibility.accountBalance == 700
+        && example.cash.storedTrade.request.amount == 600, "EXAMPLE_REVERSAL_CHANGED_ORIGINAL_TRADE");
+    int count = 0;
+    double debit = 0;
+    double credit = 0;
+    for (CashPostingRecord posting : example.cash.postings) {
+        count++;
+        if (posting.line.side == "Debit") { debit += posting.line.amount; }
+        else { credit += posting.line.amount; }
+        if (posting.slot == 1) {
+            require(posting.line.side == "Credit" && posting.line.amount == 600, "EXAMPLE_REVERSAL_CASH_POSTING");
+        }
+        if (posting.slot == 7) {
+            require(posting.line.side == "Credit" && posting.line.amount == 2, "EXAMPLE_REVERSAL_FEE_POSTING");
+        }
+    }
+    require(count == 8 && debit == 602 && credit == 602, "EXAMPLE_REVERSAL_LEDGER");
+    require(example.cash.audit != null && example.cash.audit.event == "ReversalCommitted", "EXAMPLE_REVERSAL_AUDIT");
+}
+Scenario serial observeCashReversalExample(context CashReversalExample example) {
+    example.cash.observed = queryCashAccount(example.cash.observed);
+    example.cash.storedTrade = queryCashDepositTrade(example.cash.tradeKey);
+    example.record = queryCashReversalTrade(example.recordKey);
+    example.link = queryCashTradeReversalLink(example.linkKey);
+    example.cash.postings = queryCashPostingRecords(example.cash.postingKey);
+    example.cash.audit = lookupCashExampleAudit(example.cash.auditKey);
+}
+atomic calculate prepareCashReversalReplayExample(context CashReversalExample example) {
+    example.command.attemptId = "SOURCE-REVERSAL-REPLAY";
+    example.command.day.date = 20261009;
+    example.cash.auditKey.attemptId = example.command.attemptId;
+}
+atomic check verifyCashReversalReplayExample(CashReversalExample example) {
+    require(example.lifecycle.work.status == "Committed" && example.lifecycle.work.proposed.version == 3
+        && example.lifecycle.work.execution.businessDate == 20261008, "EXAMPLE_REVERSAL_REPLAY_RESULT");
+    require(example.cash.observed.version == 3 && example.cash.observed.eligibility.accountBalance == 200,
+        "EXAMPLE_REVERSAL_REPLAY_UPDATED_ACCOUNT");
+    require(example.cash.audit != null && example.cash.audit.event == "ReversalReplayed", "EXAMPLE_REVERSAL_REPLAY_AUDIT");
+    int count = 0;
+    for (CashPostingRecord posting : example.cash.postings) { count++; }
+    require(count == 8, "EXAMPLE_REVERSAL_REPLAY_DUPLICATE_POSTINGS");
+}
+atomic calculate prepareDuplicateCashReversalExample(context CashReversalExample example) {
+    example.command.id = "SOURCE-REVERSAL-DUPLICATE";
+    example.command.attemptId = "SOURCE-REVERSAL-DUPLICATE-REJECT";
+    example.command.day.date = 20261008;
+    example.cash.auditKey.attemptId = example.command.attemptId;
+    example.failure = null;
+}
+atomic check verifyDuplicateCashReversalExample(CashReversalExample example) {
+    require(example.failure != null && example.failure.code == "ORIGINAL_DEPOSIT_ALREADY_REVERSED", "EXAMPLE_DUPLICATE_REVERSAL_ALLOWED");
+    require(example.cash.observed.version == 3 && example.cash.observed.eligibility.accountBalance == 200,
+        "EXAMPLE_DUPLICATE_REVERSAL_CHANGED_ACCOUNT");
+    require(example.cash.audit != null && example.cash.audit.event == "ReversalRejected"
+        && example.cash.audit.code == "ORIGINAL_DEPOSIT_ALREADY_REVERSED", "EXAMPLE_DUPLICATE_REVERSAL_AUDIT");
+}
+Scenario serial crossDayCashReversalExample(context CashReversalExample example) {
+    initializeCashReversalExample(example);
+    prepareOrdinaryCashExample(example.cash);
+    configureCrossBranchFeeExample(example.cash);
+    configureCashReversalExample(example);
+    serial { transaction quantum {
+        seedCashExampleAccount(example.cash.seed);
+        seedCashExampleTariff(example.cash.tariffRecord);
+    } }
+    executeCashDeposit(example.cash.command, example.cash.lifecycle);
+    example.cash.observed = queryCashAccount(example.cash.observed);
+    verifyOriginalQualifiedCashExample(example);
+    prepareCashReversalLaterTradeExample(example);
+    executeCashDeposit(example.cash.command, example.cash.lifecycle);
+    example.cash.observed = queryCashAccount(example.cash.observed);
+    verifyBeforeCashReversalExample(example);
+    executeCashReversal(example.command, example.lifecycle);
+    prepareCashReversalObservationsExample(example);
+    observeCashReversalExample(example);
+    verifyCommittedCashReversalExample(example);
+    prepareCashReversalReplayExample(example);
+    executeCashReversal(example.command, example.lifecycle);
+    observeCashReversalExample(example);
+    verifyCashReversalReplayExample(example);
+    prepareDuplicateCashReversalExample(example);
+    try { executeCashReversal(example.command, example.lifecycle); }
+    catch (CashFailureFacts example.failure) {}
+    example.cash.observed = queryCashAccount(example.cash.observed);
+    example.cash.audit = lookupCashExampleAudit(example.cash.auditKey);
+    verifyDuplicateCashReversalExample(example);
+}

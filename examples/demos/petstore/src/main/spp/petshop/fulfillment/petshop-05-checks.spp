@@ -1,0 +1,32 @@
+domain petshop;
+
+atomic check checkShipmentAgreementInput(ShipmentAgreement) {
+    require(ShipmentAgreement.tracking != null && ShipmentAgreement.tracking != "", "TRACKING_REQUIRED");
+}
+
+atomic check checkShipmentEligibility(ShopOrder) {
+    require(ShopOrder.status == OrderStatus.PAID, "ORDER_NOT_SHIPPABLE");
+}
+
+atomic check checkDeliveryEligibility(ShopOrder) {
+    require(ShopOrder.status == OrderStatus.SHIPPED, "ORDER_NOT_DELIVERABLE");
+}
+
+atomic check checkReservedInventory(ShopOrder, StockLine[]) {
+    for (OrderLine line : ShopOrder.lines) {
+        boolean found = false;
+        for (StockLine stock : StockLine[]) {
+            if (stock.goods.sku == line.goods.sku) {
+                int needed = 0;
+                for (OrderLine ordered : ShopOrder.lines) {
+                    if (ordered.goods.sku == line.goods.sku) {
+                        needed += ordered.quantity;
+                    }
+                }
+                require(stock.reserved >= needed, "RESERVATION_MISSING");
+                found = true;
+            }
+        }
+        require(found, "INVENTORY_ITEM_NOT_FOUND");
+    }
+}

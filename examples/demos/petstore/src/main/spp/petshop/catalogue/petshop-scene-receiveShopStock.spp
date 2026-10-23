@@ -1,0 +1,35 @@
+domain petshop;
+
+atomic check checkStockReceiptQuantity(StockReceiptAgreement) {
+    require(StockReceiptAgreement.quantity > 0, "INVALID_QUANTITY");
+}
+
+atomic calculate prepareStockReceipt(Goods, StockLine, StockSupply, StockReceiptAgreement) {
+    StockLine.goods = Goods;
+    StockSupply.goods = Goods;
+    StockReceiptAgreement.goods = Goods;
+    StockReceiptAgreement.stock = StockLine;
+    StockReceiptAgreement.source = StockSupply;
+}
+
+atomic update receiveInventory(StockLine, StockSupply, StockReceiptAgreement);
+
+Scenario serial receiveShopStock(Goods, StockLine, StockSupply, StockReceiptAgreement) {
+    checkGoodsCredential;
+    checkStockReceiptQuantity;
+    findGoods;
+    identify(Goods);
+    prepareStockReceipt;
+    parallel {
+        findStockLine;
+        findStockSupply;
+    }
+    identify(StockLine);
+    identify(StockSupply);
+    transaction {
+        receiveInventory bounds {
+            StockSupply.balance: [null, null];
+            StockLine.available: [0, null];
+        };
+    }
+}

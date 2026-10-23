@@ -1,0 +1,14 @@
+domain cboddeposit;
+
+// Signed cash clearing is the counterparty to customer net balance.
+Role CashQuantumClearing { String accountId; quantum double amount; }
+atomic calculate describeCashQuantumMovement(AccountEligibility before, AccountEligibility after,
+    context CashQuantumMovement movement) {
+    movement.amount = after.accountBalance - before.accountBalance;
+}
+quantum update moveCashQuantumValue(AccountEligibility account, CashQuantumClearing clearing,
+    context CashQuantumMovement movement);
+Scenario serial commitCashQuantumValue(AccountEligibility account, CashQuantumClearing clearing,
+    context CashQuantumMovement movement) {
+    transaction quantum { moveCashQuantumValue(account, clearing, movement); }
+}

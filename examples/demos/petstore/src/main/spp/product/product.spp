@@ -1,0 +1,192 @@
+domain product;
+
+Entity Product {
+    business("Product catalogue number") String productCode;
+    String name;
+    String category;
+    String description;
+    BigDecimal(9, 2) cost;
+}
+
+Role CatalogProduct {
+    business("Catalogue lookup number, identical to the product catalogue number") String sku;
+    boolean active;
+}
+
+take Product as CatalogProduct {
+    takeall;
+    String sku = productCode;
+}
+
+Contract ProductCatalogueOpeningAgreement {
+    CatalogProduct[] products;
+}
+
+Contract ProductRevisionAgreement {
+    Product product;
+    String name;
+    String category;
+    String description;
+    BigDecimal(9, 2) cost;
+}
+
+atomic query listCatalogue(CatalogProduct, CatalogProduct[]);
+const String CAT_CATEGORY = "Cats";
+const String CAT_NAME = "British Shorthair";
+const String CAT_DESCRIPTION = "Health checked; adoption handover is arranged by the shop";
+const String FOOD_CATEGORY = "Food";
+const String FOOD_NAME = "Everyday cat food";
+const String FOOD_DESCRIPTION = "Everyday pet food; demo price USD 29.90";
+const String TOY_CATEGORY = "Accessories";
+const String TOY_NAME = "Cat teaser wand";
+const String TOY_DESCRIPTION = "Interactive toy for a multi-product shopping cart";
+const String DOG_CATEGORY = "Dogs";
+const String DOG_NAME = "Corgi puppy";
+const String DOG_DESCRIPTION = "Shop handover; limited demo stock";
+
+atomic calculate localizeProductLabels(CatalogProduct[]) {
+    for (CatalogProduct product : CatalogProduct[]) {
+        switch (product.sku) {
+            case "CAT-001":
+                product.category = CAT_CATEGORY;
+                product.name = CAT_NAME;
+                product.description = CAT_DESCRIPTION;
+                break;
+            case "FOOD-001":
+                product.category = FOOD_CATEGORY;
+                product.name = FOOD_NAME;
+                product.description = FOOD_DESCRIPTION;
+                break;
+            case "TOY-001":
+                product.category = TOY_CATEGORY;
+                product.name = TOY_NAME;
+                product.description = TOY_DESCRIPTION;
+                break;
+            case "DOG-001":
+                product.category = DOG_CATEGORY;
+                product.name = DOG_NAME;
+                product.description = DOG_DESCRIPTION;
+                break;
+        }
+    }
+}
+
+atomic calculate configureCatalogueSelection(CatalogProduct) {
+    CatalogProduct.active = true;
+}
+
+atomic calculate initializeProductCatalogue(CatalogProduct[], Product[], ProductCatalogueOpeningAgreement) {
+    CatalogProduct[] = new CatalogProduct[] {
+        new CatalogProduct(),
+        new CatalogProduct(),
+        new CatalogProduct(),
+        new CatalogProduct()
+    };
+    int index = 0;
+    for (CatalogProduct product : CatalogProduct[]) {
+        product.active = true;
+        switch (index) {
+            case 0:
+                product.sku = "CAT-001";
+                product.name = CAT_NAME;
+                product.category = CAT_CATEGORY;
+                product.description = CAT_DESCRIPTION;
+                product.cost = 800;
+                break;
+            case 1:
+                product.sku = "FOOD-001";
+                product.name = FOOD_NAME;
+                product.category = FOOD_CATEGORY;
+                product.description = FOOD_DESCRIPTION;
+                product.cost = 20;
+                break;
+            case 2:
+                product.sku = "TOY-001";
+                product.name = TOY_NAME;
+                product.category = TOY_CATEGORY;
+                product.description = TOY_DESCRIPTION;
+                product.cost = 8;
+                break;
+            default:
+                product.sku = "DOG-001";
+                product.name = DOG_NAME;
+                product.category = DOG_CATEGORY;
+                product.description = DOG_DESCRIPTION;
+                product.cost = 1200;
+        }
+        index++;
+    }
+    Product[] = new Product[] {
+        new Product(),
+        new Product(),
+        new Product(),
+        new Product()
+    };
+
+    index = 0;
+    for (Product root : Product[]) {
+        switch (index) {
+            case 0:
+                root.productCode = "CAT-001";
+                break;
+            case 1:
+                root.productCode = "FOOD-001";
+                break;
+            case 2:
+                root.productCode = "TOY-001";
+                break;
+            default:
+                root.productCode = "DOG-001";
+        }
+        for (CatalogProduct product : CatalogProduct[]) {
+            if (product.sku == root.productCode) {
+                root.name = product.name;
+                root.category = product.category;
+                root.description = product.description;
+                root.cost = product.cost;
+            }
+        }
+        index++;
+    }
+    ProductCatalogueOpeningAgreement.products = CatalogProduct[];
+}
+
+Scenario serial initializeProductDomain(
+    CatalogProduct,
+    CatalogProduct[],
+    Product[],
+    ProductCatalogueOpeningAgreement
+) {
+    configureCatalogueSelection;
+    listCatalogue;
+    if (CatalogProduct[].length == 0) {
+        initializeProductCatalogue;
+        transaction {
+            insertProduct;
+            insertCatalogProduct(CatalogProduct[]);
+        }
+    }
+}
+
+atomic calculate applyProductRevision(Product, ProductRevisionAgreement) {
+    Product.name = ProductRevisionAgreement.name;
+    Product.category = ProductRevisionAgreement.category;
+    Product.description = ProductRevisionAgreement.description;
+    Product.cost = ProductRevisionAgreement.cost;
+    ProductRevisionAgreement.product = Product;
+}
+
+atomic check checkProductFacts(Product) {
+    require(Product.cost >= 0, "INVALID_PRODUCT_COST");
+    require(Product.name != null && Product.name != "", "PRODUCT_NAME_REQUIRED");
+}
+
+Scenario serial reviseProduct(Product, ProductRevisionAgreement) {
+    findProduct;
+    identify(Product);
+    applyProductRevision;
+    checkProductFacts;
+    transaction {
+        updateProduct;
+    }
+}

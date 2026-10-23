@@ -1,0 +1,6 @@
+domain petshop;
+
+Scenario serial readShopCart(Cart) {
+    findCart;
+    identify(Cart);
+}

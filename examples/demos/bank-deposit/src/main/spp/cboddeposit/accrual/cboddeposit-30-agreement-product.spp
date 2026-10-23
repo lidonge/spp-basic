@@ -1,0 +1,93 @@
+domain cboddeposit;
+
+// CSAPRD2 5500/5555: retain the five source slots, traversed 5 down to 1.
+// Normal and agreement periods have already been clipped/decoded by calendar services.
+
+Role AgreementBand {
+    int slot;
+    BigDecimal(19, 2) threshold;
+    BigDecimal(19, 2) product;
+}
+
+Role AgreementPolicy {
+    String mode;
+    String currency;
+    boolean enabled;
+}
+
+Role AgreementProduct {
+    BigDecimal(19, 2) normalProduct;
+    BigDecimal(19, 2) bandProduct;
+    BigDecimal(19, 2) remainingAmount;
+    int selectedSlot;
+    String appliedMode;
+}
+
+atomic calculate calculateAgreementProduct(
+    InterestPeriod normal,
+    InterestPeriod overlap,
+    AgreementPolicy,
+    AgreementBand[],
+    AgreementProduct
+) {
+    AgreementProduct.normalProduct = roundDown(normal.amount / normal.unit, 0) * normal.unit * normal.days;
+    AgreementProduct.bandProduct = 0;
+    AgreementProduct.remainingAmount = normal.amount;
+    AgreementProduct.selectedSlot = 0;
+    AgreementProduct.appliedMode = AgreementPolicy.mode;
+    if (AgreementPolicy.mode != "1" && AgreementPolicy.mode != "2") {
+        if (AgreementPolicy.currency == "CNY") {
+            AgreementProduct.appliedMode = "2";
+        } else {
+            AgreementProduct.appliedMode = "1";
+        }
+    }
+    for (AgreementBand band : AgreementBand[]) {
+        band.product = 0;
+    }
+    if (AgreementPolicy.enabled && overlap.days > 0) {
+        for (AgreementBand band : AgreementBand[]) {
+            if (AgreementProduct.appliedMode == "2") {
+                if (AgreementProduct.remainingAmount > band.threshold) {
+                    band.product = roundDown(
+                        (AgreementProduct.remainingAmount - band.threshold) / normal.unit,
+                        0
+                    ) * normal.unit * overlap.days;
+                    AgreementProduct.bandProduct += band.product;
+                    AgreementProduct.remainingAmount = band.threshold;
+                    if (band.slot == 1) {
+                        AgreementProduct.normalProduct -= roundDown(
+                            (normal.amount - band.threshold) / normal.unit,
+                            0
+                        ) * normal.unit * overlap.days;
+                    }
+                }
+            } else {
+                if (normal.amount >= band.threshold) {
+                    band.product = roundDown(normal.amount / normal.unit, 0) * normal.unit * overlap.days;
+                    AgreementProduct.bandProduct = band.product;
+                    AgreementProduct.normalProduct -= band.product;
+                    AgreementProduct.selectedSlot = band.slot;
+                    break;
+                }
+            }
+        }
+    }
+}
+
+atomic check checkAgreementProductInput(InterestPeriod normal, InterestPeriod overlap, AgreementBand[]) {
+    require(normal.amount >= 0 && normal.unit > 0 && normal.days >= 0, "INVALID_INTEREST_PERIOD");
+    require(
+        overlap.amount == normal.amount
+            && overlap.unit == normal.unit
+            && overlap.days >= 0
+            && overlap.days <= normal.days,
+        "INVALID_AGREEMENT_PERIOD"
+    );
+    int expectedSlot = 5;
+    for (AgreementBand band : AgreementBand[]) {
+        require(band.slot == expectedSlot && band.threshold >= 0, "INVALID_AGREEMENT_BANDS");
+        expectedSlot--;
+    }
+    require(expectedSlot == 0, "INVALID_AGREEMENT_BANDS");
+}

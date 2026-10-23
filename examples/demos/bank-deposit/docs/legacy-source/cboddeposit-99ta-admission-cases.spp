@@ -1,0 +1,74 @@
+domain cboddeposit;
+
+atomic calculate configureAdmissionRuleCase01(context AdmissionRuleExampleFacts example) {
+    example.request.amount = 0; example.request.valueDate = 20261007;
+    example.expectedCode = "E1155";
+}
+atomic calculate configureAdmissionRuleCase02(context AdmissionRuleExampleFacts example) {
+    example.request.amount = 1; example.request.valueDate = 20261008;
+    example.expectedCode = "E1044";
+}
+atomic calculate configureAdmissionRuleCase03(context AdmissionRuleExampleFacts example) {
+    example.request.amount = 1; example.request.valueDate = 20261006;
+    example.expectedCode = "E1043";
+}
+atomic calculate configureAdmissionRuleCase04(context AdmissionRuleExampleFacts example) {
+    example.request.amount = 1; example.request.valueDate = 20261007;
+    example.expectedCode = "";
+}
+atomic calculate configureAdmissionRuleCase05(context AdmissionRuleExampleFacts example) {
+    example.account.status = "Closed";
+    example.expectedCode = "EO082";
+}
+atomic calculate configureAdmissionRuleCase06(context AdmissionRuleExampleFacts example) {
+    example.account.temporary = true; example.account.expiresOn = 20261006;
+    example.expectedCode = "EDF19";
+}
+atomic calculate configureAdmissionRuleCase07(context AdmissionRuleExampleFacts example) {
+    example.account.temporary = true; example.account.expiresOn = 20261006; example.account.temporaryOpen = true;
+    example.expectedCode = "";
+}
+atomic calculate configureAdmissionRuleCase08(context AdmissionRuleExampleFacts example) {
+    example.account.temporary = true;
+    example.expectedCode = "";
+}
+atomic calculate configureAdmissionRuleCase09(context AdmissionRuleExampleFacts example) {
+    example.request.amount = 99; example.account.detailCount = 0;
+    example.expectedCode = "EN173";
+}
+atomic calculate configureAdmissionRuleCase10(context AdmissionRuleExampleFacts example) {
+    example.request.amount = 5001; example.account.detailCount = 0;
+    example.expectedCode = "EN174";
+}
+atomic calculate configureAdmissionRuleCase11(context AdmissionRuleExampleFacts example) {
+    example.request.amount = 100; example.account.detailCount = 0;
+    example.expectedCode = "";
+}
+atomic calculate configureAdmissionRuleCase12(context AdmissionRuleExampleFacts example) {
+    example.request.amount = 5000; example.account.detailCount = 0;
+    example.expectedCode = "";
+}
+atomic calculate configureAdmissionRuleCase13(context AdmissionRuleExampleFacts example) {
+    example.request.amount = 99; example.account.detailCount = 1; example.account.lastTransactionDate = 20261001;
+    example.expectedCode = "EN173";
+}
+atomic calculate configureAdmissionRuleCase14(context AdmissionRuleExampleFacts example) {
+    example.request.amount = 99; example.account.detailCount = 1; example.account.lastTransactionDate = 20261001; example.account.cashDepositedToday = 1;
+    example.expectedCode = "";
+}
+atomic calculate configureAdmissionRuleCase15(context AdmissionRuleExampleFacts example) {
+    example.request.amount = 99;
+    example.expectedCode = "";
+}
+atomic calculate configureAdmissionRuleCase16(context AdmissionRuleExampleFacts example) {
+    example.account.accountBalance = 9901;
+    example.expectedCode = "EN175";
+}
+atomic calculate configureAdmissionRuleCase17(context AdmissionRuleExampleFacts example) {
+    example.account.accountBalance = 9900;
+    example.expectedCode = "";
+}
+atomic calculate configureAdmissionRuleCase18(context AdmissionRuleExampleFacts example) {
+    example.request.amount = 100000; example.account.detailCount = 0; example.product.minimumOpeningAmount = 0; example.product.maximumOpeningAmount = 0; example.product.maximumBalance = 0;
+    example.expectedCode = "";
+}

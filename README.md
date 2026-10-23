@@ -3,10 +3,16 @@
 ## Start here
 
 - [S++ tutorial](docs/tutorial/spp-tutorial.md): check, generate, build and run your first scenario.
+- [Business examples](examples/README.md): included Petstore and bank-deposit sources, basic by default.
 - [SDK user guide](sdk-tools/docs/user-guide.md): editions, installation, CLI, VS Code and integration.
 - [Built-in technical services](sdk-tools/docs/builtin-technical-services.md): paid-edition configuration, replacement and transaction boundaries.
 
 Public documentation and release notes use English as their primary language.
+Before publishing changes to the integrated examples, run
+`python3 scripts/check_examples.py` to verify their reviewed import hashes,
+English documentation, links, executable modes and license boundaries. Deliberate
+source changes require reviewing and updating `examples/IMPORT.json`; do not
+silently accept drift. Generated test/build output is not part of that inventory.
 The technical-services manual describes optional components; it does not include
 or relicense their implementation source.
 

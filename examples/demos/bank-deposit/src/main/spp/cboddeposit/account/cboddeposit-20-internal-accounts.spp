@@ -1,0 +1,73 @@
+domain cboddeposit;
+
+Role InterestIncomeAccount {
+    String accountNumber;
+    quantum BigDecimal(19, 2) balance;
+}
+
+Role CollectionInterestIncomeAccount {
+    String accountNumber;
+    quantum BigDecimal(19, 2) balance;
+}
+
+Role PrincipalRecoveryAccount {
+    String accountNumber;
+    quantum BigDecimal(19, 2) balance;
+}
+
+take BankAccount as InterestIncomeAccount {
+    mapsame;
+}
+
+take BankAccount as CollectionInterestIncomeAccount {
+    mapsame;
+}
+
+take BankAccount as PrincipalRecoveryAccount {
+    mapsame;
+}
+
+Contract InternalAccountOpeningAgreement {
+    InterestIncomeAccount interestIncome;
+    CollectionInterestIncomeAccount collectionIncome;
+    PrincipalRecoveryAccount principalRecovery;
+}
+
+atomic check checkInternalAccountNumbers(
+    BankAccount interestSubject,
+    BankAccount collectionSubject,
+    BankAccount principalSubject
+) {
+    require(
+        interestSubject.accountNumber != null
+            && interestSubject.accountNumber != ""
+            && collectionSubject.accountNumber != null
+            && collectionSubject.accountNumber != ""
+            && principalSubject.accountNumber != null
+            && principalSubject.accountNumber != "",
+        "INTERNAL_ACCOUNT_NUMBER_REQUIRED"
+    );
+    require(
+        interestSubject.accountNumber != collectionSubject.accountNumber
+            && interestSubject.accountNumber != principalSubject.accountNumber
+            && collectionSubject.accountNumber != principalSubject.accountNumber,
+        "INTERNAL_ACCOUNTS_MUST_DIFFER"
+    );
+}
+
+atomic calculate prepareInternalAccounts(
+    BankAccount interestSubject,
+    BankAccount collectionSubject,
+    BankAccount principalSubject,
+    InterestIncomeAccount,
+    CollectionInterestIncomeAccount,
+    PrincipalRecoveryAccount,
+    InternalAccountOpeningAgreement
+) {
+    InterestIncomeAccount.accountNumber = interestSubject.accountNumber;
+    CollectionInterestIncomeAccount.accountNumber = collectionSubject.accountNumber;
+    PrincipalRecoveryAccount.accountNumber = principalSubject.accountNumber;
+    InternalAccountOpeningAgreement.interestIncome = InterestIncomeAccount;
+    InternalAccountOpeningAgreement.collectionIncome = CollectionInterestIncomeAccount;
+    InternalAccountOpeningAgreement.principalRecovery = PrincipalRecoveryAccount;
+}

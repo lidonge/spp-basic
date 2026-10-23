@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en-US"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Little Pet Shop · SPP Petstore</title><link rel="stylesheet" href="/style.css"></head>
+<body><header><a class="brand" href="/">🐾 Little Pet Shop <span>SPP Petstore</span></a><nav><a href="#catalog">Goods</a><a href="#cart">Cart</a><a href="#orders">Orders</a><a href="#language">Business source</a></nav></header>
+<main><section class="hero"><div><p class="eyebrow">One pet, a complete business journey</p><h1>Companionship starts here.</h1><p>Browse, order, pay and receive your goods. Explore cancellation, refunds and returns too. Every step runs through SPP business services.</p><a class="button" href="#catalog">Explore Little Pet Shop ↗</a></div><div class="pet-art" aria-label="Cat illustration"><div class="ear left"></div><div class="ear right"></div><div class="cat-face"><span>•</span><b>ω</b><span>•</span></div><div class="art-caption">One order, a new companion</div></div></section>
+<section class="account panel"><div><h2>My demo account</h2><p>Load an existing buyer or register a new one. Accounts open with zero balances; wallet funding comes from a third-party settlement account. Inventory is supplied through a separate goods-receipt transaction. All monetary amounts in this demo are US dollars (USD).</p></div><form id="profile"><label>Membership number<input name="membershipNumber" value="PET-CUSTOMER" required></label><label>Name<input name="name" value="Alex Taylor" required></label><label>Email<input name="email" type="email" value="pet@example.test" required></label><label>Delivery address<input name="address" value="1 Pet Lane, Demo City" required></label><label>Membership tier<select name="tier"><option value="NORMAL">Standard</option><option value="VIP">VIP</option></select></label><div class="form-actions"><button type="submit">Register customer</button><button type="button" id="load-customer" class="secondary">Load customer</button><button type="button" id="update-profile" class="secondary">Update profile</button></div></form><div class="form-actions"><label>Funding amount (USD)<input id="funding-amount" type="number" min="0.01" step="0.01" value="5000"></label><button id="fund-wallet" type="button">Fund from settlement account</button></div><div id="customer" class="facts">No account selected</div></section>
+<div id="notice" role="status" aria-live="polite">Loading shop facts…</div>
+<section id="catalog"><div class="section-head"><div><p class="eyebrow">Pets and everyday essentials</p><h2>Goods catalogue</h2></div><label>Catalogue language<select id="catalog-locale"><option value="en-US">English</option><option value="zh-CN">Chinese</option></select></label><select id="category" aria-label="Goods category"><option value="">All categories</option><option>Cats</option><option>Dogs</option><option>Food</option><option>Accessories</option></select></div><div id="products" class="product-grid"></div></section>
+<section class="two-column"><div id="cart" class="panel"><div class="section-head"><h2>Shopping cart</h2><button id="clear-cart" class="text-button">Clear</button></div><div id="cart-lines"></div><div id="quote" class="quote"></div><div class="form-actions"><button id="preview" class="secondary">Get a quote</button><button id="checkout">Place order</button></div><p class="hint">Standard members pay the listed price; VIP members receive a 10% discount. Shipping is free for a discounted subtotal of USD 100 or more, otherwise USD 8. Services explicitly round money to cents.</p></div><div class="panel"><h2>Shop business facts</h2><div class="form-actions"><label>Units received per product<input id="receipt-quantity" type="number" min="1" value="10"></label><button id="receive-stock" type="button">Receive from supply source</button></div><div id="inventory" class="facts"></div><p class="hint">Ordering moves available stock to reserved; shipping moves reserved stock to sold. Cancellation and returns restore inventory through delta transactions.</p><div id="receipt" class="receipt"></div><button id="replay" class="secondary">Replay the last request</button><p class="hint">Replay uses the original request number and content and returns its original receipt.</p></div></section>
+<section id="reservation" class="panel"><h2>Reserve a pet</h2><p>The application is accepted before inventory reservation is attempted. If stock is insufficient, the accepted application remains available by its reservation number.</p><div class="form-actions"><label>Goods<select id="reservation-product"></select></label><label>Quantity<input id="reservation-quantity" type="number" min="1" value="1"></label><button id="reserve-pet">Accept and attempt reservation</button></div><div class="form-actions"><label>Reservation number<input id="reservation-number"></label><button id="read-reservation" class="secondary">Look up reservation</button></div><div id="reservation-facts" class="facts"></div></section>
+<section id="orders"><div class="section-head"><div><p class="eyebrow">A complete transaction lifecycle</p><h2>My orders</h2></div><button id="refresh" class="secondary">Refresh facts</button></div><div id="order-list"></div></section>
+<section id="language" class="panel language"><h2>How does SPP describe this business?</h2><div class="two-column"><div><h3>Calculation and shared checks</h3><pre>atomic calculate priceLine(OrderLine) {
+    OrderLine.amount = roundHalfUp(
+        OrderLine.unitPrice * OrderLine.quantity,
+        2
+    );
+}</pre><p>Participants define the facts a service needs. PHY selects the concrete numeric representation; business code does not need to write BigDecimal method calls.</p></div><div><h3>Explicit business transactions</h3><pre>Contract ReturnRequestAgreement {
+    Buyer;
+    ShopOrder;
+    String reason;
+    Receipt;
+}
+
+Scenario serial requestShopReturn(
+    Buyer,
+    ShopOrder,
+    ReturnRequestAgreement
+) {
+    checkReturnRequestAgreementInput;
+    initializeReturnRequestAgreement;
+    findBuyer;
+    identify(Buyer);
+    findShopOrder;
+    identify(ShopOrder);
+    checkOrderOwner;
+    checkReturnRequest;
+    prepareReturnRequest;
+    prepareReturnRequestReceipt;
+    transaction {
+        updateShopOrder;
+        insertReceipt(ReturnRequestAgreement.Receipt);
+    }
+}</pre><p>Contract fields and scenario entries can omit instance names and use participant type names directly. Parameterless calls bind by unique type. Each business scenario declares its own transaction boundary; APP selects service realization and PHY supplies the commit guarantees.</p></div></div><p>This is a local, single-database demonstration. Its wallet is not connected to a real payment provider. Ordinary updates use conditional saves based on queried revisions, while the quantum domain protects balances and inventory. Parallel queries demonstrate reading behavior; refreshing this page does not produce a transaction snapshot.</p></section>
+</main><footer>SPP business language demo · SPP + APP + PHY · All business Java is generated from source</footer><script src="/app.js"></script></body></html>

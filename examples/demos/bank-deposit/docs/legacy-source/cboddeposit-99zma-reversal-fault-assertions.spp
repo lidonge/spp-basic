@@ -1,0 +1,97 @@
+domain cboddeposit;
+
+atomic check verifyReversalFaultIndependentBusiness(ReversalFaultExample example) {
+    require(example.reversal.cash.storedTrade.id == example.reversal.command.originalTradeId
+        && example.reversal.cash.storedTrade.settled.version == 1
+        && example.reversal.cash.storedTrade.settled.eligibility.accountBalance == 700
+        && example.reversal.cash.storedTrade.request.amount == 600 && example.reversal.cash.storedTrade.fee.fee == 2,
+        "EXAMPLE_REV_FAULT_ORIGINAL_CHANGED");
+    require(example.later.id == example.laterKey.id && example.later.settled.version == 2
+        && example.later.request.amount == 100 && example.later.settled.eligibility.accountBalance == 800
+        && example.later.settled.accrual.state.normalProduct == 800, "EXAMPLE_REV_FAULT_LATER_CHANGED");
+    int originals = 0; int laterLines = 0; double debit = 0; double credit = 0;
+    for (CashPostingRecord posting : example.originalPostings) {
+        originals++;
+        for (DepositPostingLine line : example.reversal.cash.storedTrade.lines) {
+            if (posting.slot == line.slot) { require(posting.line.side == line.side && posting.line.subject == line.subject
+                && posting.line.amount == line.amount, "EXAMPLE_REV_FAULT_ORIGINAL_LEDGER_CHANGED"); }
+        }
+        if (posting.line.side == "Debit") { debit += posting.line.amount; } else { credit += posting.line.amount; }
+    }
+    require(originals == 8 && debit == 602 && credit == 602, "EXAMPLE_REV_FAULT_ORIGINAL_LEDGER");
+    debit = 0; credit = 0;
+    for (CashPostingRecord posting : example.laterPostings) {
+        laterLines++;
+        for (DepositPostingLine line : example.later.lines) {
+            if (posting.slot == line.slot) { require(posting.line.side == line.side && posting.line.subject == line.subject
+                && posting.line.amount == line.amount, "EXAMPLE_REV_FAULT_LATER_LEDGER_CHANGED"); }
+        }
+        if (posting.line.side == "Debit") { debit += posting.line.amount; } else { credit += posting.line.amount; }
+    }
+    require(laterLines == 8 && debit == 102 && credit == 102, "EXAMPLE_REV_FAULT_LATER_LEDGER");
+}
+atomic check verifyReversalFaultUncommitted(ReversalFaultExample example) {
+    require(example.reversal.cash.observed.version == 2 && example.reversal.cash.observed.account.interestBase == 800
+        && example.reversal.cash.observed.eligibility.accountBalance == 800
+        && example.reversal.cash.observed.eligibility.cashDepositedToday == 100
+        && example.reversal.cash.observed.eligibility.detailCount == 12
+        && example.reversal.cash.observed.accrual.state.normalProduct == 800,
+        "EXAMPLE_REV_FAULT_PARTIAL_ACCOUNT");
+    require(example.reversal.record == null && example.reversal.link.version == 0 && example.reversal.link.reversalId == "",
+        "EXAMPLE_REV_FAULT_PARTIAL_RECEIPT_LINK");
+    int count = 0; for (CashPostingRecord posting : example.reversal.cash.postings) { count++; }
+    require(count == 0, "EXAMPLE_REV_FAULT_PARTIAL_LEDGER");
+}
+atomic check verifyReversalFaultCommitted(ReversalFaultExample example) {
+    require(example.reversal.cash.observed.version == 3 && example.reversal.cash.observed.account.interestBase == 200
+        && example.reversal.cash.observed.eligibility.accountBalance == 200
+        && example.reversal.cash.observed.eligibility.cashDepositedToday == 0
+        && example.reversal.cash.observed.eligibility.detailCount == 13
+        && example.reversal.cash.observed.eligibility.lastTransactionDate == 20261008
+        && example.reversal.cash.observed.accrual.state.normalProduct == 800
+        && example.reversal.cash.observed.accrual.state.actualProduct == 800, "EXAMPLE_REV_FAULT_COMMITTED_ACCOUNT");
+    require(example.reversal.record != null && example.reversal.record.settled.version == 3
+        && example.reversal.record.originalTradeId == example.reversal.command.originalTradeId
+        && example.reversal.record.fee.refundAmount == 2
+        && example.reversal.link.version == 1 && example.reversal.link.reversalId == example.reversal.command.id,
+        "EXAMPLE_REV_FAULT_COMMITTED_RECEIPT_LINK");
+    int count = 0; double debit = 0; double credit = 0;
+    for (CashPostingRecord posting : example.reversal.cash.postings) {
+        count++; if (posting.line.side == "Debit") { debit += posting.line.amount; } else { credit += posting.line.amount; }
+        for (DepositPostingLine line : example.reversal.record.lines) {
+            if (posting.slot == line.slot) { require(posting.line.side == line.side && posting.line.subject == line.subject
+                && posting.line.amount == line.amount, "EXAMPLE_REV_FAULT_COMMITTED_LINE"); }
+        }
+    }
+    require(count == 8 && debit == 602 && credit == 602, "EXAMPLE_REV_FAULT_COMMITTED_LEDGER");
+}
+atomic check verifyReversalFaultInitialHistory(ReversalFaultExample example) {
+    require(example.reversal.failure != null && example.reversal.failure.code == example.expectedCode, "EXAMPLE_REV_FAULT_CODE");
+    require(example.reversal.failure.transactionOutcome == example.expectedOutcome, "EXAMPLE_REV_FAULT_OUTCOME");
+    int count = 0; int failed = 0; int committed = 0;
+    for (CashAuditRecord audit : example.history) {
+        count++; require(audit.attemptId == example.reversal.command.attemptId, "EXAMPLE_REV_FAULT_ATTEMPT");
+        if (audit.event == example.expectedEvent) { failed++; require(audit.code == example.expectedCode, "EXAMPLE_REV_FAULT_AUDIT_CODE"); }
+        if (audit.event == "ReversalCommitted") { committed++; }
+    }
+    if (example.mode <= 2 || example.mode >= 5) { require(count == 1 && failed == 1 && committed == 0, "EXAMPLE_REV_FAULT_ROLLBACK_HISTORY"); }
+    else { require(count == 2 && failed == 1 && committed == 1, "EXAMPLE_REV_FAULT_COMMITTED_HISTORY"); }
+}
+atomic calculate selectReversalFaultRetry(context ReversalFaultExample example) {
+    example.reversal.command.attemptId = example.prefix + "-RETRY";
+}
+atomic calculate selectReversalFaultReplay(context ReversalFaultExample example) {
+    example.reversal.command.attemptId = example.prefix + "-REPLAY"; example.reversal.command.day.date = 20261009;
+}
+atomic check verifyReversalFaultResolvedHistory(ReversalFaultExample example) {
+    require(example.reversal.lifecycle.work.status == "Committed" && example.reversal.lifecycle.work.proposed.version == 3
+        && example.reversal.lifecycle.work.proposed.eligibility.accountBalance == 200
+        && example.reversal.lifecycle.work.execution.businessDate == 20261008, "EXAMPLE_REV_FAULT_REPLAY_RESULT");
+    int count = 0; int failed = 0; int committed = 0; int replayed = 0;
+    for (CashAuditRecord audit : example.history) {
+        count++; if (audit.event == example.expectedEvent) { failed++; }
+        if (audit.event == "ReversalCommitted") { committed++; } if (audit.event == "ReversalReplayed") { replayed++; }
+    }
+    if (example.mode <= 2 || example.mode >= 5) { require(count == 3 && failed == 1 && committed == 1 && replayed == 1, "EXAMPLE_REV_FAULT_RETRY_HISTORY"); }
+    else { require(count == 4 && failed == 1 && committed == 1 && replayed == 2, "EXAMPLE_REV_FAULT_QUERY_HISTORY"); }
+}

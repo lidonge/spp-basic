@@ -1,0 +1,422 @@
+[
+  {
+    "source": "cboddeposit-99pa-kernel-repayment.spp",
+    "request": {
+      "amount": 0.01
+    },
+    "account": {
+      "interestBase": 0,
+      "frozenAmount": 0,
+      "authorizedAmount": 0,
+      "loanState": "NORMAL",
+      "overdraftInterest": 0.005,
+      "collectionInterest": 0.004,
+      "overdraftPrincipal": 0.01,
+      "overdraftExposure": 0.02
+    },
+    "expected": {
+      "newInterestBase": 0,
+      "newAvailableBalance": 0,
+      "interestBaseIncrease": 0,
+      "interestBaseDecrease": 0,
+      "interestPaid": 0.005,
+      "collectionInterestPaid": 0.004,
+      "principalPaid": 0.001,
+      "newOverdraftExposure": 0.019,
+      "newAccountBalance": -0.009
+    },
+    "name": "fractional-interest-business-exact"
+  },
+  {
+    "source": "cboddeposit-99pa-kernel-repayment.spp",
+    "request": {
+      "amount": 0.01
+    },
+    "account": {
+      "interestBase": 0,
+      "frozenAmount": 0,
+      "authorizedAmount": 0,
+      "loanState": "BAD_DEBT",
+      "overdraftInterest": 0.005,
+      "collectionInterest": 0.004,
+      "overdraftPrincipal": 0.01,
+      "overdraftExposure": 0.02
+    },
+    "expected": {
+      "interestPaid": 0,
+      "collectionInterestPaid": 0,
+      "newInterestBase": 0,
+      "newAvailableBalance": 0,
+      "interestBaseIncrease": 0,
+      "interestBaseDecrease": 0,
+      "principalPaid": 0.01,
+      "newOverdraftExposure": 0.01,
+      "newAccountBalance": -0.009
+    },
+    "name": "fractional-bad-debt-business-exact"
+  },
+  {
+    "source": "cboddeposit-99pa-kernel-repayment.spp",
+    "request": {
+      "amount": 50
+    },
+    "account": {
+      "interestBase": 100,
+      "frozenAmount": 20,
+      "authorizedAmount": 10,
+      "overdraftInterest": 0,
+      "collectionInterest": 0,
+      "overdraftPrincipal": 0,
+      "overdraftExposure": 0,
+      "loanState": "NORMAL"
+    },
+    "expected": {
+      "interestPaid": 0,
+      "collectionInterestPaid": 0,
+      "principalPaid": 0,
+      "newInterestBase": 150,
+      "newAvailableBalance": 120,
+      "newOverdraftExposure": 0,
+      "newAccountBalance": 150,
+      "interestBaseIncrease": 50,
+      "interestBaseDecrease": 0
+    },
+    "name": "normal-credit"
+  },
+  {
+    "source": "cboddeposit-99pa-kernel-repayment.spp",
+    "request": {
+      "amount": 50
+    },
+    "account": {
+      "interestBase": 0,
+      "frozenAmount": 0,
+      "authorizedAmount": 0,
+      "overdraftInterest": 30,
+      "collectionInterest": 40,
+      "overdraftPrincipal": 100,
+      "overdraftExposure": 120,
+      "loanState": "NORMAL"
+    },
+    "expected": {
+      "interestPaid": 30,
+      "collectionInterestPaid": 20,
+      "principalPaid": 0,
+      "newInterestBase": 0,
+      "newAvailableBalance": 0,
+      "newOverdraftExposure": 120,
+      "newAccountBalance": -120,
+      "interestBaseIncrease": 0,
+      "interestBaseDecrease": 0
+    },
+    "name": "ordinary-interest-first"
+  },
+  {
+    "source": "cboddeposit-99pa-kernel-repayment.spp",
+    "request": {
+      "amount": 50
+    },
+    "account": {
+      "interestBase": 0,
+      "frozenAmount": 0,
+      "authorizedAmount": 0,
+      "overdraftInterest": 30,
+      "collectionInterest": 40,
+      "overdraftPrincipal": 100,
+      "overdraftExposure": 120,
+      "loanState": "BAD_DEBT"
+    },
+    "expected": {
+      "interestPaid": 0,
+      "collectionInterestPaid": 0,
+      "principalPaid": 50,
+      "newInterestBase": 0,
+      "newAvailableBalance": 0,
+      "newOverdraftExposure": 70,
+      "newAccountBalance": -120,
+      "interestBaseIncrease": 0,
+      "interestBaseDecrease": 0
+    },
+    "name": "bad-debt-principal-first"
+  },
+  {
+    "source": "cboddeposit-99pa-kernel-repayment.spp",
+    "request": {
+      "amount": 50
+    },
+    "account": {
+      "interestBase": 0,
+      "frozenAmount": 0,
+      "authorizedAmount": 0,
+      "overdraftInterest": 30,
+      "collectionInterest": 40,
+      "overdraftPrincipal": 100,
+      "overdraftExposure": 120,
+      "loanState": "WRITTEN_OFF"
+    },
+    "expected": {
+      "interestPaid": 0,
+      "collectionInterestPaid": 0,
+      "principalPaid": 50,
+      "newInterestBase": 0,
+      "newAvailableBalance": 0,
+      "newOverdraftExposure": 70,
+      "newAccountBalance": -120,
+      "interestBaseIncrease": 0,
+      "interestBaseDecrease": 0
+    },
+    "name": "written-off-principal-first"
+  },
+  {
+    "source": "cboddeposit-99pa-kernel-repayment.spp",
+    "request": {
+      "amount": 200
+    },
+    "account": {
+      "interestBase": 0,
+      "frozenAmount": 0,
+      "authorizedAmount": 0,
+      "overdraftInterest": 30,
+      "collectionInterest": 40,
+      "overdraftPrincipal": 100,
+      "overdraftExposure": 120,
+      "loanState": "NORMAL"
+    },
+    "expected": {
+      "interestPaid": 30,
+      "collectionInterestPaid": 40,
+      "principalPaid": 100,
+      "newInterestBase": 30,
+      "newAvailableBalance": 30,
+      "newOverdraftExposure": 0,
+      "newAccountBalance": 30,
+      "interestBaseIncrease": 30,
+      "interestBaseDecrease": 0
+    },
+    "name": "ordinary-all-paid"
+  },
+  {
+    "source": "cboddeposit-99pa-kernel-repayment.spp",
+    "request": {
+      "amount": 200
+    },
+    "account": {
+      "interestBase": 0,
+      "frozenAmount": 0,
+      "authorizedAmount": 0,
+      "overdraftInterest": 30,
+      "collectionInterest": 40,
+      "overdraftPrincipal": 100,
+      "overdraftExposure": 120,
+      "loanState": "BAD_DEBT"
+    },
+    "expected": {
+      "interestPaid": 30,
+      "collectionInterestPaid": 40,
+      "principalPaid": 100,
+      "newInterestBase": 30,
+      "newAvailableBalance": 30,
+      "newOverdraftExposure": 0,
+      "newAccountBalance": 30,
+      "interestBaseIncrease": 30,
+      "interestBaseDecrease": 0
+    },
+    "name": "bad-debt-all-paid"
+  },
+  {
+    "source": "cboddeposit-99pb-kernel-boundaries.spp",
+    "request": {
+      "amount": 150
+    },
+    "account": {
+      "interestBase": 0,
+      "frozenAmount": 0,
+      "authorizedAmount": 0,
+      "overdraftInterest": 30,
+      "collectionInterest": 40,
+      "overdraftPrincipal": 100,
+      "overdraftExposure": 120,
+      "loanState": "NORMAL"
+    },
+    "expected": {
+      "interestPaid": 30,
+      "collectionInterestPaid": 40,
+      "principalPaid": 80,
+      "newInterestBase": 0,
+      "newAvailableBalance": 0,
+      "newOverdraftExposure": 40,
+      "newAccountBalance": -20,
+      "interestBaseIncrease": 0,
+      "interestBaseDecrease": 0
+    },
+    "name": "ordinary-partial-principal"
+  },
+  {
+    "source": "cboddeposit-99pb-kernel-boundaries.spp",
+    "request": {
+      "amount": 150
+    },
+    "account": {
+      "interestBase": 0,
+      "frozenAmount": 0,
+      "authorizedAmount": 0,
+      "overdraftInterest": 30,
+      "collectionInterest": 40,
+      "overdraftPrincipal": 100,
+      "overdraftExposure": 120,
+      "loanState": "BAD_DEBT"
+    },
+    "expected": {
+      "interestPaid": 30,
+      "collectionInterestPaid": 20,
+      "principalPaid": 100,
+      "newInterestBase": 0,
+      "newAvailableBalance": 0,
+      "newOverdraftExposure": 0,
+      "newAccountBalance": -20,
+      "interestBaseIncrease": 0,
+      "interestBaseDecrease": 0
+    },
+    "name": "bad-debt-partial-collection"
+  },
+  {
+    "source": "cboddeposit-99pb-kernel-boundaries.spp",
+    "request": {
+      "amount": 100
+    },
+    "account": {
+      "interestBase": 0,
+      "frozenAmount": 0,
+      "authorizedAmount": 0,
+      "overdraftInterest": 0,
+      "collectionInterest": 0,
+      "overdraftPrincipal": 100,
+      "overdraftExposure": 120,
+      "loanState": "NORMAL"
+    },
+    "expected": {
+      "interestPaid": 0,
+      "collectionInterestPaid": 0,
+      "principalPaid": 100,
+      "newInterestBase": 0,
+      "newAvailableBalance": 0,
+      "newOverdraftExposure": 20,
+      "newAccountBalance": 0,
+      "interestBaseIncrease": 0,
+      "interestBaseDecrease": 0
+    },
+    "name": "exact-principal-boundary"
+  },
+  {
+    "source": "cboddeposit-99pb-kernel-boundaries.spp",
+    "request": {
+      "amount": 100.01
+    },
+    "account": {
+      "interestBase": 0,
+      "frozenAmount": 0,
+      "authorizedAmount": 0,
+      "overdraftInterest": 0,
+      "collectionInterest": 0,
+      "overdraftPrincipal": 100,
+      "overdraftExposure": 120,
+      "loanState": "NORMAL"
+    },
+    "expected": {
+      "interestPaid": 0,
+      "collectionInterestPaid": 0,
+      "principalPaid": 100,
+      "newOverdraftExposure": 0,
+      "interestBaseDecrease": 0,
+      "newInterestBase": 0.01,
+      "newAvailableBalance": 0.01,
+      "newAccountBalance": 0.01,
+      "interestBaseIncrease": 0.01
+    },
+    "name": "beyond-principal-boundary"
+  },
+  {
+    "source": "cboddeposit-99pb-kernel-boundaries.spp",
+    "request": {
+      "amount": 10
+    },
+    "account": {
+      "interestBase": 10,
+      "frozenAmount": 30,
+      "authorizedAmount": 5,
+      "overdraftInterest": 3,
+      "collectionInterest": 4,
+      "overdraftPrincipal": 5,
+      "overdraftExposure": 8,
+      "loanState": "NORMAL"
+    },
+    "expected": {
+      "interestPaid": 0,
+      "collectionInterestPaid": 0,
+      "principalPaid": 0,
+      "newInterestBase": 20,
+      "newAvailableBalance": 0,
+      "newOverdraftExposure": 8,
+      "newAccountBalance": 8,
+      "interestBaseIncrease": 10,
+      "interestBaseDecrease": 0
+    },
+    "name": "frozen-exceeds-funds"
+  },
+  {
+    "source": "cboddeposit-99pb-kernel-boundaries.spp",
+    "request": {
+      "amount": 50
+    },
+    "account": {
+      "interestBase": 100,
+      "frozenAmount": 140,
+      "authorizedAmount": 30,
+      "overdraftInterest": 5,
+      "collectionInterest": 10,
+      "overdraftPrincipal": 20,
+      "overdraftExposure": 20,
+      "loanState": "NORMAL"
+    },
+    "expected": {
+      "interestPaid": 5,
+      "collectionInterestPaid": 5,
+      "principalPaid": 0,
+      "newInterestBase": 140,
+      "newAvailableBalance": 0,
+      "newOverdraftExposure": 20,
+      "newAccountBalance": 115,
+      "interestBaseIncrease": 40,
+      "interestBaseDecrease": 0
+    },
+    "name": "frozen-and-authorized"
+  },
+  {
+    "source": "cboddeposit-99pb-kernel-boundaries.spp",
+    "request": {
+      "amount": 0
+    },
+    "account": {
+      "interestBase": 100,
+      "frozenAmount": 0,
+      "authorizedAmount": 0,
+      "overdraftInterest": 10,
+      "collectionInterest": 20,
+      "overdraftPrincipal": 30,
+      "overdraftExposure": 50,
+      "loanState": "NORMAL"
+    },
+    "expected": {
+      "interestPaid": 10,
+      "collectionInterestPaid": 20,
+      "principalPaid": 30,
+      "newInterestBase": 40,
+      "newAvailableBalance": 40,
+      "newOverdraftExposure": 0,
+      "newAccountBalance": 40,
+      "interestBaseIncrease": 0,
+      "interestBaseDecrease": 60
+    },
+    "name": "zero-amount-kernel"
+  }
+]

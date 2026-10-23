@@ -1,0 +1,36 @@
+domain petshop;
+
+Reference Person from customer.Person {
+    business("Customer-domain subject registration number") String customerNumber;
+    String name;
+    String email;
+    String address;
+}
+
+Reference Product from product.Product {
+    business("Product catalogue number") String productCode;
+    String name;
+    String category;
+    String description;
+    BigDecimal(9, 2) cost;
+}
+
+Reference CatalogProduct from product.CatalogProduct {
+    String sku;
+    String name;
+    String category;
+    String description;
+    boolean active;
+}
+
+take Goods as CatalogProduct {
+    mapsame;
+}
+
+take Buyer as Person {
+    mapsame;
+}
+
+take Merchant as Person {
+    mapsame;
+}

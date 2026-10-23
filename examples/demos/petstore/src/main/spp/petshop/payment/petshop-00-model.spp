@@ -1,0 +1,20 @@
+domain petshop;
+
+Role SettlementAccount {
+    business("Third-party payment settlement account number") String accountNumber;
+    quantum BigDecimal(25, 2) balance;
+}
+
+Contract WalletFundingAgreement {
+    Buyer buyer;
+    SettlementAccount source;
+    BigDecimal(19, 2) amount;
+}
+
+Contract PaymentAgreement {
+    Buyer buyer;
+    Merchant seller;
+    ShopOrder order;
+    Receipt receipt;
+    BigDecimal(19, 2) paymentAmount;
+}

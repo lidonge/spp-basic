@@ -1,0 +1,15 @@
+domain petshop;
+
+Contract ShipmentAgreement {
+    Buyer buyer;
+    ShopOrder order;
+    String tracking;
+    Receipt receipt;
+    int shippedQuantity;
+}
+
+Contract DeliveryAgreement {
+    Buyer buyer;
+    ShopOrder order;
+    Receipt receipt;
+}

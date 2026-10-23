@@ -1,0 +1,37 @@
+domain petshop;
+
+Scenario serial readShopInventory(Goods, Goods[], StockLine[]) {
+    prepareProductSelection;
+    listProducts;
+    prepareInventorySelection;
+    findStockLine;
+    identify(StockLine[]);
+}
+
+Scenario serial readShopMerchant(Merchant) {
+    configureMerchantLookup;
+    findMerchant;
+    identify(Merchant);
+}
+
+atomic calculate prepareProductSelection(Goods) {
+    Goods.active = true;
+}
+
+atomic calculate filterProducts(Goods, Goods[]) {
+    Goods[] filtered = new Goods[] {
+    };
+    for (Goods product : Goods[]) {
+        if (Goods.category == null || Goods.category == "" || product.category == Goods.category) {
+            filtered = append(filtered, product);
+        }
+    }
+    Goods[] = filtered;
+}
+
+Scenario serial browseShopProducts(Goods, Goods[]) {
+    prepareProductSelection;
+    listProducts;
+    localizeCatalog;
+    filterProducts;
+}

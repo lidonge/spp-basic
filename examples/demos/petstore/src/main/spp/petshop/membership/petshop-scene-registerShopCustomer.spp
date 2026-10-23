@@ -1,0 +1,17 @@
+domain petshop;
+
+Scenario serial registerShopCustomer(Buyer, Cart, RegistrationAgreement) {
+    checkBuyerCredential;
+    checkCustomerProfile;
+    initializeRegistrationAgreement;
+    findBuyer;
+    checkNewCustomer;
+    registerCustomer;
+    prepareRegistrationAgreementReceipt;
+    transaction {
+        insertPerson(Buyer);
+        insertBuyer;
+        insertCart;
+        insertReceipt(RegistrationAgreement.receipt);
+    }
+}

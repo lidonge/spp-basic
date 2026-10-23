@@ -1,0 +1,82 @@
+domain cboddeposit;
+
+// Business interest-unit quantization, CSAPRD2 5300; dates supplied by shared calendar service.
+
+Role InterestPeriod {
+    BigDecimal(19, 2) amount;
+    BigDecimal(19, 2) unit;
+    int days;
+}
+
+Role InterestProduct {
+    BigDecimal(19, 2) qualifiedAmount;
+    BigDecimal(19, 2) product;
+}
+
+atomic check checkInterestPeriod(InterestPeriod) {
+    require(
+        InterestPeriod.amount >= 0 && InterestPeriod.unit > 0 && InterestPeriod.days >= 0,
+        "INVALID_INTEREST_PERIOD"
+    );
+}
+
+atomic check checkBankDate(BankDate) {
+    require(BankDate.encoded != null && BankDate.encoded != 0, "EEC28");
+    require(BankDate.encoded >= 10000101 && BankDate.encoded <= 99991231, "EE374");
+    require(isGregorianDate(BankDate.encoded), "EE374");
+}
+
+atomic check checkBankDays(BankDate start, BankDate end, InterestCalendar) {
+    require(start.epochDay <= end.epochDay, "E1175");
+    require(
+        InterestCalendar.convention == "ACT"
+            || InterestCalendar.convention == "360365"
+            || InterestCalendar.convention == "360360",
+        "EEC28"
+    );
+}
+
+atomic calculate calculateInterestProduct(InterestPeriod, InterestProduct) {
+    InterestProduct.qualifiedAmount = roundDown(
+        InterestPeriod.amount / InterestPeriod.unit,
+        0
+    ) * InterestPeriod.unit;
+    InterestProduct.product = InterestProduct.qualifiedAmount * InterestPeriod.days;
+}
+
+// CSAPRD2/CCMDAT1 function O: start included, end excluded.
+// The shared Gregorian functions decode representation; business selects ACT or deposit 360-day policy.
+
+Role BankDate {
+    int encoded;
+    int year;
+    int month;
+    int day;
+    int epochDay;
+}
+
+Role InterestCalendar {
+    String convention;
+}
+
+atomic calculate decodeBankDate(BankDate) {
+    BankDate.year = dateYear(BankDate.encoded);
+    BankDate.month = dateMonth(BankDate.encoded);
+    BankDate.day = dateDay(BankDate.encoded);
+    BankDate.epochDay = dateEpochDay(BankDate.encoded);
+}
+
+atomic calculate calculateBankDays(BankDate start, BankDate end, InterestCalendar, InterestPeriod) {
+    if (InterestCalendar.convention == "ACT") {
+        InterestPeriod.days = end.epochDay - start.epochDay;
+    } else {
+        InterestPeriod.days = 360
+            * (end.year
+            - start.year)
+            + 30
+            * (end.month
+            - start.month)
+            + min(end.day, 30)
+            - min(start.day, 30);
+    }
+}

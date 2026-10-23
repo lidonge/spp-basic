@@ -1,0 +1,38 @@
+domain cboddeposit;
+
+// Zero date encodes absent agreement dates; clipping is business policy, not APP routing.
+
+Role AgreementTerm {
+    int effectiveDate;
+    int cancelDate;
+}
+
+atomic calculate prepareAgreementWindow(
+    BankDate normalStart,
+    BankDate normalEnd,
+    AgreementTerm,
+    BankDate clippedStart,
+    BankDate clippedEnd,
+    InterestPeriod normal,
+    InterestPeriod overlap,
+    AgreementPolicy
+) {
+    clippedStart.encoded = normalStart.encoded;
+    clippedEnd.encoded = normalStart.encoded;
+    overlap.amount = normal.amount;
+    overlap.unit = normal.unit;
+    overlap.days = 0;
+    AgreementPolicy.enabled = AgreementPolicy.enabled && AgreementTerm.effectiveDate > 0;
+    if (AgreementPolicy.enabled) {
+        clippedStart.encoded = max(normalStart.encoded, AgreementTerm.effectiveDate);
+        clippedEnd.encoded = normalEnd.encoded;
+        if (AgreementTerm.cancelDate > 0) {
+            clippedEnd.encoded = min(normalEnd.encoded, AgreementTerm.cancelDate);
+        }
+        if (clippedStart.encoded >= clippedEnd.encoded) {
+            AgreementPolicy.enabled = false;
+            clippedStart.encoded = normalStart.encoded;
+            clippedEnd.encoded = normalStart.encoded;
+        }
+    }
+}

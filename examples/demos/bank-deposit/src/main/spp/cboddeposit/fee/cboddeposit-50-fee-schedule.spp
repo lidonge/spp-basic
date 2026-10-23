@@ -1,0 +1,13 @@
+domain cboddeposit;
+
+atomic check checkFeeAmount(DepositRequest) {
+    require(DepositRequest.amount >= 0, "EP192");
+}
+
+Contract FeeScheduleAgreement {
+    DepositFeeRate rate;
+}
+
+atomic calculate describeFeeSchedule(DepositFeeRate, FeeScheduleAgreement) {
+    FeeScheduleAgreement.rate = DepositFeeRate;
+}

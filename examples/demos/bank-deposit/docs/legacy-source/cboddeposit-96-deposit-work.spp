@@ -1,0 +1,48 @@
+domain cboddeposit;
+
+Role CashPostingSubjects { String id; DepositPostingLine[] lines; }
+Contract CashDepositWork {
+    AdmissionDecision admission;
+    DepositFeeRate rate;
+    DepositFeePlan fee;
+    DepositPlan plan;
+    DepositAccounting amounts;
+    DepositPostingLine[] lines;
+    DepositPostingTotals totals;
+    DepositAccount afterAccount;
+    AccountEligibility afterEligibility;
+    DepositAccrualInput afterAccrual;
+    AgreementBand[] afterBands;
+    AgreementBand[] increments;
+    DepositAccrualWork accrualWork;
+    DepositAccrualPlan accrual;
+    DepositNotices notices;
+}
+atomic calculate initializeCashDepositWork(CashAccountRecord original, CashPostingSubjects subjects,
+    context CashDepositWork work) {
+    work.admission = new AdmissionDecision();
+    work.rate = new DepositFeeRate();
+    work.fee = new DepositFeePlan();
+    work.plan = new DepositPlan();
+    work.amounts = new DepositAccounting();
+    work.lines = copy(subjects.lines);
+    work.totals = new DepositPostingTotals();
+    work.afterAccount = copy(original.account);
+    work.afterEligibility = copy(original.eligibility);
+    work.afterAccrual = copy(original.accrual);
+    work.afterBands = copy(original.bands);
+    work.increments = copy(original.bands);
+    work.accrual = new DepositAccrualPlan();
+    work.notices = new DepositNotices();
+    work.accrualWork = new DepositAccrualWork();
+    work.accrualWork.start = new BankDate();
+    work.accrualWork.end = new BankDate();
+    work.accrualWork.clippedStart = new BankDate();
+    work.accrualWork.clippedEnd = new BankDate();
+    work.accrualWork.normal = new InterestPeriod();
+    work.accrualWork.overlap = new InterestPeriod();
+    work.accrualWork.overdraft = new InterestPeriod();
+    work.accrualWork.overdraftCalendar = new InterestCalendar();
+    work.accrualWork.agreement = new AgreementPolicy();
+    work.accrualWork.products = new AgreementProduct();
+}

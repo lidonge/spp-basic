@@ -1,0 +1,90 @@
+domain cboddeposit;
+
+atomic calculate configureAuthorizationExample(context CashExample example) {
+    example.seed.id = "SOURCE-AUTH-A";
+    example.seed.eligibility.accountId = example.seed.id;
+    example.command.id = "SOURCE-AUTH-T";
+    example.command.attemptId = "SOURCE-AUTH-PENDING-B";
+    example.command.accountId = example.seed.id;
+    example.command.request.amount = 1500;
+    example.observed.id = example.seed.id;
+    example.postingKey.tradeId = example.command.id;
+    example.tradeKey = new CashDepositTrade();
+    example.tradeKey.id = example.command.id;
+    example.auditKey = new CashAuditRecord();
+    example.auditKey.attemptId = example.command.attemptId;
+}
+atomic check verifyPendingAuthorizationExample(CashExample example) {
+    require(example.lifecycle.execution.status == "PendingAuthorization", "EXAMPLE_AUTH_PENDING_STATUS");
+    require(example.observed.version == 0 && example.observed.eligibility.accountBalance == 100
+        && example.observed.eligibility.cashDepositedToday == 0, "EXAMPLE_PENDING_CHANGED_ACCOUNT");
+    require(example.storedTrade == null, "EXAMPLE_PENDING_HAS_TRADE");
+    int count = 0;
+    for (CashPostingRecord posting : example.postings) { count++; }
+    require(count == 0, "EXAMPLE_PENDING_HAS_POSTINGS");
+    require(example.audit != null && example.audit.event == "PendingAuthorization", "EXAMPLE_PENDING_AUDIT");
+    if (example.command.authorizationPolicy.tellerLimit == 1000) {
+        require(example.lifecycle.execution.work.admission.requiredLevel == "B", "EXAMPLE_FIRST_AUTH_LEVEL");
+    } else {
+        require(example.lifecycle.execution.work.admission.requiredLevel == "A", "EXAMPLE_UPDATED_AUTH_LEVEL");
+    }
+}
+Scenario serial observePendingAuthorizationExample(context CashExample example) {
+    example.observed = queryCashAccount(example.observed);
+    example.storedTrade = lookupCashDepositTrade(example.tradeKey);
+    example.postings = queryCashPostingRecords(example.postingKey);
+    example.audit = lookupCashExampleAudit(example.auditKey);
+    verifyPendingAuthorizationExample(example);
+}
+atomic calculate raiseAuthorizationRequirementExample(context CashExample example) {
+    example.command.attemptId = "SOURCE-AUTH-PENDING-A";
+    example.command.authorizationPolicy.tellerLimit = 500;
+    example.command.evidence.grantedLevel = "B";
+    example.auditKey.attemptId = example.command.attemptId;
+}
+atomic calculate grantAuthorizationExample(context CashExample example) {
+    example.command.attemptId = "SOURCE-AUTH-COMMIT";
+    example.command.evidence.grantedLevel = "A";
+    example.auditKey.attemptId = example.command.attemptId;
+}
+atomic check verifyAuthorizedCommitExample(CashExample example) {
+    require(example.lifecycle.execution.status == "Committed", "EXAMPLE_AUTH_NOT_COMMITTED");
+    require(example.observed.version == 1 && example.observed.eligibility.accountBalance == 1600
+        && example.observed.eligibility.cashDepositedToday == 1500, "EXAMPLE_AUTH_COMMIT_BALANCE");
+    require(example.audit != null && example.audit.event == "Committed", "EXAMPLE_AUTH_COMMIT_AUDIT");
+    int count = 0;
+    double debit = 0;
+    double credit = 0;
+    for (CashPostingRecord posting : example.postings) {
+        count++;
+        if (posting.line.side == "Debit") { debit += posting.line.amount; }
+        else { credit += posting.line.amount; }
+    }
+    require(count == 8 && debit == 1500 && credit == 1500, "EXAMPLE_AUTH_COMMIT_LEDGER");
+}
+atomic calculate prepareAuthorizationHistoryExample(context CashExample example) { example.auditKey.tradeId = example.command.id; }
+atomic check verifyAuthorizationHistoryExample(CashExample example) {
+    int count = 0; int pending = 0; int committed = 0;
+    for (CashAuditRecord audit : example.history) {
+        count++; if (audit.event == "PendingAuthorization") { pending++; } if (audit.event == "Committed") { committed++; }
+    }
+    require(count == 3 && pending == 2 && committed == 1, "EXAMPLE_AUTH_ATTEMPT_HISTORY");
+}
+Scenario serial authorizationCashExample(context CashExample example) {
+    prepareOrdinaryCashExample(example);
+    configureAuthorizationExample(example);
+    serial { transaction quantum { seedCashExampleAccount(example.seed); } }
+    executeCashDeposit(example.command, example.lifecycle);
+    observePendingAuthorizationExample(example);
+    raiseAuthorizationRequirementExample(example);
+    executeCashDeposit(example.command, example.lifecycle);
+    observePendingAuthorizationExample(example);
+    grantAuthorizationExample(example);
+    executeCashDeposit(example.command, example.lifecycle);
+    example.observed = queryCashAccount(example.observed);
+    example.postings = queryCashPostingRecords(example.postingKey);
+    example.audit = lookupCashExampleAudit(example.auditKey);
+    verifyAuthorizedCommitExample(example);
+    prepareAuthorizationHistoryExample(example); example.history = queryCashExampleHistory(example.auditKey);
+    verifyAuthorizationHistoryExample(example);
+}

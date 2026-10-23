@@ -1,0 +1,25 @@
+domain petshop;
+
+atomic query importCatalogue(Goods, Goods[]);
+
+atomic query listProducts(Goods, Goods[]);
+
+atomic check checkGoodsCredential(Goods) {
+    require(Goods.sku != null && Goods.sku != "", "ITEM_REQUIRED");
+}
+
+atomic check checkGoodsSale(Goods) {
+    require(Goods.active, "PRODUCT_UNAVAILABLE");
+}
+
+atomic calculate prepareInventorySelection(Goods[], StockLine[]) {
+    StockLine[] = new StockLine[] {
+    };
+    for (Goods product : Goods[]) {
+        StockLine stock = new StockLine();
+        stock.goods = product;
+        StockLine[] = append(StockLine[], stock);
+    }
+}
+
+atomic calculate initializeInventory(Goods[], StockLine[], StockSupply[]);

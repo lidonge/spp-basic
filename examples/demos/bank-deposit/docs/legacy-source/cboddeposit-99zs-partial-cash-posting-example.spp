@@ -1,0 +1,85 @@
+domain cboddeposit;
+
+Contract PartialCashPostingExample { CashExample cash; QuantumEvidenceExample evidence; }
+atomic update deletePartialPostingFixture(CashPostingRecord[] postings);
+atomic calculate initializePartialCashPostingExample(context PartialCashPostingExample example) {
+    example.cash = new CashExample(); example.evidence = new QuantumEvidenceExample();
+}
+atomic calculate configurePartialCashPostingExample(context CashExample example) {
+    example.seed.id = "SOURCE-PARTIAL-CASH-A"; example.seed.eligibility.accountId = example.seed.id;
+    example.command.id = "SOURCE-PARTIAL-CASH-T"; example.command.attemptId = "SOURCE-PARTIAL-CASH-FIRST";
+    example.command.accountId = example.seed.id; example.observed.id = example.seed.id;
+    example.tradeKey = new CashDepositTrade(); example.tradeKey.id = example.command.id;
+    example.postingKey.tradeId = example.command.id; example.auditKey = new CashAuditRecord();
+    example.auditKey.attemptId = example.command.attemptId; example.auditKey.tradeId = example.command.id;
+    example.postings = new CashPostingRecord[] { new CashPostingRecord() };
+    for (CashPostingRecord posting : example.postings) {
+        posting.tradeId = example.command.id; posting.slot = 4; posting.line = new DepositPostingLine();
+        posting.line.slot = 4; posting.line.amount = 777; posting.line.side = "Credit"; posting.line.subject = "DEMO.EXISTING";
+    }
+}
+atomic calculate configurePartialCashQuantumEvidence(context PartialCashPostingExample example) {
+    example.evidence.journalKey.objectId = example.cash.seed.id; example.evidence.valueKey.objectId = example.cash.seed.id;
+}
+atomic check verifyPartialCashPostingRollback(CashExample example) {
+    require(example.failure != null && example.failure.code == "PERSISTENCE_ALREADY_EXISTS"
+        && example.failure.transactionOutcome == "ROLLED_BACK", "EXAMPLE_PARTIAL_CASH_FAILURE");
+    require(example.observed.version == 0 && example.observed.account.interestBase == 100
+        && example.observed.eligibility.accountBalance == 100 && example.observed.eligibility.detailCount == 10
+        && example.observed.eligibility.cashDepositedToday == 0 && example.storedTrade == null, "EXAMPLE_PARTIAL_CASH_ACCOUNT");
+    int rows = 0; int audits = 0;
+    for (CashPostingRecord posting : example.postings) {
+        rows++; require(posting.tradeId == example.command.id && posting.slot == 4 && posting.line.amount == 777
+            && posting.line.subject == "DEMO.EXISTING" && posting.line.side == "Credit", "EXAMPLE_PARTIAL_CASH_FIXTURE_CHANGED");
+    }
+    for (CashAuditRecord audit : example.history) {
+        audits++; require(audit.event == "RolledBack" && audit.code == "PERSISTENCE_ALREADY_EXISTS"
+            && audit.attemptId == example.command.attemptId, "EXAMPLE_PARTIAL_CASH_AUDIT");
+    }
+    require(rows == 1 && audits == 1, "EXAMPLE_PARTIAL_CASH_LEFT_BATCH_ROWS");
+}
+atomic check verifyPartialCashQuantumRollback(PartialCashPostingExample example) {
+    int rows = 0; int values = 0;
+    for (QuantumJournalEvidence row : example.evidence.journal) { rows++; }
+    for (QuantumValueEvidence value : example.evidence.values) { values++; }
+    require(rows == 0 && values == 0, "EXAMPLE_PARTIAL_CASH_QUANTUM_RESIDUE");
+}
+atomic calculate selectPartialCashPostingRetry(context CashExample example) {
+    example.command.attemptId = "SOURCE-PARTIAL-CASH-RETRY";
+}
+atomic check verifyPartialCashRetryHistory(CashExample example) {
+    int rows = 0; int failed = 0; int committed = 0;
+    for (CashAuditRecord audit : example.history) {
+        rows++; if (audit.event == "RolledBack") { failed++; }
+        else if (audit.event == "Committed") { committed++; }
+        else { require(false, "EXAMPLE_PARTIAL_CASH_RETRY_UNEXPECTED_EVENT"); }
+    }
+    require(rows == 2 && failed == 1 && committed == 1 && example.storedTrade != null, "EXAMPLE_PARTIAL_CASH_RETRY_HISTORY");
+}
+atomic check verifyPartialCashQuantumRetry(PartialCashPostingExample example) {
+    int rows = 0; int values = 0; int balances = 0; int clearings = 0; double deltas = 0;
+    for (QuantumJournalEvidence row : example.evidence.journal) {
+        rows++; deltas += row.deltaValue;
+        require(row.status == "COMMITTED" && row.objectId == example.cash.seed.id
+            && row.beforeValue + row.deltaValue == row.afterValue, "EXAMPLE_PARTIAL_CASH_QUANTUM_RECORD");
+    }
+    for (QuantumValueEvidence value : example.evidence.values) {
+        values++; require(value.objectId == example.cash.seed.id, "EXAMPLE_PARTIAL_CASH_QUANTUM_OBJECT");
+        if (value.attributeId == "AccountEligibility.accountBalance") { balances++; require(value.currentValue == 700, "EXAMPLE_PARTIAL_CASH_QUANTUM_BALANCE"); }
+        else if (value.attributeId == "CashQuantumClearing.amount") { clearings++; require(value.currentValue == -600, "EXAMPLE_PARTIAL_CASH_QUANTUM_CLEARING"); }
+        else { require(false, "EXAMPLE_PARTIAL_CASH_QUANTUM_ATTRIBUTE"); }
+    }
+    require(rows == 2 && deltas == 0 && values == 2 && balances == 1 && clearings == 1, "EXAMPLE_PARTIAL_CASH_QUANTUM_REPEATED");
+}
+Scenario serial partialCashPostingExampleRun(context PartialCashPostingExample example) {
+    initializePartialCashPostingExample(example); prepareOrdinaryCashExample(example.cash); configurePartialCashPostingExample(example.cash);
+    initializeQuantumEvidenceExample(example.evidence); configurePartialCashQuantumEvidence(example);
+    serial { transaction quantum { seedCashExampleAccount(example.cash.seed); storeCashPostingRecords(example.cash.postings); } }
+    try { executeCashDeposit(example.cash.command, example.cash.lifecycle); } catch (CashFailureFacts example.cash.failure) {}
+    observeCashAuditUnavailableExample(example.cash); verifyPartialCashPostingRollback(example.cash);
+    observeQuantumEvidenceExample(example.evidence); verifyPartialCashQuantumRollback(example);
+    serial { transaction quantum { deletePartialPostingFixture(example.cash.postings); } }
+    selectPartialCashPostingRetry(example.cash); executeCashDeposit(example.cash.command, example.cash.lifecycle);
+    observeCashAuditUnavailableExample(example.cash); verifyOrdinaryCashExample(example.cash); verifyPartialCashRetryHistory(example.cash);
+    observeQuantumEvidenceExample(example.evidence); verifyPartialCashQuantumRetry(example);
+}

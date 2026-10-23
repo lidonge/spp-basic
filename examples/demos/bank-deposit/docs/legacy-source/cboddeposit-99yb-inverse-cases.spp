@@ -1,0 +1,70 @@
+domain cboddeposit;
+
+atomic calculate configureFinancialInverseCase07(context FinancialInverseExampleFacts example) {
+    example.request.amount = 10;
+    example.before.interestBase = 0;
+    example.before.overdraftPrincipal = 0;
+    example.before.overdraftInterest = 0;
+    example.before.collectionInterest = 0;
+    example.before.overdraftExposure = 0;
+    example.before.loanState = "Normal";
+    example.current.interestBase = 5;
+    example.current.overdraftPrincipal = 0;
+    example.current.overdraftInterest = 0;
+    example.current.collectionInterest = 0;
+    example.current.overdraftExposure = 0;
+    example.current.loanState = "Normal";
+    example.snapshot = copy(example.current); example.capacity.overdraftPermitted = false; example.capacity.overdraftLimit = 0;
+    example.expectedCode = "ES020";
+}
+atomic calculate configureFinancialInverseCase08(context FinancialInverseExampleFacts example) {
+    example.request.amount = 10;
+    example.before.interestBase = 0;
+    example.before.overdraftPrincipal = 0;
+    example.before.overdraftInterest = 0;
+    example.before.collectionInterest = 0;
+    example.before.overdraftExposure = 0;
+    example.before.loanState = "Normal";
+    example.current.interestBase = 5;
+    example.current.overdraftPrincipal = 0;
+    example.current.overdraftInterest = 0;
+    example.current.collectionInterest = 0;
+    example.current.overdraftExposure = 0;
+    example.current.loanState = "Normal";
+    example.snapshot = copy(example.current); example.capacity.overdraftPermitted = true; example.capacity.overdraftLimit = 10;
+    example.expectedCode = "EN249";
+}
+atomic calculate configureFinancialInverseCase09(context FinancialInverseExampleFacts example) {
+    example.request.amount = 50;
+    example.before.interestBase = 0;
+    example.before.overdraftPrincipal = 100;
+    example.before.overdraftInterest = 30;
+    example.before.collectionInterest = 40;
+    example.before.overdraftExposure = 100;
+    example.before.loanState = "BadDebt";
+    example.current.interestBase = 100;
+    example.current.overdraftPrincipal = 50;
+    example.current.overdraftInterest = 30;
+    example.current.collectionInterest = 40;
+    example.current.overdraftExposure = 50;
+    example.current.loanState = "Normal";
+    example.snapshot = copy(example.current); example.capacity.overdraftPermitted = true; example.capacity.overdraftLimit = 100;
+    example.expectedCode = "EN177";
+}
+atomic calculate configureFinancialInverseCase10(context FinancialInverseExampleFacts example) {
+    example.request.amount = 10;
+    example.before.interestBase = 0;
+    example.before.overdraftPrincipal = 0;
+    example.before.overdraftInterest = 0;
+    example.before.collectionInterest = 0;
+    example.before.overdraftExposure = 0;
+    example.before.loanState = "Normal";
+    example.current.interestBase = 100;
+    example.current.overdraftPrincipal = 0;
+    example.current.overdraftInterest = 0;
+    example.current.collectionInterest = 0;
+    example.current.overdraftExposure = 0;
+    example.current.loanState = "Normal";
+    example.snapshot = copy(example.current); example.capacity.overdraftPermitted = false; example.capacity.overdraftLimit = 0;
+    example.expectedCode = "ORIGINAL_DEPOSIT_MOVEMENT_NOT_BALANCED";
+}

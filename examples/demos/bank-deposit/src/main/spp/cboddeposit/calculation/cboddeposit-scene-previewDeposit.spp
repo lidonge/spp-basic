@@ -1,0 +1,7 @@
+domain cboddeposit;
+
+Scenario serial previewDeposit(DepositRequest, DepositAccount, DepositPlan) {
+    checkKernelInput;
+    calculateDepositPlan;
+    checkPlan;
+}

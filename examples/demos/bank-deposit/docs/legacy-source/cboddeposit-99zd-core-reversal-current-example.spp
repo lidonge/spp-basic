@@ -1,0 +1,97 @@
+domain cboddeposit;
+
+atomic calculate configureCoreReversalLaterDepositExample(context CoreReversalEligibilityExample example) {
+    example.fixture.cash.command.id = "SOURCE-CORE-ELIGIBILITY-LATER";
+    example.fixture.cash.command.attemptId = "SOURCE-CORE-ELIGIBILITY-LATER-COMMIT";
+}
+atomic calculate prepareFrozenCoreReversalAccountExample(context CoreReversalEligibilityExample example) {
+    example.prior = copy(example.fixture.cash.observed); example.proposed = copy(example.prior);
+    example.proposed.version = example.prior.version + 1; example.proposed.eligibility.status = "Frozen";
+    example.proposed.bankProfile.passbookLoss = "Written"; example.proposed.bankProfile.depositRange = "SameBranch";
+    example.expectedCode = "EN111"; example.failure = null;
+}
+atomic check verifyFrozenCoreReversalRejectedExample(CoreReversalEligibilityExample example) {
+    require(example.failure != null && example.failure.code == "EN111", "EXAMPLE_FROZEN_CORE_REVERSAL_ALLOWED");
+}
+atomic check verifyFrozenCoreReversalCandidateExample(CoreReversalEligibilityExample example) {
+    require(example.facts.financial.current.version == 3 && example.facts.financial.current.eligibility.status == "Frozen"
+        && example.facts.financial.current.account.interestBase == 800
+        && example.facts.financial.amounts.accountBalance == 200 && example.facts.financial.movement.interestBaseDelta == 600,
+        "EXAMPLE_CORE_REVERSAL_CURRENT_FACTS");
+    require(example.facts.financial.notices.passbookWarning == "WN201" && example.facts.operator.transactionPrefix == "SA01116",
+        "EXAMPLE_CORE_REVERSAL_ORIGINAL_OPERATOR");
+    require(example.facts.financial.current.accrual.state.normalProduct == 800
+        && example.facts.financial.originalTrade.settled.version == 1
+        && example.facts.financial.originalTrade.settled.account.interestBase == 700,
+        "EXAMPLE_CORE_REVERSAL_ORIGINAL_EVIDENCE");
+}
+atomic calculate mutateCoreReversalCallerFactsExample(context CoreReversalEligibilityExample example) {
+    example.request.operator.transactionPrefix = "WRONG"; example.request.capacity.overdraftLimit = 0;
+}
+atomic check verifyCoreReversalPreparationNoWriteExample(CoreReversalEligibilityExample example) {
+    require(example.fixture.cash.observed.version == 3 && example.fixture.cash.observed.eligibility.status == "Frozen"
+        && example.fixture.cash.observed.eligibility.accountBalance == 800
+        && example.fixture.cash.observed.accrual.state.normalProduct == 800, "EXAMPLE_CORE_REVERSAL_PREPARATION_WROTE_ACCOUNT");
+    require(example.facts.operator.transactionPrefix == "SA01116" && example.facts.financial.capacity.overdraftLimit == 1000,
+        "EXAMPLE_CORE_REVERSAL_CALLER_MUTATED_CANDIDATE");
+}
+atomic calculate prepareCancelledCoreReversalAccountExample(context CoreReversalEligibilityExample example) {
+    example.prior = copy(example.fixture.cash.observed); example.proposed = copy(example.prior);
+    example.proposed.version = example.prior.version + 1; example.proposed.control.cancelledOn = 20261007;
+    example.request.operator.transactionPrefix = "SA01116"; example.failure = null;
+}
+atomic check verifyCancelledCoreReversalRejectedExample(CoreReversalEligibilityExample example) {
+    require(example.failure != null && example.failure.code == "EN113", "EXAMPLE_CANCELLED_CORE_REVERSAL_ALLOWED");
+    require(example.fixture.cash.observed.version == 4 && example.fixture.cash.observed.eligibility.status == "Frozen"
+        && example.fixture.cash.observed.account.interestBase == 800, "EXAMPLE_CANCELLED_CORE_REVERSAL_CHANGED_ACCOUNT");
+}
+
+atomic calculate prepareCoreReversalEvidenceKeysExample(context CoreReversalEligibilityExample example) {
+    example.auditKey = new CashAuditRecord(); example.auditKey.tradeId = example.request.originalTradeId;
+    example.fixture.cash.postingKey.tradeId = example.request.originalTradeId;
+    example.linkKey = new CashTradeReversalLink(); example.linkKey.id = example.request.originalTradeId;
+}
+Scenario serial observeCoreReversalEvidenceExample(context CoreReversalEligibilityExample example) {
+    prepareCoreReversalEvidenceKeysExample(example);
+    example.audits = queryCoreReversalExampleAudits(example.auditKey);
+    example.originalPostings = queryCashPostingRecords(example.fixture.cash.postingKey);
+    example.link = queryCashTradeReversalLink(example.linkKey);
+}
+atomic check verifyCoreReversalEvidenceUnchangedExample(CoreReversalEligibilityExample example) {
+    int audits = 0;
+    for (CashAuditRecord audit : example.audits) { audits++; require(audit.event == "Committed", "EXAMPLE_CORE_PREPARATION_AUDIT_CHANGED"); }
+    int postings = 0; double debit = 0; double credit = 0;
+    for (CashPostingRecord posting : example.originalPostings) {
+        postings++; if (posting.line.side == "Debit") { debit += posting.line.amount; } else { credit += posting.line.amount; }
+    }
+    require(audits == 1 && postings == 8 && debit == 602 && credit == 602, "EXAMPLE_CORE_PREPARATION_WROTE_EVIDENCE");
+    require(example.link.version == 0 && example.link.reversalId == "", "EXAMPLE_CORE_PREPARATION_SUBMITTED_REVERSAL");
+}
+
+Scenario serial coreReversalCurrentFactsExampleRun(context CoreReversalEligibilityExample example) {
+    initializeCoreReversalEligibilityExample(example); initializeCashReversalExample(example.fixture);
+    prepareOrdinaryCashExample(example.fixture.cash); configureCrossBranchFeeExample(example.fixture.cash);
+    configureCashReversalExample(example.fixture); configureCoreReversalEligibilityExample(example);
+    serial { transaction quantum {
+        seedCashExampleAccount(example.fixture.cash.seed); seedCashExampleTariff(example.fixture.cash.tariffRecord);
+    } }
+    executeCashDeposit(example.fixture.cash.command, example.fixture.cash.lifecycle);
+    prepareCashReversalLaterTradeExample(example.fixture); configureCoreReversalLaterDepositExample(example);
+    executeCashDeposit(example.fixture.cash.command, example.fixture.cash.lifecycle);
+    example.fixture.cash.observed = queryCashAccount(example.fixture.cash.observed);
+    prepareFrozenCoreReversalAccountExample(example);
+    serial { transaction quantum { storeCashAccount(example.prior, example.proposed); } }
+    try { prepareCoreQualifiedDepositReversal(example.request, example.facts); } catch (CashFailureFacts example.failure) {}
+    verifyFrozenCoreReversalRejectedExample(example);
+    configureFrozenExceptionCoreReversalExample(example);
+    prepareCoreQualifiedDepositReversal(example.request, example.facts); verifyFrozenCoreReversalCandidateExample(example);
+    mutateCoreReversalCallerFactsExample(example); example.fixture.cash.observed = queryCashAccount(example.fixture.cash.observed);
+    verifyCoreReversalPreparationNoWriteExample(example);
+    observeCoreReversalEvidenceExample(example); verifyCoreReversalEvidenceUnchangedExample(example);
+    prepareCancelledCoreReversalAccountExample(example);
+    serial { transaction quantum { storeCashAccount(example.prior, example.proposed); } }
+    try { prepareCoreQualifiedDepositReversal(example.request, example.facts); } catch (CashFailureFacts example.failure) {}
+    example.fixture.cash.observed = queryCashAccount(example.fixture.cash.observed);
+    verifyCancelledCoreReversalRejectedExample(example);
+    observeCoreReversalEvidenceExample(example); verifyCoreReversalEvidenceUnchangedExample(example);
+}

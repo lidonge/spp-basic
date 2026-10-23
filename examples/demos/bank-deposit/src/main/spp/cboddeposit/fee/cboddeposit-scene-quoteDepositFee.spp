@@ -1,0 +1,20 @@
+domain cboddeposit;
+
+Scenario serial quoteDepositFee(
+    DepositRequest,
+    DepositFeeParty,
+    DepositFeeContext,
+    DepositFeeRate,
+    DepositFeePlan
+) {
+    checkFeeAmount;
+    checkFeeAccount;
+    classifyDepositFee;
+    if (DepositFeePlan.applicable) {
+        prepareFeeLookup;
+        findDepositFeeRate;
+    }
+    checkRequiredFeeIdentified;
+    checkFeeRate;
+    calculateDepositFee;
+}

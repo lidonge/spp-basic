@@ -1,0 +1,65 @@
+domain cboddeposit;
+
+// Report facts are business participants, not a handwritten reporting program.
+Contract DepositReportTradeEvidence {
+    int slot; CashDepositTrade trade; CashPostingRecord[] postings; CashAuditRecord[] history;
+}
+Contract DepositReportCandidateEvidence {
+    int slot; String description; boolean executed; DepositReversalPreparationFacts facts;
+}
+Role DepositSourceCashReport {
+    String id; String title; String scope; String candidateDescription;
+    boolean cobolExecuted; boolean bankConfigurationObtained; boolean productionReplacementVerified;
+    String pendingStatus; CashAccountRecord pendingAccount;
+    CashDepositCommand pendingCommand; CashDepositCommand authorizedCommand; CashDepositCommand replayCommand;
+    CashAccountRecord replayCurrent; CashAccountRecord replayResult;
+    CashAccountRecord current; DepositReportTradeEvidence[] actualTrades;
+    DepositReportCandidateEvidence[] candidates;
+}
+Contract DepositCashReportExample {
+    StoredReversalPreparationExample stored; DepositSourceCashReport report; DepositSourceCashReport loaded;
+    CashDepositTrade tradeKey; CashDepositTrade trade; CashPostingRecord postingKey; CashPostingRecord[] postings;
+    CashAuditRecord historyKey; CashAuditRecord[] history;
+    int slot;
+}
+atomic update storeDepositSourceCashReport(DepositSourceCashReport report);
+atomic query <DepositSourceCashReport report> queryDepositSourceCashReport(DepositSourceCashReport key);
+atomic calculate initializeDepositCashReport(context DepositCashReportExample example) {
+    example.stored = new StoredReversalPreparationExample(); example.stored.prefix = "SOURCE-REPORT-CASH";
+    example.report = new DepositSourceCashReport(); example.report.id = "SOURCE-REPORT-CASH";
+    example.report.title = "存款业务证据：现金、授权、重放与跨日积数";
+    example.report.scope = "COBOL尚未执行，生产银行配置尚未取得；本报告不认定生产替代验证已完成";
+    example.report.cobolExecuted = false; example.report.bankConfigurationObtained = false;
+    example.report.productionReplacementVerified = false;
+    example.report.candidateDescription = "金融与分录反向候选（未执行）；预期净余额1700";
+    example.report.actualTrades = new DepositReportTradeEvidence[] {
+        new DepositReportTradeEvidence(), new DepositReportTradeEvidence(), new DepositReportTradeEvidence() };
+    example.report.candidates = new DepositReportCandidateEvidence[] {
+        new DepositReportCandidateEvidence(), new DepositReportCandidateEvidence() };
+    int slot = 1; for (DepositReportTradeEvidence evidence : example.report.actualTrades) { evidence.slot = slot; slot++; }
+    slot = 1; for (DepositReportCandidateEvidence evidence : example.report.candidates) { evidence.slot = slot; slot++; }
+    example.tradeKey = new CashDepositTrade(); example.postingKey = new CashPostingRecord(); example.historyKey = new CashAuditRecord();
+    example.slot = 1;
+}
+atomic calculate selectDepositCashReportQuery(context DepositCashReportExample example) {
+    if (example.slot == 1) { example.tradeKey.id = "SOURCE-REPORT-CASH-T"; }
+    else if (example.slot == 2) { example.tradeKey.id = "SOURCE-REPORT-CASH-AUTHORIZED"; }
+    else { example.tradeKey.id = "SOURCE-REPORT-CASH-NEXT"; }
+    example.postingKey.tradeId = example.tradeKey.id; example.historyKey.tradeId = example.tradeKey.id;
+}
+atomic calculate captureDepositCashReportTrade(context DepositCashReportExample example) {
+    require(example.trade != null, "REPORT_MISSING_ACTUAL_TRADE");
+    for (DepositReportTradeEvidence evidence : example.report.actualTrades) {
+        if (evidence.slot == example.slot) {
+            evidence.trade = copy(example.trade); evidence.postings = copy(example.postings); evidence.history = copy(example.history);
+        }
+    }
+    example.slot++;
+}
+Scenario serial readDepositCashReportTrade(context DepositCashReportExample example) {
+    selectDepositCashReportQuery(example);
+    example.trade = queryCashDepositTrade(example.tradeKey);
+    example.postings = queryCashPostingRecords(example.postingKey);
+    example.history = queryCoreReversalExampleAudits(example.historyKey);
+    captureDepositCashReportTrade(example);
+}

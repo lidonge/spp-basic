@@ -1,0 +1,11 @@
+domain cboddeposit;
+
+technical services {
+    invocationTrace;
+}
+
+intercept services {
+    before: invocationTrace;
+    after: invocationTrace;
+    failure: invocationTrace;
+}

@@ -1,0 +1,44 @@
+domain petshop;
+
+Scenario serial reserveShopPet(Buyer, Goods, StockLine[], PetReservationAgreement) {
+    checkBuyerCredential;
+    checkGoodsCredential;
+    checkReservationQuantity;
+    parallel {
+        findBuyer;
+        findGoods;
+    }
+    identify(Buyer);
+    identify(Goods);
+    checkGoodsSale;
+    preparePetReservation;
+    transaction {
+        insertPetReservationAgreement;
+    }
+    prepareReservationInventory;
+    findStockLine;
+    identify(StockLine[]);
+    transaction {
+        reserveRequestedInventory bounds {
+            StockLine[].available: [0, null];
+            StockLine[].reserved: [0, null];
+        };
+        confirmPetReservation;
+        updatePetReservationAgreement;
+    } fail {
+        if (ResultInfo.failure.recoveryStatus == "ROLLED_BACK"
+            || ResultInfo.failure.recoveryStatus == "REVERSED") {
+            findStockLine;
+            identify(StockLine[]);
+            rejectPetReservation;
+            transaction {
+                updatePetReservationAgreement;
+            }
+        }
+    }
+}
+
+Scenario serial readShopReservation(PetReservationAgreement) {
+    findPetReservationAgreement;
+    identify(PetReservationAgreement);
+}

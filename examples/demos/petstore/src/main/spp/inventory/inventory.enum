@@ -1,0 +1,20 @@
+domain inventory;
+
+Enum OrderStatus {
+    UNPAID("UNPAID"),
+    PAID("PAID"),
+    SHIPPED("SHIPPED"),
+    DELIVERED("DELIVERED"),
+    CANCELLED("CANCELLED"),
+    RETURN_REQUESTED("RETURN_REQUESTED"),
+    RETURNED("RETURNED")
+}
+
+Enum ReceiptStatus {
+    COMPLETED("COMPLETED")
+}
+
+Enum MemberTier {
+    NORMAL("NORMAL"),
+    VIP("VIP")
+}

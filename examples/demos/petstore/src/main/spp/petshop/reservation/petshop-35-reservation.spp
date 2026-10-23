@@ -1,0 +1,47 @@
+domain petshop;
+
+Contract PetReservationAgreement {
+    business("Reservation reference used to track an accepted application") String reservationNumber;
+    Buyer buyer;
+    Goods goods;
+    int quantity;
+    ReservationStatus status;
+    ReservationRejectionReason rejectionReason;
+}
+
+atomic check checkReservationQuantity(PetReservationAgreement) {
+    require(PetReservationAgreement.quantity > 0, "INVALID_QUANTITY");
+}
+
+atomic calculate preparePetReservation(Buyer, Goods, PetReservationAgreement) {
+    PetReservationAgreement.buyer = Buyer;
+    PetReservationAgreement.goods = Goods;
+    PetReservationAgreement.status = ReservationStatus.ACCEPTED;
+    PetReservationAgreement.rejectionReason = null;
+}
+
+atomic calculate prepareReservationInventory(Goods, StockLine[]) {
+    StockLine[] = new StockLine[] {
+        new StockLine()
+    };
+    for (StockLine item : StockLine[]) {
+        item.goods = Goods;
+    }
+}
+
+atomic calculate confirmPetReservation(PetReservationAgreement) {
+    PetReservationAgreement.status = ReservationStatus.RESERVED;
+}
+
+atomic calculate rejectPetReservation(StockLine[], PetReservationAgreement) {
+    PetReservationAgreement.status = ReservationStatus.REJECTED;
+    PetReservationAgreement.rejectionReason = ReservationRejectionReason.RESERVATION_NOT_COMPLETED;
+    for (StockLine item : StockLine[]) {
+        if (item.goods.sku == PetReservationAgreement.goods.sku
+            && item.available < PetReservationAgreement.quantity) {
+            PetReservationAgreement.rejectionReason = ReservationRejectionReason.INSUFFICIENT_STOCK;
+        }
+    }
+}
+
+atomic update reserveRequestedInventory(StockLine[], PetReservationAgreement);

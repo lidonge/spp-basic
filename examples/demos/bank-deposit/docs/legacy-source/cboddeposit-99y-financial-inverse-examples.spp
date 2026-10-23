@@ -1,0 +1,125 @@
+domain cboddeposit;
+Contract FinancialInverseExampleFacts {
+    DepositRequest request; DepositAccount before; DepositAccount current; DepositAccount snapshot;
+    DepositPlan originalPlan; OriginalDepositMovement movement; DepositReversalCapacity capacity;
+    DepositReversalAmountPlan plan; DepositReversalAmountPlan expected; CashFailureFacts failure; String expectedCode;
+}
+atomic calculate initializeFinancialInverseExample(context FinancialInverseExampleFacts example) {
+    example.request = new DepositRequest(); example.request.currency = "CNY"; example.request.valueDate = 20261007;
+    example.before = new DepositAccount(); example.current = new DepositAccount();
+    example.before.frozenAmount = 0; example.before.authorizedAmount = 0;
+    example.current.frozenAmount = 0; example.current.authorizedAmount = 0;
+    example.originalPlan = new DepositPlan(); example.movement = new OriginalDepositMovement();
+    example.capacity = new DepositReversalCapacity(); example.plan = new DepositReversalAmountPlan(); example.expected = new DepositReversalAmountPlan();
+    example.failure = null; example.expectedCode = "";
+}
+atomic check verifyFinancialInverseExample(FinancialInverseExampleFacts example) {
+    require(example.plan.interestBase == example.expected.interestBase, "EXAMPLE_FINANCIAL_INVERSE_INTERESTBASE");
+    require(example.plan.overdraftInterest == example.expected.overdraftInterest, "EXAMPLE_FINANCIAL_INVERSE_OVERDRAFTINTEREST");
+    require(example.plan.collectionInterest == example.expected.collectionInterest, "EXAMPLE_FINANCIAL_INVERSE_COLLECTIONINTEREST");
+    require(example.plan.overdraftPrincipal == example.expected.overdraftPrincipal, "EXAMPLE_FINANCIAL_INVERSE_OVERDRAFTPRINCIPAL");
+    require(example.plan.overdraftExposure == example.expected.overdraftExposure, "EXAMPLE_FINANCIAL_INVERSE_OVERDRAFTEXPOSURE");
+    require(example.plan.availableBalance == example.expected.availableBalance, "EXAMPLE_FINANCIAL_INVERSE_AVAILABLEBALANCE");
+    require(example.plan.accountBalance == example.expected.accountBalance, "EXAMPLE_FINANCIAL_INVERSE_ACCOUNTBALANCE");
+}
+atomic check verifyFinancialInverseInputExample(FinancialInverseExampleFacts example) {
+    require(example.current.interestBase == example.snapshot.interestBase, "EXAMPLE_FINANCIAL_INVERSE_INPUT_INTERESTBASE");
+    require(example.current.overdraftPrincipal == example.snapshot.overdraftPrincipal, "EXAMPLE_FINANCIAL_INVERSE_INPUT_OVERDRAFTPRINCIPAL");
+    require(example.current.overdraftInterest == example.snapshot.overdraftInterest, "EXAMPLE_FINANCIAL_INVERSE_INPUT_OVERDRAFTINTEREST");
+    require(example.current.collectionInterest == example.snapshot.collectionInterest, "EXAMPLE_FINANCIAL_INVERSE_INPUT_COLLECTIONINTEREST");
+    require(example.current.overdraftExposure == example.snapshot.overdraftExposure, "EXAMPLE_FINANCIAL_INVERSE_INPUT_OVERDRAFTEXPOSURE");
+    require(example.current.frozenAmount == example.snapshot.frozenAmount, "EXAMPLE_FINANCIAL_INVERSE_INPUT_FROZENAMOUNT");
+    require(example.current.authorizedAmount == example.snapshot.authorizedAmount, "EXAMPLE_FINANCIAL_INVERSE_INPUT_AUTHORIZEDAMOUNT");
+    require(example.current.loanState == example.snapshot.loanState, "EXAMPLE_FINANCIAL_INVERSE_INPUT_LOANSTATE");
+    require(example.movement.valueDate == 20261007 && example.movement.currency == "CNY", "EXAMPLE_FINANCIAL_INVERSE_ORIGINAL_IDENTITY");
+}
+atomic check verifyFinancialInverseFailureExample(FinancialInverseExampleFacts example) {
+    require(example.failure != null && example.failure.code == example.expectedCode, "EXAMPLE_FINANCIAL_INVERSE_REJECTION");
+}
+atomic check verifyFinancialInverseUncomputedExample(FinancialInverseExampleFacts example) {
+    require(example.plan.interestBase == null, "EXAMPLE_FINANCIAL_INVERSE_EARLY_MUTATION");
+}
+atomic check verifyClampedExposureMovementExample(FinancialInverseExampleFacts example) {
+    require(example.movement.exposureDelta == -5, "EXAMPLE_ORIGINAL_CLAMPED_EXPOSURE_DELTA");
+}
+atomic calculate forgeFinancialInverseMovementExample(context FinancialInverseExampleFacts example) { example.movement.amount = 11; }
+Scenario serial financialInverseRulesExampleRun(context FinancialInverseExampleFacts example) {
+    initializeFinancialInverseExample(example);
+    configureFinancialInverseCase01(example);
+    depositKernel(example.request, example.before, example.originalPlan);
+    describeOriginalDepositMovement(example.request, example.before, example.originalPlan, example.movement);
+    prepareDepositReversalAmounts(example.current, example.movement, example.capacity, example.plan);
+    verifyFinancialInverseExample(example);
+    verifyFinancialInverseInputExample(example);
+    initializeFinancialInverseExample(example);
+    configureFinancialInverseCase02(example);
+    depositKernel(example.request, example.before, example.originalPlan);
+    describeOriginalDepositMovement(example.request, example.before, example.originalPlan, example.movement);
+    prepareDepositReversalAmounts(example.current, example.movement, example.capacity, example.plan);
+    verifyFinancialInverseExample(example);
+    verifyFinancialInverseInputExample(example);
+    initializeFinancialInverseExample(example);
+    configureFinancialInverseCase03(example);
+    depositKernel(example.request, example.before, example.originalPlan);
+    describeOriginalDepositMovement(example.request, example.before, example.originalPlan, example.movement);
+    prepareDepositReversalAmounts(example.current, example.movement, example.capacity, example.plan);
+    verifyFinancialInverseExample(example);
+    verifyFinancialInverseInputExample(example);
+    initializeFinancialInverseExample(example);
+    configureFinancialInverseCase04(example);
+    depositKernel(example.request, example.before, example.originalPlan);
+    describeOriginalDepositMovement(example.request, example.before, example.originalPlan, example.movement);
+    prepareDepositReversalAmounts(example.current, example.movement, example.capacity, example.plan);
+    verifyFinancialInverseExample(example);
+    verifyFinancialInverseInputExample(example);
+    initializeFinancialInverseExample(example);
+    configureFinancialInverseCase05(example);
+    depositKernel(example.request, example.before, example.originalPlan);
+    describeOriginalDepositMovement(example.request, example.before, example.originalPlan, example.movement);
+    verifyClampedExposureMovementExample(example);
+    prepareDepositReversalAmounts(example.current, example.movement, example.capacity, example.plan);
+    verifyFinancialInverseExample(example);
+    verifyFinancialInverseInputExample(example);
+    initializeFinancialInverseExample(example);
+    configureFinancialInverseCase06(example);
+    depositKernel(example.request, example.before, example.originalPlan);
+    describeOriginalDepositMovement(example.request, example.before, example.originalPlan, example.movement);
+    prepareDepositReversalAmounts(example.current, example.movement, example.capacity, example.plan);
+    verifyFinancialInverseExample(example);
+    verifyFinancialInverseInputExample(example);
+    initializeFinancialInverseExample(example);
+    configureFinancialInverseCase07(example);
+    depositKernel(example.request, example.before, example.originalPlan);
+    describeOriginalDepositMovement(example.request, example.before, example.originalPlan, example.movement);
+    try { prepareDepositReversalAmounts(example.current, example.movement, example.capacity, example.plan); }
+    catch (CashFailureFacts example.failure) {}
+    verifyFinancialInverseFailureExample(example);
+    verifyFinancialInverseUncomputedExample(example);
+    verifyFinancialInverseInputExample(example);
+    initializeFinancialInverseExample(example);
+    configureFinancialInverseCase08(example);
+    depositKernel(example.request, example.before, example.originalPlan);
+    describeOriginalDepositMovement(example.request, example.before, example.originalPlan, example.movement);
+    try { prepareDepositReversalAmounts(example.current, example.movement, example.capacity, example.plan); }
+    catch (CashFailureFacts example.failure) {}
+    verifyFinancialInverseFailureExample(example);
+    verifyFinancialInverseInputExample(example);
+    initializeFinancialInverseExample(example);
+    configureFinancialInverseCase09(example);
+    depositKernel(example.request, example.before, example.originalPlan);
+    describeOriginalDepositMovement(example.request, example.before, example.originalPlan, example.movement);
+    try { prepareDepositReversalAmounts(example.current, example.movement, example.capacity, example.plan); }
+    catch (CashFailureFacts example.failure) {}
+    verifyFinancialInverseFailureExample(example);
+    verifyFinancialInverseInputExample(example);
+    initializeFinancialInverseExample(example);
+    configureFinancialInverseCase10(example);
+    depositKernel(example.request, example.before, example.originalPlan);
+    describeOriginalDepositMovement(example.request, example.before, example.originalPlan, example.movement);
+    forgeFinancialInverseMovementExample(example);
+    try { prepareDepositReversalAmounts(example.current, example.movement, example.capacity, example.plan); }
+    catch (CashFailureFacts example.failure) {}
+    verifyFinancialInverseFailureExample(example);
+    verifyFinancialInverseUncomputedExample(example);
+    verifyFinancialInverseInputExample(example);
+}

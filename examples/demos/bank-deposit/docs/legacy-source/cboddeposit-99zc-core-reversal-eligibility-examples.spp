@@ -1,0 +1,83 @@
+domain cboddeposit;
+Contract CoreReversalEligibilityExample {
+    CashReversalExample fixture; DepositReversalPreparationRequest request; DepositReversalPreparationFacts facts;
+    CashFailureFacts failure; String expectedCode; CashAccountRecord prior; CashAccountRecord proposed;
+    CashAuditRecord auditKey; CashAuditRecord[] audits; CashPostingRecord[] originalPostings; CashTradeReversalLink linkKey; CashTradeReversalLink link;
+}
+atomic calculate initializeCoreReversalEligibilityExample(context CoreReversalEligibilityExample example) {
+    example.fixture = new CashReversalExample(); example.request = new DepositReversalPreparationRequest();
+    example.facts = new DepositReversalPreparationFacts(); example.failure = null;
+}
+atomic calculate configureCoreReversalEligibilityExample(context CoreReversalEligibilityExample example) {
+    example.fixture.cash.seed.id = "SOURCE-CORE-ELIGIBILITY-A"; example.fixture.cash.seed.eligibility.accountId = example.fixture.cash.seed.id;
+    example.fixture.cash.command.id = "SOURCE-CORE-ELIGIBILITY-T"; example.fixture.cash.command.attemptId = "SOURCE-CORE-ELIGIBILITY-COMMIT";
+    example.fixture.cash.command.accountId = example.fixture.cash.seed.id; example.fixture.cash.observed.id = example.fixture.cash.seed.id;
+    example.fixture.cash.tariffRecord.customerId = "SOURCE-CORE-ELIGIBILITY-CUSTOMER";
+    example.fixture.cash.seed.feeParty.customerId = example.fixture.cash.tariffRecord.customerId;
+    example.request.originalTradeId = example.fixture.cash.command.id;
+    example.request.capacity = new DepositReversalCapacity(); example.request.capacity.overdraftPermitted = false; example.request.capacity.overdraftLimit = 1000;
+    example.request.operator = copy(example.fixture.cash.command.operator); example.request.channel = copy(example.fixture.cash.command.channel);
+}
+atomic calculate configureClosedCoreReversalExample(context CoreReversalEligibilityExample example) {
+    example.fixture.cash.seed.eligibility.status = "Closed"; example.expectedCode = "EO082"; example.failure = null;
+}
+atomic calculate configureCancelledCoreReversalExample(context CoreReversalEligibilityExample example) {
+    example.fixture.cash.seed.eligibility.status = "Normal"; example.fixture.cash.seed.control.cancelledOn = 20261007;
+    example.expectedCode = "EN113"; example.failure = null;
+}
+atomic calculate configureFrozenCoreReversalExample(context CoreReversalEligibilityExample example) {
+    example.fixture.cash.seed.control.cancelledOn = 0; example.fixture.cash.seed.eligibility.status = "Frozen";
+    example.expectedCode = "EN111"; example.failure = null;
+}
+atomic calculate configureFrozenExceptionCoreReversalExample(context CoreReversalEligibilityExample example) {
+    example.request.operator.transactionPrefix = "SA01116";
+}
+atomic calculate configureCancelledFrozenCoreReversalExample(context CoreReversalEligibilityExample example) {
+    example.fixture.cash.seed.control.cancelledOn = 20261007; example.expectedCode = "EN113"; example.failure = null;
+}
+atomic check verifyCoreReversalRuleFailureExample(CoreReversalEligibilityExample example) {
+    require(example.failure != null && example.failure.code == example.expectedCode, "EXAMPLE_CORE_REVERSAL_RULE_ERROR");
+}
+Scenario serial checkCoreReversalRuleFailureExample(context CoreReversalEligibilityExample example) {
+    try { checkCoreDepositReversalEligibility(example.fixture.cash.seed.control, example.fixture.cash.seed.eligibility, example.request.operator); }
+    catch (CashFailureFacts example.failure) {}
+    verifyCoreReversalRuleFailureExample(example);
+}
+atomic calculate configureCoreReversalRangeExample(context CoreReversalEligibilityExample example) {
+    example.fixture.cash.seed.eligibility.status = "Normal"; example.fixture.cash.seed.control.cancelledOn = 0;
+    example.fixture.cash.seed.bankProfile.depositRange = "SameBranch"; example.fixture.cash.seed.bankProfile.passbookLoss = "Written";
+    example.facts.financial = new CashReversalWork(); example.facts.financial.notices = new DepositNotices();
+    example.expectedCode = "EN134"; example.failure = null;
+}
+atomic check verifyCoreReversalRangeWarningExample(CoreReversalEligibilityExample example) {
+    require(example.facts.financial.notices.passbookWarning == "WN201", "EXAMPLE_CORE_REVERSAL_WARNING");
+}
+atomic calculate configureCoreReversalFrontControlExample(context CoreReversalEligibilityExample example) {
+    example.fixture.cash.seed.control.controllingInstitution = "001"; example.fixture.cash.seed.control.controlStatus = "Locked";
+    example.expectedCode = "EN432"; example.failure = null;
+}
+Scenario serial coreReversalEligibilityRulesExampleRun(context CoreReversalEligibilityExample example) {
+    initializeCoreReversalEligibilityExample(example); initializeCashReversalExample(example.fixture);
+    prepareOrdinaryCashExample(example.fixture.cash); configureCrossBranchFeeExample(example.fixture.cash);
+    configureCashReversalExample(example.fixture); configureCoreReversalEligibilityExample(example);
+    configureClosedCoreReversalExample(example); checkCoreReversalRuleFailureExample(example);
+    configureCancelledCoreReversalExample(example); checkCoreReversalRuleFailureExample(example);
+    configureFrozenCoreReversalExample(example); checkCoreReversalRuleFailureExample(example);
+    configureFrozenExceptionCoreReversalExample(example);
+    checkCoreDepositReversalEligibility(example.fixture.cash.seed.control, example.fixture.cash.seed.eligibility, example.request.operator);
+    configureCancelledFrozenCoreReversalExample(example); checkCoreReversalRuleFailureExample(example);
+    configureCoreReversalRangeExample(example);
+    assessCoreDepositReversalEligibility(example.fixture.cash.seed.control, example.fixture.cash.seed.eligibility,
+        example.fixture.cash.seed.bankProfile, example.request.operator, example.request.channel, example.facts.financial.notices);
+    verifyCoreReversalRangeWarningExample(example);
+    try { checkDepositBranchRange(example.fixture.cash.seed.bankProfile, example.request.operator, example.request.channel); }
+    catch (CashFailureFacts example.failure) {}
+    verifyCoreReversalRuleFailureExample(example);
+    configureCoreReversalFrontControlExample(example);
+    checkCoreDepositReversalEligibility(example.fixture.cash.seed.control, example.fixture.cash.seed.eligibility, example.request.operator);
+    try { checkCashAccountControl(example.fixture.cash.seed.control, example.fixture.cash.seed.eligibility); }
+    catch (CashFailureFacts example.failure) {}
+    verifyCoreReversalRuleFailureExample(example);
+}
+
+atomic query <CashAuditRecord[] audits> queryCoreReversalExampleAudits(CashAuditRecord key);

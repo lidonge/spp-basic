@@ -1,0 +1,73 @@
+domain petshop;
+
+atomic calculate priceLine(OrderLine) {
+    OrderLine.amount = roundHalfUp(OrderLine.unitPrice * OrderLine.quantity, 2);
+}
+
+atomic calculate quoteOrder(Buyer, Cart, Goods[], ShopOrder) {
+    ShopOrder.buyer = Buyer;
+    ShopOrder.reservedQuantity = 0;
+    ShopOrder.address = Buyer.address;
+    ShopOrder.status = OrderStatus.UNPAID;
+    ShopOrder.lines = new OrderLine[] {
+    };
+    ShopOrder.subtotal = 0;
+    for (CartLine cartLine : Cart.lines) {
+        for (Goods product : Goods[]) {
+            if (product.sku == cartLine.goods.sku) {
+                OrderLine line = new OrderLine();
+                line.goods = product;
+                line.name = product.name;
+                line.quantity = cartLine.quantity;
+                line.unitPrice = product.price;
+                priceLine(line);
+                ShopOrder.lines = append(ShopOrder.lines, line);
+                ShopOrder.subtotal += line.amount;
+            }
+        }
+    }
+    ShopOrder.discount = 0;
+    if (Buyer.tier == MemberTier.VIP) {
+        ShopOrder.discount = roundHalfUp(ShopOrder.subtotal * 0.1, 2);
+    }
+    ShopOrder.shipping = 8;
+    if (ShopOrder.subtotal - ShopOrder.discount >= 100) {
+        ShopOrder.shipping = 0;
+    }
+    ShopOrder.total = roundHalfUp(ShopOrder.subtotal - ShopOrder.discount + ShopOrder.shipping, 2);
+}
+
+atomic calculate reserveOrder(Cart, ShopOrder) {
+    ShopOrder.reservedQuantity = 0;
+    for (OrderLine line : ShopOrder.lines) {
+        ShopOrder.reservedQuantity += line.quantity;
+    }
+    Cart.lines = new CartLine[] {
+    };
+}
+
+atomic check checkOrderOwner(Buyer, ShopOrder) {
+    require(ShopOrder.buyer == Buyer, "ORDER_NOT_FOUND");
+}
+
+atomic calculate prepareUnpaidCancellation(ShopOrder, UnpaidCancellationAgreement) {
+    UnpaidCancellationAgreement.releasedQuantity = 0;
+    for (OrderLine line : ShopOrder.lines) {
+        UnpaidCancellationAgreement.releasedQuantity += line.quantity;
+    }
+    ShopOrder.status = OrderStatus.CANCELLED;
+    ShopOrder.reason = UnpaidCancellationAgreement.reason;
+}
+
+atomic calculate preparePaidCancellation(ShopOrder, PaidCancellationAgreement) {
+    PaidCancellationAgreement.releasedQuantity = 0;
+    for (OrderLine line : ShopOrder.lines) {
+        PaidCancellationAgreement.releasedQuantity += line.quantity;
+    }
+    ShopOrder.status = OrderStatus.CANCELLED;
+    ShopOrder.reason = PaidCancellationAgreement.reason;
+}
+
+atomic calculate prepareCancellationRefund(ShopOrder, PaidCancellationAgreement) {
+    PaidCancellationAgreement.refundAmount = ShopOrder.total;
+}

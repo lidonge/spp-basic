@@ -1,0 +1,89 @@
+domain cboddeposit;
+
+atomic calculate selectDepositReportCashReversal(context DepositCompleteReportExample example) {
+    example.report.cashReversal = copy(example.cashWork.stored.core.fixture);
+    example.report.cashReversal.cash.command = copy(example.report.cashReversal.cash.originalCommand);
+    example.report.cashReversal.command.id = "SOURCE-REPORT-CASH-R";
+    example.report.cashReversal.command.attemptId = "SOURCE-REPORT-CASH-REVERSE";
+    example.report.cashReversal.cash.auditKey = new CashAuditRecord();
+}
+atomic calculate selectDepositReportDebtReversal(context DepositReportDebtEvidence debt) {
+    debt.fixture.cash.auditKey = new CashAuditRecord();
+}
+atomic check verifyDepositReportActualReversal(CashReversalExample fixture) {
+    require(fixture.lifecycle.work.status == "Committed" && fixture.record != null
+        && fixture.record.id == fixture.command.id && fixture.link.reversalId == fixture.command.id
+        && fixture.link.version == 1 && fixture.cash.audit.event == "ReversalCommitted", "REPORT_REVERSAL_NOT_COMMITTED");
+    require(fixture.record.originalTradeId == fixture.cash.storedTrade.id
+        && sameFacts(fixture.record.originalDeposit, fixture.cash.storedTrade), "REPORT_REVERSAL_ORIGINAL_CHANGED");
+    int lines = 0; double debit = 0; double credit = 0;
+    for (CashPostingRecord posting : fixture.cash.postings) {
+        lines++; if (posting.line.side == "Debit") { debit += posting.line.amount; } else { credit += posting.line.amount; }
+    }
+    require(lines == 8 && debit == credit && debit == fixture.cash.storedTrade.request.amount + fixture.record.fee.refundAmount,
+        "REPORT_REVERSAL_POSTINGS");
+}
+Scenario serial executeDepositReportActualReversal(context CashReversalExample fixture) {
+    alignCashReversalExampleKeys(fixture);
+    executeCashReversal(fixture.command, fixture.lifecycle);
+    prepareCashReversalObservationsExample(fixture); observeCashReversalExample(fixture);
+    verifyDepositReportActualReversal(fixture);
+}
+atomic check verifyDepositReportDebtRestore(DepositReportDebtEvidence debt) {
+    require(debt.fixture.cash.observed.version == 2
+        && debt.fixture.cash.observed.eligibility.accountBalance == debt.original.original.eligibility.accountBalance
+        && sameFacts(debt.fixture.cash.observed.account, debt.original.original.account)
+        && sameFacts(debt.fixture.cash.observed.accrual, debt.settled.accrual), "REPORT_DEBT_RESTORE_AND_ACCRUAL");
+    require(debt.fixture.record.fee.refundAmount == 0, "REPORT_DEBT_REFUND");
+}
+atomic calculate markDepositReportActualReversals(context DepositCompleteReportExample example) {
+    example.report.actualReversalsExecuted = true;
+    example.report.title = "存款与实际现金冲正证据：六笔存款、四笔冲正、20条量子日志";
+    example.report.id = "SOURCE-REPORT-ACTUAL-REVERSALS";
+}
+atomic check verifyDepositReportActualReversals(DepositCompleteReportExample example) {
+    require(example.report.actualReversalsExecuted
+        && example.report.cashReversal.cash.observed.version == 4
+        && example.report.cashReversal.cash.observed.eligibility.accountBalance == 1700
+        && example.report.cashReversal.cash.observed.account.interestBase == 1700
+        && example.report.cashReversal.cash.observed.accrual.state.normalProduct == 2200
+        && example.report.cashReversal.cash.observed.accrual.state.actualProduct == 2200
+        && example.report.cashReversal.cash.observed.eligibility.cashDepositedToday == 0
+        && example.report.cashReversal.cash.observed.eligibility.lastTransactionDate == 20261008
+        && example.report.cashReversal.cash.observed.eligibility.detailCount == 14
+        && example.report.cashReversal.record.fee.refundAmount == 2, "REPORT_CASH_REVERSE_OVERWROTE_LATER_BUSINESS");
+    int count = 0; double deltas = 0;
+    for (QuantumJournalEvidence row : example.report.journal) {
+        count++; deltas += row.deltaValue;
+        require(row.status == "COMMITTED" && row.beforeValue + row.deltaValue == row.afterValue, "REPORT_ACTUAL_QUANTUM_ROWS");
+    }
+    require(count == 20 && deltas == 0, "REPORT_TWENTY_ACTUAL_QUANTUM_ROWS");
+    count = 0; int cash = 0; int debt = 0; int fractional = 0;
+    for (QuantumValueEvidence value : example.report.values) {
+        count++;
+        if (value.objectId == "SOURCE-REPORT-CASH-A") { cash++; require(value.currentValue == 1700, "REPORT_QUANTUM_CASH"); }
+        else if (value.objectId == "SOURCE-REPORT-FRACTIONAL-A") { fractional++; require(value.currentValue == -0.019, "REPORT_QUANTUM_FRACTIONAL"); }
+        else { debt++; require(value.currentValue == -170, "REPORT_QUANTUM_DEBT"); }
+    }
+    require(count == 4 && cash == 1 && debt == 2 && fractional == 1, "REPORT_QUANTUM_ACCOUNT_COUNT");
+    count = 0; cash = 0;
+    for (QuantumValueEvidence value : example.report.clearingValues) {
+        count++;
+        if (value.objectId == "SOURCE-REPORT-CASH-A") { cash++; require(value.currentValue == -1600, "REPORT_QUANTUM_CASH_CLEARING"); }
+        else { require(value.currentValue == 0, "REPORT_QUANTUM_DEBT_CLEARING"); }
+    }
+    require(count == 4 && cash == 1, "REPORT_QUANTUM_CLEARING_COUNT");
+}
+Scenario serial depositActualReversalReportSetupExampleRun(context DepositCompleteReportExample example) {
+    createDepositCompleteReport(example); selectDepositReportCashReversal(example);
+    executeDepositReportActualReversal(example.report.cashReversal);
+    verifyDepositReportCashReversalRepetition(example);
+    selectDepositReportDebtReversal(example.report.normal); executeDepositReportActualReversal(example.report.normal.fixture);
+    verifyDepositReportDebtRestore(example.report.normal);
+    selectDepositReportDebtReversal(example.report.bad); executeDepositReportActualReversal(example.report.bad.fixture);
+    verifyDepositReportDebtRestore(example.report.bad);
+    selectDepositReportDebtReversal(example.report.fractional); executeDepositReportActualReversal(example.report.fractional.fixture);
+    verifyDepositReportDebtRestore(example.report.fractional);
+    markDepositReportActualReversals(example); observeDepositCompleteReportQuantum(example); verifyDepositReportActualReversals(example);
+    transaction quantum { storeDepositCompleteSourceReport(example.report); }
+}

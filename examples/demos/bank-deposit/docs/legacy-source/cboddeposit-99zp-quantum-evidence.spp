@@ -1,0 +1,60 @@
+domain cboddeposit;
+
+// Technical evidence is read through declared APP tables, never a bank Java query helper.
+Role QuantumJournalEvidence {
+    String transactionId; String boundaryServiceId; String status; int sequenceNo;
+    String groupId; String attributeId; String objectId; double beforeValue; double deltaValue; double afterValue;
+}
+Role QuantumValueEvidence {
+    String attributeId; String objectId; String groupId; String boundaryServiceId; String transactionId; double currentValue;
+}
+Contract QuantumEvidenceExample {
+    AccountEligibility account; CashQuantumClearing clearing; CashQuantumMovement movement;
+    QuantumJournalEvidence journalKey; QuantumJournalEvidence[] journal;
+    QuantumValueEvidence valueKey; QuantumValueEvidence[] values;
+    CashFailureFacts failure;
+}
+atomic query <QuantumJournalEvidence[] records> queryQuantumJournalEvidence(QuantumJournalEvidence key);
+atomic query <QuantumValueEvidence[] records> queryQuantumValueEvidence(QuantumValueEvidence key);
+atomic calculate initializeQuantumEvidenceExample(context QuantumEvidenceExample example) {
+    example.account = new AccountEligibility(); example.clearing = new CashQuantumClearing(); example.movement = new CashQuantumMovement();
+    example.journalKey = new QuantumJournalEvidence(); example.valueKey = new QuantumValueEvidence();
+    example.account.accountId = "SOURCE-Q-EXACT-A"; example.clearing.accountId = example.account.accountId;
+    example.account.accountBalance = 100; example.clearing.amount = 0; example.movement.amount = 0.0000000000000000000000001;
+    example.journalKey.objectId = example.account.accountId; example.valueKey.objectId = example.account.accountId;
+}
+Scenario serial observeQuantumEvidenceExample(context QuantumEvidenceExample example) {
+    example.journal = queryQuantumJournalEvidence(example.journalKey); example.values = queryQuantumValueEvidence(example.valueKey);
+}
+atomic check verifyTinyQuantumEvidenceExample(QuantumEvidenceExample example) {
+    int values = 0; int balances = 0; int clearings = 0;
+    for (QuantumValueEvidence value : example.values) {
+        values++; require(value.objectId == "SOURCE-Q-EXACT-A", "EXAMPLE_Q_EXACT_OBJECT");
+        if (value.attributeId == "AccountEligibility.accountBalance") {
+            balances++; require(value.currentValue == 100.0000000000000000000000001, "EXAMPLE_Q_EXACT_BALANCE");
+        }
+        if (value.attributeId == "CashQuantumClearing.amount") {
+            clearings++; require(value.currentValue == -0.0000000000000000000000001, "EXAMPLE_Q_EXACT_CLEARING");
+        }
+    }
+    require(values == 2 && balances == 1 && clearings == 1, "EXAMPLE_Q_EXACT_VALUES");
+    int rows = 0; double deltas = 0;
+    for (QuantumJournalEvidence row : example.journal) {
+        rows++; deltas += row.deltaValue;
+        require(row.objectId == "SOURCE-Q-EXACT-A" && row.status == "COMMITTED", "EXAMPLE_Q_EXACT_JOURNAL");
+        if (row.attributeId == "AccountEligibility.accountBalance") {
+            require(row.beforeValue == 100 && row.deltaValue == 0.0000000000000000000000001
+                && row.afterValue == 100.0000000000000000000000001, "EXAMPLE_Q_EXACT_BALANCE_RECORD");
+        }
+        if (row.attributeId == "CashQuantumClearing.amount") {
+            require(row.beforeValue == 0 && row.deltaValue == -0.0000000000000000000000001
+                && row.afterValue == -0.0000000000000000000000001, "EXAMPLE_Q_EXACT_CLEARING_RECORD");
+        }
+    }
+    require(rows == 2 && deltas == 0, "EXAMPLE_Q_EXACT_CONSERVATION");
+}
+Scenario serial quantumEvidenceExampleRun(context QuantumEvidenceExample example) {
+    initializeQuantumEvidenceExample(example);
+    commitCashQuantumValue(example.account, example.clearing, example.movement);
+    observeQuantumEvidenceExample(example); verifyTinyQuantumEvidenceExample(example);
+}

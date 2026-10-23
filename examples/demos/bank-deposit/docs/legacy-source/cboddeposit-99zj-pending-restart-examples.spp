@@ -1,0 +1,97 @@
+domain cboddeposit;
+
+Contract PendingRestartExample {
+    CashExample cash; CashDepositRequestRecord key; CashDepositRequestRecord identity;
+    CashAuditRecord historyKey; CashAuditRecord[] history;
+}
+atomic calculate initializePendingRestartExample(context PendingRestartExample example) {
+    example.cash = new CashExample(); example.key = new CashDepositRequestRecord(); example.historyKey = new CashAuditRecord();
+}
+atomic calculate selectPendingRestartIdentityExample(context PendingRestartExample example) {
+    example.cash.seed.id = "SOURCE-RESTART-PENDING-A"; example.cash.seed.eligibility.accountId = example.cash.seed.id;
+    example.cash.command.accountId = example.cash.seed.id; example.cash.observed.id = example.cash.seed.id;
+    example.cash.command.id = "SOURCE-RESTART-PENDING-T"; example.cash.command.attemptId = "SOURCE-RESTART-PENDING-WAIT";
+    example.cash.postingKey.tradeId = example.cash.command.id; example.cash.tradeKey.id = example.cash.command.id;
+    example.cash.auditKey.attemptId = example.cash.command.attemptId;
+    example.key.id = example.cash.command.id; example.historyKey.tradeId = example.cash.command.id;
+}
+Scenario serial preparePendingRestartFixtureExample(context PendingRestartExample example) {
+    initializePendingRestartExample(example); prepareOrdinaryCashExample(example.cash); configureAuthorizationExample(example.cash);
+    selectPendingRestartIdentityExample(example);
+}
+atomic check verifyPersistedPendingIdentityExample(PendingRestartExample example) {
+    require(example.identity != null && example.identity.id == example.cash.command.id
+        && example.identity.command.accountId == example.cash.command.accountId
+        && example.identity.command.request.amount == 1500 && example.identity.command.request.valueDate == 20261007,
+        "EXAMPLE_RESTART_PENDING_IDENTITY");
+}
+Scenario serial pendingRestartSetupExampleRun(context PendingRestartExample example) {
+    preparePendingRestartFixtureExample(example);
+    serial { transaction quantum { seedCashExampleAccount(example.cash.seed); } }
+    executeCashDeposit(example.cash.command, example.cash.lifecycle); observePendingAuthorizationExample(example.cash);
+    example.identity = queryCashDepositRequest(example.key); verifyPersistedPendingIdentityExample(example);
+}
+atomic calculate selectChangedPendingRestartExample(context PendingRestartExample example) {
+    example.cash.command.attemptId = "SOURCE-RESTART-PENDING-CHANGED"; example.cash.command.request.amount = 1501;
+    example.cash.command.evidence.grantedLevel = "B"; example.cash.auditKey.attemptId = example.cash.command.attemptId;
+    example.cash.failure = null;
+}
+atomic check verifyChangedPendingRestartExample(PendingRestartExample example) {
+    require(example.cash.failure != null && example.cash.failure.code == "DEPOSIT_REQUEST_ID_REUSED", "EXAMPLE_RESTART_CHANGED_IDENTITY_ACCEPTED");
+    require(example.cash.observed.version == 0 && example.cash.observed.eligibility.accountBalance == 100
+        && example.cash.observed.eligibility.cashDepositedToday == 0 && example.cash.storedTrade == null, "EXAMPLE_RESTART_REJECTION_CHANGED_ACCOUNT");
+    int count = 0; for (CashPostingRecord posting : example.cash.postings) { count++; }
+    require(count == 0, "EXAMPLE_RESTART_REJECTION_HAS_LEDGER");
+    require(example.cash.audit != null && example.cash.audit.event == "Rejected"
+        && example.cash.audit.code == "DEPOSIT_REQUEST_ID_REUSED", "EXAMPLE_RESTART_REJECTION_AUDIT");
+}
+atomic calculate selectAuthorizedPendingRestartExample(context PendingRestartExample example) {
+    example.cash.command.request.amount = 1500; example.cash.command.attemptId = "SOURCE-RESTART-PENDING-COMMIT";
+    example.cash.auditKey.attemptId = example.cash.command.attemptId;
+}
+atomic calculate selectPendingRestartReplayExample(context PendingRestartExample example) {
+    example.cash.command.request.amount = 1500.00; example.cash.command.attemptId = "SOURCE-RESTART-PENDING-REPLAY";
+    example.cash.command.day.date = 20261008; example.cash.command.authorizationPolicy.tellerLimit = 1;
+    example.cash.auditKey.attemptId = example.cash.command.attemptId;
+}
+atomic check verifyPendingRestartReplayExample(PendingRestartExample example) {
+    require(example.cash.lifecycle.execution.status == "Committed" && example.cash.lifecycle.execution.proposed.version == 1
+        && example.cash.observed.version == 1 && example.cash.observed.eligibility.accountBalance == 1600
+        && example.cash.observed.eligibility.cashDepositedToday == 1500 && example.cash.observed.eligibility.detailCount == 11,
+        "EXAMPLE_RESTART_REPLAY_CHANGED_ACCOUNT");
+    require(example.cash.audit != null && example.cash.audit.event == "Replayed", "EXAMPLE_RESTART_REPLAY_AUDIT");
+    int lines = 0; for (CashPostingRecord posting : example.cash.postings) { lines++; }
+    require(lines == 8, "EXAMPLE_RESTART_REPLAY_DUPLICATE_LEDGER");
+    int count = 0; int pending = 0; int rejected = 0; int committed = 0; int replayed = 0;
+    for (CashAuditRecord audit : example.history) {
+        count++; if (audit.event == "PendingAuthorization") { pending++; } if (audit.event == "Rejected") { rejected++; }
+        if (audit.event == "Committed") { committed++; } if (audit.event == "Replayed") { replayed++; }
+    }
+    require(count == 4 && pending == 1 && rejected == 1 && committed == 1 && replayed == 1, "EXAMPLE_RESTART_ATTEMPT_HISTORY");
+}
+atomic check verifyStoredPendingRestartStateExample(PendingRestartExample example) {
+    require(example.cash.observed.version == 0 && example.cash.observed.eligibility.accountBalance == 100
+        && example.cash.observed.eligibility.cashDepositedToday == 0 && example.cash.storedTrade == null, "EXAMPLE_RESTART_LOST_PENDING_STATE");
+    int count = 0; for (CashPostingRecord posting : example.cash.postings) { count++; }
+    require(count == 0 && example.cash.audit != null && example.cash.audit.event == "PendingAuthorization", "EXAMPLE_RESTART_LOST_PENDING_AUDIT");
+}
+Scenario serial pendingRestartResumeExampleRun(context PendingRestartExample example) {
+    preparePendingRestartFixtureExample(example);
+    example.identity = queryCashDepositRequest(example.key); verifyPersistedPendingIdentityExample(example);
+    example.cash.observed = queryCashAccount(example.cash.observed); example.cash.storedTrade = lookupCashDepositTrade(example.cash.tradeKey);
+    example.cash.postings = queryCashPostingRecords(example.cash.postingKey); example.cash.audit = lookupCashExampleAudit(example.cash.auditKey);
+    verifyStoredPendingRestartStateExample(example);
+    selectChangedPendingRestartExample(example);
+    try { executeCashDeposit(example.cash.command, example.cash.lifecycle); } catch (CashFailureFacts example.cash.failure) {}
+    example.cash.observed = queryCashAccount(example.cash.observed); example.cash.storedTrade = lookupCashDepositTrade(example.cash.tradeKey);
+    example.cash.postings = queryCashPostingRecords(example.cash.postingKey); example.cash.audit = lookupCashExampleAudit(example.cash.auditKey);
+    verifyChangedPendingRestartExample(example);
+    example.identity = queryCashDepositRequest(example.key); verifyPersistedPendingIdentityExample(example);
+    selectAuthorizedPendingRestartExample(example); executeCashDeposit(example.cash.command, example.cash.lifecycle);
+    example.cash.observed = queryCashAccount(example.cash.observed); example.cash.postings = queryCashPostingRecords(example.cash.postingKey);
+    example.cash.audit = lookupCashExampleAudit(example.cash.auditKey); verifyAuthorizedCommitExample(example.cash);
+    selectPendingRestartReplayExample(example); executeCashDeposit(example.cash.command, example.cash.lifecycle);
+    example.cash.observed = queryCashAccount(example.cash.observed); example.cash.postings = queryCashPostingRecords(example.cash.postingKey);
+    example.cash.audit = lookupCashExampleAudit(example.cash.auditKey); example.history = queryCoreReversalExampleAudits(example.historyKey);
+    verifyPendingRestartReplayExample(example); example.identity = queryCashDepositRequest(example.key); verifyPersistedPendingIdentityExample(example);
+}

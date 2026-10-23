@@ -1,0 +1,66 @@
+domain cboddeposit;
+
+atomic calculate configureBankQualificationCase45(context BankQualificationExampleFacts example) {
+    example.profile.accountSeries = "49927"; example.profile.cardLinked = true; example.profile.cardRecordFound = true; example.profile.cardLoss = "Oral"; example.profile.passbookLoss = "Written";
+    example.expectedCode = "";
+}
+atomic check verifyBankQualificationCase45(BankQualificationExampleFacts example) {
+    require(example.notices.cardWarning == "WN200" && example.notices.passbookWarning == "WN201", "EXAMPLE_BANK_NOTICES_45");
+}
+atomic calculate configureBankQualificationCase46(context BankQualificationExampleFacts example) {
+    example.profile.accountSeries = "49927"; example.profile.cardLinked = true; example.profile.cardRecordFound = true; example.profile.cardLoss = "Oral"; example.profile.passbookLoss = "Written";example.profile.cardStatus = "Cancelled";
+    example.expectedCode = "";
+}
+atomic check verifyBankQualificationCase46(BankQualificationExampleFacts example) {
+    require(example.notices.cardWarning == "" && example.notices.passbookWarning == "WN201", "EXAMPLE_BANK_NOTICES_46");
+}
+atomic calculate configureBankQualificationCase47(context BankQualificationExampleFacts example) {
+    example.profile.accountSeries = "49927"; example.profile.cardLinked = true; example.profile.cardRecordFound = true; example.profile.cardLoss = "Oral"; example.profile.passbookLoss = "Written";example.profile.cardRecordFound = false;
+    example.expectedCode = "";
+}
+atomic check verifyBankQualificationCase47(BankQualificationExampleFacts example) {
+    require(example.notices.cardWarning == "" && example.notices.passbookWarning == "WN201", "EXAMPLE_BANK_NOTICES_47");
+}
+atomic calculate configureBankQualificationCase48(context BankQualificationExampleFacts example) {
+    example.profile.accountSeries = "49927"; example.profile.cardLinked = true; example.profile.cardRecordFound = true; example.profile.cardLoss = "Oral"; example.profile.passbookLoss = "Written";example.channel.businessCode = "CR0";
+    example.expectedCode = "";
+}
+atomic check verifyBankQualificationCase48(BankQualificationExampleFacts example) {
+    require(example.notices.cardWarning == "" && example.notices.passbookWarning == "WN201", "EXAMPLE_BANK_NOTICES_48");
+}
+atomic calculate configureBankQualificationCase49(context BankQualificationExampleFacts example) {
+    example.profile.accountSeries = "49927"; example.profile.cardLinked = true; example.profile.cardRecordFound = true; example.profile.cardLoss = "Oral"; example.profile.passbookLoss = "Written";example.operator.agencySigned = true;
+    example.expectedCode = "";
+}
+atomic check verifyBankQualificationCase49(BankQualificationExampleFacts example) {
+    require(example.notices.cardWarning == "" && example.notices.passbookWarning == "", "EXAMPLE_BANK_NOTICES_49");
+}
+atomic calculate configureBankQualificationCase50(context BankQualificationExampleFacts example) {
+    example.profile.accountSeries = "49927"; example.profile.cardLinked = true; example.profile.cardRecordFound = true; example.profile.cardLoss = "Oral"; example.profile.passbookLoss = "Written";example.operator.numericTeller = false;
+    example.expectedCode = "";
+}
+atomic check verifyBankQualificationCase50(BankQualificationExampleFacts example) {
+    require(example.notices.cardWarning == "" && example.notices.passbookWarning == "", "EXAMPLE_BANK_NOTICES_50");
+}
+atomic calculate configureBankQualificationCase51(context BankQualificationExampleFacts example) {
+    example.profile.accountSeries = "49927"; example.profile.cardLinked = true; example.profile.cardRecordFound = true; example.profile.cardLoss = "Oral"; example.profile.passbookLoss = "Written";example.operator.mode = "CentralBatch";
+    example.expectedCode = "";
+}
+atomic check verifyBankQualificationCase51(BankQualificationExampleFacts example) {
+    require(example.notices.cardWarning == "" && example.notices.passbookWarning == "", "EXAMPLE_BANK_NOTICES_51");
+}
+atomic calculate configureBankQualificationCase52(context BankQualificationExampleFacts example) {
+    example.profile.accountSeries = "49927"; example.profile.cardLinked = true; example.profile.cardRecordFound = true; example.profile.cardLoss = "Oral"; example.profile.passbookLoss = "Written";example.operator.mode = "Mode8";
+    example.expectedCode = "";
+}
+atomic check verifyBankQualificationCase52(BankQualificationExampleFacts example) {
+    require(example.notices.cardWarning == "WN200" && example.notices.passbookWarning == "WN201", "EXAMPLE_BANK_NOTICES_52");
+}
+atomic calculate configureBankQualificationCase53(context BankQualificationExampleFacts example) {
+    example.profile.depositRange = "Subbranch"; example.profile.subbranch = ""; example.operator.subbranch = "";
+    example.expectedCode = "DEPOSIT_SUBBRANCH_RELATION_NOT_FOUND";
+}
+atomic calculate configureBankQualificationCase54(context BankQualificationExampleFacts example) {
+    example.profile.area = null; example.operator.area = null;
+    example.expectedCode = "DEPOSIT_AREA_NOT_FOUND";
+}

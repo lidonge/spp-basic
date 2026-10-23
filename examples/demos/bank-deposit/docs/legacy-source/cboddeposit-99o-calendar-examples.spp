@@ -1,0 +1,427 @@
+domain cboddeposit;
+
+// Independent expectations from CCMDAT1/CSAPRD2, migrated from BankCalendarTest.
+Contract BankCalendarExampleFacts {
+    BankDate start;
+    BankDate end;
+    InterestCalendar calendar;
+    InterestPeriod period;
+    InterestProduct product;
+    CashFailureFacts failure;
+    int expectedDays;
+    String expectedCode;
+    double expectedQualified;
+    double expectedProduct;
+}
+atomic calculate initializeBankCalendarExample(context BankCalendarExampleFacts example) {
+    example.start = new BankDate();
+    example.end = new BankDate();
+    example.calendar = new InterestCalendar();
+    example.period = new InterestPeriod();
+    example.product = new InterestProduct();
+}
+atomic check verifyBankCalendarDaysExample(BankCalendarExampleFacts example) {
+    require(example.period.days == example.expectedDays, "EXAMPLE_BANK_CALENDAR_DAYS");
+}
+atomic check verifyBankCalendarFailureExample(BankCalendarExampleFacts example) {
+    require(example.failure != null && example.failure.code == example.expectedCode,
+        "EXAMPLE_BANK_CALENDAR_FAILURE");
+}
+atomic check verifyBankCalendarInterestExample(BankCalendarExampleFacts example) {
+    require(example.product.qualifiedAmount == example.expectedQualified
+        && example.product.product == example.expectedProduct, "EXAMPLE_BANK_INTEREST_UNITS");
+}
+
+atomic calculate prepareBankCalendarCase01(context BankCalendarExampleFacts example) {
+    example.start.encoded = 20240228;
+    example.end.encoded = 20240301;
+    example.calendar.convention = "ACT";
+    example.expectedDays = 2;
+    example.expectedCode = "";
+    example.failure = null;
+}
+
+atomic calculate prepareBankCalendarCase02(context BankCalendarExampleFacts example) {
+    example.start.encoded = 20230228;
+    example.end.encoded = 20230301;
+    example.calendar.convention = "ACT";
+    example.expectedDays = 1;
+    example.expectedCode = "";
+    example.failure = null;
+}
+
+atomic calculate prepareBankCalendarCase03(context BankCalendarExampleFacts example) {
+    example.start.encoded = 20000228;
+    example.end.encoded = 20000301;
+    example.calendar.convention = "ACT";
+    example.expectedDays = 2;
+    example.expectedCode = "";
+    example.failure = null;
+}
+
+atomic calculate prepareBankCalendarCase04(context BankCalendarExampleFacts example) {
+    example.start.encoded = 19000228;
+    example.end.encoded = 19000301;
+    example.calendar.convention = "ACT";
+    example.expectedDays = 1;
+    example.expectedCode = "";
+    example.failure = null;
+}
+
+atomic calculate prepareBankCalendarCase05(context BankCalendarExampleFacts example) {
+    example.start.encoded = 20261231;
+    example.end.encoded = 20270101;
+    example.calendar.convention = "ACT";
+    example.expectedDays = 1;
+    example.expectedCode = "";
+    example.failure = null;
+}
+
+atomic calculate prepareBankCalendarCase06(context BankCalendarExampleFacts example) {
+    example.start.encoded = 20261007;
+    example.end.encoded = 20261007;
+    example.calendar.convention = "ACT";
+    example.expectedDays = 0;
+    example.expectedCode = "";
+    example.failure = null;
+}
+
+atomic calculate prepareBankCalendarCase07(context BankCalendarExampleFacts example) {
+    example.start.encoded = 20260131;
+    example.end.encoded = 20260228;
+    example.calendar.convention = "ACT";
+    example.expectedDays = 28;
+    example.expectedCode = "";
+    example.failure = null;
+}
+
+atomic calculate prepareBankCalendarCase08(context BankCalendarExampleFacts example) {
+    example.start.encoded = 20260101;
+    example.end.encoded = 20270101;
+    example.calendar.convention = "ACT";
+    example.expectedDays = 365;
+    example.expectedCode = "";
+    example.failure = null;
+}
+
+atomic calculate prepareBankCalendarCase09(context BankCalendarExampleFacts example) {
+    example.start.encoded = 20260131;
+    example.end.encoded = 20260228;
+    example.calendar.convention = "360365";
+    example.expectedDays = 28;
+    example.expectedCode = "";
+    example.failure = null;
+}
+
+atomic calculate prepareBankCalendarCase10(context BankCalendarExampleFacts example) {
+    example.start.encoded = 20260130;
+    example.end.encoded = 20260131;
+    example.calendar.convention = "360365";
+    example.expectedDays = 0;
+    example.expectedCode = "";
+    example.failure = null;
+}
+
+atomic calculate prepareBankCalendarCase11(context BankCalendarExampleFacts example) {
+    example.start.encoded = 20260228;
+    example.end.encoded = 20260331;
+    example.calendar.convention = "360365";
+    example.expectedDays = 32;
+    example.expectedCode = "";
+    example.failure = null;
+}
+
+atomic calculate prepareBankCalendarCase12(context BankCalendarExampleFacts example) {
+    example.start.encoded = 20240229;
+    example.end.encoded = 20240331;
+    example.calendar.convention = "360365";
+    example.expectedDays = 31;
+    example.expectedCode = "";
+    example.failure = null;
+}
+
+atomic calculate prepareBankCalendarCase13(context BankCalendarExampleFacts example) {
+    example.start.encoded = 20260101;
+    example.end.encoded = 20270101;
+    example.calendar.convention = "360365";
+    example.expectedDays = 360;
+    example.expectedCode = "";
+    example.failure = null;
+}
+
+atomic calculate prepareBankCalendarCase14(context BankCalendarExampleFacts example) {
+    example.start.encoded = 20261231;
+    example.end.encoded = 20270101;
+    example.calendar.convention = "360365";
+    example.expectedDays = 1;
+    example.expectedCode = "";
+    example.failure = null;
+}
+
+atomic calculate prepareBankCalendarCase15(context BankCalendarExampleFacts example) {
+    example.start.encoded = 20261007;
+    example.end.encoded = 20261007;
+    example.calendar.convention = "360365";
+    example.expectedDays = 0;
+    example.expectedCode = "";
+    example.failure = null;
+}
+
+atomic calculate prepareBankCalendarCase16(context BankCalendarExampleFacts example) {
+    example.start.encoded = 20260131;
+    example.end.encoded = 20260228;
+    example.calendar.convention = "360360";
+    example.expectedDays = 28;
+    example.expectedCode = "";
+    example.failure = null;
+}
+
+atomic calculate prepareBankCalendarCase17(context BankCalendarExampleFacts example) {
+    example.start.encoded = 20260130;
+    example.end.encoded = 20260131;
+    example.calendar.convention = "360360";
+    example.expectedDays = 0;
+    example.expectedCode = "";
+    example.failure = null;
+}
+
+atomic calculate prepareBankCalendarCase18(context BankCalendarExampleFacts example) {
+    example.start.encoded = 20260228;
+    example.end.encoded = 20260331;
+    example.calendar.convention = "360360";
+    example.expectedDays = 32;
+    example.expectedCode = "";
+    example.failure = null;
+}
+
+atomic calculate prepareBankCalendarCase19(context BankCalendarExampleFacts example) {
+    example.start.encoded = 20240229;
+    example.end.encoded = 20240331;
+    example.calendar.convention = "360360";
+    example.expectedDays = 31;
+    example.expectedCode = "";
+    example.failure = null;
+}
+
+atomic calculate prepareBankCalendarCase20(context BankCalendarExampleFacts example) {
+    example.start.encoded = 20260101;
+    example.end.encoded = 20270101;
+    example.calendar.convention = "360360";
+    example.expectedDays = 360;
+    example.expectedCode = "";
+    example.failure = null;
+}
+
+atomic calculate prepareBankCalendarCase21(context BankCalendarExampleFacts example) {
+    example.start.encoded = 20261231;
+    example.end.encoded = 20270101;
+    example.calendar.convention = "360360";
+    example.expectedDays = 1;
+    example.expectedCode = "";
+    example.failure = null;
+}
+
+atomic calculate prepareBankCalendarCase22(context BankCalendarExampleFacts example) {
+    example.start.encoded = 20261007;
+    example.end.encoded = 20261007;
+    example.calendar.convention = "360360";
+    example.expectedDays = 0;
+    example.expectedCode = "";
+    example.failure = null;
+}
+
+atomic calculate prepareBankCalendarCase23(context BankCalendarExampleFacts example) {
+    example.start.encoded = 20260229;
+    example.end.encoded = 20270101;
+    example.calendar.convention = "ACT";
+    example.expectedDays = 0;
+    example.expectedCode = "EE374";
+    example.failure = null;
+}
+
+atomic calculate prepareBankCalendarCase24(context BankCalendarExampleFacts example) {
+    example.start.encoded = 19000229;
+    example.end.encoded = 20270101;
+    example.calendar.convention = "ACT";
+    example.expectedDays = 0;
+    example.expectedCode = "EE374";
+    example.failure = null;
+}
+
+atomic calculate prepareBankCalendarCase25(context BankCalendarExampleFacts example) {
+    example.start.encoded = 20261301;
+    example.end.encoded = 20270101;
+    example.calendar.convention = "ACT";
+    example.expectedDays = 0;
+    example.expectedCode = "EE374";
+    example.failure = null;
+}
+
+atomic calculate prepareBankCalendarCase26(context BankCalendarExampleFacts example) {
+    example.start.encoded = 20260132;
+    example.end.encoded = 20270101;
+    example.calendar.convention = "ACT";
+    example.expectedDays = 0;
+    example.expectedCode = "EE374";
+    example.failure = null;
+}
+
+atomic calculate prepareBankCalendarCase27(context BankCalendarExampleFacts example) {
+    example.start.encoded = 9991231;
+    example.end.encoded = 20270101;
+    example.calendar.convention = "ACT";
+    example.expectedDays = 0;
+    example.expectedCode = "EE374";
+    example.failure = null;
+}
+
+atomic calculate prepareBankCalendarCase28(context BankCalendarExampleFacts example) {
+    example.start.encoded = 0;
+    example.end.encoded = 20270101;
+    example.calendar.convention = "ACT";
+    example.expectedDays = 0;
+    example.expectedCode = "EEC28";
+    example.failure = null;
+}
+
+atomic calculate prepareBankCalendarCase29(context BankCalendarExampleFacts example) {
+    example.start.encoded = 20261008;
+    example.end.encoded = 20261007;
+    example.calendar.convention = "ACT";
+    example.expectedDays = 0;
+    example.expectedCode = "E1175";
+    example.failure = null;
+}
+
+atomic calculate prepareBankCalendarCase30(context BankCalendarExampleFacts example) {
+    example.start.encoded = 20261007;
+    example.end.encoded = 20261008;
+    example.calendar.convention = "US30/360";
+    example.expectedDays = 0;
+    example.expectedCode = "EEC28";
+    example.failure = null;
+}
+
+atomic calculate prepareBankInterestUnitsHundredExample(context BankCalendarExampleFacts example) {
+    example.period.amount = 199.999;
+    example.period.unit = 100;
+    example.period.days = 2;
+    example.expectedQualified = 100;
+    example.expectedProduct = 200;
+}
+
+atomic calculate prepareBankInterestUnitsThirdExample(context BankCalendarExampleFacts example) {
+    example.period.amount = 10;
+    example.period.unit = 3;
+    example.period.days = 2;
+    example.expectedQualified = 9;
+    example.expectedProduct = 18;
+}
+
+Scenario serial bankCalendarExampleRun(context BankCalendarExampleFacts example) {
+    initializeBankCalendarExample(example);
+    prepareBankCalendarCase01(example);
+    calculateBankPeriod(example.start, example.end, example.calendar, example.period);
+    verifyBankCalendarDaysExample(example);
+    prepareBankCalendarCase02(example);
+    calculateBankPeriod(example.start, example.end, example.calendar, example.period);
+    verifyBankCalendarDaysExample(example);
+    prepareBankCalendarCase03(example);
+    calculateBankPeriod(example.start, example.end, example.calendar, example.period);
+    verifyBankCalendarDaysExample(example);
+    prepareBankCalendarCase04(example);
+    calculateBankPeriod(example.start, example.end, example.calendar, example.period);
+    verifyBankCalendarDaysExample(example);
+    prepareBankCalendarCase05(example);
+    calculateBankPeriod(example.start, example.end, example.calendar, example.period);
+    verifyBankCalendarDaysExample(example);
+    prepareBankCalendarCase06(example);
+    calculateBankPeriod(example.start, example.end, example.calendar, example.period);
+    verifyBankCalendarDaysExample(example);
+    prepareBankCalendarCase07(example);
+    calculateBankPeriod(example.start, example.end, example.calendar, example.period);
+    verifyBankCalendarDaysExample(example);
+    prepareBankCalendarCase08(example);
+    calculateBankPeriod(example.start, example.end, example.calendar, example.period);
+    verifyBankCalendarDaysExample(example);
+    prepareBankCalendarCase09(example);
+    calculateBankPeriod(example.start, example.end, example.calendar, example.period);
+    verifyBankCalendarDaysExample(example);
+    prepareBankCalendarCase10(example);
+    calculateBankPeriod(example.start, example.end, example.calendar, example.period);
+    verifyBankCalendarDaysExample(example);
+    prepareBankCalendarCase11(example);
+    calculateBankPeriod(example.start, example.end, example.calendar, example.period);
+    verifyBankCalendarDaysExample(example);
+    prepareBankCalendarCase12(example);
+    calculateBankPeriod(example.start, example.end, example.calendar, example.period);
+    verifyBankCalendarDaysExample(example);
+    prepareBankCalendarCase13(example);
+    calculateBankPeriod(example.start, example.end, example.calendar, example.period);
+    verifyBankCalendarDaysExample(example);
+    prepareBankCalendarCase14(example);
+    calculateBankPeriod(example.start, example.end, example.calendar, example.period);
+    verifyBankCalendarDaysExample(example);
+    prepareBankCalendarCase15(example);
+    calculateBankPeriod(example.start, example.end, example.calendar, example.period);
+    verifyBankCalendarDaysExample(example);
+    prepareBankCalendarCase16(example);
+    calculateBankPeriod(example.start, example.end, example.calendar, example.period);
+    verifyBankCalendarDaysExample(example);
+    prepareBankCalendarCase17(example);
+    calculateBankPeriod(example.start, example.end, example.calendar, example.period);
+    verifyBankCalendarDaysExample(example);
+    prepareBankCalendarCase18(example);
+    calculateBankPeriod(example.start, example.end, example.calendar, example.period);
+    verifyBankCalendarDaysExample(example);
+    prepareBankCalendarCase19(example);
+    calculateBankPeriod(example.start, example.end, example.calendar, example.period);
+    verifyBankCalendarDaysExample(example);
+    prepareBankCalendarCase20(example);
+    calculateBankPeriod(example.start, example.end, example.calendar, example.period);
+    verifyBankCalendarDaysExample(example);
+    prepareBankCalendarCase21(example);
+    calculateBankPeriod(example.start, example.end, example.calendar, example.period);
+    verifyBankCalendarDaysExample(example);
+    prepareBankCalendarCase22(example);
+    calculateBankPeriod(example.start, example.end, example.calendar, example.period);
+    verifyBankCalendarDaysExample(example);
+    prepareBankCalendarCase23(example);
+    try { calculateBankPeriod(example.start, example.end, example.calendar, example.period); }
+    catch (CashFailureFacts example.failure) {}
+    verifyBankCalendarFailureExample(example);
+    prepareBankCalendarCase24(example);
+    try { calculateBankPeriod(example.start, example.end, example.calendar, example.period); }
+    catch (CashFailureFacts example.failure) {}
+    verifyBankCalendarFailureExample(example);
+    prepareBankCalendarCase25(example);
+    try { calculateBankPeriod(example.start, example.end, example.calendar, example.period); }
+    catch (CashFailureFacts example.failure) {}
+    verifyBankCalendarFailureExample(example);
+    prepareBankCalendarCase26(example);
+    try { calculateBankPeriod(example.start, example.end, example.calendar, example.period); }
+    catch (CashFailureFacts example.failure) {}
+    verifyBankCalendarFailureExample(example);
+    prepareBankCalendarCase27(example);
+    try { calculateBankPeriod(example.start, example.end, example.calendar, example.period); }
+    catch (CashFailureFacts example.failure) {}
+    verifyBankCalendarFailureExample(example);
+    prepareBankCalendarCase28(example);
+    try { calculateBankPeriod(example.start, example.end, example.calendar, example.period); }
+    catch (CashFailureFacts example.failure) {}
+    verifyBankCalendarFailureExample(example);
+    prepareBankCalendarCase29(example);
+    try { calculateBankPeriod(example.start, example.end, example.calendar, example.period); }
+    catch (CashFailureFacts example.failure) {}
+    verifyBankCalendarFailureExample(example);
+    prepareBankCalendarCase30(example);
+    try { calculateBankPeriod(example.start, example.end, example.calendar, example.period); }
+    catch (CashFailureFacts example.failure) {}
+    verifyBankCalendarFailureExample(example);
+    prepareBankInterestUnitsHundredExample(example);
+    calculateInterestProduct(example.period, example.product);
+    verifyBankCalendarInterestExample(example);
+    prepareBankInterestUnitsThirdExample(example);
+    calculateInterestProduct(example.period, example.product);
+    verifyBankCalendarInterestExample(example);
+}

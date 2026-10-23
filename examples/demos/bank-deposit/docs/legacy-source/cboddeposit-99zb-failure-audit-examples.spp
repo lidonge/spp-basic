@@ -1,0 +1,73 @@
+domain cboddeposit;
+
+// Pure business classification: these fixtures do not simulate measured physical outcomes.
+Contract FailureAuditRuleExampleFacts {
+    CashDepositCommand depositCommand; CashDepositLifecycle deposit;
+    CashReversalCommand reversalCommand; CashReversalLifecycle reversal;
+    String expectedDeposit; String expectedReversal;
+}
+atomic calculate initializeFailureAuditRuleExample(context FailureAuditRuleExampleFacts example) {
+    example.depositCommand = new CashDepositCommand(); example.depositCommand.id = "SOURCE-AUDIT-DEPOSIT";
+    example.depositCommand.accountId = "SOURCE-AUDIT-ACCOUNT"; example.depositCommand.attemptId = "SOURCE-AUDIT-DEPOSIT-ATTEMPT";
+    example.deposit = new CashDepositLifecycle(); example.deposit.failure = new CashFailureFacts();
+    example.deposit.failure.code = "SOURCE-FAILURE"; example.deposit.failure.transactionOutcome = "UNREPORTED";
+    example.deposit.execution = new CashDepositExecution(); example.deposit.execution.status = "Committing";
+    example.deposit.execution.trade = new CashDepositTrade(); example.deposit.execution.trade.id = example.depositCommand.id;
+    example.reversalCommand = new CashReversalCommand(); example.reversalCommand.id = "SOURCE-AUDIT-REVERSAL";
+    example.reversalCommand.attemptId = "SOURCE-AUDIT-REVERSAL-ATTEMPT";
+    example.reversal = new CashReversalLifecycle(); example.reversal.failure = new CashFailureFacts();
+    example.reversal.failure.code = "SOURCE-FAILURE"; example.reversal.failure.transactionOutcome = "UNREPORTED";
+    example.reversal.work = new CashReversalWork(); example.reversal.work.status = "Committing";
+    example.reversal.work.current = new CashAccountRecord(); example.reversal.work.current.id = "SOURCE-AUDIT-ACCOUNT";
+    example.reversal.work.reversal = new CashReversalTrade(); example.reversal.work.reversal.id = example.reversalCommand.id;
+    example.expectedDeposit = "CommitFailed"; example.expectedReversal = "ReversalCommitFailed";
+}
+atomic calculate configureRolledBackAuditRuleExample(context FailureAuditRuleExampleFacts example) {
+    example.deposit.failure.transactionOutcome = "ROLLED_BACK"; example.reversal.failure.transactionOutcome = "ROLLED_BACK";
+    example.expectedDeposit = "RolledBack"; example.expectedReversal = "ReversalRolledBack";
+}
+atomic calculate configureUnknownAuditRuleExample(context FailureAuditRuleExampleFacts example) {
+    example.deposit.failure.transactionOutcome = "UNKNOWN"; example.reversal.failure.transactionOutcome = "UNKNOWN";
+    example.expectedDeposit = "CommitUnknown"; example.expectedReversal = "ReversalCommitUnknown";
+}
+atomic calculate configureCommittedAuditRuleExample(context FailureAuditRuleExampleFacts example) {
+    example.deposit.failure.transactionOutcome = "COMMITTED"; example.reversal.failure.transactionOutcome = "COMMITTED";
+    example.expectedDeposit = "CommittedResponseFailed"; example.expectedReversal = "ReversalCommittedResponseFailed";
+}
+atomic calculate configureReplayAuditRuleExample(context FailureAuditRuleExampleFacts example) {
+    example.deposit.execution.status = "Committed"; example.reversal.work.status = "Committed";
+    example.expectedDeposit = "ReplayAuditFailed"; example.expectedReversal = "ReversalReplayAuditFailed";
+}
+atomic calculate configureRejectedAuditRuleExample(context FailureAuditRuleExampleFacts example) {
+    example.deposit.execution.status = "Preparing"; example.reversal.work.status = "Preparing";
+    example.expectedDeposit = "Rejected"; example.expectedReversal = "ReversalRejected";
+}
+atomic calculate configureAbsentWorkAuditRuleExample(context FailureAuditRuleExampleFacts example) {
+    example.deposit.execution = null; example.reversal.work = null;
+    example.expectedDeposit = "Rejected"; example.expectedReversal = "ReversalRejected";
+}
+atomic check verifyFailureAuditRuleExample(FailureAuditRuleExampleFacts example) {
+    require(example.deposit.failureAudit.event == example.expectedDeposit && example.reversal.failureAudit.event == example.expectedReversal,
+        "EXAMPLE_FAILURE_AUDIT_CLASSIFICATION");
+    require(example.deposit.failureAudit.code == "SOURCE-FAILURE" && example.reversal.failureAudit.code == "SOURCE-FAILURE"
+        && example.deposit.failureAudit.attemptId == "SOURCE-AUDIT-DEPOSIT-ATTEMPT"
+        && example.reversal.failureAudit.attemptId == "SOURCE-AUDIT-REVERSAL-ATTEMPT", "EXAMPLE_FAILURE_AUDIT_IDENTITY");
+    require(example.deposit.failureAudit.accountId == "SOURCE-AUDIT-ACCOUNT", "EXAMPLE_FAILURE_DEPOSIT_AUDIT_ACCOUNT");
+    if (example.reversal.work != null) {
+        require(example.reversal.failureAudit.accountId == "SOURCE-AUDIT-ACCOUNT", "EXAMPLE_FAILURE_REVERSAL_AUDIT_ACCOUNT");
+    }
+}
+Scenario serial classifyFailureAuditRuleExample(context FailureAuditRuleExampleFacts example) {
+    prepareCashDepositFailureAudit(example.depositCommand, example.deposit);
+    prepareCashReversalFailureAudit(example.reversalCommand, example.reversal);
+    verifyFailureAuditRuleExample(example);
+}
+Scenario serial cashFailureAuditRulesExampleRun(context FailureAuditRuleExampleFacts example) {
+    initializeFailureAuditRuleExample(example); classifyFailureAuditRuleExample(example);
+    configureRolledBackAuditRuleExample(example); classifyFailureAuditRuleExample(example);
+    configureUnknownAuditRuleExample(example); classifyFailureAuditRuleExample(example);
+    configureCommittedAuditRuleExample(example); classifyFailureAuditRuleExample(example);
+    configureReplayAuditRuleExample(example); classifyFailureAuditRuleExample(example);
+    configureRejectedAuditRuleExample(example); classifyFailureAuditRuleExample(example);
+    configureAbsentWorkAuditRuleExample(example); classifyFailureAuditRuleExample(example);
+}

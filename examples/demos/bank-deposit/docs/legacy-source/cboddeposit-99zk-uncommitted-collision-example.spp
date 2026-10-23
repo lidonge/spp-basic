@@ -1,0 +1,40 @@
+domain cboddeposit;
+
+atomic calculate configureUncommittedCollisionExample(context CashExample example) {
+    example.seed.id = "SOURCE-COLLISION-NO-TRADE-A"; example.seed.eligibility.accountId = example.seed.id;
+    example.command.id = "SOURCE-COLLISION-NO-TRADE-T"; example.command.attemptId = "SOURCE-COLLISION-NO-TRADE-ATTEMPT";
+    example.command.accountId = example.seed.id; example.observed.id = example.seed.id;
+    example.tradeKey = new CashDepositTrade(); example.tradeKey.id = example.command.id;
+    example.postingKey.tradeId = example.command.id; example.auditKey = new CashAuditRecord(); example.auditKey.attemptId = example.command.attemptId;
+    example.failure = null;
+    example.postings = new CashPostingRecord[] { new CashPostingRecord() };
+    for (CashPostingRecord posting : example.postings) {
+        posting.tradeId = example.command.id; posting.slot = 1; posting.line = new DepositPostingLine();
+        posting.line.slot = 1; posting.line.amount = 600; posting.line.side = "Debit"; posting.line.subject = "DEMO.CASH";
+    }
+}
+atomic check verifyUncommittedCollisionExample(CashExample example) {
+    require(example.failure != null && example.failure.code == "PERSISTENCE_ALREADY_EXISTS"
+        && example.failure.transactionOutcome == "ROLLED_BACK", "EXAMPLE_NO_RECEIPT_COLLISION_SWALLOWED");
+    require(example.storedTrade == null && example.observed.version == 0 && example.observed.account.interestBase == 100
+        && example.observed.eligibility.accountBalance == 100 && example.observed.eligibility.cashDepositedToday == 0
+        && example.observed.eligibility.detailCount == 10, "EXAMPLE_NO_RECEIPT_COLLISION_PARTIAL_COMMIT");
+    require(example.audit != null && example.audit.event == "RolledBack" && example.audit.code == "PERSISTENCE_ALREADY_EXISTS",
+        "EXAMPLE_NO_RECEIPT_COLLISION_AUDIT");
+    require(example.lifecycle.requestRecord != null && example.lifecycle.requestRecord.id == example.command.id,
+        "EXAMPLE_NO_RECEIPT_COLLISION_IDENTITY");
+    int count = 0; for (CashPostingRecord posting : example.postings) {
+        count++; require(posting.slot == 1 && posting.line.amount == 600 && posting.line.subject == "DEMO.CASH",
+            "EXAMPLE_NO_RECEIPT_COLLISION_ALTERED_FIXTURE");
+    }
+    require(count == 1, "EXAMPLE_NO_RECEIPT_COLLISION_LEFT_PARTIAL_LEDGER");
+}
+Scenario serial uncommittedCollisionExampleRun(context CashExample example) {
+    prepareOrdinaryCashExample(example); configureUncommittedCollisionExample(example);
+    serial { transaction quantum { seedCashExampleAccount(example.seed); storeCashPostingRecords(example.postings); } }
+    try { executeCashDeposit(example.command, example.lifecycle); } catch (CashFailureFacts example.failure) {}
+    example.observed = queryCashAccount(example.observed); example.storedTrade = lookupCashDepositTrade(example.tradeKey);
+    example.postings = queryCashPostingRecords(example.postingKey); example.audit = lookupCashExampleAudit(example.auditKey);
+    example.lifecycle.requestRecord = queryCashDepositRequest(example.lifecycle.requestRecord);
+    verifyUncommittedCollisionExample(example);
+}

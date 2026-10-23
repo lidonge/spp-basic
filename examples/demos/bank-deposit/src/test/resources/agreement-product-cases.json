@@ -1,0 +1,746 @@
+[
+  {
+    "name": "01",
+    "source": "cboddeposit-99qa-agreement-modes.spp",
+    "input": {
+      "normal": {
+        "amount": 650,
+        "unit": 1,
+        "days": 10
+      },
+      "overlap": {
+        "amount": 650,
+        "unit": 1,
+        "days": 4
+      },
+      "AgreementPolicy": {
+        "mode": "2",
+        "currency": "USD",
+        "enabled": true
+      },
+      "AgreementBandArray": [
+        {
+          "slot": 5,
+          "threshold": 500,
+          "product": 999
+        },
+        {
+          "slot": 4,
+          "threshold": 400,
+          "product": 999
+        },
+        {
+          "slot": 3,
+          "threshold": 300,
+          "product": 999
+        },
+        {
+          "slot": 2,
+          "threshold": 200,
+          "product": 999
+        },
+        {
+          "slot": 1,
+          "threshold": 100,
+          "product": 999
+        }
+      ]
+    },
+    "expected": {
+      "normalProduct": 4300,
+      "bandProduct": 2200,
+      "remainingAmount": 100,
+      "selectedSlot": 0,
+      "appliedMode": "2"
+    },
+    "bands": [
+      600,
+      400,
+      400,
+      400,
+      400
+    ]
+  },
+  {
+    "name": "02",
+    "source": "cboddeposit-99qa-agreement-modes.spp",
+    "input": {
+      "normal": {
+        "amount": 500,
+        "unit": 1,
+        "days": 10
+      },
+      "overlap": {
+        "amount": 500,
+        "unit": 1,
+        "days": 4
+      },
+      "AgreementPolicy": {
+        "mode": "1",
+        "currency": "CNY",
+        "enabled": true
+      },
+      "AgreementBandArray": [
+        {
+          "slot": 5,
+          "threshold": 500,
+          "product": 999
+        },
+        {
+          "slot": 4,
+          "threshold": 400,
+          "product": 999
+        },
+        {
+          "slot": 3,
+          "threshold": 300,
+          "product": 999
+        },
+        {
+          "slot": 2,
+          "threshold": 200,
+          "product": 999
+        },
+        {
+          "slot": 1,
+          "threshold": 100,
+          "product": 999
+        }
+      ]
+    },
+    "expected": {
+      "normalProduct": 3000,
+      "bandProduct": 2000,
+      "remainingAmount": 500,
+      "selectedSlot": 5,
+      "appliedMode": "1"
+    },
+    "bands": [
+      2000,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "name": "04",
+    "source": "cboddeposit-99qa-agreement-modes.spp",
+    "input": {
+      "normal": {
+        "amount": 650,
+        "unit": 1,
+        "days": 10
+      },
+      "overlap": {
+        "amount": 650,
+        "unit": 1,
+        "days": 4
+      },
+      "AgreementPolicy": {
+        "mode": "",
+        "currency": "CNY",
+        "enabled": true
+      },
+      "AgreementBandArray": [
+        {
+          "slot": 5,
+          "threshold": 500,
+          "product": 999
+        },
+        {
+          "slot": 4,
+          "threshold": 400,
+          "product": 999
+        },
+        {
+          "slot": 3,
+          "threshold": 300,
+          "product": 999
+        },
+        {
+          "slot": 2,
+          "threshold": 200,
+          "product": 999
+        },
+        {
+          "slot": 1,
+          "threshold": 100,
+          "product": 999
+        }
+      ]
+    },
+    "expected": {
+      "normalProduct": 4300,
+      "bandProduct": 2200,
+      "remainingAmount": 100,
+      "selectedSlot": 0,
+      "appliedMode": "2"
+    },
+    "bands": [
+      600,
+      400,
+      400,
+      400,
+      400
+    ]
+  },
+  {
+    "name": "05",
+    "source": "cboddeposit-99qa-agreement-modes.spp",
+    "input": {
+      "normal": {
+        "amount": 650,
+        "unit": 1,
+        "days": 10
+      },
+      "overlap": {
+        "amount": 650,
+        "unit": 1,
+        "days": 4
+      },
+      "AgreementPolicy": {
+        "mode": "",
+        "currency": "USD",
+        "enabled": true
+      },
+      "AgreementBandArray": [
+        {
+          "slot": 5,
+          "threshold": 500,
+          "product": 999
+        },
+        {
+          "slot": 4,
+          "threshold": 400,
+          "product": 999
+        },
+        {
+          "slot": 3,
+          "threshold": 300,
+          "product": 999
+        },
+        {
+          "slot": 2,
+          "threshold": 200,
+          "product": 999
+        },
+        {
+          "slot": 1,
+          "threshold": 100,
+          "product": 999
+        }
+      ]
+    },
+    "expected": {
+      "normalProduct": 3900,
+      "bandProduct": 2600,
+      "remainingAmount": 650,
+      "selectedSlot": 5,
+      "appliedMode": "1"
+    },
+    "bands": [
+      2600,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "name": "06",
+    "source": "cboddeposit-99qa-agreement-modes.spp",
+    "input": {
+      "normal": {
+        "amount": 650,
+        "unit": 1,
+        "days": 10
+      },
+      "overlap": {
+        "amount": 650,
+        "unit": 1,
+        "days": 4
+      },
+      "AgreementPolicy": {
+        "mode": "2",
+        "currency": "USD",
+        "enabled": true
+      },
+      "AgreementBandArray": [
+        {
+          "slot": 5,
+          "threshold": 500,
+          "product": 999
+        },
+        {
+          "slot": 4,
+          "threshold": 400,
+          "product": 999
+        },
+        {
+          "slot": 3,
+          "threshold": 300,
+          "product": 999
+        },
+        {
+          "slot": 2,
+          "threshold": 200,
+          "product": 999
+        },
+        {
+          "slot": 1,
+          "threshold": 100,
+          "product": 999
+        }
+      ]
+    },
+    "expected": {
+      "normalProduct": 4300,
+      "bandProduct": 2200,
+      "remainingAmount": 100,
+      "selectedSlot": 0,
+      "appliedMode": "2"
+    },
+    "bands": [
+      600,
+      400,
+      400,
+      400,
+      400
+    ]
+  },
+  {
+    "name": "07",
+    "source": "cboddeposit-99qa-agreement-modes.spp",
+    "input": {
+      "normal": {
+        "amount": 650,
+        "unit": 1,
+        "days": 10
+      },
+      "overlap": {
+        "amount": 650,
+        "unit": 1,
+        "days": 4
+      },
+      "AgreementPolicy": {
+        "mode": "1",
+        "currency": "CNY",
+        "enabled": true
+      },
+      "AgreementBandArray": [
+        {
+          "slot": 5,
+          "threshold": 500,
+          "product": 999
+        },
+        {
+          "slot": 4,
+          "threshold": 400,
+          "product": 999
+        },
+        {
+          "slot": 3,
+          "threshold": 300,
+          "product": 999
+        },
+        {
+          "slot": 2,
+          "threshold": 200,
+          "product": 999
+        },
+        {
+          "slot": 1,
+          "threshold": 100,
+          "product": 999
+        }
+      ]
+    },
+    "expected": {
+      "normalProduct": 3900,
+      "bandProduct": 2600,
+      "remainingAmount": 650,
+      "selectedSlot": 5,
+      "appliedMode": "1"
+    },
+    "bands": [
+      2600,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "name": "08",
+    "source": "cboddeposit-99qb-agreement-edges.spp",
+    "input": {
+      "normal": {
+        "amount": 650,
+        "unit": 1,
+        "days": 10
+      },
+      "overlap": {
+        "amount": 650,
+        "unit": 1,
+        "days": 4
+      },
+      "AgreementPolicy": {
+        "mode": "2",
+        "currency": "CNY",
+        "enabled": false
+      },
+      "AgreementBandArray": [
+        {
+          "slot": 5,
+          "threshold": 500,
+          "product": 999
+        },
+        {
+          "slot": 4,
+          "threshold": 400,
+          "product": 999
+        },
+        {
+          "slot": 3,
+          "threshold": 300,
+          "product": 999
+        },
+        {
+          "slot": 2,
+          "threshold": 200,
+          "product": 999
+        },
+        {
+          "slot": 1,
+          "threshold": 100,
+          "product": 999
+        }
+      ]
+    },
+    "expected": {
+      "normalProduct": 6500,
+      "bandProduct": 0,
+      "remainingAmount": 650,
+      "selectedSlot": 0,
+      "appliedMode": "2"
+    },
+    "bands": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "name": "09",
+    "source": "cboddeposit-99qb-agreement-edges.spp",
+    "input": {
+      "normal": {
+        "amount": 650,
+        "unit": 1,
+        "days": 10
+      },
+      "overlap": {
+        "amount": 650,
+        "unit": 1,
+        "days": 0
+      },
+      "AgreementPolicy": {
+        "mode": "2",
+        "currency": "CNY",
+        "enabled": true
+      },
+      "AgreementBandArray": [
+        {
+          "slot": 5,
+          "threshold": 500,
+          "product": 999
+        },
+        {
+          "slot": 4,
+          "threshold": 400,
+          "product": 999
+        },
+        {
+          "slot": 3,
+          "threshold": 300,
+          "product": 999
+        },
+        {
+          "slot": 2,
+          "threshold": 200,
+          "product": 999
+        },
+        {
+          "slot": 1,
+          "threshold": 100,
+          "product": 999
+        }
+      ]
+    },
+    "expected": {
+      "normalProduct": 6500,
+      "bandProduct": 0,
+      "remainingAmount": 650,
+      "selectedSlot": 0,
+      "appliedMode": "2"
+    },
+    "bands": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "name": "10",
+    "source": "cboddeposit-99qb-agreement-edges.spp",
+    "input": {
+      "normal": {
+        "amount": 99,
+        "unit": 1,
+        "days": 10
+      },
+      "overlap": {
+        "amount": 99,
+        "unit": 1,
+        "days": 4
+      },
+      "AgreementPolicy": {
+        "mode": "1",
+        "currency": "CNY",
+        "enabled": true
+      },
+      "AgreementBandArray": [
+        {
+          "slot": 5,
+          "threshold": 500,
+          "product": 999
+        },
+        {
+          "slot": 4,
+          "threshold": 400,
+          "product": 999
+        },
+        {
+          "slot": 3,
+          "threshold": 300,
+          "product": 999
+        },
+        {
+          "slot": 2,
+          "threshold": 200,
+          "product": 999
+        },
+        {
+          "slot": 1,
+          "threshold": 100,
+          "product": 999
+        }
+      ]
+    },
+    "expected": {
+      "normalProduct": 990,
+      "bandProduct": 0,
+      "remainingAmount": 99,
+      "selectedSlot": 0,
+      "appliedMode": "1"
+    },
+    "bands": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "name": "11",
+    "source": "cboddeposit-99qb-agreement-edges.spp",
+    "input": {
+      "normal": {
+        "amount": 99,
+        "unit": 1,
+        "days": 10
+      },
+      "overlap": {
+        "amount": 99,
+        "unit": 1,
+        "days": 4
+      },
+      "AgreementPolicy": {
+        "mode": "2",
+        "currency": "CNY",
+        "enabled": true
+      },
+      "AgreementBandArray": [
+        {
+          "slot": 5,
+          "threshold": 500,
+          "product": 999
+        },
+        {
+          "slot": 4,
+          "threshold": 400,
+          "product": 999
+        },
+        {
+          "slot": 3,
+          "threshold": 300,
+          "product": 999
+        },
+        {
+          "slot": 2,
+          "threshold": 200,
+          "product": 999
+        },
+        {
+          "slot": 1,
+          "threshold": 100,
+          "product": 999
+        }
+      ]
+    },
+    "expected": {
+      "normalProduct": 990,
+      "bandProduct": 0,
+      "remainingAmount": 99,
+      "selectedSlot": 0,
+      "appliedMode": "2"
+    },
+    "bands": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "name": "12",
+    "source": "cboddeposit-99qb-agreement-edges.spp",
+    "input": {
+      "normal": {
+        "amount": 250,
+        "unit": 100,
+        "days": 1
+      },
+      "overlap": {
+        "amount": 250,
+        "unit": 100,
+        "days": 1
+      },
+      "AgreementPolicy": {
+        "mode": "2",
+        "currency": "CNY",
+        "enabled": true
+      },
+      "AgreementBandArray": [
+        {
+          "slot": 5,
+          "threshold": 3000,
+          "product": 999
+        },
+        {
+          "slot": 4,
+          "threshold": 2000,
+          "product": 999
+        },
+        {
+          "slot": 3,
+          "threshold": 1000,
+          "product": 999
+        },
+        {
+          "slot": 2,
+          "threshold": 125,
+          "product": 999
+        },
+        {
+          "slot": 1,
+          "threshold": 50,
+          "product": 999
+        }
+      ]
+    },
+    "expected": {
+      "normalProduct": 0,
+      "bandProduct": 100,
+      "remainingAmount": 50,
+      "selectedSlot": 0,
+      "appliedMode": "2"
+    },
+    "bands": [
+      0,
+      0,
+      0,
+      100,
+      0
+    ]
+  },
+  {
+    "name": "13",
+    "source": "cboddeposit-99qb-agreement-edges.spp",
+    "input": {
+      "normal": {
+        "amount": 250,
+        "unit": 3,
+        "days": 1
+      },
+      "overlap": {
+        "amount": 250,
+        "unit": 3,
+        "days": 1
+      },
+      "AgreementPolicy": {
+        "mode": "1",
+        "currency": "USD",
+        "enabled": true
+      },
+      "AgreementBandArray": [
+        {
+          "slot": 5,
+          "threshold": 3000,
+          "product": 999
+        },
+        {
+          "slot": 4,
+          "threshold": 2000,
+          "product": 999
+        },
+        {
+          "slot": 3,
+          "threshold": 1000,
+          "product": 999
+        },
+        {
+          "slot": 2,
+          "threshold": 125,
+          "product": 999
+        },
+        {
+          "slot": 1,
+          "threshold": 50,
+          "product": 999
+        }
+      ]
+    },
+    "expected": {
+      "normalProduct": 0,
+      "bandProduct": 249,
+      "remainingAmount": 250,
+      "selectedSlot": 2,
+      "appliedMode": "1"
+    },
+    "bands": [
+      0,
+      0,
+      0,
+      249,
+      0
+    ]
+  }
+]

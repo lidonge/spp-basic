@@ -1,0 +1,30 @@
+domain cboddeposit;
+
+Enum LoanState {
+    NORMAL,
+    BAD_DEBT,
+    WRITTEN_OFF
+}
+
+Enum AccountStatus {
+    ACTIVE,
+    FROZEN,
+    CLOSED
+}
+
+Enum AuthorizationLevel {
+    NONE,
+    A,
+    B
+}
+
+Enum AdmissionStatus {
+    READY,
+    WARNING,
+    PENDING_AUTHORIZATION
+}
+
+Enum CashHandlingState {
+    NOT_COMPLETED,
+    RECONCILIATION_REQUIRED
+}

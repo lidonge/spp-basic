@@ -1,0 +1,62 @@
+domain petshop;
+
+atomic calculate captureCartLines(Cart, CartLine[]) {
+    CartLine[] = new CartLine[] {
+    };
+    for (CartLine line : Cart.lines) {
+        CartLine[] = append(CartLine[], copy(line));
+    }
+}
+
+atomic check checkCart(Buyer, Cart) {
+    require(Cart.buyer == Buyer, "CART_NOT_FOUND");
+}
+
+atomic calculate addCartProduct(Goods, Cart, CartAdditionAgreement) {
+    CartLine[] result = new CartLine[] {
+    };
+    int previousQuantity = 0;
+    for (CartLine line : Cart.lines) {
+        if (line.goods.sku != Goods.sku) {
+            result = append(result, copy(line));
+        } else {
+            previousQuantity = line.quantity;
+        }
+    }
+    CartLine added = new CartLine();
+    added.buyer = Cart.buyer;
+    added.goods = Goods;
+    added.quantity = previousQuantity + CartAdditionAgreement.quantity;
+    Cart.lines = append(result, added);
+}
+
+atomic calculate setCartProductQuantity(Goods, Cart, CartQuantityAgreement) {
+    CartLine[] result = new CartLine[] {
+    };
+    for (CartLine line : Cart.lines) {
+        if (line.goods.sku != Goods.sku) {
+            result = append(result, copy(line));
+        }
+    }
+    CartLine added = new CartLine();
+    added.buyer = Cart.buyer;
+    added.goods = Goods;
+    added.quantity = CartQuantityAgreement.quantity;
+    Cart.lines = append(result, added);
+}
+
+atomic calculate removeCartProduct(Goods, Cart) {
+    CartLine[] result = new CartLine[] {
+    };
+    for (CartLine line : Cart.lines) {
+        if (line.goods.sku != Goods.sku) {
+            result = append(result, copy(line));
+        }
+    }
+    Cart.lines = result;
+}
+
+atomic calculate clearCartProducts(Cart) {
+    Cart.lines = new CartLine[] {
+    };
+}

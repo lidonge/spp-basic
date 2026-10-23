@@ -1,0 +1,78 @@
+domain cboddeposit;
+
+// Source-derived KSADEP0 4110/4111 and balance formulas in 4150.
+// Account is an immutable input snapshot; plan contains proposed changes.
+Role DepositRequest { quantum double amount; String currency; int valueDate; }
+Role DepositAccount {
+    quantum double interestBase;
+    quantum double frozenAmount;
+    quantum double authorizedAmount;
+    quantum double overdraftInterest;
+    quantum double collectionInterest;
+    quantum double overdraftPrincipal;
+    quantum double overdraftExposure;
+    String loanState; // Normal, BadDebt, WrittenOff: decoded business states, not deployment flags.
+}
+Contract DepositPlan {
+    double interestPaid;
+    double collectionInterestPaid;
+    double principalPaid;
+    double newInterestBase;
+    double newAvailableBalance;
+    double newOverdraftExposure;
+    double newAccountBalance;
+    double interestBaseIncrease;
+    double interestBaseDecrease;
+}
+atomic check checkKernelInput(DepositRequest d) {
+    require(d.amount >= 0, "E1095");
+}
+atomic calculate calculateDepositPlan(DepositRequest d, DepositAccount a, context DepositPlan p) {
+    boolean principalFirst = a.loanState == "BadDebt" || a.loanState == "WrittenOff";
+    double remaining = d.amount + a.interestBase - a.frozenAmount;
+    p.interestPaid = 0;
+    p.collectionInterestPaid = 0;
+    p.principalPaid = 0;
+    p.newOverdraftExposure = a.overdraftExposure;
+    if (remaining > 0) {
+        if (principalFirst) {
+            p.principalPaid = min(remaining, a.overdraftPrincipal);
+            if (remaining <= a.overdraftPrincipal) {
+                p.newOverdraftExposure = max(0, a.overdraftExposure - p.principalPaid);
+            } else {
+                p.newOverdraftExposure = 0;
+            }
+            remaining -= p.principalPaid;
+        }
+        p.interestPaid = min(remaining, a.overdraftInterest);
+        remaining -= p.interestPaid;
+        p.collectionInterestPaid = min(remaining, a.collectionInterest);
+        remaining -= p.collectionInterestPaid;
+        if (!principalFirst && remaining > 0) {
+            p.principalPaid = min(remaining, a.overdraftPrincipal);
+            if (remaining <= a.overdraftPrincipal) {
+                p.newOverdraftExposure = max(0, a.overdraftExposure - p.principalPaid);
+            } else {
+                p.newOverdraftExposure = 0;
+            }
+            remaining -= p.principalPaid;
+        }
+    }
+    p.newInterestBase = a.interestBase + d.amount - p.interestPaid
+        - p.collectionInterestPaid - p.principalPaid;
+    p.newAvailableBalance = max(0, p.newInterestBase - a.frozenAmount - a.authorizedAmount);
+    p.newAccountBalance = p.newInterestBase - (a.overdraftInterest - p.interestPaid)
+        - (a.collectionInterest - p.collectionInterestPaid) - (a.overdraftPrincipal - p.principalPaid);
+    p.interestBaseIncrease = max(0, p.newInterestBase - a.interestBase);
+    p.interestBaseDecrease = max(0, a.interestBase - p.newInterestBase);
+}
+atomic check checkPlan(DepositRequest d, DepositAccount a, context DepositPlan p) {
+    // Derived arithmetic invariant, rather than a new claim about COBOL checks.
+    require(p.newAccountBalance == a.interestBase - a.overdraftInterest
+        - a.collectionInterest - a.overdraftPrincipal + d.amount, "net balance invariant");
+}
+Scenario serial depositKernel(DepositRequest d, DepositAccount a, context DepositPlan p) {
+    checkKernelInput(d);
+    calculateDepositPlan(d, a, p);
+    checkPlan(d, a, p);
+}

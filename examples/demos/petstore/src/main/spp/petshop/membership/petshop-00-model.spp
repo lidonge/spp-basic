@@ -1,0 +1,30 @@
+domain petshop;
+
+Role Buyer {
+    business("Membership account number used to identify the buyer and verify order ownership") String membershipNumber;
+    business("Registration number of the linked customer-domain subject") String customerNumber;
+    String name;
+    String email;
+    String address;
+    MemberTier tier;
+    quantum BigDecimal(19, 2) wallet;
+}
+
+take Person as Buyer {
+    mapsame;
+}
+
+Contract RegistrationAgreement {
+    Buyer buyer;
+    Cart cart;
+    Receipt receipt;
+}
+
+Contract ProfileAgreement {
+    Buyer buyer;
+    String newName;
+    String newEmail;
+    String newAddress;
+    MemberTier newTier;
+    Receipt receipt;
+}

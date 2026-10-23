@@ -1,0 +1,113 @@
+domain cboddeposit;
+
+// Identity is retained even if the first attempt awaits authorization or is rejected.
+Role CashDepositRequestRecord { String id; CashDepositCommand command; }
+Contract CashDepositLifecycle {
+    CashFailureFacts failure;
+    CashFailureFacts submissionFailure;
+    CashAuditRecord failureAudit;
+    CashDepositRequestRecord requestRecord;
+    CashDepositTrade recordedTrade;
+    CashDepositExecution execution;
+}
+atomic query <CashDepositRequestRecord record> queryCashDepositRequest(CashDepositRequestRecord key);
+atomic query <CashDepositTrade trade> lookupCashDepositTrade(CashDepositTrade key);
+atomic update storeCashDepositRequestIfAbsent(CashDepositRequestRecord record);
+
+atomic calculate initializeCashDepositLifecycle(CashDepositCommand command, context CashDepositLifecycle lifecycle) {
+    lifecycle.failure = null;
+    lifecycle.submissionFailure = null;
+    lifecycle.failureAudit = null;
+    lifecycle.execution = null;
+    lifecycle.requestRecord = null;
+    lifecycle.recordedTrade = null;
+    require(command.id != null && command.id != "", "MISSING_DEPOSIT_TRANSACTION_ID");
+    require(command.attemptId != null && command.attemptId != "", "MISSING_DEPOSIT_ATTEMPT_ID");
+    require(command.accountId != null && command.accountId != "", "MISSING_DEPOSIT_ACCOUNT_ID");
+    require(command.request != null && command.channel != null && command.feeContext != null, "MISSING_DEPOSIT_REQUEST_IDENTITY");
+    require(command.request.amount != null, "MISSING_AMOUNT");
+    lifecycle.requestRecord = new CashDepositRequestRecord();
+    lifecycle.requestRecord.id = command.id;
+    lifecycle.requestRecord.command = copy(command);
+    lifecycle.recordedTrade = new CashDepositTrade();
+    lifecycle.recordedTrade.id = command.id;
+    lifecycle.execution = new CashDepositExecution();
+}
+atomic check checkCashDepositRequestIdentity(CashDepositCommand command, CashDepositRequestRecord recorded) {
+    require(recorded.command != null && recorded.id == command.id, "MISSING_DEPOSIT_REQUEST_IDENTITY");
+    require(recorded.command.accountId == command.accountId
+        && recorded.command.request.amount == command.request.amount
+        && recorded.command.request.currency == command.request.currency
+        && recorded.command.request.valueDate == command.request.valueDate
+        && recorded.command.channel.teller == command.channel.teller
+        && recorded.command.channel.channel == command.channel.channel
+        && recorded.command.channel.transactionId == command.channel.transactionId
+        && recorded.command.channel.transactionFamily == command.channel.transactionFamily
+        && recorded.command.channel.businessCode == command.channel.businessCode
+        && recorded.command.feeContext.channel == command.feeContext.channel
+        && recorded.command.feeContext.branchId == command.feeContext.branchId
+        && recorded.command.feeContext.regionCode == command.feeContext.regionCode,
+        "DEPOSIT_REQUEST_ID_REUSED");
+}
+atomic calculate describeCashDepositReplay(CashDepositCommand command, CashDepositTrade recorded,
+    context CashDepositExecution execution) {
+    require(recorded.original != null && recorded.settled != null, "MISSING_DEPOSIT_COMMITTED_FACTS");
+    execution.status = "Committed";
+    execution.original = copy(recorded.original);
+    execution.proposed = copy(recorded.settled);
+    execution.trade = copy(recorded);
+    execution.work = new CashDepositWork();
+    execution.work.admission = copy(recorded.admission);
+    execution.work.fee = copy(recorded.fee);
+    execution.work.plan = copy(recorded.plan);
+    execution.work.lines = copy(recorded.lines);
+    execution.work.accrual = copy(recorded.accrual);
+    execution.work.increments = copy(recorded.increments);
+    execution.work.notices = copy(recorded.notices);
+    execution.audit = new CashAuditRecord();
+    execution.audit.attemptId = command.attemptId;
+    execution.audit.tradeId = command.id;
+    execution.audit.accountId = command.accountId;
+    execution.audit.event = "Replayed";
+    execution.audit.code = "";
+    execution.audit.deposit = copy(recorded);
+}
+atomic calculate prepareConcurrentCashReceiptQuery(CashDepositCommand command, context CashDepositLifecycle lifecycle) {
+    lifecycle.recordedTrade = new CashDepositTrade(); lifecycle.recordedTrade.id = command.id;
+}
+Scenario serial executeCashDepositUnchecked(CashDepositCommand command, context CashDepositLifecycle lifecycle) {
+    initializeCashDepositLifecycle(command, lifecycle);
+    serial { transaction quantum {
+        storeCashDepositRequestIfAbsent(lifecycle.requestRecord);
+        queryCashDepositRequest(lifecycle.requestRecord);
+        checkCashDepositRequestIdentity(command, lifecycle.requestRecord);
+    } }
+    lifecycle.recordedTrade = lookupCashDepositTrade(lifecycle.recordedTrade);
+    if (lifecycle.recordedTrade != null) {
+        describeCashDepositReplay(command, lifecycle.recordedTrade, lifecycle.execution);
+        transaction quantum { storeCashAudit(lifecycle.execution.audit); }
+    } else {
+        try { executeCashDepositAttempt(command, lifecycle.execution); }
+        catch (CashFailureFacts lifecycle.submissionFailure) {
+            if (lifecycle.submissionFailure.code == "PERSISTENCE_ALREADY_EXISTS") {
+                prepareConcurrentCashReceiptQuery(command, lifecycle);
+                lifecycle.recordedTrade = lookupCashDepositTrade(lifecycle.recordedTrade);
+                if (lifecycle.recordedTrade != null) {
+                    describeCashDepositReplay(command, lifecycle.recordedTrade, lifecycle.execution);
+                    transaction quantum { storeCashAudit(lifecycle.execution.audit); }
+                } else { throw lifecycle.submissionFailure; }
+            } else { throw lifecycle.submissionFailure; }
+        }
+    }
+}
+
+Scenario serial executeCashDeposit(CashDepositCommand command, context CashDepositLifecycle lifecycle) {
+    try { executeCashDepositUnchecked(command, lifecycle); }
+    catch (CashFailureFacts lifecycle.failure) {
+        if (command.attemptId != null && command.attemptId != "") {
+            prepareCashDepositFailureAudit(command, lifecycle);
+            transaction quantum { storeCashAudit(lifecycle.failureAudit); }
+        }
+        throw lifecycle.failure;
+    }
+}

@@ -1,0 +1,104 @@
+domain cboddeposit;
+
+Contract PreparedReversalExample {
+    ReversalAuditEvidenceExample facts; CashReversalWork saved;
+    CashDepositTrade archived; CashDepositTrade changed; CashReversalTrade committed;
+    CashDepositTrade extraKey; CashDepositTrade extra;
+    CashPostingRecord extraPostingKey; CashPostingRecord[] extraPostings;
+    int expectedVersion; double expectedBalance; double expectedClearing; int expectedQuantumRows;
+    String expectedCode;
+}
+atomic update changeOriginalReceiptExampleFixture(CashDepositTrade trade);
+atomic calculate initializePreparedReversalExample(context PreparedReversalExample example) {
+    example.facts = new ReversalAuditEvidenceExample();
+    example.facts.business = new ReversalFaultExample(); example.facts.evidence = new QuantumEvidenceExample();
+    example.extraKey = new CashDepositTrade(); example.extraPostingKey = new CashPostingRecord();
+}
+atomic calculate selectChangedOriginalExample(context PreparedReversalExample example) {
+    example.facts.business.prefix = "SOURCE-PREP-ORIGINAL";
+    example.expectedCode = "ORIGINAL_DEPOSIT_RECEIPT_CHANGED";
+    example.expectedVersion = 2; example.expectedBalance = 800; example.expectedClearing = -700; example.expectedQuantumRows = 4;
+}
+atomic calculate savePreparedReversalExample(context PreparedReversalExample example) {
+    require(example.facts.business.reversal.lifecycle.work.status == "Prepared", "EXAMPLE_CANDIDATE_NOT_PREPARED");
+    example.saved = copy(example.facts.business.reversal.lifecycle.work);
+    example.archived = copy(example.saved.originalEvidence.expected);
+    example.changed = copy(example.archived); example.changed.settled.version = 99;
+    example.extraKey.id = example.facts.business.prefix + "-AFTER"; example.extraPostingKey.tradeId = example.extraKey.id;
+}
+atomic calculate retryPreparedReversalExample(context PreparedReversalExample example) {
+    example.facts.business.reversal.command.attemptId = example.facts.business.prefix + "-RETRY";
+}
+atomic calculate expectPreparedReversalCommitted(context PreparedReversalExample example) {
+    example.expectedVersion = 3; example.expectedBalance = 200; example.expectedClearing = -100; example.expectedQuantumRows = 6;
+}
+atomic check verifyPreparedReversalQuantum(PreparedReversalExample example) {
+    int rows = 0; int values = 0; int balances = 0; int clearings = 0; double deltas = 0;
+    for (QuantumJournalEvidence row : example.facts.evidence.journal) {
+        rows++; deltas += row.deltaValue;
+        require(row.objectId == example.facts.business.reversal.cash.seed.id && row.status == "COMMITTED"
+            && row.beforeValue + row.deltaValue == row.afterValue, "EXAMPLE_PREPARED_QUANTUM_RECORD");
+    }
+    for (QuantumValueEvidence value : example.facts.evidence.values) {
+        values++; require(value.objectId == example.facts.business.reversal.cash.seed.id, "EXAMPLE_PREPARED_QUANTUM_OBJECT");
+        if (value.attributeId == "AccountEligibility.accountBalance") {
+            balances++; require(value.currentValue == example.expectedBalance, "EXAMPLE_PREPARED_QUANTUM_BALANCE");
+        } else if (value.attributeId == "CashQuantumClearing.amount") {
+            clearings++; require(value.currentValue == example.expectedClearing, "EXAMPLE_PREPARED_QUANTUM_CLEARING");
+        } else { require(false, "EXAMPLE_PREPARED_QUANTUM_ATTRIBUTE"); }
+    }
+    require(rows == example.expectedQuantumRows && deltas == 0 && values == 2 && balances == 1 && clearings == 1,
+        "EXAMPLE_PREPARED_QUANTUM_RESIDUE");
+}
+atomic check verifyPreparedReversalRollback(PreparedReversalExample example) {
+    require(example.facts.business.reversal.failure != null
+        && example.facts.business.reversal.failure.code == example.expectedCode
+        && example.facts.business.reversal.failure.transactionOutcome == "ROLLED_BACK", "EXAMPLE_PREPARED_FAILURE");
+    require(example.facts.business.reversal.cash.observed.version == example.expectedVersion
+        && example.facts.business.reversal.cash.observed.account.interestBase == example.expectedBalance
+        && example.facts.business.reversal.cash.observed.eligibility.accountBalance == example.expectedBalance
+        && example.facts.business.reversal.record == null && example.facts.business.reversal.link.version == 0
+        && example.facts.business.reversal.link.reversalId == "", "EXAMPLE_PREPARED_PARTIAL_ACCOUNT_RECEIPT_LINK");
+    int lines = 0; int history = 0;
+    for (CashPostingRecord posting : example.facts.business.reversal.cash.postings) { lines++; }
+    for (CashAuditRecord audit : example.facts.business.history) {
+        history++; require(audit.event == "ReversalRolledBack" && audit.code == example.expectedCode,
+            "EXAMPLE_PREPARED_FAILURE_AUDIT");
+    }
+    require(lines == 0 && history == 1, "EXAMPLE_PREPARED_ROLLBACK_RESIDUE");
+}
+atomic check verifyChangedOriginalCandidate(PreparedReversalExample example) {
+    require(example.facts.business.reversal.cash.storedTrade.settled.version == 99
+        && example.saved.originalEvidence.expected.settled.version == 1
+        && !sameFacts(example.facts.business.reversal.cash.storedTrade, example.saved.originalEvidence.expected),
+        "EXAMPLE_ORIGINAL_RECEIPT_NOT_CHANGED");
+}
+Scenario serial prepareReversalCandidateExample(context PreparedReversalExample example) {
+    seedReversalFaultBusiness(example.facts.business);
+    initializeQuantumEvidenceExample(example.facts.evidence); configureReversalAuditQuantumEvidence(example.facts);
+    initializeCashReversalLifecycle(example.facts.business.reversal.command, example.facts.business.reversal.lifecycle);
+    prepareCashReversalAttempt(example.facts.business.reversal.command, example.facts.business.reversal.lifecycle.work);
+    savePreparedReversalExample(example);
+}
+Scenario serial observePreparedReversalExample(context PreparedReversalExample example) {
+    observeReversalFaultBusiness(example.facts.business); observeQuantumEvidenceExample(example.facts.evidence);
+}
+Scenario serial retryFreshPreparedReversalExample(context PreparedReversalExample example) {
+    retryPreparedReversalExample(example);
+    prepareCashReversalAttempt(example.facts.business.reversal.command, example.facts.business.reversal.lifecycle.work);
+    executePreparedCashReversal(example.facts.business.reversal.command, example.facts.business.reversal.lifecycle);
+    observePreparedReversalExample(example);
+    verifyReversalFaultIndependentBusiness(example.facts.business);
+}
+Scenario serial changedOriginalPreparedReversalExampleRun(context PreparedReversalExample example) {
+    initializePreparedReversalExample(example); selectChangedOriginalExample(example); prepareReversalCandidateExample(example);
+    serial { transaction quantum { changeOriginalReceiptExampleFixture(example.changed); } }
+    try { executePreparedCashReversal(example.facts.business.reversal.command, example.facts.business.reversal.lifecycle); }
+    catch (CashFailureFacts example.facts.business.reversal.failure) {}
+    observePreparedReversalExample(example); verifyChangedOriginalCandidate(example);
+    verifyPreparedReversalRollback(example); verifyPreparedReversalQuantum(example);
+    serial { transaction quantum { changeOriginalReceiptExampleFixture(example.archived); } }
+    retryFreshPreparedReversalExample(example); expectPreparedReversalCommitted(example);
+    verifyReversalFaultCommitted(example.facts.business); verifyPartialReversalRetryHistory(example.facts.business);
+    verifyPreparedReversalQuantum(example);
+}

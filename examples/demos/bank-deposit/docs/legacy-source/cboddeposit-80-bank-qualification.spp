@@ -1,0 +1,169 @@
+domain cboddeposit;
+
+// CSAQRY1 9704/9709: decoded account and operator facts, with business selection in SPP.
+Role DepositBankProfile {
+    boolean normalSavings;
+    boolean restrictedSubtype;
+    String openingBranch;
+    String openingProvince;
+    String subbranch;
+    String area;
+    String areaProvince;
+    String depositRange;
+    String proprietaryRange;
+    boolean cardLinked;
+    String accountSeries;
+    boolean cardRecordFound;
+    String cardLoss;
+    String cardStatus;
+    String passbookLoss;
+    boolean groupSubaccount;
+}
+Role DepositOperatorFacts {
+    String branch;
+    String province;
+    String subbranch;
+    String area;
+    String areaProvince;
+    boolean accountingCentre;
+    String transactionPrefix;
+    String operationCode;
+    String tellerFamily;
+    int tellerNumber;
+    boolean numericTeller;
+    String mode;
+    boolean agencySigned;
+    boolean corporateTransfer;
+    String settlementChannel;
+}
+Contract DepositNotices { String cardWarning; String passbookWarning; }
+atomic calculate assessDepositDocumentNotices(DepositBankProfile account, DepositOperatorFacts operator,
+    CashChannel channel, context DepositNotices notices) {
+    notices.cardWarning = "";
+    notices.passbookWarning = "";
+    boolean applies = !operator.agencySigned && operator.numericTeller
+        && (operator.mode == "Online" || operator.mode == "Mode8");
+    if (applies) {
+        if (account.accountSeries == "49927" && account.cardLinked && account.cardRecordFound
+            && channel.businessCode != "CR0" && (account.cardLoss == "Oral" || account.cardLoss == "Written")
+            && account.cardStatus != "Cancelled") { notices.cardWarning = "WN200"; }
+        if (account.passbookLoss == "Oral" || account.passbookLoss == "Written") { notices.passbookWarning = "WN201"; }
+    }
+}
+atomic check checkDepositBranchRange(DepositBankProfile account, DepositOperatorFacts operator, CashChannel channel) {
+    boolean specificPermission = operator.transactionPrefix == "FL06002" || operator.transactionPrefix == "AG02891"
+        || operator.transactionPrefix == "SA01120" || operator.transactionPrefix == "FL06615" || operator.transactionPrefix == "FL06618";
+    boolean commonException = operator.transactionPrefix == "RE04081" || operator.transactionPrefix == "RE04082"
+        || operator.transactionPrefix == "RE04001" || operator.transactionPrefix == "RE04013"
+        || operator.transactionPrefix == "RE04047" || operator.transactionPrefix == "RE04057"
+        || operator.transactionPrefix == "CR05220";
+    boolean agencyException = channel.businessCode == "AG0" && (operator.operationCode == "1732"
+        || operator.operationCode == "1762" || operator.operationCode == "1725");
+    boolean outerException = operator.transactionPrefix == "RE04001" || operator.transactionPrefix == "RE04013"
+        || operator.transactionPrefix == "RE04047" || operator.transactionPrefix == "RE04057"
+        || operator.transactionPrefix == "RE04067" || operator.transactionPrefix == "AG01765"
+        || operator.transactionPrefix == "AG02899" || operator.transactionPrefix == "RE04066";
+    boolean specialTeller = operator.tellerFamily == "UH" && operator.tellerNumber >= 0 && operator.tellerNumber <= 9;
+    if ((operator.operationCode == "1751" || operator.operationCode == "1176" || operator.operationCode == "1172")
+        && operator.tellerFamily == "O" && operator.tellerNumber >= 56 && operator.tellerNumber <= 99) { specialTeller = true; }
+    if (operator.operationCode == "1751" && operator.tellerFamily == "ZD" && operator.tellerNumber >= 0
+        && operator.tellerNumber <= 9) { specialTeller = true; }
+    boolean applies = !account.cardLinked && channel.businessCode != "FL0" && channel.businessCode != "RE0"
+        && channel.businessCode != "AG0" && (!operator.accountingCentre || account.openingProvince != operator.province)
+        && !outerException && !specificPermission && !specialTeller;
+    boolean groupException = account.groupSubaccount && (operator.settlementChannel == "HVP"
+        || operator.settlementChannel == "BEP" || operator.settlementChannel == "NXY");
+    boolean checksRange = operator.mode != "CentralBatch" && !operator.corporateTransfer
+        && operator.transactionPrefix != "CR05220" && !groupException;
+    if (applies) {
+        if (account.normalSavings) {
+            require(account.depositRange == "SameBranch" || account.depositRange == "Subbranch"
+                || account.depositRange == "City" || account.depositRange == "Province" || account.depositRange == "All",
+                "INVALID_DEPOSIT_RANGE");
+            if (checksRange) {
+                if (account.depositRange == "SameBranch" && account.openingBranch != operator.branch && !commonException) {
+                    require(false, "EN134");
+                }
+                if (account.depositRange == "Subbranch") {
+                    require(account.subbranch != null && account.subbranch != "" && operator.subbranch != null
+                        && operator.subbranch != "", "DEPOSIT_SUBBRANCH_RELATION_NOT_FOUND");
+                    require(account.subbranch == operator.subbranch, "EN470");
+                }
+                if (account.depositRange == "City") {
+                    require(account.area != null && account.area != "" && operator.area != null && operator.area != "", "DEPOSIT_AREA_NOT_FOUND");
+                    require(account.area == operator.area, "EN470");
+                }
+                if (account.depositRange == "Province") {
+                    require(account.areaProvince != null && account.areaProvince != "" && operator.areaProvince != null
+                        && operator.areaProvince != "", "DEPOSIT_AREA_NOT_FOUND");
+                    require(account.areaProvince == operator.areaProvince, "EN470");
+                }
+            }
+        } else {
+            if ((account.proprietaryRange == "SameBranch" || account.proprietaryRange == "WithdrawOnly")
+                && account.openingBranch != operator.branch && operator.mode != "CentralBatch"
+                && !operator.corporateTransfer && !commonException
+                && !(account.restrictedSubtype && agencyException)) { require(false, "EN134"); }
+        }
+    }
+    // This subtype check is outside the outer range gate in the source.
+    if (account.restrictedSubtype && account.openingBranch != operator.branch && !agencyException && !commonException
+        && operator.transactionPrefix != "AG01765" && operator.transactionPrefix != "AG02899"
+        && operator.transactionPrefix != "RE04066" && operator.transactionPrefix != "RE04035" && !specificPermission) {
+        require(false, "EN134");
+    }
+}
+atomic calculate mergeDepositNotices(context AdmissionDecision admission, context DepositNotices notices) {
+    if (admission.executable && (notices.cardWarning != "" || notices.passbookWarning != "")) { admission.status = "Warning"; }
+}
+// KSADEP0:603 and CSAQRY1 5000/9751/9753. Reversal uses its own eligibility path.
+atomic check checkCoreDepositReversalEligibility(CashAccountControl control, AccountEligibility account,
+    DepositOperatorFacts operator) {
+    require(account.status != "Closed", "EO082");
+    require(control.cancelledOn == 0, "EN113");
+    require(account.status != "Frozen" || operator.transactionPrefix == "SA01116", "EN111");
+}
+Scenario serial assessCoreDepositReversalEligibility(CashAccountControl control, AccountEligibility account,
+    DepositBankProfile profile, DepositOperatorFacts operator, CashChannel channel, context DepositNotices notices) {
+    checkCoreDepositReversalEligibility(control, account, operator);
+    assessDepositDocumentNotices(profile, operator, channel, notices);
+}
+Scenario serial assessDepositBankQualification(DepositBankProfile account, DepositOperatorFacts operator,
+    CashChannel channel, context DepositNotices notices) {
+    assessDepositDocumentNotices(account, operator, channel, notices);
+    checkDepositBranchRange(account, operator, channel);
+}
+atomic check checkDepositOperatorBinding(DepositOperatorFacts operator, DepositFeeContext feeContext) {
+    require(operator.branch == feeContext.branchId && operator.area == feeContext.regionCode,
+        "DEPOSIT_OPERATOR_CONTEXT_MISMATCH");
+    require(operator.operationCode == "1102" && operator.transactionPrefix == "SA01102", "UNSUPPORTED_DEPOSIT_OPERATOR_PATH");
+}
+Scenario serial prepareQualifiedCashDeposit(DepositRequest d, DepositAccount before, CashAccountControl control,
+    AccountEligibility eligibility, DepositProduct product, BusinessDay day, CashChannel channel,
+    CashAuthorizationPolicy authorizationPolicy, AuthorizationEvidence evidence, context AdmissionDecision admission,
+    DepositFeeParty feeParty, DepositFeeContext feeContext, DepositFeeRate rate, context DepositFeePlan fee,
+    context DepositPlan plan, context DepositAccounting amounts, DepositPostingLine[] lines,
+    context DepositPostingTotals totals, DepositDetailPolicy details, DepositAccount after, AccountEligibility afterEligibility,
+    DepositBankProfile bankProfile, DepositOperatorFacts operator, context DepositNotices notices) {
+    checkDepositOperatorBinding(operator, feeContext);
+    assessDepositBankQualification(bankProfile, operator, channel, notices);
+    prepareNormalCashDeposit(d, before, control, eligibility, product, day, channel, authorizationPolicy, evidence,
+        admission, feeParty, feeContext, rate, fee, plan, amounts, lines, totals, details, after, afterEligibility);
+    mergeDepositNotices(admission, notices);
+}
+Scenario serial prepareQualifiedCashDepositWithAccrual(DepositRequest d, DepositAccount before, CashAccountControl control,
+    AccountEligibility eligibility, DepositProduct product, BusinessDay day, CashChannel channel,
+    CashAuthorizationPolicy authorizationPolicy, AuthorizationEvidence evidence, context AdmissionDecision admission,
+    DepositFeeParty feeParty, DepositFeeContext feeContext, DepositFeeRate rate, context DepositFeePlan fee,
+    context DepositPlan plan, context DepositAccounting amounts, DepositPostingLine[] lines,
+    context DepositPostingTotals totals, DepositDetailPolicy details, DepositAccount after, AccountEligibility afterEligibility,
+    DepositAccrualInput beforeAccrual, AgreementBand[] beforeBands, DepositAccrualWork work,
+    AgreementBand[] increments, DepositAccrualInput afterAccrual, AgreementBand[] afterBands, context DepositAccrualPlan accrual,
+    DepositBankProfile bankProfile, DepositOperatorFacts operator, context DepositNotices notices) {
+    checkDepositOperatorBinding(operator, feeContext);
+    assessDepositBankQualification(bankProfile, operator, channel, notices);
+    prepareCashDepositWithAccrual(d, before, control, eligibility, product, day, channel, authorizationPolicy, evidence,
+        admission, feeParty, feeContext, rate, fee, plan, amounts, lines, totals, details, after, afterEligibility,
+        beforeAccrual, beforeBands, work, increments, afterAccrual, afterBands, accrual);
+    mergeDepositNotices(admission, notices);
+}

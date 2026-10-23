@@ -1,0 +1,8 @@
+domain cboddeposit;
+
+Scenario serial registerFeeSchedule(DepositFeeRate, FeeScheduleAgreement) {
+    describeFeeSchedule;
+    transaction {
+        insertDepositFeeRate;
+    }
+}

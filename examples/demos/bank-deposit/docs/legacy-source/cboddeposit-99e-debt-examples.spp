@@ -1,0 +1,82 @@
+domain cboddeposit;
+
+atomic query <CashAuditRecord audit> lookupCashExampleAudit(CashAuditRecord key);
+atomic calculate configureDebtExample(context CashExample example) {
+    example.seed.id = "SOURCE-DEBT-NORMAL-A";
+    example.command.id = "SOURCE-DEBT-NORMAL-T";
+    example.command.attemptId = "SOURCE-DEBT-NORMAL-ATTEMPT";
+    if (example.seed.account.loanState == "BadDebt") {
+        example.seed.id = "SOURCE-DEBT-BAD-A";
+        example.command.id = "SOURCE-DEBT-BAD-T";
+        example.command.attemptId = "SOURCE-DEBT-BAD-ATTEMPT";
+    }
+    if (example.seed.account.loanState == "WrittenOff") {
+        example.seed.id = "SOURCE-DEBT-WRITTEN-A";
+        example.command.id = "SOURCE-DEBT-WRITTEN-T";
+        example.command.attemptId = "SOURCE-DEBT-WRITTEN-ATTEMPT";
+    }
+    example.seed.account.interestBase = 0;
+    example.seed.account.overdraftInterest = 30;
+    example.seed.account.collectionInterest = 40;
+    example.seed.account.overdraftPrincipal = 100;
+    example.seed.account.overdraftExposure = 100;
+    example.seed.eligibility.accountBalance = -170;
+    example.seed.eligibility.accountId = example.seed.id;
+    example.command.accountId = example.seed.id;
+    example.command.request.amount = 50;
+    example.observed.id = example.seed.id;
+    example.postingKey.tradeId = example.command.id;
+}
+atomic calculate selectBadDebtExample(context CashExample example) { example.seed.account.loanState = "BadDebt"; }
+atomic calculate selectWrittenOffExample(context CashExample example) { example.seed.account.loanState = "WrittenOff"; }
+atomic check verifyDebtExample(CashExample example) {
+    require(example.lifecycle.execution.status == "Committed", "EXAMPLE_DEBT_NOT_COMMITTED");
+    require(example.observed.version == 1 && example.observed.eligibility.accountBalance == -120,
+        "EXAMPLE_DEBT_BALANCE");
+    require(example.observed.account.interestBase == 0 && example.observed.eligibility.cashDepositedToday == 50,
+        "EXAMPLE_DEBT_BASE_AND_DAILY");
+    if (example.seed.account.loanState == "Normal") {
+        require(example.lifecycle.execution.work.plan.interestPaid == 30
+            && example.lifecycle.execution.work.plan.collectionInterestPaid == 20
+            && example.lifecycle.execution.work.plan.principalPaid == 0, "EXAMPLE_NORMAL_REPAYMENT_ORDER");
+        require(example.observed.account.overdraftInterest == 0 && example.observed.account.collectionInterest == 20
+            && example.observed.account.overdraftPrincipal == 100, "EXAMPLE_NORMAL_REMAINING_DEBT");
+    } else {
+        require(example.lifecycle.execution.work.plan.interestPaid == 0
+            && example.lifecycle.execution.work.plan.collectionInterestPaid == 0
+            && example.lifecycle.execution.work.plan.principalPaid == 50, "EXAMPLE_PRINCIPAL_FIRST_ORDER");
+        require(example.observed.account.overdraftInterest == 30 && example.observed.account.collectionInterest == 40
+            && example.observed.account.overdraftPrincipal == 50, "EXAMPLE_PRINCIPAL_FIRST_REMAINING_DEBT");
+    }
+    int count = 0;
+    double debit = 0;
+    double credit = 0;
+    for (CashPostingRecord posting : example.postings) {
+        count++;
+        if (posting.line.side == "Debit") { debit += posting.line.amount; }
+        else { credit += posting.line.amount; }
+    }
+    require(count == 8 && debit == 50 && credit == 50, "EXAMPLE_DEBT_LEDGER");
+}
+Scenario serial runDebtExample(context CashExample example) {
+    configureDebtExample(example);
+    serial { transaction quantum { seedCashExampleAccount(example.seed); } }
+    executeCashDeposit(example.command, example.lifecycle);
+    example.observed = queryCashAccount(example.observed);
+    example.postings = queryCashPostingRecords(example.postingKey);
+    verifyDebtExample(example);
+}
+Scenario serial normalDebtCashExample(context CashExample example) {
+    prepareOrdinaryCashExample(example);
+    runDebtExample(example);
+}
+Scenario serial badDebtCashExample(context CashExample example) {
+    prepareOrdinaryCashExample(example);
+    selectBadDebtExample(example);
+    runDebtExample(example);
+}
+Scenario serial writtenOffCashExample(context CashExample example) {
+    prepareOrdinaryCashExample(example);
+    selectWrittenOffExample(example);
+    runDebtExample(example);
+}

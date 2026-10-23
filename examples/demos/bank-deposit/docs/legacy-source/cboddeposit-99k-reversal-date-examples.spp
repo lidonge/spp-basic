@@ -1,0 +1,91 @@
+domain cboddeposit;
+
+atomic calculate selectSameDayCashReversalExample(context CashReversalExample example) {
+    example.cash.seed.id = "SOURCE-SAME-DAY-A";
+    example.cash.command.id = "SOURCE-SAME-DAY-T";
+    example.cash.command.attemptId = "SOURCE-SAME-DAY-DEPOSIT";
+    example.command.id = "SOURCE-SAME-DAY-R";
+    example.command.attemptId = "SOURCE-SAME-DAY-REVERSE";
+    example.command.day.date = 20261007;
+}
+atomic calculate selectMode2CashReversalExample(context CashReversalExample example) {
+    example.cash.seed.id = "SOURCE-MODE2-A";
+    example.cash.command.id = "SOURCE-MODE2-T";
+    example.cash.command.attemptId = "SOURCE-MODE2-DEPOSIT";
+    example.command.id = "SOURCE-MODE2-R";
+    example.command.attemptId = "SOURCE-MODE2-REVERSE";
+    example.command.day.date = 20261008;
+    example.command.overnightMode2 = true;
+}
+atomic calculate alignCashReversalExampleKeys(context CashReversalExample example) {
+    example.cash.seed.eligibility.accountId = example.cash.seed.id;
+    example.cash.seed.feeParty.customerId = example.cash.seed.id;
+    example.cash.tariffRecord.customerId = example.cash.seed.id;
+    example.cash.command.accountId = example.cash.seed.id;
+    example.cash.observed.id = example.cash.seed.id;
+    example.cash.originalCommand = copy(example.cash.command);
+    example.cash.tradeKey.id = example.cash.command.id;
+    example.command.originalTradeId = example.cash.command.id;
+    example.recordKey.id = example.command.id;
+    example.linkKey.id = example.command.originalTradeId;
+}
+atomic check verifyDirectCashReversalExample(CashReversalExample example) {
+    require(example.lifecycle.work.status == "Committed", "EXAMPLE_DIRECT_REVERSAL_NOT_COMMITTED");
+    require(example.cash.observed.version == 2 && example.cash.observed.eligibility.accountBalance == 100
+        && example.cash.observed.account.interestBase == 100, "EXAMPLE_DIRECT_REVERSAL_BALANCE");
+    require(example.cash.observed.eligibility.detailCount == 12
+        && example.cash.observed.eligibility.cashDepositedToday == 0, "EXAMPLE_DIRECT_REVERSAL_COUNTERS");
+    require(example.cash.observed.accrual.state.normalProduct == 100
+        && example.cash.observed.accrual.state.actualProduct == 100, "EXAMPLE_DIRECT_REVERSAL_ACCRUAL");
+    if (example.command.overnightMode2) {
+        require(example.cash.observed.eligibility.lastTransactionDate == 20261008
+            && !example.lifecycle.work.metadata.reverseInstitutionLimit, "EXAMPLE_MODE2_DATE_AND_LIMIT");
+    } else {
+        require(example.cash.observed.eligibility.lastTransactionDate == 20261006
+            && example.lifecycle.work.metadata.reverseInstitutionLimit, "EXAMPLE_SAME_DAY_DATE_AND_LIMIT");
+    }
+    require(example.record.fee.refundAmount == 2 && example.link.version == 1
+        && example.link.reversalId == example.command.id, "EXAMPLE_DIRECT_REVERSAL_FEE_AND_LINK");
+    require(example.cash.storedTrade.settled.version == 1 && example.cash.storedTrade.request.amount == 600,
+        "EXAMPLE_DIRECT_REVERSAL_CHANGED_ORIGINAL");
+    int count = 0;
+    double debit = 0;
+    double credit = 0;
+    for (CashPostingRecord posting : example.cash.postings) {
+        count++;
+        if (posting.line.side == "Debit") { debit += posting.line.amount; }
+        else { credit += posting.line.amount; }
+    }
+    require(count == 8 && debit == 602 && credit == 602, "EXAMPLE_DIRECT_REVERSAL_LEDGER");
+    require(example.cash.audit != null && example.cash.audit.event == "ReversalCommitted", "EXAMPLE_DIRECT_REVERSAL_AUDIT");
+}
+Scenario serial submitDirectCashReversalExample(context CashReversalExample example) {
+    alignCashReversalExampleKeys(example);
+    serial { transaction quantum {
+        seedCashExampleAccount(example.cash.seed);
+        seedCashExampleTariff(example.cash.tariffRecord);
+    } }
+    executeCashDeposit(example.cash.command, example.cash.lifecycle);
+    example.cash.observed = queryCashAccount(example.cash.observed);
+    verifyOriginalQualifiedCashExample(example);
+    executeCashReversal(example.command, example.lifecycle);
+    prepareCashReversalObservationsExample(example);
+    observeCashReversalExample(example);
+    verifyDirectCashReversalExample(example);
+}
+Scenario serial sameDayCashReversalExample(context CashReversalExample example) {
+    initializeCashReversalExample(example);
+    prepareOrdinaryCashExample(example.cash);
+    configureCrossBranchFeeExample(example.cash);
+    configureCashReversalExample(example);
+    selectSameDayCashReversalExample(example);
+    submitDirectCashReversalExample(example);
+}
+Scenario serial mode2CashReversalExample(context CashReversalExample example) {
+    initializeCashReversalExample(example);
+    prepareOrdinaryCashExample(example.cash);
+    configureCrossBranchFeeExample(example.cash);
+    configureCashReversalExample(example);
+    selectMode2CashReversalExample(example);
+    submitDirectCashReversalExample(example);
+}

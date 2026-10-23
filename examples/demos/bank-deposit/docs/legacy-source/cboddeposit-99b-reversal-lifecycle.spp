@@ -1,0 +1,140 @@
+domain cboddeposit;
+
+Contract CashReversalLifecycle { CashFailureFacts failure; CashFailureFacts submissionFailure; CashTradeReversalLink competingLink; boolean concurrentReplay; boolean preparedSubmission; CashAuditRecord failureAudit; CashReversalTrade recorded; CashReversalWork work; }
+atomic query <CashReversalTrade trade> lookupCashReversalTrade(CashReversalTrade key);
+atomic query <CashTradeReversalLink link> lookupCashReversalLink(CashTradeReversalLink key);
+atomic calculate initializeCashReversalLifecycle(CashReversalCommand command, context CashReversalLifecycle lifecycle) {
+    lifecycle.preparedSubmission = false;
+    lifecycle.failure = null;
+    lifecycle.submissionFailure = null; lifecycle.competingLink = null; lifecycle.concurrentReplay = false;
+    lifecycle.failureAudit = null;
+    lifecycle.work = null;
+    lifecycle.recorded = null;
+    require(command.id != null && command.id != "" && command.id != command.originalTradeId, "INVALID_REVERSAL_TRANSACTION_ID");
+    require(command.attemptId != null && command.attemptId != "", "MISSING_REVERSAL_ATTEMPT_ID");
+    require(command.originalTradeId != null && command.originalTradeId != "", "MISSING_ORIGINAL_TRANSACTION_ID");
+    lifecycle.recorded = new CashReversalTrade();
+    lifecycle.recorded.id = command.id;
+    lifecycle.work = new CashReversalWork();
+}
+atomic calculate initializePreparedCashReversalLifecycle(CashReversalCommand command, context CashReversalLifecycle lifecycle) {
+    require(command.id != null && command.id != "" && command.id != command.originalTradeId, "INVALID_REVERSAL_TRANSACTION_ID");
+    require(command.attemptId != null && command.attemptId != "", "MISSING_REVERSAL_ATTEMPT_ID");
+    require(lifecycle.work != null && lifecycle.work.originalEvidence != null
+        && lifecycle.work.originalEvidence.expected != null, "CASH_REVERSAL_NOT_PREPARED");
+    lifecycle.preparedSubmission = true;
+    lifecycle.failure = null; lifecycle.submissionFailure = null; lifecycle.failureAudit = null;
+    lifecycle.competingLink = null; lifecycle.concurrentReplay = false;
+    lifecycle.recorded = new CashReversalTrade(); lifecycle.recorded.id = command.id;
+}
+atomic check checkPreparedCashReversalReplay(CashReversalCommand command, CashReversalTrade recorded, context CashReversalWork work) {
+    require(work.reversal != null && work.reversal.id == command.id
+        && work.reversal.originalTradeId == command.originalTradeId, "DEPOSIT_REQUEST_ID_REUSED");
+    require(recorded.originalDeposit != null
+        && sameFacts(recorded.originalDeposit, work.originalEvidence.expected)
+        && sameFacts(recorded.originalDeposit, work.reversal.originalDeposit), "DEPOSIT_REQUEST_ID_REUSED");
+}
+atomic check checkCashReversalReplayIdentity(CashReversalCommand command, CashReversalTrade recorded) {
+    require(recorded.execution != null, "MISSING_REVERSAL_COMMITTED_FACTS");
+    require(recorded.id == command.id && recorded.originalTradeId == command.originalTradeId
+        && recorded.execution.overnightMode2 == command.overnightMode2, "DEPOSIT_REQUEST_ID_REUSED");
+}
+atomic calculate describeCashReversalReplay(CashReversalCommand command, CashReversalTrade recorded,
+    context CashReversalWork work) {
+    work.status = "Committed";
+    work.reversal = copy(recorded);
+    work.current = copy(recorded.original);
+    work.proposed = copy(recorded.settled);
+    work.movement = copy(recorded.movement);
+    work.amounts = copy(recorded.amounts);
+    work.refund = copy(recorded.fee);
+    work.reversedLines = copy(recorded.lines);
+    work.journal = copy(recorded.journal);
+    work.execution = copy(recorded.execution);
+    work.metadata = copy(recorded.metadata);
+    work.notices = copy(recorded.notices);
+    work.audit = new CashAuditRecord();
+    work.audit.attemptId = command.attemptId;
+    work.audit.tradeId = command.id;
+    work.audit.accountId = recorded.accountId;
+    work.audit.event = "ReversalReplayed";
+    work.audit.code = "";
+    work.audit.reversal = copy(recorded);
+}
+atomic calculate prepareConcurrentCashReversalQueries(CashReversalCommand command, context CashReversalLifecycle lifecycle) {
+    lifecycle.recorded = new CashReversalTrade(); lifecycle.recorded.id = command.id;
+    lifecycle.competingLink = new CashTradeReversalLink(); lifecycle.competingLink.id = command.originalTradeId;
+}
+atomic calculate markConcurrentCashReversalReplay(context CashReversalLifecycle lifecycle) {
+    lifecycle.concurrentReplay = true; lifecycle.work.status = "Preparing";
+}
+atomic calculate classifyConcurrentCashReversalLink(context CashReversalLifecycle lifecycle) {
+    if (lifecycle.competingLink != null && lifecycle.competingLink.reversalId != "") {
+        lifecycle.work.status = "Rejected";
+        require(false, "ORIGINAL_DEPOSIT_ALREADY_REVERSED");
+    }
+}
+Scenario serial decideCashReversalSubmission(CashReversalCommand command, context CashReversalLifecycle lifecycle) {
+    if (lifecycle.recorded != null) {
+        checkCashReversalReplayIdentity(command, lifecycle.recorded);
+        if (lifecycle.preparedSubmission) { checkPreparedCashReversalReplay(command, lifecycle.recorded, lifecycle.work); }
+        describeCashReversalReplay(command, lifecycle.recorded, lifecycle.work);
+        transaction quantum { storeCashAudit(lifecycle.work.audit); }
+    } else {
+        try {
+            if (lifecycle.preparedSubmission) { submitPreparedCashReversal(command, lifecycle.work); }
+            else { executeCashReversalAttempt(command, lifecycle.work); }
+        }
+        catch (CashFailureFacts lifecycle.submissionFailure) {
+            if (lifecycle.submissionFailure.code == "PERSISTENCE_ALREADY_EXISTS"
+                || lifecycle.submissionFailure.code == "PERSISTENCE_VERSION_CONFLICT") {
+                prepareConcurrentCashReversalQueries(command, lifecycle);
+                lifecycle.recorded = lookupCashReversalTrade(lifecycle.recorded);
+                if (lifecycle.recorded != null) {
+                    markConcurrentCashReversalReplay(lifecycle);
+                } else {
+                    lifecycle.competingLink = lookupCashReversalLink(lifecycle.competingLink);
+                    if (lifecycle.competingLink == null || lifecycle.competingLink.reversalId == null
+                        || lifecycle.competingLink.reversalId == "") { throw lifecycle.submissionFailure; }
+                }
+            } else { throw lifecycle.submissionFailure; }
+        }
+        if (lifecycle.concurrentReplay) {
+            checkCashReversalReplayIdentity(command, lifecycle.recorded);
+        if (lifecycle.preparedSubmission) { checkPreparedCashReversalReplay(command, lifecycle.recorded, lifecycle.work); }
+            describeCashReversalReplay(command, lifecycle.recorded, lifecycle.work);
+            transaction quantum { storeCashAudit(lifecycle.work.audit); }
+        } else { classifyConcurrentCashReversalLink(lifecycle); }
+    }
+}
+
+Scenario serial executeCashReversalUnchecked(CashReversalCommand command, context CashReversalLifecycle lifecycle) {
+    initializeCashReversalLifecycle(command, lifecycle);
+    lifecycle.recorded = lookupCashReversalTrade(lifecycle.recorded);
+    decideCashReversalSubmission(command, lifecycle);
+}
+Scenario serial executePreparedCashReversalUnchecked(CashReversalCommand command, context CashReversalLifecycle lifecycle) {
+    initializePreparedCashReversalLifecycle(command, lifecycle);
+    lifecycle.recorded = lookupCashReversalTrade(lifecycle.recorded);
+    decideCashReversalSubmission(command, lifecycle);
+}
+Scenario serial executePreparedCashReversal(CashReversalCommand command, context CashReversalLifecycle lifecycle) {
+    try { executePreparedCashReversalUnchecked(command, lifecycle); }
+    catch (CashFailureFacts lifecycle.failure) {
+        if (command.attemptId != null && command.attemptId != "") {
+            prepareCashReversalFailureAudit(command, lifecycle);
+            transaction quantum { storeCashAudit(lifecycle.failureAudit); }
+        }
+        throw lifecycle.failure;
+    }
+}
+Scenario serial executeCashReversal(CashReversalCommand command, context CashReversalLifecycle lifecycle) {
+    try { executeCashReversalUnchecked(command, lifecycle); }
+    catch (CashFailureFacts lifecycle.failure) {
+        if (command.attemptId != null && command.attemptId != "") {
+            prepareCashReversalFailureAudit(command, lifecycle);
+            transaction quantum { storeCashAudit(lifecycle.failureAudit); }
+        }
+        throw lifecycle.failure;
+    }
+}

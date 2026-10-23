@@ -1,0 +1,65 @@
+domain cboddeposit;
+
+Entity BankAccount {
+    String accountNumber;
+}
+
+Role CashSettlementAccount {
+    String accountNumber;
+    quantum BigDecimal(19, 2) balance;
+}
+
+Role CashAccountControl {
+    String controllingInstitution;
+    String controlStatus;
+    int cancelledOn;
+    String productKind;
+}
+
+Role DepositAccrualState {
+    String accountNumber;
+    int lastProductDate;
+    BigDecimal(25, 2) normalProduct;
+    BigDecimal(25, 2) overdraftProduct;
+    BigDecimal(25, 2) overdraftInterestProduct;
+    BigDecimal(25, 2) actualProduct;
+    BigDecimal(25, 2) agreementProduct;
+    int overdraftDays;
+    int overdraftInterestDays;
+}
+
+Role DepositInterestPolicy {
+    boolean normalEnabled;
+    BigDecimal(19, 2) normalUnit;
+    BigDecimal(19, 2) overdraftUnit;
+}
+
+Role DepositDetailPolicy {
+    int itemCount;
+}
+
+atomic check checkCashControl(CashAccountControl, AccountEligibility) {
+    require(CashAccountControl.controllingInstitution == "", "EN432");
+    require(
+        CashAccountControl.controlStatus != "PayNoReceive" && CashAccountControl.controlStatus != "Locked",
+        "EN432"
+    );
+    require(AccountEligibility.status != AccountStatus.FROZEN, "EG877");
+    require(CashAccountControl.cancelledOn == 0, "EN113");
+    require(CashAccountControl.productKind != "RealEstate", "EI090");
+}
+
+atomic calculate describeAccountBalance(DepositAccount, AccountEligibility) {
+    AccountEligibility.accountBalance = DepositAccount.interestBase
+        - DepositAccount.overdraftInterest
+        - DepositAccount.collectionInterest
+        - DepositAccount.overdraftPrincipal;
+}
+
+atomic check checkAccountParticipants(DepositAccount, AccountEligibility, DepositAccrualState) {
+    require(
+        DepositAccount.accountNumber == AccountEligibility.accountNumber
+            && DepositAccount.accountNumber == DepositAccrualState.accountNumber,
+        "ACCOUNT_PARTICIPANTS_MISMATCH"
+    );
+}

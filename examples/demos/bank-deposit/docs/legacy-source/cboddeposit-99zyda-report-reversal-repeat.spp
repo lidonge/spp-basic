@@ -1,0 +1,55 @@
+domain cboddeposit;
+
+atomic calculate selectDepositReportCashReplay(context DepositCompleteReportExample example) {
+    example.report.replay = copy(example.report.cashReversal);
+    example.report.replay.command.attemptId = "SOURCE-REPORT-CASH-REVERSAL-REPLAY";
+    example.report.replay.command.day.date = 20261009;
+}
+atomic check verifyDepositReportCashReplay(DepositCompleteReportExample example) {
+    require(example.report.replay.lifecycle.work.status == "Committed"
+        && example.report.replay.lifecycle.work.proposed.version == 4
+        && example.report.replay.lifecycle.work.execution.businessDate == 20261008
+        && example.report.replay.cash.observed.version == 4
+        && example.report.replay.cash.observed.eligibility.accountBalance == 1700
+        && example.report.replay.cash.audit.event == "ReversalReplayed"
+        && sameFacts(example.report.replay.record, example.report.cashReversal.record), "REPORT_CASH_REPLAY_CHANGED_TRANSACTION");
+}
+atomic calculate selectDepositReportCashDuplicate(context DepositCompleteReportExample example) {
+    example.report.duplicateRejected = copy(example.report.cashReversal);
+    example.report.duplicateRejected.command.id = "SOURCE-REPORT-CASH-DUPLICATE";
+    example.report.duplicateRejected.command.attemptId = "SOURCE-REPORT-CASH-DUPLICATE-REJECT";
+    example.report.duplicateRejected.recordKey.id = example.report.duplicateRejected.command.id;
+    example.report.duplicateRejected.failure = null;
+}
+atomic check verifyDepositReportCashDuplicate(DepositCompleteReportExample example) {
+    require(example.report.duplicateRejected.failure != null
+        && example.report.duplicateRejected.failure.code == "ORIGINAL_DEPOSIT_ALREADY_REVERSED"
+        && example.report.duplicateRejected.record == null
+        && example.report.duplicateRejected.cash.observed.version == 4
+        && example.report.duplicateRejected.cash.observed.eligibility.accountBalance == 1700
+        && example.report.duplicateRejected.cash.audit.event == "ReversalRejected", "REPORT_CASH_DUPLICATE_ACCEPTED");
+    int lines = 0; for (CashPostingRecord posting : example.report.duplicateRejected.cash.postings) { lines++; }
+    require(lines == 0, "REPORT_CASH_DUPLICATE_POSTINGS");
+}
+atomic calculate captureDepositReportCashOnlyQuantum(context DepositCompleteReportExample example) {
+    int rows = 0; double deltas = 0;
+    for (QuantumJournalEvidence row : example.report.journal) { rows++; deltas += row.deltaValue; }
+    require(rows == 14 && deltas == 0, "REPORT_CASH_ONLY_QUANTUM_COUNT");
+    example.report.cashOnlyJournal = copy(example.report.journal);
+}
+Scenario serial verifyDepositReportCashReversalRepetition(context DepositCompleteReportExample example) {
+    selectDepositReportCashReplay(example);
+    executeCashReversal(example.report.replay.command, example.report.replay.lifecycle);
+    prepareCashReversalObservationsExample(example.report.replay); observeCashReversalExample(example.report.replay);
+    verifyDepositReportCashReplay(example);
+    selectDepositReportCashDuplicate(example);
+    try { executeCashReversal(example.report.duplicateRejected.command, example.report.duplicateRejected.lifecycle); }
+    catch (CashFailureFacts example.report.duplicateRejected.failure) {}
+    prepareCashReversalObservationsExample(example.report.duplicateRejected);
+    example.report.duplicateRejected.cash.observed = queryCashAccount(example.report.duplicateRejected.cash.observed);
+    example.report.duplicateRejected.record = lookupCashReversalTrade(example.report.duplicateRejected.recordKey);
+    example.report.duplicateRejected.cash.postings = queryCashPostingRecords(example.report.duplicateRejected.cash.postingKey);
+    example.report.duplicateRejected.cash.audit = lookupCashExampleAudit(example.report.duplicateRejected.cash.auditKey);
+    verifyDepositReportCashDuplicate(example);
+    observeDepositCompleteReportQuantum(example); captureDepositReportCashOnlyQuantum(example);
+}

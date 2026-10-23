@@ -1,0 +1,16 @@
+domain petshop;
+
+Scenario serial updateShopCustomer(Buyer, ProfileAgreement) {
+    checkBuyerCredential;
+    checkProfileAgreementInput;
+    initializeProfileAgreement;
+    prepareProfileAgreementReceipt;
+    findBuyer;
+    identify(Buyer);
+    updateProfile;
+    transaction {
+        updatePerson(Buyer);
+        updateBuyer;
+        insertReceipt(ProfileAgreement.receipt);
+    }
+}

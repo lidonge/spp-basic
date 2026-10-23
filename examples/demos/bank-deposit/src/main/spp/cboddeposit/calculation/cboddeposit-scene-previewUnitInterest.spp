@@ -1,0 +1,6 @@
+domain cboddeposit;
+
+Scenario serial previewUnitInterest(InterestPeriod, InterestProduct) {
+    checkInterestPeriod;
+    calculateInterestProduct;
+}

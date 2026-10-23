@@ -1,0 +1,201 @@
+domain cboddeposit;
+
+// Business inverse of the recorded financial movement. Dates, fees and journals use separate policies.
+Contract OriginalDepositMovement {
+    double amount;
+    double interestBaseDelta;
+    double interestPaid;
+    double collectionPaid;
+    double principalPaid;
+    double exposureDelta;
+    int valueDate;
+    String currency;
+}
+atomic calculate describeOriginalDepositMovement(DepositRequest request, DepositAccount before,
+    context DepositPlan original, context OriginalDepositMovement movement) {
+    movement.amount = request.amount;
+    movement.interestBaseDelta = original.newInterestBase - before.interestBase;
+    movement.interestPaid = original.interestPaid;
+    movement.collectionPaid = original.collectionInterestPaid;
+    movement.principalPaid = original.principalPaid;
+    movement.exposureDelta = original.newOverdraftExposure - before.overdraftExposure;
+    movement.valueDate = request.valueDate;
+    movement.currency = request.currency;
+}
+Contract DepositReversalAmountPlan {
+    double interestBase;
+    double overdraftInterest;
+    double collectionInterest;
+    double overdraftPrincipal;
+    double overdraftExposure;
+    double availableBalance;
+    double accountBalance;
+}
+atomic calculate prepareDepositReversalAccountUpdate(DepositAccount current, context DepositReversalAmountPlan plan,
+    DepositAccount after) {
+    after.interestBase = plan.interestBase;
+    after.overdraftInterest = plan.overdraftInterest;
+    after.collectionInterest = plan.collectionInterest;
+    after.overdraftPrincipal = plan.overdraftPrincipal;
+    after.overdraftExposure = plan.overdraftExposure;
+    after.frozenAmount = current.frozenAmount;
+    after.authorizedAmount = current.authorizedAmount;
+    after.loanState = current.loanState;
+}
+atomic check checkOriginalDepositMovement(context OriginalDepositMovement movement) {
+    require(movement.amount >= 0 && movement.interestPaid >= 0 && movement.collectionPaid >= 0
+        && movement.principalPaid >= 0, "INVALID_ORIGINAL_DEPOSIT_MOVEMENT");
+    require(movement.amount == movement.interestBaseDelta + movement.interestPaid
+        + movement.collectionPaid + movement.principalPaid, "ORIGINAL_DEPOSIT_MOVEMENT_NOT_BALANCED");
+}
+atomic calculate calculateDepositReversalAmounts(DepositAccount current, context OriginalDepositMovement original,
+    context DepositReversalAmountPlan plan) {
+    plan.interestBase = current.interestBase - original.interestBaseDelta;
+    plan.overdraftInterest = current.overdraftInterest + original.interestPaid;
+    plan.collectionInterest = current.collectionInterest + original.collectionPaid;
+    plan.overdraftPrincipal = current.overdraftPrincipal + original.principalPaid;
+    plan.overdraftExposure = current.overdraftExposure - original.exposureDelta;
+    plan.availableBalance = max(0, plan.interestBase - current.frozenAmount - current.authorizedAmount);
+    plan.accountBalance = plan.interestBase - plan.overdraftInterest - plan.collectionInterest - plan.overdraftPrincipal;
+}
+atomic check checkDepositReversalInvariant(DepositAccount current, context OriginalDepositMovement original,
+    context DepositReversalAmountPlan plan) {
+    require(plan.accountBalance == current.interestBase - current.overdraftInterest
+        - current.collectionInterest - current.overdraftPrincipal - original.amount, "REVERSAL_NET_BALANCE_INVARIANT");
+}
+// KSADEP0:637 and 4610/4640: inverse existence does not replace business eligibility.
+Role DepositReversalCapacity { boolean overdraftPermitted; double overdraftLimit; }
+atomic check checkDepositReversalCapacity(DepositAccount current, context OriginalDepositMovement original,
+    DepositReversalCapacity capacity) {
+    double available = max(0, current.interestBase - current.frozenAmount - current.authorizedAmount);
+    require(original.amount <= available || (capacity.overdraftPermitted
+        && capacity.overdraftLimit >= original.amount - available), "ES020");
+}
+atomic check checkDepositReversalAccount(DepositAccount current, context DepositReversalAmountPlan plan) {
+    require(plan.interestBase >= 0, "EN249");
+    require(!(plan.interestBase > 0 && plan.overdraftPrincipal > 0 && plan.interestBase > current.frozenAmount), "EN177");
+}
+Scenario serial prepareDepositReversalAmounts(DepositAccount current, context OriginalDepositMovement original,
+    DepositReversalCapacity capacity, context DepositReversalAmountPlan plan) {
+    checkOriginalDepositMovement(original);
+    checkDepositReversalCapacity(current, original, capacity);
+    calculateDepositReversalAmounts(current, original, plan);
+    checkDepositReversalInvariant(current, original, plan);
+    checkDepositReversalAccount(current, plan);
+}
+
+// Validate recorded financial effects before using them as inverse-operation evidence.
+atomic check checkOriginalDepositSettlement(DepositAccount before, DepositAccount after, context DepositPlan original) {
+    require(after.interestBase == original.newInterestBase && after.overdraftExposure == original.newOverdraftExposure
+        && after.overdraftPrincipal == before.overdraftPrincipal - original.principalPaid
+        && after.overdraftInterest == before.overdraftInterest - original.interestPaid
+        && after.collectionInterest == before.collectionInterest - original.collectionInterestPaid,
+        "ORIGINAL_DEPOSIT_SETTLEMENT_MISMATCH");
+    require(after.frozenAmount == before.frozenAmount && after.authorizedAmount == before.authorizedAmount
+        && after.loanState == before.loanState, "ORIGINAL_DEPOSIT_SETTLEMENT_MISMATCH");
+    require(original.newAccountBalance == after.interestBase - after.overdraftInterest
+        - after.collectionInterest - after.overdraftPrincipal
+        && original.newAvailableBalance == max(0, after.interestBase - after.frozenAmount - after.authorizedAmount),
+        "ORIGINAL_DEPOSIT_SETTLEMENT_MISMATCH");
+}
+Scenario serial prepareRecordedDepositReversal(DepositRequest request, DepositAccount before, DepositAccount after,
+    context DepositPlan original, DepositAccount current, DepositReversalCapacity capacity,
+    context OriginalDepositMovement movement, context DepositReversalAmountPlan plan) {
+    checkOriginalDepositSettlement(before, after, original);
+    describeOriginalDepositMovement(request, before, original, movement);
+    prepareDepositReversalAmounts(current, movement, capacity, plan);
+}
+
+// Refund amount is an explicit business decision; there is no implicit refund policy.
+Role DepositReversalFeeDecision { double refundAmount; }
+atomic check checkRecordedDepositLedger(DepositPostingLine[] recorded, DepositPostingLine[] actual) {
+    int expected = 1;
+    for (DepositPostingLine line : recorded) {
+        require(line.slot == expected, "INVALID_RECORDED_DEPOSIT_POSTINGS");
+        expected++;
+    }
+    require(expected == 9, "INVALID_RECORDED_DEPOSIT_POSTINGS");
+    expected = 1;
+    for (DepositPostingLine line : actual) {
+        require(line.slot == expected, "INVALID_ORIGINAL_DEPOSIT_POSTINGS");
+        expected++;
+        for (DepositPostingLine evidence : recorded) {
+            if (line.slot == evidence.slot) {
+                require(line.subject == evidence.subject && line.side == evidence.side && line.amount == evidence.amount,
+                    "ORIGINAL_DEPOSIT_LEDGER_EVIDENCE_MISMATCH");
+            }
+        }
+    }
+    require(expected == 9, "INVALID_ORIGINAL_DEPOSIT_POSTINGS");
+}
+atomic calculate assessOriginalDepositPostingLines(context DepositAccounting amounts, context DepositFeePlan fee,
+    DepositPostingLine[] lines, context DepositPostingTotals totals) {
+    totals.debit = 0;
+    totals.credit = 0;
+    totals.fee = fee.fee;
+    int expected = 1;
+    for (DepositPostingLine line : lines) {
+        require(line.slot == expected && line.subject != null && line.subject != "" && line.amount >= 0,
+            "INVALID_ORIGINAL_DEPOSIT_POSTINGS");
+        if (line.slot == 1 || line.slot == 2 || line.slot == 7) {
+            require(line.side == "Debit", "INVALID_ORIGINAL_DEPOSIT_POSTINGS");
+            totals.debit += line.amount;
+        } else {
+            require(line.side == "Credit", "INVALID_ORIGINAL_DEPOSIT_POSTINGS");
+            totals.credit += line.amount;
+        }
+        switch (line.slot) {
+            case 1: require(line.amount == amounts.transactionAmount, "ORIGINAL_DEPOSIT_POSTING_AMOUNT_MISMATCH"); break;
+            case 2: require(line.amount == amounts.depositDecrease, "ORIGINAL_DEPOSIT_POSTING_AMOUNT_MISMATCH"); break;
+            case 3: require(line.amount == amounts.depositIncrease, "ORIGINAL_DEPOSIT_POSTING_AMOUNT_MISMATCH"); break;
+            case 4: require(line.amount == amounts.principalPaid, "ORIGINAL_DEPOSIT_POSTING_AMOUNT_MISMATCH"); break;
+            case 5: require(line.amount == amounts.interestPaid, "ORIGINAL_DEPOSIT_POSTING_AMOUNT_MISMATCH"); break;
+            case 6: require(line.amount == amounts.collectionPaid, "ORIGINAL_DEPOSIT_POSTING_AMOUNT_MISMATCH"); break;
+            case 7: require(line.amount == fee.fee, "ORIGINAL_DEPOSIT_POSTING_AMOUNT_MISMATCH"); break;
+            case 8: require(line.amount == fee.fee, "ORIGINAL_DEPOSIT_POSTING_AMOUNT_MISMATCH"); break;
+        }
+        expected++;
+    }
+    require(expected == 9 && fee.fee >= 0, "INVALID_ORIGINAL_DEPOSIT_POSTINGS");
+}
+atomic check checkDepositFeeRefund(context DepositPostingTotals original, DepositReversalFeeDecision decision) {
+    require(decision.refundAmount >= 0 && decision.refundAmount <= original.fee, "INVALID_DEPOSIT_FEE_REFUND");
+}
+atomic calculate calculateDepositReversalPostings(DepositPostingLine[] original, DepositReversalFeeDecision decision,
+    DepositPostingLine[] reversed, context DepositPostingTotals totals) {
+    int expected = 1;
+    for (DepositPostingLine line : reversed) {
+        require(line.slot == expected, "INVALID_REVERSAL_POSTING_SLOTS");
+        expected++;
+    }
+    require(expected == 9, "INVALID_REVERSAL_POSTING_SLOTS");
+    totals.debit = 0;
+    totals.credit = 0;
+    totals.fee = decision.refundAmount;
+    for (DepositPostingLine line : reversed) {
+        for (DepositPostingLine source : original) {
+            if (source.slot == line.slot) {
+                line.subject = source.subject;
+                if (source.side == "Debit") { line.side = "Credit"; }
+                else { line.side = "Debit"; }
+                if (source.slot == 7 || source.slot == 8) { line.amount = decision.refundAmount; }
+                else { line.amount = source.amount; }
+            }
+        }
+        if (line.side == "Debit") { totals.debit += line.amount; }
+        else { totals.credit += line.amount; }
+    }
+}
+Scenario serial prepareRecordedDepositReversalPostings(DepositRequest request, context DepositPlan original,
+    context DepositFeePlan fee, DepositPostingLine[] recordedLines, DepositPostingLine[] originalLines, DepositReversalFeeDecision decision,
+    context DepositAccounting amounts, context DepositPostingTotals originalTotals,
+    DepositPostingLine[] reversed, context DepositPostingTotals totals) {
+    checkRecordedDepositLedger(recordedLines, originalLines);
+    classifyDepositAccounting(request, original, amounts);
+    checkDepositAccounting(amounts);
+    assessOriginalDepositPostingLines(amounts, fee, originalLines, originalTotals);
+    checkDepositPostings(originalTotals);
+    checkDepositFeeRefund(originalTotals, decision);
+    calculateDepositReversalPostings(originalLines, decision, reversed, totals);
+    checkDepositPostings(totals);
+}

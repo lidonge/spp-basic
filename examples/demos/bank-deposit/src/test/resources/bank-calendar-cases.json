@@ -1,0 +1,242 @@
+[
+  {
+    "name": "prepareBankCalendarCase01",
+    "start": 20240228,
+    "end": 20240301,
+    "convention": "ACT",
+    "expectedDays": 2,
+    "expectedCode": ""
+  },
+  {
+    "name": "prepareBankCalendarCase02",
+    "start": 20230228,
+    "end": 20230301,
+    "convention": "ACT",
+    "expectedDays": 1,
+    "expectedCode": ""
+  },
+  {
+    "name": "prepareBankCalendarCase03",
+    "start": 20000228,
+    "end": 20000301,
+    "convention": "ACT",
+    "expectedDays": 2,
+    "expectedCode": ""
+  },
+  {
+    "name": "prepareBankCalendarCase04",
+    "start": 19000228,
+    "end": 19000301,
+    "convention": "ACT",
+    "expectedDays": 1,
+    "expectedCode": ""
+  },
+  {
+    "name": "prepareBankCalendarCase05",
+    "start": 20261231,
+    "end": 20270101,
+    "convention": "ACT",
+    "expectedDays": 1,
+    "expectedCode": ""
+  },
+  {
+    "name": "prepareBankCalendarCase06",
+    "start": 20261007,
+    "end": 20261007,
+    "convention": "ACT",
+    "expectedDays": 0,
+    "expectedCode": ""
+  },
+  {
+    "name": "prepareBankCalendarCase07",
+    "start": 20260131,
+    "end": 20260228,
+    "convention": "ACT",
+    "expectedDays": 28,
+    "expectedCode": ""
+  },
+  {
+    "name": "prepareBankCalendarCase08",
+    "start": 20260101,
+    "end": 20270101,
+    "convention": "ACT",
+    "expectedDays": 365,
+    "expectedCode": ""
+  },
+  {
+    "name": "prepareBankCalendarCase09",
+    "start": 20260131,
+    "end": 20260228,
+    "convention": "360365",
+    "expectedDays": 28,
+    "expectedCode": ""
+  },
+  {
+    "name": "prepareBankCalendarCase10",
+    "start": 20260130,
+    "end": 20260131,
+    "convention": "360365",
+    "expectedDays": 0,
+    "expectedCode": ""
+  },
+  {
+    "name": "prepareBankCalendarCase11",
+    "start": 20260228,
+    "end": 20260331,
+    "convention": "360365",
+    "expectedDays": 32,
+    "expectedCode": ""
+  },
+  {
+    "name": "prepareBankCalendarCase12",
+    "start": 20240229,
+    "end": 20240331,
+    "convention": "360365",
+    "expectedDays": 31,
+    "expectedCode": ""
+  },
+  {
+    "name": "prepareBankCalendarCase13",
+    "start": 20260101,
+    "end": 20270101,
+    "convention": "360365",
+    "expectedDays": 360,
+    "expectedCode": ""
+  },
+  {
+    "name": "prepareBankCalendarCase14",
+    "start": 20261231,
+    "end": 20270101,
+    "convention": "360365",
+    "expectedDays": 1,
+    "expectedCode": ""
+  },
+  {
+    "name": "prepareBankCalendarCase15",
+    "start": 20261007,
+    "end": 20261007,
+    "convention": "360365",
+    "expectedDays": 0,
+    "expectedCode": ""
+  },
+  {
+    "name": "prepareBankCalendarCase16",
+    "start": 20260131,
+    "end": 20260228,
+    "convention": "360360",
+    "expectedDays": 28,
+    "expectedCode": ""
+  },
+  {
+    "name": "prepareBankCalendarCase17",
+    "start": 20260130,
+    "end": 20260131,
+    "convention": "360360",
+    "expectedDays": 0,
+    "expectedCode": ""
+  },
+  {
+    "name": "prepareBankCalendarCase18",
+    "start": 20260228,
+    "end": 20260331,
+    "convention": "360360",
+    "expectedDays": 32,
+    "expectedCode": ""
+  },
+  {
+    "name": "prepareBankCalendarCase19",
+    "start": 20240229,
+    "end": 20240331,
+    "convention": "360360",
+    "expectedDays": 31,
+    "expectedCode": ""
+  },
+  {
+    "name": "prepareBankCalendarCase20",
+    "start": 20260101,
+    "end": 20270101,
+    "convention": "360360",
+    "expectedDays": 360,
+    "expectedCode": ""
+  },
+  {
+    "name": "prepareBankCalendarCase21",
+    "start": 20261231,
+    "end": 20270101,
+    "convention": "360360",
+    "expectedDays": 1,
+    "expectedCode": ""
+  },
+  {
+    "name": "prepareBankCalendarCase22",
+    "start": 20261007,
+    "end": 20261007,
+    "convention": "360360",
+    "expectedDays": 0,
+    "expectedCode": ""
+  },
+  {
+    "name": "prepareBankCalendarCase23",
+    "start": 20260229,
+    "end": 20270101,
+    "convention": "ACT",
+    "expectedDays": 0,
+    "expectedCode": "EE374"
+  },
+  {
+    "name": "prepareBankCalendarCase24",
+    "start": 19000229,
+    "end": 20270101,
+    "convention": "ACT",
+    "expectedDays": 0,
+    "expectedCode": "EE374"
+  },
+  {
+    "name": "prepareBankCalendarCase25",
+    "start": 20261301,
+    "end": 20270101,
+    "convention": "ACT",
+    "expectedDays": 0,
+    "expectedCode": "EE374"
+  },
+  {
+    "name": "prepareBankCalendarCase26",
+    "start": 20260132,
+    "end": 20270101,
+    "convention": "ACT",
+    "expectedDays": 0,
+    "expectedCode": "EE374"
+  },
+  {
+    "name": "prepareBankCalendarCase27",
+    "start": 9991231,
+    "end": 20270101,
+    "convention": "ACT",
+    "expectedDays": 0,
+    "expectedCode": "EE374"
+  },
+  {
+    "name": "prepareBankCalendarCase28",
+    "start": 0,
+    "end": 20270101,
+    "convention": "ACT",
+    "expectedDays": 0,
+    "expectedCode": "EEC28"
+  },
+  {
+    "name": "prepareBankCalendarCase29",
+    "start": 20261008,
+    "end": 20261007,
+    "convention": "ACT",
+    "expectedDays": 0,
+    "expectedCode": "E1175"
+  },
+  {
+    "name": "prepareBankCalendarCase30",
+    "start": 20261007,
+    "end": 20261008,
+    "convention": "US30/360",
+    "expectedDays": 0,
+    "expectedCode": "EEC28"
+  }
+]
