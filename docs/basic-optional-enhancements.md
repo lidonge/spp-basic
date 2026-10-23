@@ -56,5 +56,21 @@ boundaries, or implement missing bank/Petstore business logic in Java.
   contain English public documentation rather than Chinese original drafts.
 - Homepage Source points to the published basic repository's examples directory.
 
-Implementation and verification are in progress. This document does not claim
-the complete example migration or website publication has passed.
+## Verified source acceptance (2026-10-23)
+
+- The integrated `examples/` tree passed `mvn -f examples/pom.xml clean test`:
+  Petstore 41 and bank 88 tests, zero failures, errors or skips.
+- The same demo sources passed `-Penhanced clean test` against separately supplied
+  enhanced artifacts: 129 tests, zero failures, errors or skips. Those artifacts
+  and their implementation sources are not part of this distribution.
+- Focused generator acceptance passed 17 tests, including absent/present optional
+  providers and actual generated persistence. Ten basic runtime boundary tests
+  passed, including stale-write rejection and preserved committed database facts.
+- A clean source export built all twelve `basic,basic-example` reactor modules
+  with `package -DskipTests`; this packaging result is not an additional test run.
+- The import checker verifies hashes, modes, English demo Markdown, local links
+  and retained MIT/book rights boundaries. Its five regression tests passed.
+
+These are local Java 17/H2 and generated-code checks, not production distributed
+transaction certification. Website deployment is separately verified by the
+maintainer and is not inferred from these source tests.
