@@ -1,5 +1,15 @@
 # S++ basic SDK
 
+## Start here
+
+- [S++ tutorial](docs/tutorial/spp-tutorial.md): check, generate, build and run your first scenario.
+- [SDK user guide](sdk-tools/docs/user-guide.md): editions, installation, CLI, VS Code and integration.
+- [Built-in technical services](sdk-tools/docs/builtin-technical-services.md): paid-edition configuration, replacement and transaction boundaries.
+
+Public documentation and release notes use English as their primary language.
+The technical-services manual describes optional components; it does not include
+or relicense their implementation source.
+
 S++ separates business behavior (SPP), application realization (APP) and physical
 deployment (PHY). This source package contains the language tools, business
 generator, basic JDBC runtime, offline command line, local language server and
@@ -66,3 +76,8 @@ node sdk-tools/release/verify-vsix.mjs --artifact spp-tools-basic-0.1.2.vsix \
 
 An ephemeral `local-test` signature requires `--allow-local-test` and establishes
 only the local test chain. It does not turn a review build into an official release.
+
+## Source ownership and downstream integrations
+
+See [repository responsibilities](docs/repository-role.md). Basic fixes are
+maintained here; downstream commercial workspaces consume a pinned revision.

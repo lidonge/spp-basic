@@ -24,3 +24,7 @@ user business sources or third-party dependencies.
 Download artifacts through a trusted release channel and verify release
 signatures against an independently trusted public key. A locally calculated
 bundle hash identifies content; it does not establish who published it.
+
+Downstream packages can reuse these sources and supply their own extension
+metadata with `tools/package-vsix.js --manifest /path/to/package.json`. The
+compiler requirements and basic-edition component checks still apply.

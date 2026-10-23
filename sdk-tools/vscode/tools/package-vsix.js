@@ -39,12 +39,12 @@ function validateReleaseConfiguration(release) {
   }
 }
 
-async function stageExtension({ extensionRoot, cliJar, languageServerJar, preview = false, basic = false, jarExecutable = 'jar' }) {
+async function stageExtension({ extensionRoot, cliJar, languageServerJar, preview = false, basic = false, jarExecutable = 'jar', manifestPath }) {
   if (basic && !cliJar) throw new Error('Basic packaging requires --cli-jar from the basic CLI build.');
   if (!preview && !cliJar) throw new Error('Release packaging requires --cli-jar from a trusted CLI build.');
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'spp-vsix-'));
   try {
-    const manifest = JSON.parse(await fs.readFile(path.join(extensionRoot, 'package.json'), 'utf8'));
+    const manifest = JSON.parse(await fs.readFile(manifestPath || path.join(extensionRoot, 'package.json'), 'utf8'));
     if (preview) {
       manifest.name = 'spp-tools-preview';
       manifest.displayName = 'S++ Tools (development preview)';
@@ -133,13 +133,13 @@ async function main(argumentsList) {
     const argument = argumentsList[index];
     if (argument === '--basic') options.basic = true;
     else if (argument === '--preview') options.preview = true;
-    else if (['--cli-jar', '--language-server-jar', '--vsce', '--out'].includes(argument) && argumentsList[index + 1]
+    else if (['--cli-jar', '--language-server-jar', '--vsce', '--out', '--manifest'].includes(argument) && argumentsList[index + 1]
       && !argumentsList[index + 1].startsWith('--')) options[argument] = argumentsList[++index];
-    else throw new Error('Usage: node tools/package-vsix.js --vsce /path/to/vsce [--preview] [--basic] [--cli-jar FILE] [--language-server-jar FILE] [--out FILE]');
+    else throw new Error('Usage: node tools/package-vsix.js --vsce /path/to/vsce [--preview] [--basic] [--cli-jar FILE] [--language-server-jar FILE] [--out FILE] [--manifest FILE]');
   }
   if (!options['--vsce']) throw new Error('Supply the official @vscode/vsce JavaScript entry point with --vsce.');
   const extensionRoot = path.resolve(__dirname, '..');
-  const staged = await stageExtension({ extensionRoot, cliJar: options['--cli-jar'], languageServerJar: options['--language-server-jar'], preview: options.preview, basic: options.basic });
+  const staged = await stageExtension({ extensionRoot, cliJar: options['--cli-jar'], languageServerJar: options['--language-server-jar'], preview: options.preview, basic: options.basic, manifestPath: options['--manifest'] });
   try {
     const output = options['--out'] ? path.resolve(options['--out'])
       : path.join(extensionRoot, 'dist', `${staged.manifest.name}-${staged.manifest.version}.vsix`);

@@ -137,3 +137,27 @@ test('basic packaging rejects licensed CLI and basic without a CLI', async () =>
   await assert.rejects(stageExtension({ extensionRoot, basic: true }), /requires --cli-jar/);
   if (existsSync(builtJar)) await assert.rejects(stageExtension({ extensionRoot, basic: true, cliJar: builtJar }), /must contain the CLI|refuses commercial/);
 });
+
+test('downstream manifest reuses shared sources without changing the basic manifest', async () => {
+  const temporary = await fs.mkdtemp(path.join(os.tmpdir(), 'spp-downstream-manifest-'));
+  const original = await fs.readFile(path.join(extensionRoot, 'package.json'), 'utf8');
+  const manifest = JSON.parse(original);
+  manifest.publisher = 'downstream-test';
+  manifest.contributes.configuration.properties['spp.cliJar'].default = '/configured/member.jar';
+  const manifestPath = path.join(temporary, 'member.json');
+  await fs.writeFile(manifestPath, JSON.stringify(manifest));
+  let staged;
+  try {
+    staged = await stageExtension({ extensionRoot, preview: true, manifestPath });
+    assert.equal(staged.manifest.publisher, 'downstream-test');
+    assert.equal(staged.manifest.contributes.configuration.properties['spp.cliJar'].default, '/configured/member.jar');
+    assert.deepEqual(await fs.readFile(path.join(staged.directory, 'src/extension.js')),
+      await fs.readFile(path.join(extensionRoot, 'src/extension.js')));
+    assert.equal(await fs.readFile(path.join(extensionRoot, 'package.json'), 'utf8'), original);
+    assert.equal(existsSync(path.join(staged.directory, 'member.json')), false);
+    await assert.rejects(stageExtension({ extensionRoot, manifestPath }), /requires --cli-jar/);
+  } finally {
+    if (staged) await fs.rm(staged.directory, { recursive: true, force: true });
+    await fs.rm(temporary, { recursive: true, force: true });
+  }
+});

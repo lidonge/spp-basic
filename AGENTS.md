@@ -18,3 +18,9 @@ provenance and actual tests. Do not invent model versions or execution evidence.
 
 Run the applicable Maven/Node checks and describe failures and untested limits
 honestly. A local H2 test is not proof of production distributed recovery.
+
+## Public language
+
+Write new public tutorials, SDK manuals, example explanations and release notes
+in English first. Keep one authoritative English version; translations are
+optional. Preserve this convention in the exported basic distribution.

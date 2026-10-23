@@ -1,30 +1,71 @@
-# S++ 贡献规范
+# Contributing to S++
 
-官方仓库接受需求、规范、验收用例、缺陷复现，以及遵循仓库 AGENTS 规范的 Agent 所完成的 AI 实现贡献。不接受人工直接修改实现代码的提交。人工可以描述问题、约束、预期结果、边界条件和测试数据；实现、实现修复和测试代码由 Agent 完成。
+The official repository accepts requirements, specifications, acceptance cases,
+bug reproductions and AI implementation contributions produced by an Agent that
+follows the applicable AGENTS instructions. Direct human edits to implementation
+code are not accepted. Humans may describe problems, constraints, expected
+behavior, edge cases and test data; Agents implement the code, fixes and tests.
 
-## 需求与验收
+## Public language
 
-替代技术实现首先核对[公开扩展契约](EXTENSION-CONTRACTS.md)，在实现记录中引用适用的修订号与需求标识。
+English is the primary language for public documentation, tutorials, SDK manuals,
+example explanations and release notes. New public material is authored in
+English first. New public-release UI text, CLI help and user-facing diagnostics
+should also default to English; preserve language keywords and API identifiers.
+Translations may supplement it and must identify their source
+revision; the English document remains authoritative. Existing historical notes
+need not be translated as part of unrelated changes. This policy does not require
+contributors or maintainers to communicate privately in English.
 
-每项实现须关联版本固定的需求或缺陷记录，说明现状、预期行为、异常情况和可执行验收条件。修改语言语义、兼容协议、发行边界和许可时，先明确对应规范；不能以一次测试通过替代这些决定。
+## Requirements and acceptance
 
-Agent 须读取工作目录适用的 `AGENTS.md` 及其引用的规范，在独立分支完成实现和必要测试。遇到验收失败，更新需求理解或实现并重新验证；不得人工修补实现文件后继续声称该提交完全由 Agent 实现。第三方依赖保持真实的上游来源和许可证，不冒充 AI 原创代码。
+Before replacing a technical implementation, consult the versioned
+[public extension contracts](EXTENSION-CONTRACTS.md) and cite the relevant
+revision and requirement identifiers in the implementation record.
 
-## 实现证据
+Every implementation must reference a versioned requirement or defect record and
+state current behavior, expected behavior, failure cases and executable acceptance
+criteria. Establish the applicable specification before changing language
+semantics, compatibility protocols, distribution boundaries or licensing. Passing
+one test is not a substitute for these decisions.
 
-实现 PR 应包含以下可核验信息，不上传密钥、完整私人会话或客户材料：
+Agents must read the applicable `AGENTS.md` and referenced specifications, work on
+an independent branch, and run the necessary checks. On acceptance failure,
+revise the understanding or implementation and verify again. Do not manually
+patch implementation files and continue claiming the result was entirely
+Agent-produced. Preserve the real upstream origin and licenses of third-party
+code rather than presenting it as original AI work.
 
-- 需求标识及版本、基线提交与待合并提交。
-- 适用 AGENTS 文件及其版本或哈希。
-- Agent 工具、可取得的版本和实际模型标识；无法取得的信息明确标为未知。
-- 可关联到该次实现的受控执行记录或 CI 运行地址。
-- 实际执行的验证命令、结果和未覆盖范围，以及相关制品的摘要。
-- 第三方代码、模板片段与依赖的来源和许可声明。
+## Implementation evidence
 
-作者名称、`Co-authored-by`、`Generated-by` 或贡献者自行填写的 JSON 只是声明，不能证明实现来源。官方只直接合并来源可核验且通过验收的 Agent 实现；来源不可核验的外部补丁转为需求和复现材料，由官方受控 Agent 重新实现。通过来源核验也不等于代码正确，仍须经过独立验收与兼容性检查。
+An implementation PR must provide verifiable information without disclosing
+secrets, complete private conversations or customer material:
 
-## 许可与维护
+- Requirement identifier/version, baseline commit and proposed commit.
+- Applicable AGENTS files and their revision or hash.
+- Agent tool, available version and actual model identifier; mark unavailable
+  information as unknown.
+- A controlled execution record or CI run associated with the implementation.
+- Commands actually executed, their results, untested limits and relevant
+  artifact digests.
+- Sources and license notices for third-party code, templates and dependencies.
 
-本规则是官方仓库的贡献接受政策。它不限制第三方依 Apache-2.0 对已开放版本进行人工修改、分叉、再分发或商业使用。本仓库自有代码使用 Apache-2.0；第三方文件及依赖遵循各自许可。商业实现独立交付，不包含在本源码树中。
+Author names, `Co-authored-by`, `Generated-by` and contributor-written JSON are
+claims, not proof of provenance. The official repository directly merges only
+verifiable Agent implementations that pass acceptance. For external patches with
+unverifiable origin, retain the requirement/reproduction and have the official
+controlled Agent workflow implement it. Verified provenance still does not prove
+correctness; independent acceptance and compatibility review remain necessary.
 
-社区日常维护由维护者另行部署的 Codex 定时任务和运行容器承载。本次仅落地贡献规则，未创建或启用任何维护调度。
+## Licensing and maintenance
+
+This is the official repository's contribution acceptance policy. It does not
+restrict third parties from manually modifying, forking, redistributing or
+commercially using code granted under Apache-2.0.
+
+The project-owned code in this basic source distribution uses Apache-2.0;
+third-party files and dependencies retain their own licenses. Commercial
+implementations are distributed separately and are absent from this source tree.
+
+Maintainers arrange community scheduling and maintenance containers separately.
+These contribution rules do not create or enable any scheduled automation.

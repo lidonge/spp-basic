@@ -1,0 +1,23 @@
+domain ledger;
+
+Role Facts {
+    int amount;
+}
+
+atomic calculate prepare(Facts) {
+    Facts.amount = 7;
+}
+
+atomic calculate twice(Facts) {
+    Facts.amount *= 2;
+}
+
+atomic check verifyAmount(Facts) {
+    require(Facts.amount == 14, "The amount must be 14");
+}
+
+Scenario serial preview(Facts) {
+    prepare;
+    twice;
+    verifyAmount;
+}
