@@ -57,3 +57,10 @@ key locations when only the implementation moves. Default keys still require
 local-test opt-in and cannot authenticate production releases. Three independent
 verifier tests passed, including these trust-boundary checks; no private signing
 key or production trust material is added.
+
+Non-basic editor assemblies now carry the shared editor's original Apache-2.0
+license and notice under `licenses/`, with a component-scope explanation. A
+member descriptor's own terms do not replace those source-component notices.
+The original basic package layout and its commercial-component rejection checks
+are preserved. The editor suite was rerun after this packaging change: 56 passed,
+two member-JAR-specific skips, zero failures.

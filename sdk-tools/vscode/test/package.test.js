@@ -49,7 +49,7 @@ test('preview packaging is clearly named and contains only supported extension f
     assert.equal(await fs.readFile(path.join(staged.directory, 'src/extension.js'), 'utf8'),
       await fs.readFile(path.join(extensionRoot, 'src/extension.js'), 'utf8'));
     assert.deepEqual((await fs.readdir(staged.directory)).sort(),
-      ['README.md', 'client-dist', 'language-configuration.json', 'package.json', 'snippets', 'src', 'syntaxes']);
+      ['README.md', 'client-dist', 'language-configuration.json', 'licenses', 'package.json', 'snippets', 'src', 'syntaxes']);
     for (const resource of ['language-configuration.json', 'syntaxes/spp.tmLanguage.json', 'snippets/spp.json'])
       assert.equal(await fs.readFile(path.join(staged.directory, resource), 'utf8'),
         await fs.readFile(path.join(extensionRoot, resource), 'utf8'));
@@ -143,6 +143,7 @@ test('downstream manifest reuses shared sources without changing the basic manif
   const original = await fs.readFile(path.join(extensionRoot, 'package.json'), 'utf8');
   const manifest = JSON.parse(original);
   manifest.publisher = 'downstream-test';
+  manifest.license = 'UNLICENSED';
   manifest.contributes.configuration.properties['spp.cliJar'].default = '/configured/member.jar';
   const manifestPath = path.join(temporary, 'member.json');
   await fs.writeFile(manifestPath, JSON.stringify(manifest));
@@ -150,6 +151,11 @@ test('downstream manifest reuses shared sources without changing the basic manif
   try {
     staged = await stageExtension({ extensionRoot, preview: true, manifestPath });
     assert.equal(staged.manifest.publisher, 'downstream-test');
+    assert.equal(staged.manifest.license, 'UNLICENSED');
+    assert.deepEqual(await fs.readFile(path.join(staged.directory, 'licenses/spp-basic-LICENSE.txt')),
+      await fs.readFile(path.join(extensionRoot, 'LICENSE.basic')));
+    assert.deepEqual(await fs.readFile(path.join(staged.directory, 'licenses/spp-basic-NOTICE.txt')),
+      await fs.readFile(path.join(extensionRoot, 'NOTICE.basic')));
     assert.equal(staged.manifest.contributes.configuration.properties['spp.cliJar'].default, '/configured/member.jar');
     assert.deepEqual(await fs.readFile(path.join(staged.directory, 'src/extension.js')),
       await fs.readFile(path.join(extensionRoot, 'src/extension.js')));

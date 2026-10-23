@@ -65,6 +65,7 @@ async function stageExtension({ extensionRoot, cliJar, languageServerJar, previe
     delete manifest.devDependencies;
     manifest.files = ['src/**', 'client-dist/**', 'syntaxes/**', 'snippets/**', 'language-configuration.json', 'README.md', 'package.json'];
     if (basic) manifest.files.push('LICENSE', 'NOTICE');
+    else manifest.files.push('licenses/**');
     if (cliJar || languageServerJar) manifest.files.push('server/**');
     await fs.writeFile(path.join(directory, 'package.json'), JSON.stringify(manifest, null, 2) + '\n');
     await fs.cp(path.join(extensionRoot, 'src'), path.join(directory, 'src'), { recursive: true });
@@ -80,6 +81,12 @@ async function stageExtension({ extensionRoot, cliJar, languageServerJar, previe
     if (basic) {
       await fs.copyFile(path.join(extensionRoot, 'LICENSE.basic'), path.join(directory, 'LICENSE'));
       await fs.copyFile(path.join(extensionRoot, 'NOTICE.basic'), path.join(directory, 'NOTICE'));
+    } else {
+      const licenses = path.join(directory, 'licenses');
+      await fs.mkdir(licenses);
+      await fs.copyFile(path.join(extensionRoot, 'LICENSE.basic'), path.join(licenses, 'spp-basic-LICENSE.txt'));
+      await fs.copyFile(path.join(extensionRoot, 'NOTICE.basic'), path.join(licenses, 'spp-basic-NOTICE.txt'));
+      await fs.writeFile(path.join(licenses, 'README.txt'), 'These notices apply to the shared S++ editor source components. Separately distributed member CLI and commercial components retain their own terms. Node dependency notices remain in client-dist/licenses; Java dependency notices must accompany their corresponding distributions.\n');
     }
     if (cliJar) {
       const mainClass = basic ? 'com/servpp/sdk/basic/Main.class' : 'com/servpp/sdk/Main.class';
