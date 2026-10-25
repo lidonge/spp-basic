@@ -509,6 +509,12 @@ public class JdbcObjectRepository implements ObjectRepository {
             return null;
         }
         Class<?> type = value.getClass();
+        var storage = appDdlCatalog == null ? null : appDdlCatalog.roleStorage().get(type.getSimpleName());
+        if ("@storageIdentity".equals(propertyName)
+                || storage != null && storage.independent() && storage.primaryKey().equalsIgnoreCase(propertyName)) {
+            return RepositoryParticipantSnapshots.objectIdentity(value, type.getSimpleName())
+                    .orElseThrow(() -> new IllegalStateException("PERSISTENCE_READ_IDENTITY_REQUIRED"));
+        }
         for (Method method : type.getMethods()) {
             if (method.getParameterCount() == 0 && methodNameMatches(method.getName(), propertyName)) {
                 try {

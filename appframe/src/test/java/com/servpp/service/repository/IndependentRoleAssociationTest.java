@@ -100,6 +100,12 @@ public class IndependentRoleAssociationTest {
         assertEquals(List.of(CompositeObjectId.encode(List.of(firstId,"1"))), nativeReader.findObjectIdsBy("Extension","trial.buyer.@storageIdentity",firstId));
         assertTrue(nativeReader.findObjectIdsBy("Extension","trial.buyer.@storageIdentity",secondId).isEmpty());
         assertEquals(List.of(firstId),nativeReader.findObjectIdsBy("Account","@storageIdentity",firstId));
+        transaction(() -> {
+            assertEquals(1,repository.findByForUpdate("Extension",List.of("trial.buyer.@storageIdentity"),List.of(firstId),Extension.class).size());
+            assertTrue(repository.findByForUpdate("Extension",List.of("trial.buyer.@storageIdentity"),List.of(secondId),Extension.class).isEmpty());
+            assertEquals(1,repository.findByForUpdate("Extension",List.of("trial.buyer.accountRowId"),List.of(firstId),Extension.class).size());
+            assertEquals(1,repository.findByForUpdate("Account",List.of("@storageIdentity"),List.of(firstId),Account.class).size());
+        });
         String extensionId=CompositeObjectId.encode(List.of(firstId,"1"));var reopened=repository(catalog);var reread=reopened.require("Extension",extensionId,Extension.class);reread.months=2;
         write(reopened,RepositoryWriteRule.Operation.UPDATE,"Extension",extensionKeys,reread);assertEquals(2,repository.require("Extension",extensionId,Extension.class).months);
         write(reopened,RepositoryWriteRule.Operation.DELETE,"Extension",extensionKeys,reread);write(repository,RepositoryWriteRule.Operation.DELETE,"Registration",registrationKeys,loaded);
