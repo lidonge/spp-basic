@@ -21,6 +21,7 @@ import com.servpp.lang.models.app.ScopeItem;
 import com.servpp.lang.models.app.ObjectSnapshotRule;
 import com.servpp.lang.models.app.RepositoryHydrationRule;
 import com.servpp.lang.models.app.RepositoryHydrationRule.KeyTarget;
+import com.servpp.lang.models.app.RepositoryHydrationRule.KeyTerm;
 import com.servpp.lang.models.app.RuleBlock;
 import com.servpp.lang.models.app.SppFieldReference;
 import com.servpp.lang.models.app.TccReservationRule;
@@ -29,8 +30,10 @@ import org.antlr.v4.runtime.ParserRuleContext;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -486,6 +489,9 @@ public interface IScopeHandler extends IApplicationHandler {
                 targets,
                 com.servpp.lang.general.NameUtil.normalizeParticipantReference(ctx.qualifiedName().getText()),
                 ctx.repositoryUsing() == null ? null : ctx.repositoryUsing().Identifier().getText());
+        if (ctx.repositoryKeyInterception() != null) {
+            rule = rule.withKeyRewrites(repositoryKeyRewrites(ctx.repositoryKeyInterception(), rule));
+        }
         scopeItem.addRepositoryHydrationRule(rule);
         if (ctx.children.stream().anyMatch(child -> "for".equals(child.getText()))) {
             scopeItem.declareRepositoryReadLock();
@@ -498,6 +504,55 @@ public interface IScopeHandler extends IApplicationHandler {
 
     @Override
     default void exitRepositoryModifier(AppParser.RepositoryModifierContext ctx) {
+    }
+
+    @Override default void enterRepositoryKeyInterception(AppParser.RepositoryKeyInterceptionContext ctx) { }
+    @Override default void exitRepositoryKeyInterception(AppParser.RepositoryKeyInterceptionContext ctx) { }
+    @Override default void enterRepositoryKeyRewrite(AppParser.RepositoryKeyRewriteContext ctx) { }
+    @Override default void exitRepositoryKeyRewrite(AppParser.RepositoryKeyRewriteContext ctx) { }
+    @Override default void enterRepositoryKeyTerm(AppParser.RepositoryKeyTermContext ctx) { }
+    @Override default void exitRepositoryKeyTerm(AppParser.RepositoryKeyTermContext ctx) { }
+
+    private Map<String, List<KeyTerm>> repositoryKeyRewrites(AppParser.RepositoryKeyInterceptionContext ctx,
+                                                             RepositoryHydrationRule rule) {
+        Map<String, List<KeyTerm>> rewrites = new LinkedHashMap<>();
+        for (var assignment : ctx.repositoryKeyRewrite()) {
+            String path = assignment.qualifiedName().getText();
+            validateTextRepositoryKey(assignment, rule, path);
+            List<KeyTerm> expression = new ArrayList<>();
+            for (var term : assignment.repositoryKeyTerm()) {
+                boolean literal = term.StringLiteral() != null;
+                String text = term.getText();
+                if (!literal) validateTextRepositoryKey(term, rule, text);
+                expression.add(new KeyTerm(text, literal));
+            }
+            if (rewrites.putIfAbsent(path, List.copyOf(expression)) != null) {
+                logSppError(assignment, "Duplicate intercepted repository key " + path + ".");
+            }
+        }
+        return rewrites;
+    }
+
+    private void validateTextRepositoryKey(ParserRuleContext ctx, RepositoryHydrationRule rule, String path) {
+        var keys = rule.keyTargets().stream().filter(key -> key.getRepositoryObjectIdPath().equals(path)).toList();
+        if (keys.size() != 1) {
+            logSppError(ctx, "Repository key interception requires a unique declared key: " + path + ".");
+            return;
+        }
+        KeyTarget key = keys.get(0);
+        var object = getSppDomian().getSppClass(key.getObjectType());
+        if (key.isPlatform() || key.isSingleton() || !(object instanceof SppClass objectClass)
+                || !isTextRepositoryField(objectClass, key.getObjectIdPath())) {
+            logSppError(ctx, "Repository key interception requires a String key: " + path + ".");
+        }
+    }
+
+    private static boolean isTextRepositoryField(SppClass object, String path) {
+        String[] member = path.split("\\.", 2);
+        SppField field = object.getField(member[0]);
+        if (field == null || field.getArrayDimension() != 0 || field.getType() == null) return false;
+        return member.length == 1 ? "String".equals(field.getType().getName())
+                : field.getType() instanceof SppClass nested && isTextRepositoryField(nested, member[1]);
     }
 
     @Override
@@ -874,7 +929,8 @@ public interface IScopeHandler extends IApplicationHandler {
             changed = changed || !responseMethodName.equals(rule.responseMethodName());
             if (changed) {
                 rules.set(i, new RepositoryHydrationRule(rule.objectType(), normalizedTargets,
-                        responseMethodName, rule.repositoryName(), rule.appDdlInferred(), rule.sourceHint()));
+                        responseMethodName, rule.repositoryName(), rule.appDdlInferred(), rule.sourceHint(),
+                        rule.keyRewrites()));
             }
         }
     }

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.servpp.sdk.CompilationException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import org.apache.maven.plugin.MojoExecutionException;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -44,5 +45,53 @@ public class BasicCompilerTest {
         assertEquals(true,report.get("checked"));assertFalse(Files.exists(output));
         try{Main.run(new String[]{"check","--source",source.toString(),"--environment","../invalid"});fail();}
         catch(CompilationException expected){assertEquals("INVALID_ARGUMENT",expected.code());}
+    }
+
+    @Test
+    public void repositoryKeyInterceptionChecksDeclaredTextKeys() throws Exception {
+        Path source = temporary.newFolder().toPath();
+        Files.writeString(source.resolve("catalog.spp"), """
+                domain catalog;
+                Entity Record { String category; String code; int regionNumber; }
+                atomic query lookup(Record selection, Record[] matches);
+                Scenario serial search(Record selection, Record[] matches) { lookup; }
+                """);
+        Path app = source.resolve("catalog.app");
+        String binding = """
+                domain catalog;
+                scope {
+                    local {
+                        repository(argument(0, Record.category), argument(0, Record.code),
+                            argument(0, Record.regionNumber), matches) intercept key {
+                            %s
+                        } lookup;
+                    }
+                }
+                """;
+        String[] check = {"check", "--source", source.toString()};
+        Files.writeString(app, binding.formatted("""
+                category = "PHS\\u0022\\u000a";
+                code = "00000000" + category;
+                """));
+        Path output = temporary.getRoot().toPath().resolve("key-interception");
+        Main.run(new String[]{"generate", "--source", source.toString(), "--output", output.toString()});
+        String generated = Files.readString(
+                output.resolve("src/main/java/com/servpp/generated/catalog/service/SimpleLookup.java"));
+        assertTrue(generated.contains("keys -> \"PHS\\042\\012\""));
+        for (String invalid : java.util.List.of("""
+                absent = "PHS";
+                """, """
+                code = absent;
+                """, """
+                category = "PHS";
+                category = "DUP";
+                """, """
+                regionNumber = "V1";
+                """, """
+                code = "PREFIX" + regionNumber;
+                """)) {
+            Files.writeString(app, binding.formatted(invalid));
+            assertThrows(invalid, MojoExecutionException.class, () -> Main.run(check));
+        }
     }
 }

@@ -1612,6 +1612,7 @@ public class SppService extends SppClass{
                 com.servpp.lang.models.app.RepositoryHydrationRule rule = rules.get(i);
                 method.append("                ");
                 appendRepositoryHydrationRule(method, rule);
+                appendRepositoryKeyRewrites(method, rule);
                 if (scopeItem.isOptionalRepository()) { method.append(".asOptional()"); }
                 var readTarget = serviceBody.getQualifieField(rule.responseMethodName());
                 if (readTarget != null) method.append(".transactionRead(").append(!hasQuantumFields(readTarget.getType())).append(")");
@@ -1633,6 +1634,50 @@ public class SppService extends SppClass{
         for (int index = 0; index < parameters.size(); index++) if (parameters.get(index).getName().equals(path[0]))
             return "@participant:" + index + ":" + (path.length == 1 ? "" : path[1]);
         throw new IllegalStateException("Undefined query participant " + rule.responseMethodName());
+    }
+
+    private void appendRepositoryKeyRewrites(StringBuilder method,
+                                             com.servpp.lang.models.app.RepositoryHydrationRule rule) {
+        if (rule.keyRewrites().isEmpty()) return;
+        var entries = new java.util.StringJoiner(", ", ".interceptKeys(java.util.Map.ofEntries(", "))");
+        for (var target : rule.keyTargets()) {
+            String path = target.getRepositoryObjectIdPath();
+            var expression = rule.keyRewrites().get(path);
+            if (expression == null) continue;
+            var terms = new java.util.StringJoiner(" + ");
+            for (var term : expression) {
+                terms.add(term.literal() ? repositoryKeyJavaLiteral(term.text()) : "keys.apply(\"" + term.text() + "\")");
+            }
+            entries.add("java.util.Map.entry(\"" + path + "\", keys -> " + terms + ")");
+        }
+        method.append(entries);
+    }
+
+    private String repositoryKeyJavaLiteral(String token) {
+        StringBuilder java = new StringBuilder(token.length());
+        for (int index = 0; index < token.length(); index++) {
+            char ch = token.charAt(index);
+            if (ch == '\\') {
+                int start = index++;
+                if (token.charAt(index) == 'u') {
+                    int end = index + 5;
+                    int value = Integer.parseInt(token.substring(index + 1, end), 16);
+                    // Java expands Unicode escapes before it recognizes string literals.
+                    if (value < 256) java.append(String.format("\\%03o", value));
+                    else java.append(token, start, end);
+                    index = end - 1;
+                } else {
+                    java.append(token, start, index + 1);
+                }
+            } else if (ch == '\n') {
+                java.append("\\n");
+            } else if (ch == '\r') {
+                java.append("\\r");
+            } else {
+                java.append(ch);
+            }
+        }
+        return java.toString();
     }
 
     private void appendRepositoryHydrationRule(StringBuilder method,

@@ -1,18 +1,32 @@
 package com.servpp.lang.models.app;
 
 import java.util.List;
+import java.util.Map;
 
 public record RepositoryHydrationRule(String objectType,
                                       List<KeyTarget> keyTargets,
                                       String responseMethodName, String repositoryName,
                                       boolean appDdlInferred,
-                                      String sourceHint) {
+                                      String sourceHint,
+                                      Map<String, List<KeyTerm>> keyRewrites) {
     public RepositoryHydrationRule {
         if ((objectType == null || objectType.isBlank()) && keyTargets != null && !keyTargets.isEmpty()) {
             objectType = keyTargets.get(0).getObjectType();
         }
         keyTargets = keyTargets == null ? List.of() : List.copyOf(keyTargets);
         sourceHint = sourceHint == null || sourceHint.isBlank() ? null : sourceHint;
+        keyRewrites = Map.copyOf(keyRewrites);
+    }
+
+    public RepositoryHydrationRule(String objectType, List<KeyTarget> keyTargets,
+                                   String responseMethodName, String repositoryName,
+                                   boolean appDdlInferred, String sourceHint) {
+        this(objectType, keyTargets, responseMethodName, repositoryName, appDdlInferred, sourceHint, Map.of());
+    }
+
+    public RepositoryHydrationRule withKeyRewrites(Map<String, List<KeyTerm>> rewrites) {
+        return new RepositoryHydrationRule(objectType, keyTargets, responseMethodName, repositoryName,
+                appDdlInferred, sourceHint, rewrites);
     }
 
     public RepositoryHydrationRule(List<KeyTarget> keyTargets,
@@ -74,6 +88,8 @@ public record RepositoryHydrationRule(String objectType,
         int index = objectPath.indexOf('.');
         return index < 0 ? "" : objectPath.substring(index + 1);
     }
+
+    public record KeyTerm(String text, boolean literal) { }
 
     public record KeyTarget(int argumentIndex, String objectPath, String repositoryObjectPath) {
         public KeyTarget(int argumentIndex, String objectPath) {

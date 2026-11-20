@@ -11,8 +11,10 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import com.servpp.service.DelegatingService;
@@ -66,16 +68,29 @@ public final class RepositoryHydratingServiceProxy {
         }
     }
 
+    @FunctionalInterface
+    public interface KeyExpression {
+        String resolve(Function<String, String> originalKey);
+    }
+
     public record HydrationRule(String methodName, String objectType, List<KeyTarget> keyTargets,
                                 String responseMethodName, String repositoryName, boolean appDdlInferred,
-                                String sourceHint, boolean optional, boolean readLocked, Boolean ordinaryRead) {
+                                String sourceHint, boolean optional, boolean readLocked, Boolean ordinaryRead,
+                                Map<String, KeyExpression> keyRewrites) {
+        public HydrationRule(String methodName, String objectType, List<KeyTarget> keyTargets,
+                             String responseMethodName, String repositoryName, boolean appDdlInferred,
+                             String sourceHint, boolean optional, boolean readLocked, Boolean ordinaryRead) {
+            this(methodName, objectType, keyTargets, responseMethodName, repositoryName, appDdlInferred,
+                    sourceHint, optional, readLocked, ordinaryRead, Map.of());
+        }
         public HydrationRule(String methodName, String objectType, List<KeyTarget> keyTargets,
                              String responseMethodName, String repositoryName, boolean appDdlInferred,
                              String sourceHint, boolean optional, boolean readLocked) {
             this(methodName, objectType, keyTargets, responseMethodName, repositoryName, appDdlInferred, sourceHint, optional, readLocked, null);
         }
         public HydrationRule transactionRead(boolean ordinaryParticipant) {
-            return new HydrationRule(methodName, objectType, keyTargets, responseMethodName, repositoryName, appDdlInferred, sourceHint, optional, readLocked, ordinaryParticipant);
+            return new HydrationRule(methodName, objectType, keyTargets, responseMethodName, repositoryName,
+                    appDdlInferred, sourceHint, optional, readLocked, ordinaryParticipant, keyRewrites);
         }
         public HydrationRule(String methodName, String objectType, List<KeyTarget> keyTargets,
                              String responseMethodName, String repositoryName, boolean appDdlInferred,
@@ -87,10 +102,16 @@ public final class RepositoryHydratingServiceProxy {
             this(methodName,objectType,keyTargets,responseMethodName,repositoryName,appDdlInferred,sourceHint,false);
         }
         public HydrationRule asOptional() {
-            return new HydrationRule(methodName,objectType,keyTargets,responseMethodName,repositoryName,appDdlInferred,sourceHint,true,readLocked,ordinaryRead);
+            return new HydrationRule(methodName, objectType, keyTargets, responseMethodName, repositoryName,
+                    appDdlInferred, sourceHint, true, readLocked, ordinaryRead, keyRewrites);
         }
         public HydrationRule forUpdate() {
-            return new HydrationRule(methodName,objectType,keyTargets,responseMethodName,repositoryName,appDdlInferred,sourceHint,optional,true,ordinaryRead);
+            return new HydrationRule(methodName, objectType, keyTargets, responseMethodName, repositoryName,
+                    appDdlInferred, sourceHint, optional, true, ordinaryRead, keyRewrites);
+        }
+        public HydrationRule interceptKeys(Map<String, KeyExpression> rewrites) {
+            return new HydrationRule(methodName, objectType, keyTargets, responseMethodName, repositoryName,
+                    appDdlInferred, sourceHint, optional, readLocked, ordinaryRead, rewrites);
         }
         public HydrationRule {
             if (readLocked && (responseMethodName == null || responseMethodName.isBlank())) {
@@ -100,6 +121,7 @@ public final class RepositoryHydratingServiceProxy {
                 objectType = keyTargets.get(0).objectType();
             }
             keyTargets = keyTargets == null ? List.of() : List.copyOf(keyTargets);
+            keyRewrites = Map.copyOf(keyRewrites);
             sourceHint = sourceHint == null || sourceHint.isBlank() ? null : sourceHint;
         }
 
@@ -531,12 +553,33 @@ public final class RepositoryHydratingServiceProxy {
             }
             List<Object> values = new ArrayList<>();
             for (HydrationRule.KeyTarget target : rule.keyTargets()) {
-                values.add("@storageIdentity".equals(target.objectIdPath())
-                        ? RepositoryParticipantSnapshots.objectIdentity(argument(args,target.argumentIndex()),target.objectType())
-                            .orElseThrow(() -> new IllegalStateException("PERSISTENCE_READ_IDENTITY_REQUIRED"))
-                        : readRequiredValue(argument(args, target.argumentIndex()), target.objectIdPath()));
+                var rewrite = rule.keyRewrites().get(target.repositoryObjectIdPath());
+                if (rewrite == null) {
+                    values.add(originalKeyValue(args, target));
+                    continue;
+                }
+                String rewritten = rewrite.resolve(path -> originalTextKeyValue(rule, args, path));
+                if (rewritten == null || rewritten.isBlank()) {
+                    throw new IllegalStateException(target.repositoryObjectIdPath() + " is required for repository query");
+                }
+                values.add(rewritten);
             }
             return List.copyOf(values);
+        }
+
+        private static String originalTextKeyValue(HydrationRule rule, Object[] args, String path) {
+            HydrationRule.KeyTarget source = rule.keyTargets().stream()
+                    .filter(target -> path.equals(target.repositoryObjectIdPath()))
+                    .findFirst().orElseThrow(() -> new IllegalStateException("Unknown repository key " + path));
+            return (String) originalKeyValue(args, source);
+        }
+
+        private static Object originalKeyValue(Object[] args, HydrationRule.KeyTarget target) {
+            Object source = argument(args, target.argumentIndex());
+            return "@storageIdentity".equals(target.objectIdPath())
+                    ? RepositoryParticipantSnapshots.objectIdentity(source, target.objectType())
+                        .orElseThrow(() -> new IllegalStateException("PERSISTENCE_READ_IDENTITY_REQUIRED"))
+                    : readRequiredValue(source, target.objectIdPath());
         }
 
         private Optional<RoleIdentity> roleIdentity(HydrationRule rule, Object[] args) {

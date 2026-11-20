@@ -561,7 +561,7 @@ scopeModifier
     | 'resource' '(' Identifier (',' qualifiedName (',' qualifiedName)*)? ')' # resourceModifier
     | 'reservation' '(' qualifiedName '->' qualifiedName ')' # tccReservationModifier
     | 'snapshot' '(' (snapshotTiming ',')? snapshotTarget (',' snapshotTarget)* ')' snapshotUsing? # snapshotModifier
-    | 'repository' '(' repositoryTarget (',' repositoryTarget)* ',' qualifiedName ')' repositoryUsing? ('for' 'update')? # repositoryModifier
+    | 'repository' '(' repositoryTarget (',' repositoryTarget)* ',' qualifiedName ')' repositoryUsing? ('for' 'update')? repositoryKeyInterception? # repositoryModifier
     | 'repository' '(' Identifier 'by' 'index' Identifier ')' repositoryUsing? # repositoryByIndexModifier
     | 'repository' '(' Identifier 'by' Identifier ')' repositoryUsing? # repositoryByForeignTypeModifier
     | 'repository' '(' Identifier ')' repositoryUsing? # repositoryByTypeModifier
@@ -621,6 +621,19 @@ repositoryTarget
 
 repositoryUsing
     : 'using' Identifier
+    ;
+
+repositoryKeyInterception
+    : {getCurrentToken().getText().equals("intercept")}? Identifier 'key' '{' repositoryKeyRewrite+ '}'
+    ;
+
+repositoryKeyRewrite
+    : qualifiedName '=' repositoryKeyTerm ('+' repositoryKeyTerm)* ';'
+    ;
+
+repositoryKeyTerm
+    : StringLiteral
+    | qualifiedName
     ;
 
 transactionModifier

@@ -45,6 +45,10 @@ the operation declares `critical()`. Its error must reach the owner; a failure
 after an actual commit cannot turn that committed business work into a rollback.
 See [lifecycle acceptance](appframe/src/test/java/com/servpp/service/technical/TechnicalCoordinationTest.java).
 
+Use [APP repository key interception](docs/app-repository-key-interception.md)
+to derive physical String keys for an explicit query. It applies to the
+repository lookup independently of Java lifecycle handlers.
+
 ## EXT-2: requests and transaction responsibility
 
 The basic SDK supplies no official request registration, replay or request-store
