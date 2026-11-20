@@ -34,7 +34,8 @@ public interface IEntityBodyHandler extends ICompilationUnitHandler {
 
     default void declareParticipantField(SppParser.FieldDeclarationContext ctx) {
         boolean isQuantum = false;
-        String type = ctx.type() != null ? ctx.type().getText() : ctx.entitytype().getText();
+        boolean hasStringLength = ctx.IntegerLiteral() != null;
+        String type = hasStringLength ? "String" : ctx.type() != null ? ctx.type().getText() : ctx.entitytype().getText();
         if(type.startsWith("quantum")) {
             isQuantum = true;
             type =  type.substring("quantum".length());
@@ -42,8 +43,10 @@ public interface IEntityBodyHandler extends ICompilationUnitHandler {
         String specification = type.replaceAll("\\[\\]", "");
         type = type.replaceAll("\\([^)]*\\)", "");
         String[] sdims = type.split("\\[");
-        boolean defaultParticipantName = ctx.variableDeclaratorId() == null;
-        String name = defaultParticipantName ? NameUtil.participantName(sdims[0], sdims.length - 1) : ctx.variableDeclaratorId().getText();
+        boolean defaultParticipantName = !hasStringLength && ctx.variableDeclaratorId() == null;
+        String name = hasStringLength ? ctx.Identifier().getText()
+                : defaultParticipantName ? NameUtil.participantName(sdims[0], sdims.length - 1)
+                : ctx.variableDeclaratorId().getText();
         if (defaultParticipantName && getSppDomain().getCurrentClass().getType() == CompilationUnitType.role)
             name = NameUtil.firstToLowerCase(name,true);
 
@@ -58,6 +61,17 @@ public interface IEntityBodyHandler extends ICompilationUnitHandler {
         ((com.servpp.lang.models.SppClass)sppDomain.getCurrentClass()).getField(name)
                 .setDefaultParticipantName(defaultParticipantName);
         var field = ((com.servpp.lang.models.SppClass)sppDomain.getCurrentClass()).getField(name);
+        if (hasStringLength) {
+            try {
+                int length = Integer.parseInt(ctx.IntegerLiteral().getText());
+                if (length <= 0) throw new NumberFormatException();
+                field.setDefaultStringLength(length);
+            } catch (NumberFormatException invalidLength) {
+                String message = "Default String storage length must be a positive decimal integer.";
+                logSppError(ctx, message);
+                sppDomain.addAppParseError(message);
+            }
+        }
         if (specification.contains("(") && !com.servpp.lang.models.app.NumericBinding.isNumeric(sdims[0]))
             logSppError(ctx, "Precision and scale are numeric physical defaults only");
         if (com.servpp.lang.models.app.NumericBinding.isNumeric(sdims[0])) {

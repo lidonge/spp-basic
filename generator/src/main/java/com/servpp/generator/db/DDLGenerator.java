@@ -1192,6 +1192,7 @@ public class DDLGenerator implements ISppErrorLogger {
                     .setField(field)
                     .setObjectBacked(appColumn.isObjectBacked());
             setPrecisionScale(dbColumn, configs);
+            applyDefaultStringLength(dbColumn, field);
             if (appColumn.getPrecision() > 0) {
                 dbColumn.setPrecision(appColumn.getPrecision());
             }
@@ -1375,6 +1376,7 @@ public class DDLGenerator implements ISppErrorLogger {
                 .setField(sppLocalVar);
         dbColumn.setJdbcType(changeType(dbColumn, configs)).setNullable(configs.isNullable());
         setPrecisionScale(dbColumn, configs);
+        applyDefaultStringLength(dbColumn, sppLocalVar);
         String physical = sppLocalVar.getPhysicalNumericSpecification();
         if (physical != null) {
             String javaType = sppLocalVar.getJavaType();
@@ -1392,6 +1394,15 @@ public class DDLGenerator implements ISppErrorLogger {
             else if ("java.math.BigInteger".equals(javaType)) { dbColumn.setPrecision(1000); dbColumn.setScale(0); }
         }
         return dbColumn;
+    }
+
+    private void applyDefaultStringLength(DbColumn dbColumn, SppLocalVar value) {
+        if (value instanceof SppField field && field.getDefaultStringLength() != null) {
+            switch (dbColumn.getJdbcType()) {
+                case CHAR, VARCHAR, NCHAR, NVARCHAR -> dbColumn.setPrecision(field.getDefaultStringLength());
+                default -> { }
+            }
+        }
     }
 
     private boolean isScalarDbField(SppLocalVar sppLocalVar) {

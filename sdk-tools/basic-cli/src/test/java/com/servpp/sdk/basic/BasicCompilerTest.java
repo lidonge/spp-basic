@@ -94,4 +94,59 @@ public class BasicCompilerTest {
             assertThrows(invalid, MojoExecutionException.class, () -> Main.run(check));
         }
     }
+
+    @Test
+    public void stringFieldLengthIsAnOverridableColumnDefault() throws Exception {
+        Path source = temporary.newFolder().toPath();
+        Files.writeString(source.resolve("widths.spp"), """
+                domain widths;
+                Entity Address {
+                    String(20) customerNumber;
+                    String(80) address;
+                    String(6) postalCode;
+                    String(4) areaCode;
+                }
+                Role TextValue { String(3) value; }
+                atomic calculate appendText(TextValue text) { text.value = text.value + "long"; }
+                Scenario serial preview(TextValue text) { appendText(text); }
+                """);
+        Files.writeString(source.resolve("widths.app"), """
+                domain widths;
+                tables entities {
+                    table ADDRESS_ROWS(Address) {
+                        primarykey(Address.customerNumber);
+                        notnull String(9) postalCode;
+                        notnull String areaCode;
+                    }
+                }
+                map ADDRESS_ROWS {
+                    address = String(120) street;
+                    areaCode = String zone_code;
+                }
+                """);
+        Path output = temporary.getRoot().toPath().resolve("widths");
+        Main.run(new String[]{"generate", "--source", source.toString(), "--output", output.toString()});
+        String ddl = Files.readString(output.resolve("openapi/sql/ddl.sql"));
+        assertTrue(ddl, ddl.contains("customerNumber VARCHAR(20)"));
+        assertTrue(ddl, ddl.contains("street VARCHAR(120)"));
+        assertTrue(ddl, ddl.contains("postalCode VARCHAR(9)"));
+        assertTrue(ddl, ddl.contains("zone_code VARCHAR(4)"));
+        String metadata = Files.readString(output.resolve(
+                "src/main/resources/META-INF/spp/app-ddl.properties"));
+        assertTrue(metadata, metadata.contains("table.ADDRESS_ROWS.column.street.precision=120"));
+        assertTrue(metadata, metadata.contains("table.ADDRESS_ROWS.column.zone_code.precision=4"));
+        String api = Files.readString(output.resolve("openapi/widths.spp.yaml"));
+        assertFalse(api, api.contains("maxLength:"));
+    }
+
+    @Test
+    public void stringFieldLengthMustBePositiveAndInRange() throws Exception {
+        Path source = temporary.newFolder().toPath();
+        for (String length : java.util.List.of("0", "2147483648", "0x10")) {
+            Files.writeString(source.resolve("widths.spp"),
+                    "domain widths; Role TextValue { String(" + length + ") value; }");
+            assertThrows(length, MojoExecutionException.class,
+                    () -> Main.run(new String[]{"check", "--source", source.toString()}));
+        }
+    }
 }

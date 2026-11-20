@@ -56,7 +56,8 @@ entityBodyDeclaration
     ;
 
 fieldDeclaration
-    : ('business' '(' StringLiteral ')')? (type variableDeclaratorId | entitytype variableDeclaratorId?) ';'
+    : ('business' '(' StringLiteral ')')?
+      (type variableDeclaratorId | 'String' '(' IntegerLiteral ')' Identifier | entitytype variableDeclaratorId?) ';'
     ;
 
 variableDeclaratorId

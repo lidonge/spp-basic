@@ -12,6 +12,9 @@ selects realization, mappings and service policies; PHY selects implementations
 and physical resources. Switching a compatible technical implementation must
 preserve the business result without adding technical version fields to SPP.
 
+[Default String storage lengths](docs/string-storage-defaults.md) define
+field-level column defaults that APP can override.
+
 The basic repository retains read identity and revision evidence. An ordinary
 update must atomically check that revision and write the mapped ordinary facts.
 An explicit null is a write. Conflicting updates cannot silently overwrite one

@@ -26,11 +26,20 @@ public class SppField extends SppLocalVar {
     public boolean isStoredHere() { return !systemResult && (snapshotStorageFact || !borrowedStorageFact || performerStorageIdentity); }
     private boolean syntheticRolePerformer;
     private String businessMeaning;
+    private Integer defaultStringLength;
     private boolean defaultParticipantName;
     public boolean isDefaultParticipantName() { return defaultParticipantName; }
     public void setDefaultParticipantName(boolean value) { defaultParticipantName = value; }
     public String getBusinessMeaning() { return businessMeaning; }
     public void setBusinessMeaning(String meaning) { businessMeaning = meaning; }
+
+    public Integer getDefaultStringLength() {
+        return defaultStringLength;
+    }
+
+    public void setDefaultStringLength(int length) {
+        defaultStringLength = length;
+    }
 
     protected SppField(SppCompilationUnit type, String name, int arrayDimension, int index, boolean isQuantum) {
         super(type, name, arrayDimension, index, isQuantum);
@@ -53,6 +62,7 @@ public class SppField extends SppLocalVar {
         field.performerRelation = performerRelation;
         field.syntheticRolePerformer = syntheticRolePerformer;
         field.businessMeaning = businessMeaning;
+        field.defaultStringLength = defaultStringLength;
         field.defaultParticipantName = defaultParticipantName;
         field.systemResult = systemResult;
         field.setQueryKey(isQueryKey());
