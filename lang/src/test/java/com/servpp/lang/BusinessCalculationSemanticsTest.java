@@ -7,6 +7,38 @@ import static org.junit.Assert.*;
 
 public class BusinessCalculationSemanticsTest {
     private static final String ROLE = "domain rules; Role Values { double a; double b; boolean allowed; String label; } ";
+    @Test public void asciiIntegerTextHasDistinctBooleanAndExactNumericResults() throws Exception {
+        var domain = compile("""
+                domain rules;
+                Role Text { String digits; BigDecimal(30,0) value; boolean valid; }
+                atomic calculate decode(Text text) {
+                    text.valid = isAsciiDigits(text.digits);
+                    if (text.valid) { text.value = parseUnsignedInteger(text.digits); }
+                }
+                atomic check checkText(Text text) { require(isAsciiDigits(text.digits), "INVALID_TEXT"); }
+                """);
+        assertTrue(domain.validateAppDeclarations().toString(), domain.validateAppDeclarations().isEmpty());
+        var service = (SppService) domain.getSppClass("Decode");
+        service.setNumericGeneration(true);
+        String generated = service.getJavaStatements().stream().map(s -> s.getJavaStatement())
+                .collect(java.util.stream.Collectors.joining("\n"));
+        assertTrue(generated, generated.contains("AsciiIntegerText.isAsciiDigits"));
+        assertTrue(generated, generated.contains("AsciiIntegerText.parseUnsignedInteger"));
+        assertTrue(compile(ROLE + "atomic check checkText(Values v) { require(isAsciiDigits(null), \"INVALID\"); }")
+                .validateAppDeclarations().isEmpty());
+    }
+    @Test public void asciiIntegerTextRejectsWrongArityAndNonStringArguments() throws Exception {
+        for (String name : java.util.List.of("isAsciiDigits", "parseUnsignedInteger")) {
+            assertThrows(java.io.IOException.class, () -> compile(ROLE
+                    + "atomic calculate decode(Values v) { v.a = " + name + "(); }"));
+            for (String args : java.util.List.of("v.label, v.label", "v.a", "v.allowed", "v", "v.labels")) {
+                String assignment = name.equals("isAsciiDigits") ? "v.allowed" : "v.a";
+                var domain = compile("domain rules; Role Values { double a; boolean allowed; String label; String[] labels; } "
+                        + "atomic calculate decode(Values v) { " + assignment + " = " + name + "(" + args + "); }");
+                assertFalse(name + "(" + args + ")", domain.validateAppDeclarations().isEmpty());
+            }
+        }
+    }
     @Test public void utcMonthArithmeticRequiresTwoNumbersAndGeneratesGenericCalendarCall() throws Exception {
         var domain=compile("domain rules; Role Clock { long now; long end; } atomic calculate advance(Clock clock) { clock.end = addUtcMonths(clock.now, 3); }");
         assertTrue(domain.validateAppDeclarations().toString(),domain.validateAppDeclarations().isEmpty());

@@ -351,6 +351,16 @@ public final class BusinessCalculationValidator {
                 function.setReturnType(source.getReturnType());
                 return kind;
             }
+            if (Set.of("isAsciiDigits", "parseUnsignedInteger").contains(function.getName())) {
+                if (function.getArguments().size() != 1) { error(function.getName() + " requires one String argument."); }
+                for (IExpression argument : function.getArguments()) {
+                    Kind kind = type(argument);
+                    if ((kind != Kind.STRING && kind != Kind.NULL) || dimensions(argument) != 0) {
+                        error(function.getName() + " requires one scalar String argument.");
+                    }
+                }
+                return function.getName().equals("isAsciiDigits") ? Kind.BOOLEAN : Kind.NUMBER;
+            }
             if (function.getName().equals("addUtcMonths")) {
                 if (function.getArguments().size() != 2) error("addUtcMonths requires epoch seconds and calendar months.");
                 for (IExpression argument : function.getArguments()) {

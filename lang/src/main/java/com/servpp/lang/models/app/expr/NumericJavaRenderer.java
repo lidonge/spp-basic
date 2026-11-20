@@ -205,7 +205,7 @@ public final class NumericJavaRenderer {
             if (function.getName().equals("copy")) {
                 return "com.servpp.service.runtime.ParticipantCopies.copy(" + expression(function.getArguments().get(0)) + ")";
             }
-            if (function.getName().equals("isGregorianDate")) { return function(function, null); }
+            if (java.util.Set.of("isGregorianDate", "isAsciiDigits").contains(function.getName())) { return function(function, null); }
             String adapter = findAdapter(function);
             return adapter == null ? decimal(function) : adapted(function, adapter);
         }
@@ -391,7 +391,7 @@ public final class NumericJavaRenderer {
     }
 
     private boolean numeric(IExpression expression) {
-        if (expression instanceof CalculationFunction function) { return !java.util.Set.of("copy", "append", "isGregorianDate", "sameFacts").contains(function.getName()); }
+        if (expression instanceof CalculationFunction function) { return !java.util.Set.of("copy", "append", "isGregorianDate", "isAsciiDigits", "sameFacts").contains(function.getName()); }
         if (expression instanceof ConditionalExpression conditional) {
             return numeric(conditional.getWhenTrue()) && numeric(conditional.getWhenFalse());
         }
@@ -460,6 +460,12 @@ public final class NumericJavaRenderer {
     private String function(CalculationFunction function, String adapter) {
         var args = function.getArguments();
         String name = function.getName();
+        if (java.util.Set.of("isAsciiDigits", "parseUnsignedInteger").contains(name)) {
+            if (args.size() != 1) { throw new IllegalArgumentException(name + " requires one String argument."); }
+            String value = "com.servpp.service.numeric.AsciiIntegerText." + name + "(" + expression(args.get(0)) + ")";
+            return adapter == null || name.equals("isAsciiDigits") ? value
+                    : adapterCall(adapter) + ".literal((" + value + ").toPlainString())";
+        }
         if (name.equals("addUtcMonths")) {
             if (args.size() != 2) throw new IllegalArgumentException("addUtcMonths requires two arguments.");
             String value = "com.servpp.service.calendar.GregorianDates.addUtcMonths(" + decimal(args.get(0)) + ", " + decimal(args.get(1)) + ")";
