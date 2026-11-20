@@ -27972,30 +27972,7 @@ public class LocalGeneratedServiceRuntime {
     }
 
     private List<String> serviceParameterTypes(Service service) {
-        List<List<String>> declaredCandidates = serviceParameterTypes(service, service.getClass().getDeclaredMethods());
-        if (declaredCandidates.size() == 1) {
-            return declaredCandidates.get(0);
-        }
-        List<List<String>> candidates = serviceParameterTypes(service, service.getClass().getMethods());
-        if (candidates.size() == 1) {
-            return candidates.get(0);
-        }
-        return List.of();
-    }
-
-    private List<List<String>> serviceParameterTypes(Service service, Method[] methods) {
-        List<List<String>> candidates = new ArrayList<>();
-        for (Method method : methods) {
-            if (method.isSynthetic() || !method.getName().equals(service.getName())) {
-                continue;
-            }
-            List<String> parameterTypes = new ArrayList<>();
-            for (Class<?> parameterType : method.getParameterTypes()) {
-                parameterTypes.add(parameterType.getName());
-            }
-            candidates.add(List.copyOf(parameterTypes));
-        }
-        return candidates;
+        return GeneratedServiceSignatures.parameters(service);
     }
 
     private String nullToBlank(String value) {

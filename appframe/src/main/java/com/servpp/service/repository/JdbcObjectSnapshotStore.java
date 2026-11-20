@@ -407,6 +407,11 @@ public class JdbcObjectSnapshotStore {
         if (TRANSACTION_SNAPSHOT_TYPE.equals(objectType)) {
             return findTransactionHistory();
         }
+        return findCurrentByType(objectType);
+    }
+
+    /** Type-scoped current facts; unlike findByType, never redirects to transaction history. */
+    public List<ObjectSnapshot> findCurrentByType(String objectType) {
         try {
             return JdbcTransactionScope.execute(dataSource, connection -> {
                 try (PreparedStatement statement = connection.prepareStatement(selectByTypeSql)) {

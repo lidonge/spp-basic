@@ -329,7 +329,7 @@ public class JdbcObjectRepository implements ObjectRepository {
                 return values;
             }
         }
-        return store.findAll().stream()
+        return store.findCurrentByType(objectType).stream()
                 .filter(snapshot -> snapshot.objectType().equals(objectType))
                 .map(snapshot -> read(snapshot, type))
                 .toList();
@@ -347,7 +347,7 @@ public class JdbcObjectRepository implements ObjectRepository {
                 return values;
             }
         }
-        return store.findAll().stream()
+        return store.findCurrentByType(objectType).stream()
                 .filter(snapshot -> snapshot.objectType().equals(objectType))
                 .map(snapshot -> read(snapshot, type))
                 .filter(value -> Objects.equals(readPath(completeQueryFacts(objectType, value, List.of(keyPath)), keyPath), keyValue))
@@ -373,7 +373,7 @@ public class JdbcObjectRepository implements ObjectRepository {
                 return values;
             }
         }
-        return store.findAll().stream()
+        return store.findCurrentByType(objectType).stream()
                 .filter(snapshot -> snapshot.objectType().equals(objectType))
                 .map(snapshot -> read(snapshot, type))
                 .filter(value -> pathsMatch(completeQueryFacts(objectType, value, keyPaths), keyPaths, keyValues))

@@ -54,7 +54,7 @@ public class JsonObjectSnapshotRepository implements ObjectRepository {
     @Override
     public <T> List<T> findAll(String objectType, Class<T> type) {
         List<T> values = new ArrayList<>();
-        for (ObjectSnapshot snapshot : store.findAll()) {
+        for (ObjectSnapshot snapshot : store.findCurrentByType(objectType)) {
             if (snapshot.objectType().equals(objectType)) {
                 values.add(read(snapshot, type));
             }
@@ -68,7 +68,7 @@ public class JsonObjectSnapshotRepository implements ObjectRepository {
             throw new IllegalArgumentException("Object repository keyPath must not be blank.");
         }
         List<T> values = new ArrayList<>();
-        for (ObjectSnapshot snapshot : store.findAll()) {
+        for (ObjectSnapshot snapshot : store.findCurrentByType(objectType)) {
             if (!snapshot.objectType().equals(objectType)) {
                 continue;
             }

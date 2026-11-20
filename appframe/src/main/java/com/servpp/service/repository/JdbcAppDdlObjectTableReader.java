@@ -62,7 +62,7 @@ public class JdbcAppDdlObjectTableReader {
         if (table.isEmpty()) {
             return List.of();
         }
-        return queryObjectIds(table.orElseThrow(), selectAllSql(table.orElseThrow()), List.of());
+        return queryObjectIds(table.orElseThrow(), selectIdentityColumnsSql(table.orElseThrow()) + orderBySql(table.orElseThrow()), List.of());
     }
 
     public <T> List<T> findBy(String objectType, String keyPath, Object keyValue, Class<T> type) {
@@ -92,7 +92,7 @@ public class JdbcAppDdlObjectTableReader {
         if (column.isEmpty()) {
             return List.of();
         }
-        String sql = selectColumnsSql(table.orElseThrow())
+        String sql = selectIdentityColumnsSql(table.orElseThrow())
                 + " where " + safeIdentifier(column.orElseThrow(), "APP DDL column") + " = ?"
                 + orderBySql(table.orElseThrow());
         return queryObjectIds(table.orElseThrow(), sql, List.of(queryValue(keyValue)));
@@ -148,7 +148,7 @@ public class JdbcAppDdlObjectTableReader {
         for (Object value : keyValues) {
             queryValues.add(queryValue(value));
         }
-        String sql = selectColumnsSql(table.orElseThrow())
+        String sql = selectIdentityColumnsSql(table.orElseThrow())
                 + " where " + whereSql(columns, "APP DDL column")
                 + orderBySql(table.orElseThrow());
         return queryObjectIds(table.orElseThrow(), sql, queryValues);
@@ -382,6 +382,19 @@ public class JdbcAppDdlObjectTableReader {
 
     private String selectAllSql(AppDdlCatalog.Table table) {
         return selectColumnsSql(table) + orderBySql(table);
+    }
+
+    private String selectIdentityColumnsSql(AppDdlCatalog.Table table) {
+        if (table.primaryKeys().isEmpty()) {
+            // queryObjectIds returns before preparing SQL for a table without keys.
+            return selectColumnsSql(table);
+        }
+        List<String> keys = new ArrayList<>();
+        for (String key : table.primaryKeys()) {
+            keys.add(safeIdentifier(key, "APP DDL primary key"));
+        }
+        return "select " + String.join(", ", keys)
+                + " from " + safeIdentifier(table.name(), "APP DDL table");
     }
 
     private String selectColumnsSql(AppDdlCatalog.Table table) {
