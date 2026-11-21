@@ -20,4 +20,8 @@ public class SppEnum extends SppCompilationUnit{
         return items;
     }
 
+    public SppEnumItem getOtherItem() {
+        return items.stream().filter(item -> "OTHER".equals(item.getName())).findFirst().orElse(null);
+    }
+
 }

@@ -13,6 +13,39 @@ import static org.junit.Assert.*;
 
 public class BasicCompilerTest {
     @Rule public TemporaryFolder temporary = new TemporaryFolder();
+
+    @Test
+    public void onlyEnumsDeclaringOtherGenerateFallback() throws Exception {
+        Path source = temporary.newFolder().toPath();
+        Files.writeString(source.resolve("routing.spp"), """
+                domain routing;
+                Enum Route { DIRECT, OTHER("fallback") }
+                Enum StrictRoute { DIRECT, INDIRECT }
+                Role Facts { Route route; StrictRoute strictRoute; boolean other; int selected; }
+                atomic calculate choose(Facts) {
+                    Facts.other = Facts.route == Route.OTHER;
+                    switch (Facts.route) {
+                        case DIRECT: Facts.selected = 1; break;
+                        case OTHER: Facts.selected = 2; break;
+                    }
+                }
+                Scenario serial determine(Facts) { choose; }
+                """);
+        Path output = temporary.getRoot().toPath().resolve("enum-fallback");
+        Main.run(new String[]{"generate", "--source", source.toString(), "--output", output.toString()});
+        Path library = output.resolve("src/main/java/com/servpp/generated/routing");
+        String fallback = Files.readString(library.resolve("model/Route.java"));
+        assertTrue(fallback.contains("OTHER(\"fallback\")"));
+        assertTrue(fallback.contains("return OTHER;"));
+        assertFalse(fallback.contains("Unexpected value"));
+        String strict = Files.readString(library.resolve("model/StrictRoute.java"));
+        assertTrue(strict.contains("Unexpected value"));
+        assertFalse(strict.contains("return OTHER;"));
+        String calculation = Files.readString(library.resolve("service/SimpleChoose.java"));
+        assertTrue(calculation.contains("requireNonNullElse("));
+        assertTrue(calculation.contains("Route.fromValue(\"fallback\")"));
+    }
+
     private Path source()throws Exception {
         Path source=temporary.newFolder().toPath();
         var text=new StringBuilder("domain ledger; Role Facts { int amount; } atomic calculate twice(Facts) { Facts.amount *= 2; }\n");

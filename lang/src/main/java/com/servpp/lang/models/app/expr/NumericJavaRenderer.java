@@ -2,6 +2,7 @@ package com.servpp.lang.models.app.expr;
 
 import com.servpp.lang.general.NameUtil;
 import com.servpp.lang.models.SppClass;
+import com.servpp.lang.models.SppEnum;
 import com.servpp.lang.models.SppField;
 import com.servpp.lang.models.SppLocalVar;
 import com.servpp.lang.models.SppService;
@@ -145,7 +146,7 @@ public final class NumericJavaRenderer {
         String adapter = findAdapter(control.condition);
         boolean number = numeric(control.condition);
         String selected = number ? (adapter == null ? decimal(control.condition) : adapted(control.condition, adapter))
-                : "java.util.Objects.requireNonNull(" + expression(control.condition) + ")";
+                : nonNumericSwitchSelector(control.condition);
         SppLocalVar field = new SppLocalVar(control.condition.getReturnType() == null
                 ? new SppClass("double") : control.condition.getReturnType(), selectorName);
         field.setPhysicalJavaType(number && adapter == null ? "java.math.BigDecimal" : "String");
@@ -174,9 +175,32 @@ public final class NumericJavaRenderer {
         return result.append("}\n}").toString();
     }
 
+    private String nonNumericSwitchSelector(IExpression selector) {
+        String value = expression(selector);
+        if (selector.getReturnType() instanceof SppEnum enumeration && enumeration.getOtherItem() != null) {
+            return scalarEnumReference(selector) ? value : withOtherFallback(enumeration, value);
+        }
+        return "java.util.Objects.requireNonNull(" + value + ")";
+    }
+
+    private boolean scalarEnumReference(IExpression expression) {
+        return expression instanceof CalculationReference reference && reference.root != null
+                && reference.field != null && reference.field.getArrayDimension() == 0
+                && reference.getReturnType() instanceof SppEnum;
+    }
+
+    private String withOtherFallback(SppEnum enumeration, String value) {
+        var other = enumeration.getOtherItem();
+        return other == null ? value
+                : "java.util.Objects.requireNonNullElse(" + value + ", " + new EnumValue(enumeration, other).getExpr() + ")";
+    }
+
     public String expression(IExpression expression) {
         if (expression instanceof CalculationReference reference && reference.field instanceof com.servpp.lang.models.SppConstant constant)
             return constant.getJavaValue();
+        if (scalarEnumReference(expression)) {
+            return withOtherFallback((SppEnum) expression.getReturnType(), expression.getExpr());
+        }
         if (expression instanceof ParticipantConstruction construction) {
             return "new " + construction.getJavaType() + (construction.isCollection()
                     ? "[] {" + construction.getElements().stream().map(this::expression).collect(java.util.stream.Collectors.joining(", ")) + "}"

@@ -214,6 +214,7 @@ public class OpenApiGenerator extends BaseClassGenerator implements ILogable {
             java.nio.file.Path templates = yamlOutPath.toPath().resolve("JavaSpring");
             java.nio.file.Files.createDirectories(templates);
             java.nio.file.Files.writeString(templates.resolve("pojo.mustache"),pojo);
+            writeJavaSpringEnumTemplate(templates);
         }
         File dir = new File(yamlOutPath, "JavaSpring");
         ensureDirectory(dir);
@@ -229,6 +230,20 @@ public class OpenApiGenerator extends BaseClassGenerator implements ILogable {
             while ((line = reader.readLine()) != null) {
                 out.println(line);
             }
+        }
+    }
+
+    private void writeJavaSpringEnumTemplate(java.nio.file.Path templates) throws IOException {
+        try (InputStream template = org.openapitools.codegen.DefaultGenerator.class
+                .getResourceAsStream("/JavaSpring/enumOuterClass.mustache")) {
+            if (template == null) throw new IOException("Missing pinned OpenAPI JavaSpring enum template");
+            String definition = new String(template.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+            String original = "{{#isNullable}}return null;{{/isNullable}}{{^isNullable}}"
+                    + "throw new IllegalArgumentException(\"Unexpected value '\" + value + \"'\");{{/isNullable}}";
+            if (!definition.contains(original)) throw new IOException("Pinned OpenAPI JavaSpring enum template changed");
+            String fallback = "{{#vendorExtensions.x-spp-enum-other}}return OTHER;{{/vendorExtensions.x-spp-enum-other}}"
+                    + "{{^vendorExtensions.x-spp-enum-other}}" + original + "{{/vendorExtensions.x-spp-enum-other}}";
+            java.nio.file.Files.writeString(templates.resolve("enumOuterClass.mustache"), definition.replace(original, fallback));
         }
     }
 
@@ -1283,6 +1298,7 @@ public class OpenApiGenerator extends BaseClassGenerator implements ILogable {
         schema.setType("string");
         List<SppEnumItem> fields = sppEnum.getItems();
         schema.addExtension("x-enum-varnames", fields.stream().map(SppEnumItem::getName).toList());
+        if (sppEnum.getOtherItem() != null) schema.addExtension("x-spp-enum-other", true);
         for (SppEnumItem field : fields) {
             if(field.getValue() != null)
                 schema.addEnumItemObject(field.getValue());
