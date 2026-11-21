@@ -9,7 +9,8 @@
     "External links for unbundled book/site files",
     "Integrated build instructions and contribution paths",
     "Original MIT scope and book reserved-rights retained",
-    "English A-E capability tutorials and source-checked excerpts; navigation-only legacy documents removed, with references updated to substantive guides or immutable historical evidence"
+    "English A-E capability tutorials and source-checked excerpts; navigation-only legacy documents removed, with references updated to substantive guides or immutable historical evidence",
+    "Renamed a bank-deposit loop variable for the reserved other keyword and updated Petstore enum aliases to the colon syntax"
   ],
   "files": [
     {
@@ -951,7 +952,7 @@
     {
       "path": "demos/bank-deposit/src/main/spp/cboddeposit/reversal/cboddeposit-10-postings.spp",
       "sourceSha256": "090ae5efa669bd7d5d9791de77ea78c149916887151c9dd3a7ceb4ce939190c8",
-      "importedSha256": "090ae5efa669bd7d5d9791de77ea78c149916887151c9dd3a7ceb4ce939190c8",
+      "importedSha256": "43961c5872d1840a30855b38ad42b192d2dede14b5f8b59a30d0b6d24297cea2",
       "executable": false
     },
     {
@@ -1365,7 +1366,7 @@
     {
       "path": "demos/petstore/src/main/spp/inventory/inventory.enum",
       "sourceSha256": "6440bd42e3970d5aa29f5ebb0ac0e574d3ac7ce75b4434dd1c678086629d22ea",
-      "importedSha256": "6440bd42e3970d5aa29f5ebb0ac0e574d3ac7ce75b4434dd1c678086629d22ea",
+      "importedSha256": "7e4c38bde662a986ff7b48a551cc047c23ba983439bfe9539cb34183c7e55d57",
       "executable": false
     },
     {
@@ -1755,7 +1756,7 @@
     {
       "path": "demos/petstore/src/main/spp/petshop/shared/petshop.enum",
       "sourceSha256": "d1ea79e9a5f645cc2a78a10e5e02c7b7cc79545d3aa67e361ede27ecddf2a196",
-      "importedSha256": "d1ea79e9a5f645cc2a78a10e5e02c7b7cc79545d3aa67e361ede27ecddf2a196",
+      "importedSha256": "cbdb152a5fecf7d2942c86df8be9105629063eaf80170f15e781581de50be632",
       "executable": false
     },
     {

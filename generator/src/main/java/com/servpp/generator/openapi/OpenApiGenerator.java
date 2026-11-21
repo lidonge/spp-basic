@@ -241,9 +241,51 @@ public class OpenApiGenerator extends BaseClassGenerator implements ILogable {
             String original = "{{#isNullable}}return null;{{/isNullable}}{{^isNullable}}"
                     + "throw new IllegalArgumentException(\"Unexpected value '\" + value + \"'\");{{/isNullable}}";
             if (!definition.contains(original)) throw new IOException("Pinned OpenAPI JavaSpring enum template changed");
-            String fallback = "{{#vendorExtensions.x-spp-enum-other}}return OTHER;{{/vendorExtensions.x-spp-enum-other}}"
-                    + "{{^vendorExtensions.x-spp-enum-other}}" + original + "{{/vendorExtensions.x-spp-enum-other}}";
-            java.nio.file.Files.writeString(templates.resolve("enumOuterClass.mustache"), definition.replace(original, fallback));
+            String fallback = "{{#vendorExtensions.x-spp-enum-other-index}}return values()["
+                    + "{{vendorExtensions.x-spp-enum-other-index}}];{{/vendorExtensions.x-spp-enum-other-index}}"
+                    + "{{^vendorExtensions.x-spp-enum-other-index}}" + original + "{{/vendorExtensions.x-spp-enum-other-index}}";
+            String aliases = """
+                    {{#vendorExtensions.x-spp-enum-input-aliases}}
+                        if ("{{{literal}}}".equals(value)) return values()[{{index}}];
+                    {{/vendorExtensions.x-spp-enum-input-aliases}}""";
+            String enumType = "{{{datatypeWithEnum}}}{{^datatypeWithEnum}}{{{classname}}}{{/datatypeWithEnum}}";
+            String nullIndex = "{{vendorExtensions.x-spp-enum-null-index}}";
+            String nullSection = "{{#vendorExtensions.x-spp-enum-null-index}}";
+            String endNullSection = "{{/vendorExtensions.x-spp-enum-null-index}}";
+            String readNull = nullSection + "if (value == null) return values()[" + nullIndex + "];\n    " + endNullSection;
+            String annotation = "{{#jackson}}" + nullSection
+                    + "@com.fasterxml.jackson.databind.annotation.JsonDeserialize(using = "
+                    + enumType + ".$SppNullDeserializer.class)\n" + endNullSection + "{{/jackson}}";
+            String deserializer = ("""
+                    {{#jackson}}%2$s
+                      public static final class $SppNullDeserializer extends com.fasterxml.jackson.databind.JsonDeserializer<%1$s> {
+                        @Override
+                        public %1$s getNullValue(com.fasterxml.jackson.databind.DeserializationContext context) {
+                          return fromValue(null);
+                        }
+
+                        @Override
+                        public %1$s deserialize(com.fasterxml.jackson.core.JsonParser parser,
+                            com.fasterxml.jackson.databind.DeserializationContext context) throws java.io.IOException {
+                          String value = context.readValue(parser, String.class);
+                          try {
+                            return fromValue(value);
+                          } catch (IllegalArgumentException failure) {
+                            return (%1$s) context.handleWeirdStringValue(%1$s.class, value, "%%s", failure.getMessage());
+                          }
+                        }
+                      }
+                    %3$s{{/jackson}}
+                    """).formatted(enumType, nullSection, endNullSection);
+            String mappedEnum = "{{#vendorExtensions.x-spp-mapped-enum}} implements com.servpp.service.runtime.WireMappedEnum"
+                    + "{{/vendorExtensions.x-spp-mapped-enum}}";
+            String declaration = "public enum " + enumType;
+            definition = definition.replace(original, aliases + fallback)
+                    .replace(declaration + " {", annotation + declaration + mappedEnum + " {")
+                    .replace("    for (", "    " + readNull + "for (");
+            int closingBrace = definition.lastIndexOf('}');
+            java.nio.file.Files.writeString(templates.resolve("enumOuterClass.mustache"),
+                    definition.substring(0, closingBrace) + deserializer + definition.substring(closingBrace));
         }
     }
 
@@ -1297,14 +1339,26 @@ public class OpenApiGenerator extends BaseClassGenerator implements ILogable {
         schema.setTitle(sppEnum.getName());
         schema.setType("string");
         List<SppEnumItem> fields = sppEnum.getItems();
+        schema.addExtension("x-spp-mapped-enum", true);
         schema.addExtension("x-enum-varnames", fields.stream().map(SppEnumItem::getName).toList());
-        if (sppEnum.getOtherItem() != null) schema.addExtension("x-spp-enum-other", true);
-        for (SppEnumItem field : fields) {
-            if(field.getValue() != null)
-                schema.addEnumItemObject(field.getValue());
-            else
-                schema.addEnumItemObject(field.getName());
+        var other = sppEnum.getOtherItem();
+        if (other != null) schema.addExtension("x-spp-enum-other-index", Integer.toString(fields.indexOf(other)));
+        var missing = sppEnum.getMissingItem();
+        if (missing != null && missing.getFallback() != null) {
+            schema.addExtension("x-spp-enum-null-index", Integer.toString(fields.indexOf(missing)));
         }
+        List<Map<String, String>> inputAliases = new ArrayList<>();
+        var encoder = com.fasterxml.jackson.core.io.JsonStringEncoder.getInstance();
+        for (int index = 0; index < fields.size(); index++) {
+            var field = fields.get(index);
+            schema.addEnumItemObject(field.getWireValue());
+            var aliases = field.getAliases();
+            for (int alias = 1; alias < aliases.size(); alias++) {
+                String literal = new String(encoder.quoteAsString(aliases.get(alias)));
+                inputAliases.add(Map.of("literal", literal, "index", Integer.toString(index)));
+            }
+        }
+        if (!inputAliases.isEmpty()) schema.addExtension("x-spp-enum-input-aliases", inputAliases);
         openAPI.schema(sppEnum.getName(), schema);
     }
 

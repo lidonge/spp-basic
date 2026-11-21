@@ -3,8 +3,16 @@ package com.servpp.sdk.basic;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.servpp.sdk.CompilationException;
+import com.servpp.service.jdbc.DriverManagerJdbcDataSource;
+import com.servpp.service.repository.JdbcAppDdlObjectTableReader;
+import com.servpp.service.repository.JdbcAppDdlObjectTableWriter;
+import com.servpp.service.repository.JdbcAppDdlSchemaManager;
+import com.servpp.service.runtime.AppDdlCatalog;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.Properties;
+import java.util.UUID;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.junit.Rule;
 import org.junit.Test;
@@ -15,18 +23,28 @@ public class BasicCompilerTest {
     @Rule public TemporaryFolder temporary = new TemporaryFolder();
 
     @Test
-    public void onlyEnumsDeclaringOtherGenerateFallback() throws Exception {
+    public void enumFallbacksDistinguishMissingAndUnrecognizedValues() throws Exception {
         Path source = temporary.newFolder().toPath();
         Files.writeString(source.resolve("routing.spp"), """
                 domain routing;
-                Enum Route { DIRECT, OTHER("fallback") }
+                Enum Route { DIRECT, OTHER:"fallback" }
                 Enum StrictRoute { DIRECT, INDIRECT }
-                Role Facts { Route route; StrictRoute strictRoute; boolean other; int selected; }
+                Enum Completion { COMPLETE:"complete":other, NULL_VALUE:null, ACTIVE, OTHER }
+                Enum NullOnly { NULL_VALUE:null, ACTIVE }
+                Enum OtherOnly { FALLBACK:other, PUBLIC:"02","04","06","25","42","62" }
+                Role Facts { Route route; StrictRoute strictRoute; Completion completion; NullOnly nullOnly; OtherOnly otherOnly; boolean unknown; int selected; }
                 atomic calculate choose(Facts) {
-                    Facts.other = Facts.route == Route.OTHER;
+                    Facts.unknown = Facts.route == Route.OTHER;
                     switch (Facts.route) {
                         case DIRECT: Facts.selected = 1; break;
                         case OTHER: Facts.selected = 2; break;
+                    }
+                    switch (Facts.completion) {
+                        case NULL_VALUE: Facts.selected = 3; break;
+                        case COMPLETE: Facts.selected = 4; break;
+                    }
+                    switch (Facts.otherOnly) {
+                        case PUBLIC: Facts.selected = 5; break;
                     }
                 }
                 Scenario serial determine(Facts) { choose; }
@@ -36,14 +54,124 @@ public class BasicCompilerTest {
         Path library = output.resolve("src/main/java/com/servpp/generated/routing");
         String fallback = Files.readString(library.resolve("model/Route.java"));
         assertTrue(fallback.contains("OTHER(\"fallback\")"));
-        assertTrue(fallback.contains("return OTHER;"));
+        assertTrue(fallback.contains("return values()[1];"));
         assertFalse(fallback.contains("Unexpected value"));
         String strict = Files.readString(library.resolve("model/StrictRoute.java"));
         assertTrue(strict.contains("Unexpected value"));
-        assertFalse(strict.contains("return OTHER;"));
+        assertFalse(strict.contains("return values()["));
+        String completion = Files.readString(library.resolve("model/Completion.java"));
+        assertTrue(completion.contains("if (value == null) return values()[1];"));
+        assertTrue(completion.contains("return values()[0];"));
+        String nullOnly = Files.readString(library.resolve("model/NullOnly.java"));
+        assertTrue(nullOnly.contains("if (value == null) return values()[0];"));
+        assertTrue(nullOnly.contains("Unexpected value"));
         String calculation = Files.readString(library.resolve("service/SimpleChoose.java"));
         assertTrue(calculation.contains("requireNonNullElse("));
         assertTrue(calculation.contains("Route.fromValue(\"fallback\")"));
+        assertTrue(calculation.contains("Completion.fromValue(\"NULL_VALUE\")"));
+        assertTrue(calculation.contains("case \"complete\":"));
+        assertTrue(calculation.contains("case \"02\", \"04\", \"06\", \"25\", \"42\", \"62\":"));
+
+        Path classes = temporary.newFolder().toPath();
+        Path storageFixture = temporary.newFolder().toPath().resolve("WireAccount.java");
+        Files.writeString(storageFixture, """
+                package com.servpp.generated.routing.model;
+
+                public class WireAccount {
+                    private String accountNumber;
+                    private OtherOnly accountType;
+                    public String getAccountNumber() { return accountNumber; }
+                    public void setAccountNumber(String value) { accountNumber = value; }
+                    public OtherOnly getAccountType() { return accountType; }
+                    public void setAccountType(OtherOnly value) { accountType = value; }
+                }
+                """);
+        var compiler = javax.tools.ToolProvider.getSystemJavaCompiler();
+        assertEquals(0, compiler.run(null, null, null, "-d", classes.toString(),
+                library.resolve("model/Completion.java").toString(),
+                library.resolve("model/NullOnly.java").toString(),
+                library.resolve("model/OtherOnly.java").toString(), storageFixture.toString()));
+        try (var loader = new java.net.URLClassLoader(new java.net.URL[]{classes.toUri().toURL()}, getClass().getClassLoader())) {
+            var mapper = new ObjectMapper();
+            var completionClass = loader.loadClass("com.servpp.generated.routing.model.Completion");
+            assertEquals("NULL_VALUE", mapper.readValue("null", completionClass).toString());
+            assertEquals("complete", mapper.readValue("\"unrecognized\"", completionClass).toString());
+            assertEquals("OTHER", mapper.readValue("\"OTHER\"", completionClass).toString());
+            assertEquals("ACTIVE", mapper.readValue("\"ACTIVE\"", completionClass).toString());
+            var nullOnlyClass = loader.loadClass("com.servpp.generated.routing.model.NullOnly");
+            assertEquals("NULL_VALUE", mapper.readValue("null", nullOnlyClass).toString());
+            assertThrows(com.fasterxml.jackson.databind.exc.InvalidFormatException.class,
+                    () -> mapper.readValue("\"unrecognized\"", nullOnlyClass));
+            var otherOnlyClass = loader.loadClass("com.servpp.generated.routing.model.OtherOnly");
+            assertEquals("FALLBACK", mapper.readValue("null", otherOnlyClass).toString());
+            assertEquals("FALLBACK", mapper.readValue("\"unrecognized\"", otherOnlyClass).toString());
+            assertEquals(2, otherOnlyClass.getEnumConstants().length);
+            for (String alias : java.util.List.of("02", "04", "06", "25", "42", "62")) {
+                var member = mapper.readValue("\"" + alias + "\"", otherOnlyClass);
+                assertSame(otherOnlyClass.getEnumConstants()[1], member);
+                assertEquals("\"02\"", mapper.writeValueAsString(member));
+            }
+            verifyMappedEnumStorage(loader.loadClass("com.servpp.generated.routing.model.WireAccount"),
+                    otherOnlyClass, otherOnlyClass.getEnumConstants()[1]);
+        }
+    }
+
+    private void verifyMappedEnumStorage(Class<?> accountType, Class<?> enumType, Object publicMember) throws Exception {
+        var properties = new Properties();
+        properties.setProperty("tables", "WIRE_ACCOUNTS");
+        properties.setProperty("table.WIRE_ACCOUNTS.category", "entities");
+        properties.setProperty("table.WIRE_ACCOUNTS.businessType", "WireAccount");
+        properties.setProperty("table.WIRE_ACCOUNTS.primaryKeys", "accountNumber");
+        properties.setProperty("table.WIRE_ACCOUNTS.columns", "accountNumber,accountType");
+        properties.setProperty("table.WIRE_ACCOUNTS.column.accountNumber.type", "VARCHAR");
+        properties.setProperty("table.WIRE_ACCOUNTS.column.accountNumber.precision", "16");
+        properties.setProperty("table.WIRE_ACCOUNTS.column.accountType.type", "VARCHAR");
+        properties.setProperty("table.WIRE_ACCOUNTS.column.accountType.precision", "16");
+        var catalog = AppDdlCatalog.fromProperties(properties);
+        var source = new DriverManagerJdbcDataSource("org.h2.Driver",
+                "jdbc:h2:mem:enum_" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1", null, null);
+        new JdbcAppDdlSchemaManager(source).ensureTables(catalog);
+        Object account = accountType.getDeclaredConstructor().newInstance();
+        accountType.getMethod("setAccountNumber", String.class).invoke(account, "CANONICAL");
+        accountType.getMethod("setAccountType", enumType).invoke(account, publicMember);
+        new JdbcAppDdlObjectTableWriter(source, catalog).save("WireAccount", account);
+        try (var connection = source.getConnection(); var sql = connection.createStatement()) {
+            assertEquals(1, sql.executeUpdate("insert into WIRE_ACCOUNTS(accountNumber,accountType) values ('LEGACY','62')"));
+            var reader = new JdbcAppDdlObjectTableReader(source, catalog);
+            var method = accountType.getMethod("getAccountType");
+            for (String id : List.of("CANONICAL", "LEGACY")) {
+                assertSame(publicMember, method.invoke(reader.find("WireAccount", id, accountType).orElseThrow()));
+            }
+            assertEquals(List.of("CANONICAL"), reader.findObjectIdsBy("WireAccount", "accountType", publicMember));
+            try (var rows = sql.executeQuery("select accountType from WIRE_ACCOUNTS order by accountNumber")) {
+                assertTrue(rows.next());
+                assertEquals("02", rows.getString(1));
+                assertTrue(rows.next());
+                assertEquals("62", rows.getString(1));
+                assertFalse(rows.next());
+            }
+            sql.execute("SHUTDOWN");
+        }
+    }
+
+    @Test
+    public void enumFallbackKeywordsAreReservedAndEachCanBeAssignedOnce() throws Exception {
+        Path source = temporary.newFolder().toPath();
+        for (String declaration : java.util.List.of(
+                "Enum Choice { FIRST:other, SECOND:other }",
+                "Enum Choice { FIRST:null, SECOND:null }",
+                "Enum Choice { FIRST(\"first\") }",
+                "Enum Choice { FIRST(other) }",
+                "Enum Choice { FIRST(null) }",
+                "Enum Choice { FIRST:\"01\",\"02\", SECOND:\"02\" }",
+                "Enum Choice { FIRST:\"01\",\"01\" }",
+                "Enum Choice { FIRST:\"01\",\"SECOND\", SECOND }",
+                "Role Facts { String other; }",
+                "Role Facts { String null; }")) {
+            Files.writeString(source.resolve("choices.spp"), "domain choices; " + declaration);
+            assertThrows(declaration, MojoExecutionException.class,
+                    () -> Main.run(new String[]{"check", "--source", source.toString()}));
+        }
     }
 
     private Path source()throws Exception {

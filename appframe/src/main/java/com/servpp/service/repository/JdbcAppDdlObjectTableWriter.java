@@ -19,6 +19,7 @@ import javax.sql.DataSource;
 
 import com.servpp.service.jdbc.JdbcTransactionScope;
 import com.servpp.service.runtime.AppDdlCatalog;
+import com.servpp.service.runtime.WireMappedEnum;
 
 public class JdbcAppDdlObjectTableWriter {
     private final DataSource dataSource;
@@ -499,6 +500,9 @@ public class JdbcAppDdlObjectTableWriter {
                 || value instanceof java.sql.Date
                 || value instanceof java.sql.Timestamp) {
             return value;
+        }
+        if (value instanceof WireMappedEnum mapped) {
+            return mapped.getValue();
         }
         if (value instanceof Enum<?> enumValue) {
             return enumValue.name();

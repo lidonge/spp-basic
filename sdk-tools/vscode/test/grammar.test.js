@@ -61,6 +61,13 @@ test('numbers, character escapes, booleans and annotations have distinct scopes'
   assertScope(tokens, '\\n', 'constant.character.escape.spp');
 });
 
+test('enum fallback markers and quoted aliases retain distinct scopes', async () => {
+  const [tokens] = await tokenize('Enum Choice { KNOWN:"alias", UNRECOGNIZED:other, NULL_VALUE:null }');
+  assertScope(tokens, 'other', 'keyword.control.spp');
+  assertScope(tokens, 'null', 'constant.language.spp');
+  assertScope(tokens, 'alias', 'string.quoted.double.spp');
+});
+
 test('APP RDB PHY configuration and contextual identifiers are distinguished', async () => {
   const lines = await tokenize('scope { local { serviceName; } }\ntables Facts { table records(Facts) {} }\nphy { environment develop { backend jdbc; } }\nRole key { String fail; }\ntechnical services { audit; }\n} fail { recover; }');
   assertScope(lines[0], 'scope', 'keyword.other.configuration.spp');

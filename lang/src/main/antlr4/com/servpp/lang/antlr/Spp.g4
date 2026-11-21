@@ -39,8 +39,12 @@ enumBody
     ;
 
 enumBodyIdentifier
-    : Identifier
-    | Identifier '(' StringLiteral ')'
+    : Identifier (':' (StringLiteral (',' StringLiteral)* (':' enumFallback)? | enumFallback))?
+    ;
+
+enumFallback
+    : OtherKeyword
+    | NullLiteral
     ;
 
 entity

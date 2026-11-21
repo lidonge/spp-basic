@@ -11,6 +11,10 @@ NullLiteral
     ;
 
 // Keywords must precede Identifier for equal-length lexer matches.
+OtherKeyword
+    :   'other'
+    ;
+
 BooleanLiteral
     :   'true'
     |   'false'

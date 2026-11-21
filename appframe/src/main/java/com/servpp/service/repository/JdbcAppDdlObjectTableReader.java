@@ -13,9 +13,12 @@ import java.util.Optional;
 
 import javax.sql.DataSource;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.servpp.service.runtime.AppDdlCatalog;
+import com.servpp.service.runtime.WireMappedEnum;
 
 public class JdbcAppDdlObjectTableReader {
+    private static final ObjectMapper ENUM_MAPPER = new ObjectMapper();
     private final DataSource dataSource;
     private final AppDdlCatalog catalog;
 
@@ -444,6 +447,9 @@ public class JdbcAppDdlObjectTableReader {
     }
 
     private Object queryValue(Object value) {
+        if (value instanceof WireMappedEnum mapped) {
+            return mapped.getValue();
+        }
         if (value instanceof Enum<?> enumValue) {
             return enumValue.name();
         }
@@ -616,6 +622,9 @@ public class JdbcAppDdlObjectTableReader {
             return value;
         }
         if (targetType.isEnum() && value instanceof String enumName) {
+            if (WireMappedEnum.class.isAssignableFrom(targetType)) {
+                return ENUM_MAPPER.convertValue(enumName, targetType);
+            }
             @SuppressWarnings({"unchecked", "rawtypes"})
             Object converted = Enum.valueOf((Class<? extends Enum>) targetType, enumName);
             return converted;

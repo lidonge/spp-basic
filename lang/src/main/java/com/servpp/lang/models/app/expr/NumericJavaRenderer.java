@@ -3,6 +3,7 @@ package com.servpp.lang.models.app.expr;
 import com.servpp.lang.general.NameUtil;
 import com.servpp.lang.models.SppClass;
 import com.servpp.lang.models.SppEnum;
+import com.servpp.lang.models.SppEnumItem;
 import com.servpp.lang.models.SppField;
 import com.servpp.lang.models.SppLocalVar;
 import com.servpp.lang.models.SppService;
@@ -142,6 +143,10 @@ public final class NumericJavaRenderer {
     }
 
     private String switchStatement(CalculationControl control) {
+        if (control.condition.getReturnType() instanceof SppEnum enumeration) {
+            String enumerationSwitch = enumSwitch(control, enumeration);
+            if (enumerationSwitch != null) return enumerationSwitch;
+        }
         String selectorName = temporary("$sppSelector"), caseName = temporary("$sppCase");
         String adapter = findAdapter(control.condition);
         boolean number = numeric(control.condition);
@@ -175,10 +180,40 @@ public final class NumericJavaRenderer {
         return result.append("}\n}").toString();
     }
 
+    private String enumSwitch(CalculationControl control, SppEnum enumeration) {
+        StringBuilder result = new StringBuilder("switch ((")
+                .append(nonNumericSwitchSelector(control.condition)).append(").getValue()) {\n");
+        for (IJavaStatement item : control.body) {
+            CalculationControl entry = (CalculationControl) item;
+            if (entry.condition == null) {
+                result.append("default:\n");
+            } else {
+                SppEnumItem member = enumCaseMember(enumeration, entry.condition);
+                if (member == null) return null;
+                String labels = member.getWireValues().stream().map(EnumValue::javaLiteral)
+                        .collect(java.util.stream.Collectors.joining(", "));
+                result.append("case ").append(labels).append(":\n");
+            }
+            result.append(statements(entry.body));
+        }
+        return result.append("}").toString();
+    }
+
+    private SppEnumItem enumCaseMember(SppEnum enumeration, IExpression condition) {
+        if (condition instanceof EnumValue value) {
+            return enumeration.getWireItem(value.getValue());
+        }
+        if (condition instanceof Literal literal && literal.getValue().startsWith("\"")) {
+            String value = literal.getValue();
+            return enumeration.getWireItem(value.substring(1, value.length() - 1));
+        }
+        return null;
+    }
+
     private String nonNumericSwitchSelector(IExpression selector) {
         String value = expression(selector);
-        if (selector.getReturnType() instanceof SppEnum enumeration && enumeration.getOtherItem() != null) {
-            return scalarEnumReference(selector) ? value : withOtherFallback(enumeration, value);
+        if (selector.getReturnType() instanceof SppEnum enumeration && enumeration.getMissingItem() != null) {
+            return scalarEnumReference(selector) ? value : withEnumFallback(enumeration, value);
         }
         return "java.util.Objects.requireNonNull(" + value + ")";
     }
@@ -189,17 +224,17 @@ public final class NumericJavaRenderer {
                 && reference.getReturnType() instanceof SppEnum;
     }
 
-    private String withOtherFallback(SppEnum enumeration, String value) {
-        var other = enumeration.getOtherItem();
-        return other == null ? value
-                : "java.util.Objects.requireNonNullElse(" + value + ", " + new EnumValue(enumeration, other).getExpr() + ")";
+    private String withEnumFallback(SppEnum enumeration, String value) {
+        var fallback = enumeration.getMissingItem();
+        return fallback == null ? value
+                : "java.util.Objects.requireNonNullElse(" + value + ", " + new EnumValue(enumeration, fallback).getExpr() + ")";
     }
 
     public String expression(IExpression expression) {
         if (expression instanceof CalculationReference reference && reference.field instanceof com.servpp.lang.models.SppConstant constant)
             return constant.getJavaValue();
         if (scalarEnumReference(expression)) {
-            return withOtherFallback((SppEnum) expression.getReturnType(), expression.getExpr());
+            return withEnumFallback((SppEnum) expression.getReturnType(), expression.getExpr());
         }
         if (expression instanceof ParticipantConstruction construction) {
             return "new " + construction.getJavaType() + (construction.isCollection()

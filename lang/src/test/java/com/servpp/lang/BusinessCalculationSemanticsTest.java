@@ -54,12 +54,12 @@ public class BusinessCalculationSemanticsTest {
                 domain rules;
                 Role Evidence { double value; }
                 Role Other { double value; }
-                Contract Work { Evidence expected; Evidence actual; Evidence[] oldRows; Evidence[] newRows; Other other; }
+                Contract Work { Evidence expected; Evidence actual; Evidence[] oldRows; Evidence[] newRows; Other secondary; }
                 """;
         String check = "atomic check compare(Work work) { require(%s, \"CHANGED\"); }";
         var valid = compile(source + check.formatted("sameFacts(work.expected, work.actual) && sameFacts(work.oldRows, work.newRows)"));
         assertTrue(valid.validateAppDeclarations().toString(), valid.validateAppDeclarations().isEmpty());
-        for (String expression : java.util.List.of("sameFacts(work.expected)", "sameFacts(work.expected, work.other)",
+        for (String expression : java.util.List.of("sameFacts(work.expected)", "sameFacts(work.expected, work.secondary)",
                 "sameFacts(work.oldRows, work.actual)", "sameFacts(work.expected.value, work.actual.value)")) {
             assertTrue(compile(source + check.formatted(expression)).validateAppDeclarations().stream()
                     .anyMatch(error -> error.contains("sameFacts requires")));
@@ -167,7 +167,7 @@ public class BusinessCalculationSemanticsTest {
     @Test public void functionNamesRemainValidBusinessFieldNamesAndEnumsUseDeclaredValues() throws Exception {
         SppDomain domain = compile("""
                 domain rules;
-                Enum Status { Pending("pending"), Cancelled("cancelled") }
+                Enum Status { Pending:"pending", Cancelled:"cancelled" }
                 Role Values { double min; double max; Status status; boolean allowed; }
                 atomic calculate decide(Values v) {
                     v.min = min(v.min, v.max);
@@ -186,7 +186,7 @@ public class BusinessCalculationSemanticsTest {
                 .anyMatch(error -> error.contains("Unknown value")));
         SppDomain wrongWireValue = compile("""
                 domain rules;
-                Enum Status { Enabled("E") }
+                Enum Status { Enabled:"E" }
                 Role Values { Status status; }
                 atomic calculate decide(Values v) { v.status = "Enabled"; }
                 """);
@@ -218,9 +218,13 @@ public class BusinessCalculationSemanticsTest {
     }
 
     @Test public void switchEnumLabelsResolveDeclaredNames() throws Exception {
-        SppDomain domain = compile("domain rules; Enum Status { Pending(\"pending\"), Accepted(\"accepted\") } Role Values { Status status; double a; } "
+        String declarations = "domain rules; Enum Status { Pending:\"pending\", Accepted:\"accepted\",\"A\" } Role Values { Status status; double a; } ";
+        SppDomain domain = compile(declarations
                 + "atomic calculate decide(Values v) { switch (v.status) { case Pending: v.a=1; break; case Status.Accepted: v.a=2; break; default: v.a=0; } }");
         assertTrue(domain.validateAppDeclarations().toString(), domain.validateAppDeclarations().isEmpty());
+        SppDomain repeated = compile(declarations
+                + "atomic calculate decide(Values v) { switch (v.status) { case Accepted: break; case \"A\": break; } }");
+        assertTrue(repeated.validateAppDeclarations().stream().anyMatch(error -> error.contains("Duplicate switch case")));
     }
 
     @Test public void stringConcatenationKeepsStringTypeAndRequiresExplicitNumericConversion() throws Exception {

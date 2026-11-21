@@ -27,8 +27,8 @@ atomic check checkOriginalDepositPostings(CashDepositAgreement, DepositPostingLi
             "INVALID_ORIGINAL_DEPOSIT_POSTINGS"
         );
         int matching = 0;
-        for (DepositPostingLine other : DepositPostingLine[]) {
-            if (other.slot == line.slot) {
+        for (DepositPostingLine candidate : DepositPostingLine[]) {
+            if (candidate.slot == line.slot) {
                 matching++;
             }
         }

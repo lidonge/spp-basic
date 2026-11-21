@@ -9,7 +9,7 @@ import static org.junit.Assert.*;
 
 public class ProjectAnalysisTest {
     private final SourceDocument model = source("model.spp", "domain ledger; Role Facts { int amount; } Role Other { int amount; }");
-    private final SourceDocument service = source("logic.spp", "domain ledger;\natomic calculate twice(Facts, Other other) { Facts.amount *= 2; other.amount += 1; }\n"
+    private final SourceDocument service = source("logic.spp", "domain ledger;\natomic calculate twice(Facts, Other secondary) { Facts.amount *= 2; secondary.amount += 1; }\n"
             + "Scenario serial preview(Facts) { twice; }");
 
     @Test public void bindsTypesServicesAndMembersAcrossFiles() {

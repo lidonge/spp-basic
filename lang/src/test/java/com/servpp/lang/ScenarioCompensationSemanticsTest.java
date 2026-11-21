@@ -51,7 +51,7 @@ public class ScenarioCompensationSemanticsTest {
     @Test public void recoveryWithoutSourceBoundaryAndMismatchedParametersAreRejected() throws Exception {
         var unbounded = compile("Scenario serial recover(Work work) { restore(work); }", "recover;");
         assertTrue(unbounded.validateAppDeclarations().stream().anyMatch(message -> message.contains("must declare a local transaction boundary in SPP")));
-        var mismatched = compile("Scenario serial recover(Work work, Other other) { transaction { restore(work); } }", "recover;");
+        var mismatched = compile("Scenario serial recover(Work work, Other secondary) { transaction { restore(work); } }", "recover;");
         assertTrue(mismatched.validateAppDeclarations().stream().anyMatch(message -> message.contains("must accept the same parameter list")));
     }
     @Test public void selfDuplicateAndReachableNestedCompensationAreRejected() throws Exception {

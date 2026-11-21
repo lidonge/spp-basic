@@ -12,7 +12,7 @@ public class ScenarioResultBindingTest {
         try {
             Files.writeString(file, "domain rules; Role Item { String code; } Role Other { String code; } "
                     + "atomic query read(Item key, " + result + "); "
-                    + "Scenario serial run(Item key, Item item, Item[] items, Other other) { " + call + " }");
+                    + "Scenario serial run(Item key, Item item, Item[] items, Other secondary) { " + call + " }");
             SppProject project = new SppProject();
             new SppCompiler(file.toFile(), project).compile();
             return project.getDomain("rules");
@@ -31,7 +31,7 @@ public class ScenarioResultBindingTest {
 
     @Test public void wrongTypeDimensionAndAmbiguousParticipantsAreRejected() throws Exception {
         for (String[] fixture : new String[][] {
-                {"read(key, other);", "Item result"},
+                {"read(key, secondary);", "Item result"},
                 {"read(key, item);", "Item[] results"},
                 {"read;", "Item result"},
                 {"read(key, unknown);", "Item result"}}) {

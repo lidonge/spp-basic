@@ -13,15 +13,18 @@ public final class EnumValue extends Expression {
         this.item = item;
     }
 
-    public String getValue() { return item.getValue() == null ? item.getName() : item.getValue(); }
+    public String getValue() { return item.getWireValue(); }
 
     @Override public String getExpr() {
         String type = (getReturnType().getBasePackage() == null ? "" : getReturnType().getPackageName() + ".")
                 + getReturnType().getName();
         // Use the wire value: generated Java member names need not match SPP member names.
-        String value = getValue().replace("\\", "\\\\").replace("\"", "\\\"")
-                .replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t");
-        return type + ".fromValue(\"" + value + "\")";
+        return type + ".fromValue(" + javaLiteral(getValue()) + ")";
+    }
+
+    static String javaLiteral(String value) {
+        return "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"")
+                .replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t") + "\"";
     }
 
     @Override public void check(SppDomain domain) { }

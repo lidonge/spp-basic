@@ -20,8 +20,24 @@ public class SppEnum extends SppCompilationUnit{
         return items;
     }
 
+    public SppEnumItem getWireItem(String value) {
+        return items.stream().filter(item -> item.acceptsWireValue(value)).findFirst().orElse(null);
+    }
+
     public SppEnumItem getOtherItem() {
-        return items.stream().filter(item -> "OTHER".equals(item.getName())).findFirst().orElse(null);
+        SppEnumItem explicit = getFallbackItem(SppEnumItem.Fallback.OTHER);
+        return explicit != null ? explicit : items.stream()
+                .filter(item -> item.getFallback() == null && "OTHER".equals(item.getName()))
+                .findFirst().orElse(null);
+    }
+
+    public SppEnumItem getFallbackItem(SppEnumItem.Fallback fallback) {
+        return items.stream().filter(item -> item.getFallback() == fallback).findFirst().orElse(null);
+    }
+
+    public SppEnumItem getMissingItem() {
+        SppEnumItem explicit = getFallbackItem(SppEnumItem.Fallback.NULL);
+        return explicit != null ? explicit : getOtherItem();
     }
 
 }

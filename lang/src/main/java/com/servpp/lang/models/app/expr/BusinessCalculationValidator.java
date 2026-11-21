@@ -220,7 +220,7 @@ public final class BusinessCalculationValidator {
                                     || (enumeration.getName() + "." + item.getName()).equals(labelName)).findFirst();
                             if (itemValue.isPresent()) {
                                 var item = itemValue.get(); Literal value = new Literal();
-                                value.setValue("\"" + (item.getValue() == null ? item.getName() : item.getValue()) + "\""); entry.condition = value;
+                                value.setValue("\"" + item.getWireValue() + "\""); entry.condition = value;
                             }
                         }
                         if (selector == Kind.NUMBER && entry.condition instanceof IOperationExpression sign
@@ -234,6 +234,11 @@ public final class BusinessCalculationValidator {
                         if (entry.condition instanceof Literal || entry.condition instanceof EnumValue) {
                             String key = entry.condition instanceof Literal literal ? literal.getValue()
                                     : "\"" + ((EnumValue) entry.condition).getValue() + "\"";
+                            if (selector == Kind.ENUM && key.startsWith("\"")
+                                    && control.condition.getReturnType() instanceof SppEnum enumeration) {
+                                var item = enumeration.getWireItem(key.substring(1, key.length() - 1));
+                                if (item != null) key = "\"" + item.getWireValue() + "\"";
+                            }
                             if (selector == Kind.NUMBER) {
                                 try { key = new java.math.BigDecimal(NumericJavaRenderer.normalizeLiteral(key)).stripTrailingZeros().toPlainString(); }
                                 catch (NumberFormatException ignored) { }
@@ -455,7 +460,7 @@ public final class BusinessCalculationValidator {
         }
         String text = literal.getValue();
         String unquoted = text.substring(1, text.length() - 1);
-        if (enumeration.getItems().stream().noneMatch(item -> unquoted.equals(item.getValue() == null ? item.getName() : item.getValue()))) {
+        if (enumeration.getWireItem(unquoted) == null) {
             error("Unknown value " + text + " for enum " + enumeration.getName());
         }
     }

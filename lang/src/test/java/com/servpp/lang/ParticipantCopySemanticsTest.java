@@ -9,14 +9,14 @@ public class ParticipantCopySemanticsTest {
     private java.util.List<String> validate(String body) throws Exception {
         var source=Files.createTempFile("participant-copy", ".spp");
         try {
-            Files.writeString(source,"domain rules; Role Item { long amount; } Role Other { long amount; } Role Batch { Item item; Item[] items; Other other; } atomic calculate freeze(Batch a, Batch b, Item[] items) { "+body+" }");
+            Files.writeString(source,"domain rules; Role Item { long amount; } Role Other { long amount; } Role Batch { Item item; Item[] items; Other secondary; } atomic calculate freeze(Batch a, Batch b, Item[] items) { "+body+" }");
             SppProject p=new SppProject();new SppCompiler(source.toFile(),p).compile();
             return p.getSppDomainMap().get("rules").validateBusinessCalculations();
         } finally { Files.deleteIfExists(source); }
     }
     @Test public void copiesKeepObjectTypesAndCollectionDimensions() throws Exception {
-        assertTrue(validate("b.item = copy(a.item); b.items = copy(items); b.other = copy(null);").isEmpty());
-        assertFalse(validate("b.item = copy(a.other);").isEmpty());
+        assertTrue(validate("b.item = copy(a.item); b.items = copy(items); b.secondary = copy(null);").isEmpty());
+        assertFalse(validate("b.item = copy(a.secondary);").isEmpty());
         assertFalse(validate("b.item = copy(items);").isEmpty());
         assertFalse(validate("b.items = copy(a.item);").isEmpty());
     }
