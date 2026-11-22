@@ -17,6 +17,8 @@ public interface ICalculationListener extends SppListener {
     @Override default void exitCalculationStatement(SppParser.CalculationStatementContext ctx) { }
     @Override default void enterCalculationAssignment(SppParser.CalculationAssignmentContext ctx) { }
     @Override default void exitCalculationAssignment(SppParser.CalculationAssignmentContext ctx) { }
+    @Override default void enterQuantumTransfer(SppParser.QuantumTransferContext ctx) { }
+    @Override default void exitQuantumTransfer(SppParser.QuantumTransferContext ctx) { }
     @Override default void enterParticipantConstruction(SppParser.ParticipantConstructionContext ctx) { }
     @Override default void exitParticipantConstruction(SppParser.ParticipantConstructionContext ctx) { }
     @Override default void enterCalculationFunction(SppParser.CalculationFunctionContext ctx) { }

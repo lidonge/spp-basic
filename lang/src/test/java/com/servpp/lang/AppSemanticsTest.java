@@ -14268,6 +14268,54 @@ public class AppSemanticsTest {
         assertTrue(service.getQuantumServiceMetadataMethod().contains("Account.debt"));
     }
 
+    @Test
+    public void quantumTransferCapturesAmountAndRegistersBothMovements() throws Exception {
+        var domain = compileDomain("""
+                domain cashflow;
+                Role CashSource { quantum BigDecimal(15,2) balance; }
+                Role CashTarget { quantum BigDecimal(15,2) balance; }
+                quantum update moveCash(CashSource, CashTarget) {
+                    CashSource.balance -> CashTarget.balance : CashSource.balance / 2;
+                }
+                """, """
+                domain cashflow;
+                quantumStore ledger { attribute CashSource.balance; attribute CashTarget.balance; }
+                scope { local { quantum resource(funds, CashSource.balance, CashTarget.balance) moveCash; } }
+                """);
+        var errors = domain.validateBusinessCalculations();
+        assertTrue(errors.toString(), errors.isEmpty());
+        var service = (SppService) domain.getSppClass("MoveCash");
+        assertEquals(java.util.Set.of("CashSource.balance", "CashTarget.balance"),
+                java.util.Set.copyOf(service.getAssignedQuantumAttributeIds()));
+        domain.applyCalculationNumericBinding(((com.servpp.lang.models.SppClass) domain.getSppClass("CashSource")).getField("balance"));
+        domain.applyCalculationNumericBinding(((com.servpp.lang.models.SppClass) domain.getSppClass("CashTarget")).getField("balance"));
+        String java = service.getPhysicalJavaStatements().get(0).getJavaStatement();
+        assertTrue(java, java.contains(".subtract(($sppTransferAmount0))"));
+        assertTrue(java, java.contains(".add(($sppTransferAmount0))"));
+        assertEquals(java, 1, java.split("\\.divide\\(", -1).length - 1);
+    }
+
+    @Test
+    public void quantumTransferRejectsOrdinaryEndpointsUnconservedScopeAndIdenticalAttributes() throws Exception {
+        var domain = compileDomain("""
+                domain cashflow;
+                Role CashSource { quantum BigDecimal(15,2) balance; }
+                Role CashTarget { quantum BigDecimal(15,2) balance; BigDecimal(15,2) ordinary; }
+                atomic calculate ordinaryMove(CashSource, CashTarget) { CashSource.balance -> CashTarget.balance : 1; }
+                quantum update badEndpoint(CashSource, CashTarget) { CashSource.balance -> CashTarget.ordinary : 1; }
+                quantum update stateMove(CashSource, CashTarget) { CashSource.balance -> CashTarget.balance : 1; }
+                quantum update sameAttribute(CashSource) { CashSource.balance -> CashSource.balance : 1; }
+                """, """
+                domain cashflow;
+                scope { local { quantum resource($state) stateMove; } }
+                """);
+        var errors = domain.validateBusinessCalculations();
+        assertTrue(errors.toString(), errors.stream().anyMatch(error -> error.contains("belongs to a quantum update")));
+        assertTrue(errors.toString(), errors.stream().anyMatch(error -> error.contains("scalar quantum parameter attribute")));
+        assertTrue(errors.toString(), errors.stream().anyMatch(error -> error.contains("endpoints must belong")));
+        assertTrue(errors.toString(), errors.stream().anyMatch(error -> error.contains("two distinct quantum attributes")));
+    }
+
     private SppDomain compileDomain(String sppSource, String appSource) throws Exception {
         File dir = Files.createTempDirectory("spp-app-semantics-test").toFile();
         String domainName = sourceDomainName(sppSource);

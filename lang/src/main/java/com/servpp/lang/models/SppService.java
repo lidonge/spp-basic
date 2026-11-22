@@ -178,6 +178,9 @@ public class SppService extends SppClass{
     private void collectBusinessAssignments(List<IJavaStatement> statements) {
         for (IJavaStatement statement : statements) {
             if (statement instanceof IOperationExpression expression) { expressions.add(expression); }
+            if (statement instanceof com.servpp.lang.models.app.expr.QuantumTransferStatement transfer) {
+                expressions.addAll(transfer.movements(transfer.amount()));
+            }
             if (statement instanceof com.servpp.lang.models.app.expr.CalculationControl control) {
                 collectBusinessAssignments(control.children());
             }

@@ -19,6 +19,11 @@ public final class BusinessCalculationCompiler {
     }
     private static IJavaStatement statement(SppParser.CalculationStatementContext ctx, com.servpp.lang.models.SppDomain domain) {
         String keyword = ctx.getChild(0).getText();
+        if (ctx.quantumTransfer() != null) {
+            var transfer = ctx.quantumTransfer();
+            return new QuantumTransferStatement(reference(transfer.qualifiedName(0).getText()),
+                    reference(transfer.qualifiedName(1).getText()), expression(transfer.expression(), domain));
+        }
         if (ctx.atomiccall() != null) {
             var call = ctx.atomiccall();
             if (call.Identifier() == null || call.scenarioBranch() != null || call.quantumBounds() != null || call.getText().contains(",breakTransction"))

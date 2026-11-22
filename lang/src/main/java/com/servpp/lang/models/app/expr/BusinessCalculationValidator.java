@@ -38,12 +38,14 @@ public final class BusinessCalculationValidator {
         for (IJavaStatement statement : statements) {
             if (service.isDeclaredQuantumService() && !(statement instanceof IOperationExpression)
                     && !(statement instanceof CalculationControl) && !(statement instanceof CalculationRule)
+                    && !(statement instanceof QuantumTransferStatement)
                     && (!(statement instanceof RequireStatement constraint) || !constraint.isQuantumConstraint())) {
                 error("Quantum service bodies declare quantum attribute updates and check(expression) constraints."); continue;
             }
             if (statement instanceof RequireStatement constraint && constraint.isQuantumConstraint() && !service.isDeclaredQuantumService())
                 error("check(expression) constraints belong to quantum service definitions.");
-            if (statement instanceof CalculationServiceCall call) { validateCall(call); }
+            if (statement instanceof QuantumTransferStatement transfer) { validateTransfer(transfer); }
+            else if (statement instanceof CalculationServiceCall call) { validateCall(call); }
             else if (statement instanceof CalculationControl control) { control(control); }
             else if (statement instanceof RequireStatement require) {
                 if (service.getServiceType() != IConstance.ServiceType.check && !service.isDeclaredQuantumService())
@@ -87,6 +89,42 @@ public final class BusinessCalculationValidator {
                 if (compound != null && left != Kind.NUMBER) { error("Compound assignment requires numeric operands."); }
             }
         }
+    }
+
+    private void validateTransfer(QuantumTransferStatement transfer) {
+        if (!service.isDeclaredQuantumService() || service.getServiceType() != IConstance.ServiceType.update) {
+            error("A transfer belongs to a quantum update service.");
+            return;
+        }
+        // Reuse assignment validation and resolve the endpoint and amount types.
+        statements(new ArrayList<>(transfer.movements(transfer.amount())));
+        if (type(transfer.amount()) != Kind.NUMBER) {
+            error("A quantum transfer amount must be numeric.");
+        }
+        String source = transferAttribute(transfer.source());
+        String destination = transferAttribute(transfer.destination());
+        if (source != null && source.equals(destination)) {
+            error("A quantum transfer requires two distinct quantum attributes.");
+        }
+        var scope = service.getScopeItem();
+        if (scope != null && ("$state".equals(scope.getResourceId())
+                || scope.hasQuantumConservationAttributes() && source != null && destination != null
+                && !(scope.getQuantumConservationAttributeIds().contains(source)
+                     && scope.getQuantumConservationAttributeIds().contains(destination)))) {
+            error("Both quantum transfer endpoints must belong to the service's conserved group.");
+        }
+    }
+
+    private String transferAttribute(Reference reference) {
+        String[] path = reference.getValue().split("\\.");
+        var participant = service.getLocalVar(path[0]);
+        if (path.length == 2 && participant != null && participant.getArrayDimension() == 0
+                && resolve(reference.getValue()) instanceof SppField field && field.isQuantum()
+                && field.getArrayDimension() == 0 && NumericBinding.isNumeric(field.getType().getName())) {
+            return participant.getType().getName() + "." + path[1];
+        }
+        error("A quantum transfer endpoint must be a scalar quantum parameter attribute: " + reference.getValue());
+        return null;
     }
     private void validateCall(CalculationServiceCall call) {
         var unit = call.domain.getSppClass(com.servpp.lang.general.NameUtil.firstToLowerCase(call.name, false));

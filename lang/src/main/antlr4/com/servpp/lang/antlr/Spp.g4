@@ -132,6 +132,7 @@ calculationBody
 
 calculationStatement
     : calculationBody
+    | quantumTransfer ';'
     | calculationAssignment ';'
     | calculationLocal ';'
     | 'require' '(' expression ',' (StringLiteral | qualifiedName) ')' ';'
@@ -144,6 +145,10 @@ calculationStatement
     | 'switch' '(' expression ')' '{' calculationCase* '}'
     | ('break' | 'continue') ';'
     | ';'
+    ;
+
+quantumTransfer
+    : qualifiedName '->' qualifiedName ':' expression
     ;
 
 calculationCase

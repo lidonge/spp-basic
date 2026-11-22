@@ -7852,7 +7852,7 @@ public class SppDomain {
                 continue;
             }
             if (service.isDeclaredQuantumService() && service.hasBusinessImplementation() && service.getDeclaredJavaStatements() != null
-                    && service.getDeclaredJavaStatements().stream().anyMatch(statement -> statement instanceof com.servpp.lang.models.app.expr.IOperationExpression)) {
+                    && hasDeclaredQuantumUpdates(service.getDeclaredJavaStatements())) {
                 errors.add("Quantum service " + service.getFuncName() + " already defines its updates in SPP; APP cannot define a second update implementation.");
             }
             if (service.getScopeItem() != null && !service.getScopeItem().isLocal()) {
@@ -7872,6 +7872,18 @@ public class SppDomain {
             }
         }
         return errors;
+    }
+
+    private static boolean hasDeclaredQuantumUpdates(List<com.servpp.lang.models.app.expr.IJavaStatement> statements) {
+        for (var statement : statements) {
+            if (statement instanceof com.servpp.lang.models.app.expr.IOperationExpression
+                    || statement instanceof com.servpp.lang.models.app.expr.QuantumTransferStatement) return true;
+            if (statement instanceof com.servpp.lang.models.app.expr.CalculationControl control
+                    && hasDeclaredQuantumUpdates(control.children())) return true;
+            if (statement instanceof com.servpp.lang.models.app.expr.CalculationRule branch
+                    && (hasDeclaredQuantumUpdates(branch.getWhenTrue()) || hasDeclaredQuantumUpdates(branch.getWhenFalse()))) return true;
+        }
+        return false;
     }
 
     public List<String> validateHeaderDeclarations() {

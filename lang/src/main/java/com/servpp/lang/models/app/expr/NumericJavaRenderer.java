@@ -18,6 +18,7 @@ public final class NumericJavaRenderer {
     public NumericJavaRenderer(SppService service) { this.service = service; }
 
     public String statement(IJavaStatement statement) {
+        if (statement instanceof QuantumTransferStatement transfer) { return transfer(transfer); }
         if (statement instanceof CalculationServiceCall call) {
             String type = call.callee.getBasePackage() + "." + call.callee.getDomainName() + ".handler." + call.callee.getName();
             String args = call.resolvedArguments.stream().map(reference -> {
@@ -47,6 +48,19 @@ public final class NumericJavaRenderer {
         }
         if (statement instanceof IOperationExpression operation) { return expression(operation) + ";"; }
         return statement.getJavaStatement();
+    }
+
+    private String transfer(QuantumTransferStatement transfer) {
+        String name = temporary("$sppTransferAmount");
+        var target = new CalculationReference();
+        target.setValue(name);
+        target.field = new SppLocalVar(new SppClass("decimal"), name);
+        target.field.setPhysicalJavaType("java.math.BigDecimal");
+        return "{\njava.math.BigDecimal " + name + " = " + decimal(transfer.amount()) + ";\n"
+                + "com.servpp.service.transaction.QuantumConstraintProvider.check("
+                + name + " != null && " + name + ".signum() >= 0, \"QUANTUM_TRANSFER_INVALID_AMOUNT\");\n"
+                + String.join("\n", transfer.movements(target).stream().map(this::statement).toList())
+                + "\n}";
     }
 
     public String boundEndpoint(IExpression expression, SppLocalVar field) {
