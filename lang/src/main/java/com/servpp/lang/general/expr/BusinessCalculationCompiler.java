@@ -2,6 +2,8 @@ package com.servpp.lang.general.expr;
 
 import com.servpp.lang.antlr.SppParser;
 import com.servpp.lang.general.app.BracketOperation;
+import com.servpp.lang.models.SppDomain;
+import com.servpp.lang.models.SppEnum;
 import com.servpp.lang.models.app.expr.*;
 import java.util.List;
 import java.util.ArrayList;
@@ -37,9 +39,20 @@ public final class BusinessCalculationCompiler {
             return new CalculationRule(expression(ctx.expression(), domain), List.of(statement(ctx.calculationStatement(0), domain)),
                     ctx.calculationStatement().size() == 2 ? List.of(statement(ctx.calculationStatement(1), domain)) : List.of());
         }
-        if (keyword.equals("require") || keyword.equals("check")) {
-            return new RequireStatement(expression(ctx.expression(), domain), ctx.StringLiteral() == null
-                    ? "\"QUANTUM_CONSTRAINT_REJECTED\"" : ctx.StringLiteral().getText()).quantumConstraint(keyword.equals("check"));
+        if (keyword.equals("require")) {
+            var condition = expression(ctx.expression(), domain);
+            if (ctx.StringLiteral() != null) {
+                return new RequireStatement(condition, ctx.StringLiteral().getText());
+            }
+            String enumName = ctx.Identifier(0).getText();
+            if (!(domain.getSppClass(enumName) instanceof SppEnum enumeration)) {
+                throw new IllegalArgumentException("Unknown rejection code enum " + enumName);
+            }
+            return new RequireStatement(condition, enumMember(enumeration, ctx.Identifier(1).getText()));
+        }
+        if (keyword.equals("check")) {
+            return new RequireStatement(expression(ctx.expression(), domain), "\"QUANTUM_CONSTRAINT_REJECTED\"")
+                    .quantumConstraint(true);
         }
         if (keyword.equals("while") || keyword.equals("for") || keyword.equals("switch")) {
             boolean each = keyword.equals("for") && ctx.calculationLocal() != null
@@ -119,17 +132,22 @@ public final class BusinessCalculationCompiler {
 
     public static IExpression expression(SppParser.ExpressionContext ctx) { return expression(ctx, null); }
 
-    public static IExpression expression(SppParser.ExpressionContext ctx, com.servpp.lang.models.SppDomain domain) {
+    private static EnumValue enumMember(SppEnum enumeration, String memberName) {
+        var item = enumeration.getItems().stream().filter(member -> member.getName().equals(memberName))
+                .findFirst().orElseThrow(() -> new IllegalArgumentException(
+                        "Unknown enum member " + enumeration.getName() + "." + memberName));
+        return new EnumValue(enumeration, item);
+    }
+
+    public static IExpression expression(SppParser.ExpressionContext ctx, SppDomain domain) {
         if (ctx instanceof SppParser.PrimExprContext primary) {
             var p = primary.primaryExpr();
             if (p.primaryExprQualified() != null) {
                 String name = p.getText();
                 String[] parts = name.split("\\.");
                 if (domain != null && parts.length == 2
-                        && domain.getSppClass(parts[0]) instanceof com.servpp.lang.models.SppEnum enumeration) {
-                    var item = enumeration.getItems().stream().filter(member -> member.getName().equals(parts[1]))
-                            .findFirst().orElseThrow(() -> new IllegalArgumentException("Unknown enum member " + name));
-                    return new EnumValue(enumeration, item);
+                        && domain.getSppClass(parts[0]) instanceof SppEnum enumeration) {
+                    return enumMember(enumeration, parts[1]);
                 }
                 return reference(name);
             }

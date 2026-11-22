@@ -23,6 +23,39 @@ public class BasicCompilerTest {
     @Rule public TemporaryFolder temporary = new TemporaryFolder();
 
     @Test
+    public void requireUsesTheCanonicalWireCodeOfAnEnumMember() throws Exception {
+        Path source = temporary.newFolder().toPath();
+        Path check = source.resolve("checks.spp");
+        String declarations = """
+                domain checks;
+                Enum AccountError { NUMBER_REQUIRED:"E01","legacy", NOT_FOUND }
+                Role Input { boolean valid; }
+                """;
+        Files.writeString(check, declarations + """
+                atomic check checkAccount(Input) {
+                    require(Input.valid, AccountError.NUMBER_REQUIRED);
+                    require(Input.valid, AccountError.NOT_FOUND);
+                    require(Input.valid, "LITERAL");
+                }
+                """);
+        Path output = temporary.getRoot().toPath().resolve("enum-rejection");
+        Main.run(new String[]{"generate", "--source", source.toString(), "--output", output.toString()});
+        String java = Files.readString(output.resolve("src/main/java/com/servpp/generated/checks/service/SimpleCheckAccount.java"));
+        assertTrue(java.contains("BusinessChecks.fail(\"E01\")"));
+        assertTrue(java.contains("BusinessChecks.fail(\"NOT_FOUND\")"));
+        assertTrue(java.contains("BusinessChecks.fail(\"LITERAL\")"));
+        assertFalse(java.contains("BusinessChecks.fail(\"legacy\")"));
+
+        for (String code : List.of("UnknownError.NUMBER_REQUIRED", "AccountError.UNKNOWN", "Input.valid")) {
+            Files.writeString(check, declarations + """
+                    atomic check checkAccount(Input) { require(Input.valid, %s); }
+                    """.formatted(code));
+            assertThrows(code, MojoExecutionException.class,
+                    () -> Main.run(new String[]{"check", "--source", source.toString()}));
+        }
+    }
+
+    @Test
     public void enumFallbacksDistinguishMissingAndUnrecognizedValues() throws Exception {
         Path source = temporary.newFolder().toPath();
         Files.writeString(source.resolve("routing.spp"), """

@@ -9,6 +9,7 @@ public class RequireStatement implements IJavaStatement, IContainer {
     public RequireStatement quantumConstraint(boolean value) { quantumConstraint = value; return this; }
     private IExpression condition;
     private String message;
+    private EnumValue rejectionCode;
     private IContainer parent;
 
     public RequireStatement(String message) {
@@ -20,6 +21,11 @@ public class RequireStatement implements IJavaStatement, IContainer {
         this.message = message;
     }
 
+    public RequireStatement(IExpression condition, EnumValue rejectionCode) {
+        this.condition = condition;
+        this.rejectionCode = rejectionCode;
+    }
+
     public IExpression getCondition() {
         return condition;
     }
@@ -29,16 +35,17 @@ public class RequireStatement implements IJavaStatement, IContainer {
     }
 
     public String getMessage() {
-        return message;
+        return rejectionCode == null ? message : EnumValue.javaLiteral(rejectionCode.getValue());
     }
 
     public void setMessage(String message) {
+        this.rejectionCode = null;
         this.message = message;
     }
 
     @Override
     public String getJavaStatement() {
-        return "if (!(" + condition.getExpr() + ")) { throw new IllegalStateException(" + message + "); }";
+        return "if (!(" + condition.getExpr() + ")) { throw new IllegalStateException(" + getMessage() + "); }";
     }
 
     @Override
