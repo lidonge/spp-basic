@@ -134,7 +134,7 @@ calculationStatement
     : calculationBody
     | calculationAssignment ';'
     | calculationLocal ';'
-    | 'require' '(' expression ',' (StringLiteral | Identifier '.' Identifier) ')' ';'
+    | 'require' '(' expression ',' (StringLiteral | qualifiedName) ')' ';'
     | 'check' '(' expression ')' ';'
     | atomiccall
     | 'if' '(' expression ')' calculationStatement ('else' calculationStatement)?

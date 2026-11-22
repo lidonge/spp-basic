@@ -2,6 +2,7 @@ package com.servpp.lang.models.app.expr;
 
 import com.servpp.lang.models.IContainer;
 import com.servpp.lang.models.IComponent;
+import java.util.function.Function;
 
 public class RequireStatement implements IJavaStatement, IContainer {
     private boolean quantumConstraint;
@@ -9,7 +10,7 @@ public class RequireStatement implements IJavaStatement, IContainer {
     public RequireStatement quantumConstraint(boolean value) { quantumConstraint = value; return this; }
     private IExpression condition;
     private String message;
-    private EnumValue rejectionCode;
+    private IExpression rejectionCode;
     private IContainer parent;
 
     public RequireStatement(String message) {
@@ -21,7 +22,7 @@ public class RequireStatement implements IJavaStatement, IContainer {
         this.message = message;
     }
 
-    public RequireStatement(IExpression condition, EnumValue rejectionCode) {
+    public RequireStatement(IExpression condition, IExpression rejectionCode) {
         this.condition = condition;
         this.rejectionCode = rejectionCode;
     }
@@ -35,7 +36,18 @@ public class RequireStatement implements IJavaStatement, IContainer {
     }
 
     public String getMessage() {
-        return rejectionCode == null ? message : EnumValue.javaLiteral(rejectionCode.getValue());
+        return renderMessage(IExpression::getExpr);
+    }
+
+    public IExpression getRejectionCode() {
+        return rejectionCode;
+    }
+
+    String renderMessage(Function<IExpression, String> renderExpression) {
+        if (rejectionCode == null) return message;
+        if (rejectionCode instanceof EnumValue member) return EnumValue.javaLiteral(member.getValue());
+        return "java.util.Objects.requireNonNull(" + renderExpression.apply(rejectionCode)
+                + ", \"REJECTION_CODE_REQUIRED\").getValue()";
     }
 
     public void setMessage(String message) {

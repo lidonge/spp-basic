@@ -29,13 +29,14 @@ public class BasicCompilerTest {
         String declarations = """
                 domain checks;
                 Enum AccountError { NUMBER_REQUIRED:"E01","legacy", NOT_FOUND }
-                Role Input { boolean valid; }
+                Role Input { boolean valid; AccountError rejection; }
                 """;
         Files.writeString(check, declarations + """
                 atomic check checkAccount(Input) {
                     require(Input.valid, AccountError.NUMBER_REQUIRED);
                     require(Input.valid, AccountError.NOT_FOUND);
                     require(Input.valid, "LITERAL");
+                    require(Input.rejection == null, Input.rejection);
                 }
                 """);
         Path output = temporary.getRoot().toPath().resolve("enum-rejection");
@@ -44,6 +45,8 @@ public class BasicCompilerTest {
         assertTrue(java.contains("BusinessChecks.fail(\"E01\")"));
         assertTrue(java.contains("BusinessChecks.fail(\"NOT_FOUND\")"));
         assertTrue(java.contains("BusinessChecks.fail(\"LITERAL\")"));
+        assertTrue(java.contains("BusinessChecks.fail(java.util.Objects.requireNonNull(Input.getRejection(), "
+                + "\"REJECTION_CODE_REQUIRED\").getValue())"));
         assertFalse(java.contains("BusinessChecks.fail(\"legacy\")"));
 
         for (String code : List.of("UnknownError.NUMBER_REQUIRED", "AccountError.UNKNOWN", "Input.valid")) {

@@ -49,6 +49,8 @@ public final class BusinessCalculationValidator {
                 if (service.getServiceType() != IConstance.ServiceType.check && !service.isDeclaredQuantumService())
                     error("Business validation belongs in an atomic check explicitly called by a scenario; calculate cannot require.");
                 bool(require.getCondition());
+                if (require.getRejectionCode() != null && type(require.getRejectionCode()) != Kind.ENUM)
+                    error("A named rejection code must be a scalar enum value.");
                 if (service.isDeclaredQuantumService()) validateQuantumCondition(require.getCondition());
             }
             else if (statement instanceof CalculationRule rule) {

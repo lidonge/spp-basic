@@ -43,7 +43,7 @@ public final class NumericJavaRenderer {
             if (service.isDeclaredQuantumService()) return "com.servpp.service.transaction.QuantumConstraintProvider.check("
                     + condition(require.getCondition()) + ", " + require.getMessage() + ");";
             return "if (!(" + condition(require.getCondition()) + ")) { com.servpp.service.runtime.BusinessChecks.fail("
-                    + require.getMessage() + "); return; }";
+                    + require.renderMessage(this::expression) + "); return; }";
         }
         if (statement instanceof IOperationExpression operation) { return expression(operation) + ";"; }
         return statement.getJavaStatement();

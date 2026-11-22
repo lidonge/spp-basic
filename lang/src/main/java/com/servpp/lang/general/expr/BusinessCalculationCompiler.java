@@ -44,11 +44,7 @@ public final class BusinessCalculationCompiler {
             if (ctx.StringLiteral() != null) {
                 return new RequireStatement(condition, ctx.StringLiteral().getText());
             }
-            String enumName = ctx.Identifier(0).getText();
-            if (!(domain.getSppClass(enumName) instanceof SppEnum enumeration)) {
-                throw new IllegalArgumentException("Unknown rejection code enum " + enumName);
-            }
-            return new RequireStatement(condition, enumMember(enumeration, ctx.Identifier(1).getText()));
+            return new RequireStatement(condition, enumOrReference(ctx.qualifiedName().getText(), domain));
         }
         if (keyword.equals("check")) {
             return new RequireStatement(expression(ctx.expression(), domain), "\"QUANTUM_CONSTRAINT_REJECTED\"")
@@ -139,17 +135,19 @@ public final class BusinessCalculationCompiler {
         return new EnumValue(enumeration, item);
     }
 
+    private static IExpression enumOrReference(String name, SppDomain domain) {
+        String[] parts = name.split("\\.");
+        if (domain != null && parts.length == 2 && domain.getSppClass(parts[0]) instanceof SppEnum enumeration) {
+            return enumMember(enumeration, parts[1]);
+        }
+        return reference(name);
+    }
+
     public static IExpression expression(SppParser.ExpressionContext ctx, SppDomain domain) {
         if (ctx instanceof SppParser.PrimExprContext primary) {
             var p = primary.primaryExpr();
             if (p.primaryExprQualified() != null) {
-                String name = p.getText();
-                String[] parts = name.split("\\.");
-                if (domain != null && parts.length == 2
-                        && domain.getSppClass(parts[0]) instanceof SppEnum enumeration) {
-                    return enumMember(enumeration, parts[1]);
-                }
-                return reference(name);
+                return enumOrReference(p.getText(), domain);
             }
             if (p.primaryExprLiteral() != null) {
                 Literal result = new Literal(); result.setValue(p.getText()); return result;
