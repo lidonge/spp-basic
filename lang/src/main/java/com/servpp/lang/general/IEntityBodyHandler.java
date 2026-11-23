@@ -72,12 +72,12 @@ public interface IEntityBodyHandler extends ICompilationUnitHandler {
                 sppDomain.addAppParseError(message);
             }
         }
-        if (specification.contains("(") && !com.servpp.lang.models.app.NumericBinding.isNumeric(sdims[0]))
-            logSppError(ctx, "Precision and scale are numeric physical defaults only");
-        if (com.servpp.lang.models.app.NumericBinding.isNumeric(sdims[0])) {
-            field.setDeclaredNumericSpecification(specification);
-            try { com.servpp.lang.models.app.NumericBinding.dimensions(specification); }
-            catch (IllegalArgumentException failure) { logSppError(ctx, failure.getMessage()); }
+        if (specification.contains("(") || com.servpp.lang.models.app.NumericBinding.isNumeric(sdims[0])) {
+            try { field.setDeclaredNumericSpecification(specification); }
+            catch (IllegalArgumentException failure) {
+                logSppError(ctx, failure.getMessage());
+                sppDomain.addAppParseError("Field " + name + ": " + failure.getMessage());
+            }
         }
         if (ctx.StringLiteral() != null) {
             String literal = ctx.StringLiteral().getText();

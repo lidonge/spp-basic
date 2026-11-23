@@ -110,6 +110,9 @@ public class GeneratorUtil {
                     new org.apache.maven.plugin.logging.SystemStreamLog().warn(sppDomain.getName() + ": " + warning);
                 }
             }
+            for (String warning : sppDomain.numericRoundingWarnings()) {
+                new org.apache.maven.plugin.logging.SystemStreamLog().warn(sppDomain.getName() + ": " + warning);
+            }
             List<String> physicalCatalogErrors = sppDomain.validatePhysicalRuntimeCatalogGeneration();
             if (!physicalCatalogErrors.isEmpty()) {
                 throw new MojoFailureException("S++ physical runtime catalog validation failed:\n"

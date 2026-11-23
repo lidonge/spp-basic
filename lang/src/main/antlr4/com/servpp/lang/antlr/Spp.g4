@@ -160,7 +160,7 @@ calculationCase
     ;
 
 calculationLocal
-    : (primitiveType | Identifier) ('[' ']')? Identifier ('=' expression)? (',' Identifier ('=' expression)?)*
+    : (primitiveType numericPrecision? | Identifier) ('[' ']')? Identifier ('=' expression)? (',' Identifier ('=' expression)?)*
     ;
 
 calculationUpdates
@@ -303,4 +303,4 @@ parameter
     : qualifiedName
     ;
 
-numericPrecision : '(' IntegerLiteral ',' IntegerLiteral ')';
+numericPrecision : '(' IntegerLiteral ',' IntegerLiteral (',' Identifier)? ')';

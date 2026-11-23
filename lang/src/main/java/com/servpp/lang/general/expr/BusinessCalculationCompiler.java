@@ -5,6 +5,8 @@ import com.servpp.lang.general.app.BracketOperation;
 import com.servpp.lang.models.SppDomain;
 import com.servpp.lang.models.SppEnum;
 import com.servpp.lang.models.app.expr.*;
+import com.servpp.lang.models.app.NumericBinding;
+import org.antlr.v4.runtime.Token;
 import java.util.List;
 import java.util.ArrayList;
 
@@ -22,7 +24,8 @@ public final class BusinessCalculationCompiler {
         if (ctx.quantumTransfer() != null) {
             var transfer = ctx.quantumTransfer();
             return new QuantumTransferStatement(reference(transfer.qualifiedName(0).getText()),
-                    reference(transfer.qualifiedName(1).getText()), expression(transfer.expression(), domain));
+                    reference(transfer.qualifiedName(1).getText()), expression(transfer.expression(), domain),
+                    sourceLocation(transfer.getStart()));
         }
         if (ctx.atomiccall() != null) {
             var call = ctx.atomiccall();
@@ -95,19 +98,25 @@ public final class BusinessCalculationCompiler {
                 : keyword.equals("continue") ? CalculationControl.Kind.CONTINUE : CalculationControl.Kind.EMPTY);
     }
     private static CalculationControl local(SppParser.CalculationLocalContext ctx, com.servpp.lang.models.SppDomain domain) {
-        String typeName = ctx.getChild(0).getText(), name = ctx.getChild(1).getText();
+        String typeName = ctx.getChild(0).getText();
         var type = domain.getSppClass(typeName);
-        if (type == null && !java.util.Set.of("short", "int", "long", "float", "double", "decimal", "boolean", "char", "String").contains(typeName)) {
+        if (type == null && !NumericBinding.isNumeric(typeName)
+                && !java.util.Set.of("boolean", "char", "String").contains(typeName)) {
             throw new IllegalArgumentException("Unknown local variable type " + typeName);
         }
         if (type == null) { type = new com.servpp.lang.models.SppClass(typeName); }
         CalculationControl result = null;
-        int dimensions = ctx.getChild(1).getText().equals("[") ? 1 : 0;
-        for (int i = dimensions == 1 ? 3 : 1; i < ctx.getChildCount();) {
-            name = ctx.getChild(i++).getText();
+        int firstVariable = ctx.numericPrecision() == null ? 1 : 2;
+        int dimensions = ctx.getChild(firstVariable).getText().equals("[") ? 1 : 0;
+        for (int i = firstVariable + 2 * dimensions; i < ctx.getChildCount();) {
+            var variable = (org.antlr.v4.runtime.tree.TerminalNode) ctx.getChild(i++);
+            String name = variable.getText();
             CalculationControl declaration = new CalculationControl(CalculationControl.Kind.LOCAL);
+            declaration.sourceLocation = sourceLocation(variable.getSymbol());
             declaration.local = new com.servpp.lang.models.SppLocalVar(type, name);
             declaration.local.setArrayDimension(dimensions);
+            if (ctx.numericPrecision() != null)
+                declaration.local.setDeclaredNumericSpecification(typeName + ctx.numericPrecision().getText());
             domain.applyCalculationNumericBinding(declaration.local);
             if (i < ctx.getChildCount() && ctx.getChild(i).getText().equals("=")) {
                 i++; declaration.condition = expression((SppParser.ExpressionContext)ctx.getChild(i++), domain);
@@ -124,10 +133,14 @@ public final class BusinessCalculationCompiler {
         if (!text.equals("=")) { operator.setAssoc(text.substring(0, text.length() - 1)); }
         operator.setType(IOperation.Opers_Type.Double);
         AssignExpression result = new AssignExpression(); result.setOperation(operator);
+        result.sourceLocation = sourceLocation(ctx.getStart());
         result.setLeft(reference(ctx.qualifiedName().getText()));
         if (ctx.expression() != null) { result.setRight(expression(ctx.expression(), domain)); }
         else { Literal one = new Literal(); one.setValue("1"); result.setRight(one); }
         return result;
+    }
+    private static String sourceLocation(Token token) {
+        return token.getInputStream().getSourceName() + ":" + token.getLine() + ":" + (token.getCharPositionInLine() + 1);
     }
     private static Reference reference(String name) {
         Reference result = new CalculationReference(); result.setValue(name); return result;

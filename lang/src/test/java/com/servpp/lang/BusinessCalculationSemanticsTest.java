@@ -253,6 +253,55 @@ public class BusinessCalculationSemanticsTest {
         }
     }
 
+    @Test public void numericRoundingModesOnFieldsQuantumAttributesAndLocals() throws Exception {
+        for (String mode : java.util.List.of("DOWN", "UP", "HALF_UP", "HALF_DOWN", "HALF_EVEN", "CEILING", "FLOOR")) {
+            SppDomain domain = compile("""
+                    domain rules;
+                    Entity Ledger { BigDecimal(15,2,%1$s) amount; }
+                    Contract Agreement { BigDecimal(15,2,%1$s) amount; }
+                    Role Values { quantum BigDecimal(15,2,%1$s) balance; BigDecimal(15,2,%1$s) amount; }
+                    atomic calculate decide(Values v) {
+                        BigDecimal(18,6,%1$s) rate = 1 / 3, previous = rate;
+                        v.amount = previous;
+                    }
+                    """.formatted(mode));
+            var errors = domain.validateBusinessCalculations();
+            assertTrue(errors.toString(), errors.isEmpty());
+            var expected = java.math.RoundingMode.valueOf(mode);
+            for (String name : java.util.List.of("Ledger", "Agreement", "Values"))
+                assertEquals(expected, ((com.servpp.lang.models.SppClass) domain.getSppClass(name)).getField("amount").getDeclaredRoundingMode());
+            assertEquals(expected, ((com.servpp.lang.models.SppClass) domain.getSppClass("Values")).getField("balance").getDeclaredRoundingMode());
+            assertTrue(domain.numericRoundingWarnings().isEmpty());
+        }
+        var invalid = compile("""
+                domain rules;
+                Role Values { BigDecimal(15,2,UNNECESSARY) amount; }
+                atomic calculate decide(Values v) { BigDecimal(15,2,BOGUS) rate; }
+                """).validateAppDeclarations();
+        for (String mode : java.util.List.of("UNNECESSARY", "BOGUS"))
+            assertTrue(invalid.toString(), invalid.stream().anyMatch(error -> error.contains("Unsupported numeric rounding mode " + mode)));
+    }
+
+    @Test public void numericWarningsTrackExpressionAndCompoundScales() throws Exception {
+        SppDomain domain = compile("""
+                domain rules;
+                Role Values { BigDecimal(15,2) amount; BigDecimal(15,3) rate; }
+                atomic calculate decide(Values v) {
+                    BigDecimal(15,2) local = v.amount / 3;
+                    v.amount = local * v.rate;
+                    v.amount += v.rate;
+                    v.amount /= 3;
+                    v.amount = local + 1.25;
+                    v.amount = roundDown(v.amount / 3, 2);
+                }
+                """);
+        assertTrue(domain.validateAppDeclarations().toString(), domain.validateAppDeclarations().isEmpty());
+        var warnings = domain.numericRoundingWarnings();
+        assertEquals(warnings.toString(), 4, warnings.size());
+        assertTrue(warnings.toString(), warnings.get(0).contains("local may need rounding"));
+        assertTrue(warnings.toString(), warnings.subList(1, 4).stream().allMatch(w -> w.contains("v.amount may need rounding")));
+    }
+
     private SppDomain compile(String source) throws Exception {
         Path file = Files.createTempFile("spp-calculation", ".spp"); Files.writeString(file, source);
         SppProject project = new SppProject(); new SppCompiler(file.toFile(), project).compile();

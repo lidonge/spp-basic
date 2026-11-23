@@ -1,5 +1,6 @@
 package com.servpp.lang.models.app;
 
+import java.math.RoundingMode;
 import java.util.Set;
 
 /** Physical representation; never replaces the business declaration. */
@@ -26,6 +27,12 @@ public record NumericBinding(String target, String representation, String adapte
     }
     public static String base(String specification) {
         return specification.split("\\(", 2)[0];
+    }
+    public static RoundingMode roundingMode(String name) {
+        return switch (name) {
+            case "DOWN", "UP", "HALF_UP", "HALF_DOWN", "HALF_EVEN", "CEILING", "FLOOR" -> RoundingMode.valueOf(name);
+            default -> throw new IllegalArgumentException("Unsupported numeric rounding mode " + name + ".");
+        };
     }
     public static int[] dimensions(String specification) {
         if (!specification.contains("(")) return null;

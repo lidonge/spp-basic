@@ -10,6 +10,7 @@ public final class CalculationControl implements IJavaStatement {
     public final Kind kind;
     public IExpression condition;
     public SppLocalVar local;
+    public String sourceLocation;
     public final List<IJavaStatement> body = new ArrayList<>();
     public final List<IJavaStatement> init = new ArrayList<>();
     public final List<IJavaStatement> update = new ArrayList<>();

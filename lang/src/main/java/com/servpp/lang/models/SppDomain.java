@@ -599,6 +599,14 @@ public class SppDomain {
         }
     }
 
+    public List<String> numericRoundingWarnings() {
+        return mapsOfClass.values().stream()
+                .filter(SppService.class::isInstance).map(SppService.class::cast)
+                .filter(service -> service.getDeclaredJavaStatements() != null && !service.getDeclaredJavaStatements().isEmpty())
+                .map(com.servpp.lang.models.app.expr.BusinessCalculationValidator::new)
+                .flatMap(validator -> validator.collectRoundingWarnings().stream()).sorted().toList();
+    }
+
     public List<String> unusedParticipantWarnings() {
         List<String> warnings = new ArrayList<>();
         for (SppCompilationUnit unit : mapsOfClass.values()) {
