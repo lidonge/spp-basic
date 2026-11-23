@@ -54,7 +54,7 @@ public final class ParticipantIdentity {
             visitor.accept(path,value);
             for(int index=0;index<Array.getLength(value);index++) walk(Array.get(value,index),path+"["+index+"]",visitor,visited); return;
         }
-        if(value.getClass().getName().startsWith("java.") || value instanceof Number || value instanceof Enum<?>) return;
+        if(value.getClass().getName().startsWith("java.") || value instanceof Number || value instanceof Enum<?> || value instanceof WireMappedEnum) return;
         visitor.accept(path,value);
         try {
             for(var property:Introspector.getBeanInfo(value.getClass(),Object.class).getPropertyDescriptors()) {

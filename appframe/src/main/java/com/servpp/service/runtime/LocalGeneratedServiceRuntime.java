@@ -22962,7 +22962,7 @@ public class LocalGeneratedServiceRuntime {
     }
 
     private boolean isRoleRequestBindingTraversable(Class<?> type) {
-        if (type == null || type.isPrimitive() || type.isEnum() || type.isArray()) {
+        if (type == null || type.isPrimitive() || type.isEnum() || WireMappedEnum.class.isAssignableFrom(type) || type.isArray()) {
             return false;
         }
         if (CharSequence.class.isAssignableFrom(type)

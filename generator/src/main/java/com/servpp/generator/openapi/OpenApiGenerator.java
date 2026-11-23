@@ -241,9 +241,15 @@ public class OpenApiGenerator extends BaseClassGenerator implements ILogable {
             String original = "{{#isNullable}}return null;{{/isNullable}}{{^isNullable}}"
                     + "throw new IllegalArgumentException(\"Unexpected value '\" + value + \"'\");{{/isNullable}}";
             if (!definition.contains(original)) throw new IOException("Pinned OpenAPI JavaSpring enum template changed");
-            String fallback = "{{#vendorExtensions.x-spp-enum-other-index}}return values()["
-                    + "{{vendorExtensions.x-spp-enum-other-index}}];{{/vendorExtensions.x-spp-enum-other-index}}"
-                    + "{{^vendorExtensions.x-spp-enum-other-index}}" + original + "{{/vendorExtensions.x-spp-enum-other-index}}";
+            String mapped = "{{#vendorExtensions.x-spp-mapped-enum}}";
+            String unmapped = "{{^vendorExtensions.x-spp-mapped-enum}}";
+            String endMapped = "{{/vendorExtensions.x-spp-mapped-enum}}";
+            String fallback = mapped + """
+                    {{#vendorExtensions.x-spp-enum-other-index}}
+                        if (allowOther || value == null) return values()[{{vendorExtensions.x-spp-enum-other-index}}];
+                    {{/vendorExtensions.x-spp-enum-other-index}}
+                        throw new IllegalArgumentException("Unexpected value '" + value + "' for enum " + __ENUM_TYPE__.class.getSimpleName());
+                    """ + endMapped + unmapped + original + endMapped;
             String aliases = """
                     {{#vendorExtensions.x-spp-enum-input-aliases}}
                         if ("{{{literal}}}".equals(value)) return values()[{{index}}];
@@ -277,16 +283,37 @@ public class OpenApiGenerator extends BaseClassGenerator implements ILogable {
                       }
                     %3$s{{/jackson}}
                     """).formatted(enumType, nullSection, endNullSection);
-            String mappedEnum = "{{#vendorExtensions.x-spp-mapped-enum}} implements com.servpp.service.runtime.WireMappedEnum"
-                    + "{{/vendorExtensions.x-spp-mapped-enum}}";
+            String mappedEnum = mapped + " implements com.servpp.service.runtime.WireMappedEnum" + endMapped;
+            String factoryBody = mapped + """
+                        return $decode(value, true);
+                      }
+
+                      public static __ENUM_TYPE__ fromCode(String value) {
+                        return $decode(value, false);
+                      }
+
+                      private static __ENUM_TYPE__ $decode(String value, boolean allowOther) {
+                    """ + endMapped + "    ";
             String declaration = "public enum " + enumType;
             definition = definition.replace(original, aliases + fallback)
                     .replace(declaration + " {", annotation + declaration + mappedEnum + " {")
-                    .replace("    for (", "    " + readNull + "for (");
-            int closingBrace = definition.lastIndexOf('}');
+                    .replace("    for (", factoryBody + readNull + "for (");
+            String openEnum;
+            try (InputStream openTemplate = OpenApiGenerator.class.getResourceAsStream("/JavaSpring/openWireEnum.mustache")) {
+                if (openTemplate == null) throw new IOException("Missing S++ open wire enum template");
+                openEnum = new String(openTemplate.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+            }
+            String open = "vendorExtensions.x-spp-open-wire-enum";
+            String templateBody = "{{^" + open + "}}" + addEnumDeserializer(definition, deserializer)
+                    + "{{/" + open + "}}\n{{#" + open + "}}" + addEnumDeserializer(openEnum, deserializer) + "{{/" + open + "}}";
             java.nio.file.Files.writeString(templates.resolve("enumOuterClass.mustache"),
-                    definition.substring(0, closingBrace) + deserializer + definition.substring(closingBrace));
+                    templateBody.replace("__ENUM_TYPE__", enumType));
         }
+    }
+
+    private static String addEnumDeserializer(String definition, String deserializer) {
+        int closingBrace = definition.lastIndexOf('}');
+        return definition.substring(0, closingBrace) + deserializer + definition.substring(closingBrace);
     }
 
     public void createServicesProperties(File genRoot) throws IOException {
@@ -1343,6 +1370,7 @@ public class OpenApiGenerator extends BaseClassGenerator implements ILogable {
         schema.setType("string");
         List<SppEnumItem> fields = sppEnum.getItems();
         schema.addExtension("x-spp-mapped-enum", true);
+        if (sppEnum.preservesUnknownWireValues()) schema.addExtension("x-spp-open-wire-enum", true);
         schema.addExtension("x-enum-varnames", fields.stream().map(SppEnumItem::getName).toList());
         var other = sppEnum.getOtherItem();
         if (other != null) schema.addExtension("x-spp-enum-other-index", Integer.toString(fields.indexOf(other)));

@@ -1,5 +1,7 @@
 package com.servpp.service.repository;
 
+import com.servpp.service.runtime.WireMappedEnum;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.servpp.service.runtime.AppDdlCatalog;
 import com.servpp.service.transaction.JdbcQuantumJournalStore;
@@ -142,6 +144,6 @@ final class QuantumRepositoryFacts {
 
     private boolean simple(Object value) {
         return value instanceof String || value instanceof Number || value instanceof Boolean
-                || value instanceof Character || value instanceof Enum<?> || value.getClass().getName().startsWith("java.time.");
+                || value instanceof Character || value instanceof Enum<?> || value instanceof WireMappedEnum || value.getClass().getName().startsWith("java.time.");
     }
 }

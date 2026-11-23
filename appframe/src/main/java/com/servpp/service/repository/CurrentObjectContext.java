@@ -1,5 +1,7 @@
 package com.servpp.service.repository;
 
+import com.servpp.service.runtime.WireMappedEnum;
+
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -197,7 +199,7 @@ public final class CurrentObjectContext {
 
     private static boolean isLeafType(Class<?> type) {
         return type.isPrimitive()
-                || type.isEnum()
+                || type.isEnum() || WireMappedEnum.class.isAssignableFrom(type)
                 || CharSequence.class.isAssignableFrom(type)
                 || Number.class.isAssignableFrom(type)
                 || Boolean.class == type

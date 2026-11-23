@@ -1,0 +1,63 @@
+/**
+ * S++ enum value with an explicit fallback for unknown wire codes.
+ */
+{{>additionalEnumTypeAnnotations}}
+{{>generatedAnnotation}}
+@com.fasterxml.jackson.databind.annotation.JsonDeserialize(using = __ENUM_TYPE__.$SppNullDeserializer.class)
+public final class __ENUM_TYPE__ implements com.servpp.service.runtime.WireMappedEnum {
+  {{#allowableValues}}{{#enumVars}}
+  public static final __ENUM_TYPE__ {{{name}}} = new __ENUM_TYPE__({{{value}}}, {{{value}}});
+  {{/enumVars}}{{/allowableValues}}
+
+  private static final __ENUM_TYPE__[] $MEMBERS = {
+    {{#allowableValues}}{{#enumVars}}{{{name}}}{{^-last}}, {{/-last}}{{/enumVars}}{{/allowableValues}}
+  };
+
+  private final String memberValue;
+  private final String value;
+
+  private __ENUM_TYPE__(String memberValue, String value) {
+    this.memberValue = memberValue;
+    this.value = value;
+  }
+
+  @Override
+  @com.fasterxml.jackson.annotation.JsonValue
+  public String getValue() {
+    return value;
+  }
+
+  public String getMemberValue() {
+    return memberValue;
+  }
+
+  public static boolean sameMember(__ENUM_TYPE__ left, __ENUM_TYPE__ right) {
+    return left == right || left != null && right != null && left.memberValue.equals(right.memberValue);
+  }
+
+  @Override
+  public boolean equals(Object other) {
+    return other instanceof __ENUM_TYPE__ member && value.equals(member.value);
+  }
+
+  @Override
+  public int hashCode() {
+    return value.hashCode();
+  }
+
+  @Override
+  public String toString() {
+    return value;
+  }
+
+  public static __ENUM_TYPE__ fromValue(String value) {
+    if (value == null) return $MEMBERS[{{vendorExtensions.x-spp-enum-null-index}}];
+    for (__ENUM_TYPE__ member : $MEMBERS) {
+      if (member.value.equals(value)) return member;
+    }
+    {{#vendorExtensions.x-spp-enum-input-aliases}}
+    if ("{{{literal}}}".equals(value)) return $MEMBERS[{{index}}];
+    {{/vendorExtensions.x-spp-enum-input-aliases}}
+    return new __ENUM_TYPE__($MEMBERS[{{vendorExtensions.x-spp-enum-other-index}}].memberValue, value);
+  }
+}

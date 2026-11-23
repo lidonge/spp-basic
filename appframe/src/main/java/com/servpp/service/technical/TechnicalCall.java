@@ -1,5 +1,7 @@
 package com.servpp.service.technical;
 
+import com.servpp.service.runtime.WireMappedEnum;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.servpp.service.repository.RepositoryParticipantSnapshots;
@@ -88,7 +90,7 @@ public final class TechnicalCall {
             for (int index=0; index<Array.getLength(value); index++) collect(Array.get(value,index),output,visited);
             return;
         }
-        if (value.getClass().getName().startsWith("java.") || value instanceof Number || value instanceof Enum<?>) return;
+        if (value.getClass().getName().startsWith("java.") || value instanceof Number || value instanceof Enum<?> || value instanceof WireMappedEnum) return;
         Object baseline;
         try { baseline = RepositoryParticipantSnapshots.require(value); }
         catch (IllegalStateException absent) {

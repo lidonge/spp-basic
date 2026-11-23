@@ -51,10 +51,11 @@ public final class BusinessCalculationCompiler {
         }
         if (keyword.equals("require")) {
             var condition = expression(ctx.expression(), domain);
-            if (ctx.StringLiteral() != null) {
-                return new RequireStatement(condition, ctx.StringLiteral().getText());
+            var code = expression(ctx.rejectionCode().expression(), domain);
+            if (code instanceof Literal literal && literal.getValue().startsWith("\"")) {
+                return new RequireStatement(condition, literal.getValue());
             }
-            return new RequireStatement(condition, enumOrReference(ctx.qualifiedName().getText(), domain));
+            return new RequireStatement(condition, code);
         }
         if (keyword.equals("check")) {
             return new RequireStatement(expression(ctx.expression(), domain), "\"QUANTUM_CONSTRAINT_REJECTED\"")
@@ -189,8 +190,15 @@ public final class BusinessCalculationCompiler {
                         .map(element -> expression(element,domain)).toList());
             }
             var function = p.calculationFunction();
-            return new CalculationFunction(function.getChild(0).getText(),
-                    function.expression().stream().map(argument -> expression(argument, domain)).toList());
+            String name = function.Identifier().getText();
+            var arguments = function.expression().stream().map(argument -> expression(argument, domain)).toList();
+            if (domain != null && domain.getSppClass(name) instanceof SppEnum enumeration) {
+                if (arguments.size() != 1) {
+                    throw new IllegalArgumentException("Enum " + name + " requires one String argument.");
+                }
+                return new EnumConstruction(enumeration, arguments.get(0));
+            }
+            return new CalculationFunction(name, arguments);
         }
         if (ctx instanceof SppParser.QuestionExprContext conditional) {
             return new ConditionalExpression(expression(conditional.expression(0), domain),

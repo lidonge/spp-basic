@@ -330,6 +330,13 @@ public final class BusinessCalculationValidator {
     }
     private Kind type(IExpression value) {
         if (value instanceof EnumValue) return Kind.ENUM;
+        if (value instanceof EnumConstruction construction) {
+            Kind code = type(construction.getCode());
+            if (code != Kind.STRING) {
+                error("Enum " + construction.getReturnType().getName() + " requires one scalar String argument.");
+            }
+            return Kind.ENUM;
+        }
         if (value instanceof ParticipantConstruction construction) {
             if (service.isDeclaredQuantumService()) error("Quantum services cannot construct participants.");
             if (service instanceof SppScenario) {
@@ -513,8 +520,10 @@ public final class BusinessCalculationValidator {
     }
     private void validateEnumLiteral(IExpression reference, IExpression value) {
         if (reference == null || !(reference.getReturnType() instanceof SppEnum enumeration)) { return; }
-        if (value != null && value.getReturnType() instanceof SppEnum other && !enumeration.getName().equals(other.getName())) {
-            error("Enum type mismatch: " + enumeration.getName() + " and " + other.getName());
+        if (value != null && value.getReturnType() instanceof SppEnum other) {
+            if (!enumeration.getName().equals(other.getName())) {
+                error("Enum type mismatch: " + enumeration.getName() + " and " + other.getName());
+            }
             return;
         }
         if (!(value instanceof Literal literal) || !literal.getValue().startsWith("\"")) {

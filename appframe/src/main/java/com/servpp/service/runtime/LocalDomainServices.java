@@ -221,7 +221,7 @@ public final class LocalDomainServices {
                 projectMetadata(incoming, converted);
                 Object current = property.getReadMethod() == null ? null : property.getReadMethod().invoke(target);
                 if (current != null && converted != null && current.getClass().equals(converted.getClass())
-                        && !current.getClass().getName().startsWith("java.") && !(current instanceof Enum<?>)) {
+                        && !current.getClass().getName().startsWith("java.") && !(current instanceof Enum<?>) && !(current instanceof WireMappedEnum)) {
                     ParticipantFacts.hydrate(current, converted);
                     projectMetadata(incoming, current);
                     converted = current;
@@ -256,7 +256,7 @@ public final class LocalDomainServices {
         if (source instanceof List<?> inputs && target instanceof List<?> outputs) {
             for (int index = 0; index < Math.min(inputs.size(), outputs.size()); index++)
                 projectMetadata(inputs.get(index), outputs.get(index), visited);
-        } else if (!source.getClass().getName().startsWith("java.") && !(source instanceof Enum<?>)) {
+        } else if (!source.getClass().getName().startsWith("java.") && !(source instanceof Enum<?>) && !(source instanceof WireMappedEnum)) {
             try {
                 var inputs = new java.util.HashMap<String,Method>();
                 for (var property : Introspector.getBeanInfo(source.getClass(), Object.class).getPropertyDescriptors())

@@ -7,6 +7,52 @@ import static org.junit.Assert.*;
 
 public class BusinessCalculationSemanticsTest {
     private static final String ROLE = "domain rules; Role Values { double a; double b; boolean allowed; String label; } ";
+    @Test public void constructsEnumValuesFromScalarStringExpressions() throws Exception {
+        var domain = compile("""
+                domain rules;
+                const String CLOSED = "EC031";
+                Enum Rejection { LIMIT:"EC012", CLOSED:"EC031", UNKNOWN:other }
+                Role ProviderResult { String code; boolean passed; Rejection reason; }
+                atomic check checkProvider(ProviderResult result) {
+                    require(result.passed, Rejection(result.code));
+                }
+                atomic calculate classify(ProviderResult result) {
+                    Rejection reason = Rejection(CLOSED);
+                    result.reason = Rejection(result.code);
+                    result.passed = Rejection("EC031") == reason;
+                    switch (Rejection(result.code)) {
+                        case UNKNOWN: result.reason = reason; break;
+                    }
+                }
+                """);
+        var project = new SppProject();
+        project.getSppDomainMap().put("rules", domain);
+        var errors = DomainDeploymentValidator.validate(project);
+        assertTrue(errors.toString(), errors.isEmpty());
+    }
+
+    @Test public void rejectsEnumConstructionWithWrongArityOrType() throws Exception {
+        String source = """
+                domain rules;
+                Enum Rejection { UNKNOWN:other }
+                Enum OtherCode { CLOSED }
+                Role ProviderResult { String code; String[] codes; Rejection reason; }
+                """;
+        String calculation = "atomic calculate classify(ProviderResult result) { result.reason = %s; }";
+        assertThrows(java.io.IOException.class, () -> compile(source + calculation.formatted("Rejection()")));
+        assertTrue(compile(source + calculation.formatted("Rejection(result.code, result.code)"))
+                .validateAppDeclarations().stream()
+                .anyMatch(error -> error.contains("Enum Rejection requires one String argument.")));
+        for (String argument : java.util.List.of("1", "true", "'X'", "null", "result", "result.codes", "result.reason")) {
+            var domain = compile(source + calculation.formatted("Rejection(" + argument + ")"));
+            assertTrue(argument, domain.validateAppDeclarations().stream()
+                    .anyMatch(error -> error.contains("Enum Rejection requires one scalar String argument.")));
+        }
+        var domain = compile(source + calculation.formatted("OtherCode(result.code)"));
+        assertTrue(domain.validateAppDeclarations().stream()
+                .anyMatch(error -> error.contains("Enum type mismatch: Rejection and OtherCode")));
+    }
+
     @Test public void asciiIntegerTextHasDistinctBooleanAndExactNumericResults() throws Exception {
         var domain = compile("""
                 domain rules;

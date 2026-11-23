@@ -1,5 +1,7 @@
 package com.servpp.service.transaction;
 
+import com.servpp.service.runtime.WireMappedEnum;
+
 import java.lang.reflect.Field;
 import java.lang.reflect.Array;
 import java.lang.reflect.Modifier;
@@ -176,7 +178,7 @@ public class ObjectSnapshotTransactionParticipant implements ArgumentAwareTransa
 
     private boolean isImmutable(Class<?> type) {
         return type.isPrimitive()
-                || type.isEnum()
+                || type.isEnum() || WireMappedEnum.class.isAssignableFrom(type)
                 || String.class == type
                 || Number.class.isAssignableFrom(type)
                 || Boolean.class == type

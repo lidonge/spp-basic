@@ -621,10 +621,10 @@ public class JdbcAppDdlObjectTableReader {
         if ((targetType == boolean.class || targetType == Boolean.class) && value instanceof Boolean) {
             return value;
         }
+        if (value instanceof String enumName && WireMappedEnum.class.isAssignableFrom(targetType)) {
+            return ENUM_MAPPER.convertValue(enumName, targetType);
+        }
         if (targetType.isEnum() && value instanceof String enumName) {
-            if (WireMappedEnum.class.isAssignableFrom(targetType)) {
-                return ENUM_MAPPER.convertValue(enumName, targetType);
-            }
             @SuppressWarnings({"unchecked", "rawtypes"})
             Object converted = Enum.valueOf((Class<? extends Enum>) targetType, enumName);
             return converted;
