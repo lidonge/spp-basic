@@ -30,7 +30,7 @@ public interface IPhyHandler extends IApplicationHandler {
         var specs = ctx.numericSpecification();
         String target = global ? specs.get(0).getText() : ctx.qualifiedName(0).getText();
         String implementation = specs.get(specs.size() - 1).getText();
-        String adapter = ctx.getText().contains("using") ? ctx.qualifiedName(ctx.qualifiedName().size() - 1).getText() : null;
+        String adapter = ctx.adapter == null ? null : ctx.adapter.getText();
         getCurrentRuleBlock().getNumericBindings().add(new com.servpp.lang.models.app.NumericBinding(target, implementation, adapter));
     }
     @Override default void exitPhyNumericRule(AppParser.PhyNumericRuleContext ctx) { }

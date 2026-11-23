@@ -671,8 +671,8 @@ expressionStatement
 
 phyNumericRules : 'numeric' '{' phyNumericRule* '}';
 phyNumericRule
-    : 'replace' numericSpecification 'with' numericSpecification ('using' qualifiedName)? ';'
-    | 'override' qualifiedName 'with' numericSpecification ('using' qualifiedName)? ';'
+    : 'replace' numericSpecification 'with' numericSpecification ('using' adapter=qualifiedName)? ';'
+    | 'override' qualifiedName 'with' numericSpecification ('using' adapter=qualifiedName)? ';'
     ;
 numericTypeName : numberType | qualifiedName | Identifier ('.' Identifier)* '.' numberType;
 numericSpecification : numericTypeName ('(' IntegerLiteral ',' IntegerLiteral ')')?;
