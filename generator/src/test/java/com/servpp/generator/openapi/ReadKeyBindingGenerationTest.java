@@ -20,8 +20,10 @@ public class ReadKeyBindingGenerationTest {
         Files.writeString(spp.toPath(), """
                 domain reads;
                 Role Item { String code; String region; }
-                Scenario serial read(Item item) {
-                    findItem by item.code, item.region;
+                Role Selection { String wanted; }
+                take Selection as Item { String code = wanted; }
+                Scenario serial read(Item item, Selection selection) {
+                    findItem by Selection, Item.region = "destination";
                 }
                 """);
         var app = temporary.newFile("reads.app");
@@ -53,6 +55,9 @@ public class ReadKeyBindingGenerationTest {
                         public void setCode(String code) { this.code = code; }
                         public void setRegion(String region) { this.region = region; }
                     }
+                    public static class Selection {
+                        public String getWanted() { return "selected"; }
+                    }
                     private static final Fixture findItem = new Fixture();
                     private static String seen;
                     public void findItem(Item item) {
@@ -61,6 +66,7 @@ public class ReadKeyBindingGenerationTest {
                     }
                     public static String run() {
                         Item item = new Item();
+                        Selection selection = new Selection();
                         %s
                         return seen + ":" + item.getRegion() + "/" + item.getCode();
                     }
@@ -70,7 +76,7 @@ public class ReadKeyBindingGenerationTest {
         assertEquals(0, ToolProvider.getSystemJavaCompiler().run(null, null, null,
                 "-classpath", System.getProperty("java.class.path"), "-d", classes.getPath(), fixture.getPath()));
         try (var loader = new URLClassLoader(new java.net.URL[]{classes.toURI().toURL()}, getClass().getClassLoader())) {
-            assertEquals("outdated/origin:outdated/origin", loader.loadClass("Fixture").getMethod("run").invoke(null));
+            assertEquals("destination/selected:destination/selected", loader.loadClass("Fixture").getMethod("run").invoke(null));
         }
     }
 }

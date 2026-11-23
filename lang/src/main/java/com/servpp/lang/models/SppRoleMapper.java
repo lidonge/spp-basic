@@ -11,6 +11,8 @@ import java.util.List;
 public class SppRoleMapper extends SppService{
     SppClass role;
     List<SppClass> entities;
+    private final List<SppClass> declaredPerformers = new ArrayList<>();
+    List<SppClass> getDeclaredPerformers() { return declaredPerformers; }
     private List<List<SppClass>> alternatives = List.of();
     public List<List<SppClass>> getAlternatives() { return alternatives; }
     public void setAlternatives(List<List<SppClass>> value) { alternatives = value; }
@@ -39,6 +41,7 @@ public class SppRoleMapper extends SppService{
         if(entities == null)
             entities = new ArrayList<>();
         entities.add(entity);
+        declaredPerformers.add(entity);
     }
 
     public boolean isMapSame() {

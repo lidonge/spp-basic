@@ -271,7 +271,12 @@ readBinding
     ;
 
 readKey
-    : qualifiedName
+    : Identifier
+    | qualifiedName '=' readConstant
+    ;
+
+readConstant
+    : Identifier
     | '-'? (IntegerLiteral | FloatingPointLiteral)
     | StringLiteral
     | CharacterLiteral

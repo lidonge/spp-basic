@@ -7,7 +7,13 @@ import com.servpp.lang.models.app.expr.NumericJavaRenderer;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 /** Resolves scenario read operands once the APP identity and call arguments are known. */
@@ -41,39 +47,34 @@ final class ReadKeyBindings {
             errors.add(label + " requires a unique scalar key participant");
             return;
         }
+        var crudTarget = service.getImplicitCrudTarget();
+        if (crudTarget != null && !ParticipantRoleBindings.identity(domain, crudTarget)
+                .equals(ParticipantRoleBindings.identity(domain, type))) {
+            errors.add(label + " requires a scenario participant of the target type " + crudTarget.getName());
+            return;
+        }
         var actual = call.getSppParameterList().get(formals.indexOf(conditions.get(0)));
         var keys = ParticipantRoleBindings.primaryKeys(domain, type);
         if (keys.isEmpty()) {
             errors.add(label + " requires APP primary-key fields");
             return;
         }
-        if (keys.size() != call.getReadKeys().size()) {
-            errors.add(label + " has wrong key count: expected " + keys.size() + ", found " + call.getReadKeys().size());
-            return;
+        Map<String, Source> sources = new HashMap<>();
+        for (var key : call.getReadKeys()) {
+            collectSources(domain, owner, type, actual.getName(), keys, key, sources, label, errors);
         }
-        for (int index = 0; index < keys.size(); index++) {
-            String path = keys.get(index);
+        for (String path : keys) {
             var field = scalarField(type, path);
+            var source = sources.get(path);
+            if (source == null) {
+                errors.add(label + " has a missing source for " + path);
+                continue;
+            }
             if (field == null) {
                 errors.add(label + " requires a writable APP primary-key field: " + path);
                 continue;
             }
-            var key = call.getReadKeys().get(index);
-            var source = source(domain, owner, key);
-            if (source == null) {
-                errors.add(label + " has unknown or ambiguous source: " + key.text());
-                continue;
-            }
-            String typeName = field.getType().getName();
-            if (!typeName.equals(source.type()) && !acceptsNumericLiteral(typeName, key)) {
-                errors.add(label + " has a type mismatch for " + path + ": expected " + typeName + ", found " + source.type());
-                continue;
-            }
-            if (!matchingWidth(field, source)) {
-                errors.add(label + " has a declared-width mismatch for " + path + ": " + key.text());
-                continue;
-            }
-            String value = source.java();
+            if (!compatible(field, source, path, label, errors)) continue;
             var parents = new ArrayList<SppServiceCall.ReadKeyParent>();
             String target = actual.getName();
             SppClass current = type;
@@ -84,14 +85,145 @@ final class ReadKeyBindings {
                 parents.add(new SppServiceCall.ReadKeyParent(target, current.getName()));
             }
             call.getBoundReadKeys().add(new SppServiceCall.BoundReadKey(actual.getName() + "." + path,
-                    field, source.field(), value, List.copyOf(parents)));
+                    field, source.field(), source.java(), source.path(), List.copyOf(parents)));
         }
     }
 
-    private static boolean acceptsNumericLiteral(String type, SppServiceCall.ReadKey key) {
-        if (!key.literal() || !NumericBinding.isNumeric(key.literalType())) return false;
+    private static void collectSources(SppDomain domain, SppService owner, SppClass target, String targetName,
+                                       List<String> keys, SppServiceCall.ReadKey binding, Map<String, Source> sources,
+                                       String label, List<String> errors) {
+        String[] parts = binding.path().split("\\.", 2);
+        String qualifier = parts[0];
+        boolean constant = binding.constant() != null;
+        var participants = owner.getServiceBody().getSppLocalVarList();
+        var matches = participants.stream().filter(var -> var.getName().equals(qualifier)).toList();
+        if (matches.isEmpty()) matches = participants.stream()
+                .filter(var -> var.getType().getName().equals(qualifier)).toList();
+        var participant = matches.size() == 1 ? matches.get(0) : null;
+        if (constant && parts.length != 2) {
+            errors.add(label + " requires a qualified field for constant: " + binding.path());
+            return;
+        }
+        Source value = constant ? constantSource(domain, binding) : null;
+        if (constant && value == null) {
+            errors.add(label + " has an unknown constant: " + binding.constant());
+            return;
+        }
+        if (constant && (qualifier.equals(targetName) || qualifier.equals(target.getName()))) {
+            if (keys.contains(parts[1])) addSource(parts[1], value, sources, label, errors);
+            else errors.add(label + " constant does not bind a primary-key field: " + binding.path());
+            return;
+        }
+        SppClass performer = null;
+        if (participant != null && participant.getArrayDimension() == 0 && participant.getType() instanceof SppClass cls) {
+            performer = cls;
+        } else if (constant && matches.isEmpty() && domain.getSppClass(qualifier) instanceof SppClass cls) {
+            performer = cls;
+        }
+        if (performer == null) {
+            errors.add(label + " has an unknown or ambiguous scalar participant: " + qualifier);
+            return;
+        }
+        var chains = takeChains(domain, target, performer, new HashSet<>());
+        if (chains.isEmpty()) {
+            errors.add(label + " participant " + qualifier + " has no take relation to " + target.getName());
+            return;
+        }
+        boolean mapped = false;
+        for (String key : keys) {
+            Set<String> fields = new LinkedHashSet<>();
+            for (var chain : chains) {
+                String field = key;
+                for (var step : chain) {
+                    field = step.performerPath(field);
+                    if (field == null) break;
+                }
+                if (field != null && scalarField(performer, field) != null
+                        && (!constant || field.equals(parts[1]))) fields.add(field);
+            }
+            for (String field : fields) {
+                mapped = true;
+                var sourceField = scalarField(performer, field);
+                if (constant) {
+                    var targetField = scalarField(target, key);
+                    var declared = new Source(sourceField.getType().getName(), null, sourceField, null, null);
+                    if (compatible(sourceField, value, binding.path(), label, errors)
+                            && targetField != null && compatible(targetField, declared, key, label, errors))
+                        addSource(key, value, sources, label, errors);
+                } else {
+                    String path = participant.getName() + "." + field;
+                    addSource(key, new Source(sourceField.getType().getName(), NameUtil.getNameCall(path),
+                            sourceField, null, path), sources, label, errors);
+                }
+            }
+        }
+        if (constant && !mapped) errors.add(label + " constant field does not map to a primary key: " + binding.path());
+    }
+
+    private static void addSource(String key, Source value, Map<String, Source> sources,
+                                  String label, List<String> errors) {
+        if (sources.putIfAbsent(key, value) != null) errors.add(label + " has a duplicate source for " + key);
+    }
+
+    private static boolean compatible(SppField field, Source source, String path, String label, List<String> errors) {
+        String type = field.getType().getName();
+        if (!type.equals(source.type()) && !acceptsNumericLiteral(type, source)) {
+            errors.add(label + " has a type mismatch for " + path + ": expected " + type + ", found " + source.type());
+            return false;
+        }
+        if (!matchingWidth(field, source)) {
+            errors.add(label + " has a declared-width mismatch for " + path);
+            return false;
+        }
+        return true;
+    }
+
+    /** Walk from the repository role back through declared take performers. */
+    private static List<List<TakeStep>> takeChains(SppDomain domain, SppClass target, SppClass performer,
+                                                   Set<String> visiting) {
+        String targetId = ParticipantRoleBindings.identity(domain, target);
+        if (!visiting.add(targetId)) return List.of();
+        List<List<TakeStep>> chains = new ArrayList<>();
+        for (var unit : domain.getMapsOfClass().values()) {
+            if (!(unit instanceof SppRoleMapper mapper) || mapper.getRole() == null
+                    || !targetId.equals(ParticipantRoleBindings.identity(domain, mapper.getRole()))) continue;
+            for (var from : mapper.getDeclaredPerformers()) {
+                var step = new TakeStep(mapper, from);
+                if (ParticipantRoleBindings.identity(domain, from).equals(ParticipantRoleBindings.identity(domain, performer))) {
+                    chains.add(List.of(step));
+                    continue;
+                }
+                for (var tail : takeChains(domain, from, performer, visiting)) {
+                    List<TakeStep> chain = new ArrayList<>();
+                    chain.add(step);
+                    chain.addAll(tail);
+                    chains.add(chain);
+                }
+            }
+        }
+        visiting.remove(targetId);
+        return chains;
+    }
+
+    private record TakeStep(SppRoleMapper mapper, SppClass performer) {
+        String performerPath(String rolePath) {
+            String[] parts = rolePath.split("\\.", 2);
+            String source = parts[0];
+            if (mapper.getField(source) instanceof SppRoleField mapping) {
+                if (mapping.getType() instanceof SppClass && performer.getName().equals(mapping.getEntityName())) {
+                    return parts.length == 2 && scalarField(performer, parts[1]) != null ? parts[1] : null;
+                }
+                source = mapping.getEntityName();
+            }
+            if (parts.length == 2) source += "." + parts[1];
+            return scalarField(performer, source) != null ? source : null;
+        }
+    }
+
+    private static boolean acceptsNumericLiteral(String type, Source source) {
+        if (source.field() != null || !NumericBinding.isNumeric(source.type())) return false;
         return switch (type) {
-            case "short", "BigInteger" -> "int".equals(key.literalType()) || "long".equals(key.literalType());
+            case "short", "BigInteger" -> "int".equals(source.type()) || "long".equals(source.type());
             case "decimal", "BigDecimal" -> true;
             default -> false;
         };
@@ -100,8 +232,7 @@ final class ReadKeyBindings {
     private static boolean matchingWidth(SppField target, Source source) {
         if (source.field() instanceof SppField field) {
             return target.getDeclaredNumericSpecification().equals(field.getDeclaredNumericSpecification())
-                    && (target.getDefaultStringLength() == null || field.getDefaultStringLength() == null
-                        || target.getDefaultStringLength().equals(field.getDefaultStringLength()));
+                    && Objects.equals(target.getDefaultStringLength(), field.getDefaultStringLength());
         }
         if (source.literal() == null) return true;
         Integer width = target.getDefaultStringLength();
@@ -131,21 +262,11 @@ final class ReadKeyBindings {
         return new BigDecimal(NumericJavaRenderer.normalizeLiteral(clean));
     }
 
-    private static Source source(SppDomain domain, SppService owner, SppServiceCall.ReadKey key) {
-        String text = key.text();
-        if (key.literal()) return new Source(key.literalType(), text, null, text);
-        int dot = text.indexOf('.');
-        if (dot < 0) {
-            var constant = domain.getConstants().get(text);
-            if (constant == null) return null;
-            return new Source(constant.getType().getName(), text, constant, constant.getLiteral());
-        }
-        String root = text.substring(0, dot);
-        var matches = owner.getServiceBody().getSppLocalVarList().stream().filter(var -> var.getName().equals(root)).toList();
-        if (matches.size() != 1 || matches.get(0).getArrayDimension() != 0
-                || !(matches.get(0).getType() instanceof SppClass type)) return null;
-        var field = scalarField(type, text.substring(dot + 1));
-        return field == null ? null : new Source(field.getType().getName(), NameUtil.getNameCall(text), field, null);
+    private static Source constantSource(SppDomain domain, SppServiceCall.ReadKey key) {
+        String text = key.constant();
+        if (key.literal()) return new Source(key.literalType(), text, null, text, null);
+        var constant = domain.getConstants().get(text);
+        return constant == null ? null : new Source(constant.getType().getName(), text, constant, constant.getLiteral(), null);
     }
 
     private static SppField scalarField(SppClass type, String path) {
@@ -156,5 +277,5 @@ final class ReadKeyBindings {
         return field.getType() instanceof SppClass nested ? scalarField(nested, path.substring(dot + 1)) : null;
     }
 
-    private record Source(String type, String java, SppLocalVar field, String literal) { }
+    private record Source(String type, String java, SppLocalVar field, String literal, String path) { }
 }

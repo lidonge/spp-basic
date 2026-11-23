@@ -13,11 +13,11 @@ import java.util.Objects;
  */
 public class SppServiceCall extends ServiceBaseBody implements IServiceBodyStatement{
     SppService callee;
-    public record ReadKey(String text, String literalType) {
+    public record ReadKey(String path, String constant, String literalType) {
         public boolean literal() { return literalType != null; }
     }
     public record ReadKeyParent(String path, String type) { }
-    public record BoundReadKey(String target, SppField field, SppLocalVar source, String value,
+    public record BoundReadKey(String target, SppField field, SppLocalVar source, String value, String sourcePath,
                                List<ReadKeyParent> parents) {
         public String javaValue() {
             String expression = source instanceof SppConstant constant ? constant.getJavaValue() : value;

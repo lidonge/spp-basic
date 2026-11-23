@@ -179,17 +179,21 @@ public interface IScenarioHandler extends IServiceDefinitionHandler {
                     com.servpp.lang.general.expr.BusinessCalculationCompiler.expression(interval.expression(0), getSppDomain()),
                     com.servpp.lang.general.expr.BusinessCalculationCompiler.expression(interval.expression(1), getSppDomain())));
         if (ctx.readBinding() != null) for (var key : ctx.readBinding().readKey()) {
-            var path = key.qualifiedName();
-            String text = key.getText();
-            String literalType = path != null ? null
-                    : key.StringLiteral() != null ? "String"
-                    : key.CharacterLiteral() != null ? "char"
-                    : key.BooleanLiteral() != null ? "boolean"
-                    : key.NullLiteral() != null ? "null"
-                    : key.IntegerLiteral() != null ? (text.matches(".*[lL]$") ? "long" : "int")
+            var constant = key.readConstant();
+            if (constant == null) {
+                sppServiceCall.getReadKeys().add(new SppServiceCall.ReadKey(key.Identifier().getText(), null, null));
+                continue;
+            }
+            String text = constant.getText();
+            String literalType = constant.Identifier() != null ? null
+                    : constant.StringLiteral() != null ? "String"
+                    : constant.CharacterLiteral() != null ? "char"
+                    : constant.BooleanLiteral() != null ? "boolean"
+                    : constant.NullLiteral() != null ? "null"
+                    : constant.IntegerLiteral() != null ? (text.matches(".*[lL]$") ? "long" : "int")
                     : text.matches(".*[fF]$") ? "float" : "double";
             sppServiceCall.getReadKeys().add(new SppServiceCall.ReadKey(
-                    path == null ? text : NameUtil.normalizeParticipantReference(text), literalType));
+                    NameUtil.normalizeParticipantReference(key.qualifiedName().getText()), text, literalType));
         }
         sppServiceCall.setImplicitArguments(ctx.parameters() == null);
         sppServiceCall.setBreaksTransaction(ctx.transactionBreak() != null);
@@ -222,6 +226,8 @@ public interface IScenarioHandler extends IServiceDefinitionHandler {
     @Override default void exitReadBinding(SppParser.ReadBindingContext ctx) { }
     @Override default void enterReadKey(SppParser.ReadKeyContext ctx) { }
     @Override default void exitReadKey(SppParser.ReadKeyContext ctx) { }
+    @Override default void enterReadConstant(SppParser.ReadConstantContext ctx) { }
+    @Override default void exitReadConstant(SppParser.ReadConstantContext ctx) { }
     @Override default void enterQuantumBounds(SppParser.QuantumBoundsContext ctx) { }
     @Override default void exitQuantumBounds(SppParser.QuantumBoundsContext ctx) { }
     @Override default void enterQuantumBound(SppParser.QuantumBoundContext ctx) { }

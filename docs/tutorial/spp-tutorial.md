@@ -233,20 +233,34 @@ Check the effective PHY URL when investigating retained data.
 
 ### Read a participant by key
 
-When another participant supplies the lookup value, bind it on the read itself.
+When other participants supply the lookup values, declare how they play the
+target role and list them on the read.
 
 ```spp
-Scenario serial readSelectedRecord(Entry, Lookup) {
-    findEntry by Lookup.entryCode;
+Role Book { String code; int edition; }
+Role Selection { String requestedCode; }
+Role Publication { int edition; }
+take Selection as Book { String code = requestedCode; }
+take Publication as Book { mapsame; }
+const int CURRENT_EDITION = 3;
+
+Scenario serial readSelectedBook(Book, Selection, Publication) {
+    findBook by Selection, Publication;
+}
+Scenario serial readCurrentBook(Book, Selection) {
+    findBook by Selection, Publication.edition = CURRENT_EDITION;
 }
 ```
 
-Here `Lookup.entryCode` supplies the value for `Entry.code`, the primary key
-declared in APP. For a composite key, give one comma-separated operand per
-APP key field, in declaration order. An operand can be a qualified scenario
-participant field, a named SPP constant, or a literal. Field types and declared
-widths must match. The generated scenario sets the keys just before the read
-and leaves them on the participant afterward. No calculation is needed.
+With APP declaring `Book.code` and `Book.edition` as the primary key, the
+first read gets the code from `Selection.requestedCode` and the edition
+from `Publication.edition`. The second read supplies the edition as a named
+constant through its performer field. `Book.edition = 3` binds the target
+field directly. Each key field needs exactly one source. The compiler
+checks the take relation, field types, and declared widths. Binding works
+in scenarios and is independent of APP key order. The generated scenario
+sets the keys immediately before the read and keeps them on the target
+afterward.
 
 For a declared list query such as
 `atomic query listCopies(key Book book, Copy[] matches);`, the values bind to

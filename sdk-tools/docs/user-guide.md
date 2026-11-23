@@ -279,13 +279,23 @@ language; they are not substitutes for the current user-facing guides.
 
 ## Scenario read bindings and transaction rejection
 
-Use `findEntry by Lookup.entryCode;` to set the target participant's APP
-primary-key fields immediately before a read. Supply comma-separated values in
-APP key order. Values may be qualified scenario participant fields, SPP
-constants, or literals. The compiler checks key count, types, and declared
-widths. A declared keyed list query binds its scalar condition participant
-and fills its collection as usual. The condition participant retains the
-bound keys.
+Use `findBook by Selection, Publication;` in a scenario when `Selection`
+and `Publication` each take the target role `Book`. Each listed participant
+supplies the APP primary-key fields covered by its take mapping. For example,
+`take Selection as Book { String code = requestedCode; }` binds `Book.code`
+from `Selection.requestedCode`.
+
+Bind a literal or named constant through a performer field with
+`Publication.edition = CURRENT_EDITION`, or bind the target key directly
+with `Book.edition = 3`. Every key field needs exactly one source. The compiler
+rejects missing or duplicate sources, constants outside the mapped key,
+participants without a take relation, and incompatible types or declared
+widths. APP key order has no effect on which value supplies a field.
+
+A declared keyed query, including a list query, binds its scalar condition
+participant in the same way. The generated scenario sets the key fields
+immediately before the read. The target keeps the bound keys, and list
+queries fill the destination collection.
 
 Use `,breakTransaction` on a bare check or `identify` inside a transaction
 to abort the transaction when the check fails. `breakTransction` is a

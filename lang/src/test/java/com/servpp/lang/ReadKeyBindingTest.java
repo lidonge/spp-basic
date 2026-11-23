@@ -5,6 +5,7 @@ import com.servpp.lang.models.SppDomain;
 import com.servpp.lang.models.SppProject;
 import com.servpp.lang.models.SppScenario;
 import com.servpp.lang.models.SppServiceCall;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.util.List;
 import org.junit.Rule;
@@ -21,7 +22,21 @@ public class ReadKeyBindingTest {
         Files.writeString(spp.toPath(), """
                 domain reads;
                 Role Item { String(8) code; int edition; String title; }
-                Role Selection { String(8) wanted; String(9) wider; int edition; }
+                Role Selection { String(8) wanted; String note; }
+                Role Release { int edition; }
+                Role EditionOverride { int number; }
+                Role Wide { String(9) wider; }
+                Role Unspecified { String wider; }
+                Role Wrong { int number; }
+                Role Unrelated { String(8) code; }
+                Role Outer { String(8) external; }
+                take Selection as Item { String code = wanted; String title = note; }
+                take Release as Item { mapsame; }
+                take EditionOverride as Item { int edition = number; }
+                take Wide as Item { String code = wider; }
+                take Unspecified as Item { String code = wider; }
+                take Wrong as Item { String code = number; }
+                take Outer as Selection { String wanted = external; }
                 Role Copy { Item item; String serialNumber; }
                 const int EDITION = 3;
                 atomic query listCopies(key Item item, Copy[] matches);
@@ -31,7 +46,7 @@ public class ReadKeyBindingTest {
         Files.writeString(app.toPath(), """
                 domain reads;
                 tables roles {
-                    table ITEMS(Item) { primarykey(Item.code, Item.edition); }
+                    table ITEMS(Item) { primarykey(Item.edition, Item.code); }
                     table COPIES(Copy) {
                         primarykey(Copy.serialNumber);
                         foreignkey(Copy.item) references Item;
@@ -49,76 +64,109 @@ public class ReadKeyBindingTest {
         return project.getDomain("reads");
     }
 
-    @Test public void resolvesCompositeImplicitAndDeclaredListKeysInAppOrder() throws Exception {
+    @Test public void resolvesTwoParticipantsAndBothConstantFormsRegardlessOfAppOrder() throws Exception {
         var domain = compile("""
-                Scenario serial read(Item item, Selection fromInput, Copy[] matches) {
-                    findItem by fromInput.wanted, EDITION;
-                    listCopies(item, matches) by "RS", -2;
+                Scenario serial read(Item item, Selection fromInput, Release release, Copy[] matches) {
+                    findItem by Selection, release;
+                    listCopies(item, matches) by EditionOverride.number = EDITION, Item.code = "RS";
                 }
                 """);
         var errors = domain.validateAppDeclarations();
         assertTrue(errors.toString(), errors.isEmpty());
         var scene = (SppScenario) domain.getSppClass("Read");
         var block = (ExecuteBlock) scene.getServiceBody().getSppServiceCallList().get(0);
-        var calls = block.getExecuteCallList();
-        var implicit = (SppServiceCall) calls.get(0);
-        assertEquals(List.of("fromInput.wanted", "EDITION"),
-                implicit.getReadKeys().stream().map(SppServiceCall.ReadKey::text).toList());
-        assertEquals(List.of("item.code", "item.edition"),
+        var implicit = (SppServiceCall) block.getExecuteCallList().get(0);
+        assertEquals(List.of("item.edition", "item.code"),
                 implicit.getBoundReadKeys().stream().map(SppServiceCall.BoundReadKey::target).toList());
-        var list = (SppServiceCall) calls.get(1);
-        assertEquals(List.of("\"RS\"", "-2"), list.getReadKeys().stream().map(SppServiceCall.ReadKey::text).toList());
-        assertEquals(2, list.getBoundReadKeys().size());
+        assertEquals(List.of("release.getEdition()", "fromInput.getWanted()"),
+                implicit.getBoundReadKeys().stream().map(SppServiceCall.BoundReadKey::value).toList());
+        var list = (SppServiceCall) block.getExecuteCallList().get(1);
+        assertEquals(List.of("EDITION", "\"RS\""),
+                list.getBoundReadKeys().stream().map(SppServiceCall.BoundReadKey::value).toList());
         assertTrue(domain.unusedParticipantWarnings().toString(), domain.unusedParticipantWarnings().isEmpty());
     }
 
-    @Test public void rejectsWrongKeyCount() throws Exception {
-        reject("findItem by source.wanted;", "wrong key count");
+    @Test public void resolvesRenamesThroughTheTakeChain() throws Exception {
+        var domain = compile("""
+                Scenario serial read(Item item, Outer outer) {
+                    findItem by Outer, Item.edition = 3;
+                }
+                """);
+        var errors = domain.validateAppDeclarations();
+        assertTrue(errors.toString(), errors.isEmpty());
+        var scene = (SppScenario) domain.getSppClass("Read");
+        var block = (ExecuteBlock) scene.getServiceBody().getSppServiceCallList().get(0);
+        var call = (SppServiceCall) block.getExecuteCallList().get(0);
+        assertEquals("outer.getExternal()", call.getBoundReadKeys().get(1).value());
+    }
+
+    @Test public void rejectsMissingSource() throws Exception {
+        reject("Selection source", "findItem by source;", "missing source for edition");
+    }
+
+    @Test public void rejectsDuplicateSource() throws Exception {
+        reject("Selection source", "findItem by source, Item.code = \"RS\", Item.edition = EDITION;",
+                "duplicate source for code");
+    }
+
+    @Test public void rejectsTargetConstantOnNonKey() throws Exception {
+        reject("Selection source", "findItem by source, Item.title = \"RS\";", "constant does not bind a primary-key field");
+    }
+
+    @Test public void rejectsPerformerConstantThatDoesNotMapToKey() throws Exception {
+        reject("Selection source", "findItem by Selection.note = \"RS\";", "constant field does not map to a primary key");
+    }
+
+    @Test public void rejectsParticipantWithoutTakeEvenWithSameNamedField() throws Exception {
+        reject("Unrelated source", "findItem by source, Item.edition = EDITION;", "has no take relation to Item");
     }
 
     @Test public void rejectsIncompatibleType() throws Exception {
-        reject("findItem by source.edition, EDITION;", "type mismatch");
+        reject("Wrong source", "findItem by source, Item.edition = EDITION;", "type mismatch for code");
     }
 
     @Test public void rejectsIncompatibleDeclaredWidth() throws Exception {
-        reject("findItem by source.wider, EDITION;", "declared-width mismatch");
+        reject("Wide source", "findItem by source, Item.edition = EDITION;", "declared-width mismatch for code");
+    }
+
+    @Test public void rejectsAnUnspecifiedSourceWidthForADeclaredWidth() throws Exception {
+        reject("Unspecified source", "findItem by source, Item.edition = EDITION;", "declared-width mismatch for code");
+    }
+
+    @Test public void rejectsAnIncompatibleConstant() throws Exception {
+        reject("Selection source", "findItem by source, Item.edition = \"3\";", "type mismatch for edition");
     }
 
     @Test public void rejectsAnOverwidthStringLiteral() throws Exception {
-        reject("findItem by \"NINECHARS\", EDITION;", "declared-width mismatch");
+        reject("Selection source", "findItem by Selection.wanted = \"NINECHARS\", Item.edition = EDITION;",
+                "declared-width mismatch for Selection.wanted");
     }
 
-    @Test public void rejectsUnknownField() throws Exception {
-        reject("findItem by source.missing, EDITION;", "unknown or ambiguous source");
+    @Test public void rejectsAnAmbiguousParticipantType() throws Exception {
+        reject("Selection first, Selection second", "findItem by Selection, Item.edition = EDITION;",
+                "unknown or ambiguous scalar participant: Selection");
     }
 
-    @Test public void rejectsAnUnqualifiedTypeWithMultipleSourceInstances() throws Exception {
-        var domain = compile("""
-                Scenario serial read(Item item, Selection first, Selection second) {
-                    findItem by Selection.wanted, EDITION;
-                }
-                """);
-        assertDiagnostic(domain, "unknown or ambiguous source: Selection.wanted");
-    }
-
-    @Test public void rejectsUnimplementedParticipantShorthand() throws Exception {
-        reject("findItem by source, EDITION;", "unknown or ambiguous source");
+    @Test public void rejectsPositionalBinding() {
+        assertThrows(IOException.class, () -> compile("""
+                Scenario serial read(Item item, Selection source) { findItem by source.wanted, EDITION; }
+                """));
     }
 
     @Test public void rejectsBindingOutsideScenarios() throws Exception {
-        assertDiagnostic(compile("atomic calculate derive(Item item) { findItem by item.code, EDITION; }"),
+        assertDiagnostic(compile("atomic calculate derive(Item item) { findItem by Item.code = \"RS\"; }"),
                 "allowed only in scenarios");
     }
 
     @Test public void rejectsBindingToNonQuery() throws Exception {
         assertDiagnostic(compile("""
                 atomic calculate derive(Item item) {}
-                Scenario serial read(Item item) { derive by item.code, EDITION; }
+                Scenario serial read(Item item) { derive by Item.edition = EDITION; }
                 """), "requires a keyed query");
     }
 
-    private void reject(String call, String message) throws Exception {
-        assertDiagnostic(compile("Scenario serial read(Item item, Selection source) { " + call + " }"), message);
+    private void reject(String parameters, String call, String message) throws Exception {
+        assertDiagnostic(compile("Scenario serial read(Item item, " + parameters + ") { " + call + " }"), message);
     }
 
     private void assertDiagnostic(SppDomain domain, String fragment) {
