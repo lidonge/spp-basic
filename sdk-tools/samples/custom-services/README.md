@@ -27,6 +27,10 @@ partial-update service or request coordinator is installed. The MyBatis library
 is needed to compile the generated mapper interface; this example does not use
 the official enhanced MyBatis adapter.
 
+The generated readonly inquiry `previewRecord` reads an entry by key, checks
+that it was identified and calculates a projected amount. Its H2 test verifies
+the returned projection and the stored row.
+
 The concurrent test uses the runtime's test-only barrier before `applyRevision`
 so both requests have read the same version. Business field assignments and
 transaction boundaries remain in SPP. This is a local H2 acceptance example,

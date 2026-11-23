@@ -35,7 +35,6 @@ public class SppDomain {
 
     Map<String, SppCompilationUnit> mapsOfClass = new HashMap<>();
     List<ErrorContent> unFoundClass = new ArrayList<>();
-    List<Object[]> unknownServiceCall = new ArrayList<>();
     private final List<String> appParseErrors = new ArrayList<>();
     private SppCompilationUnit currentClass = null;
     private List<SppDefaultService> sppDefaultServices = new ArrayList<>();
@@ -92,10 +91,6 @@ public class SppDomain {
 
     public List<SppDefaultService> getSppDefaultServices() {
         return sppDefaultServices;
-    }
-
-    public List<Object[]> getUnknownServiceCall() {
-        return unknownServiceCall;
     }
 
     public void addAppParseError(String error) {
@@ -186,7 +181,6 @@ public class SppDomain {
         prepareImplicitParticipantServices();
         resolveServiceReferences();
         checkUnfoundClass(listener);
-        checkUnknowServiceCall(listener);
     }
 
     public List<String> validateBusinessFieldMeanings() {
@@ -605,12 +599,8 @@ public class SppDomain {
         }
     }
 
-    private final Set<String> sourceWarnings = new LinkedHashSet<>();
-
-    public void addSourceWarning(String warning) { sourceWarnings.add(warning); }
-
     public List<String> unusedParticipantWarnings() {
-        List<String> warnings = new ArrayList<>(sourceWarnings);
+        List<String> warnings = new ArrayList<>();
         for (SppCompilationUnit unit : mapsOfClass.values()) {
             if (unit instanceof SppService service) {
                 warnings.addAll(UnusedParticipantWarnings.collect(service));
@@ -728,13 +718,39 @@ public class SppDomain {
     private void validateScenarioCalls(SppScenario owner, List<IServiceBodyStatement> statements, List<String> errors) {
         if (statements == null) return;
         for (IServiceBodyStatement statement : statements) {
-            if (statement instanceof SppServiceCall call && call.getCallee() instanceof SppScenario callee) {
-                errors.add("Scenario " + owner.getFuncName() + " cannot call "
-                        + "Scenario " + callee.getFuncName()
-                        + "; compose shared atomic services instead.");
+            if (owner.isReadonly() && statement instanceof TransactionBlock) {
+                errors.add("readonly Scenario " + owner.getFuncName() + " cannot contain a transaction block.");
+            }
+            if (statement instanceof SppServiceCall call && call.getCallee() != null) {
+                SppService callee = call.getCallee();
+                if (!callee.isReal()) {
+                    errors.add("Scenario " + owner.getFuncName() + " calls undefined atomic service " + callee.getName() + ".");
+                } else if (callee instanceof SppScenario) {
+                    errors.add("Scenario " + owner.getFuncName() + " cannot call "
+                            + "Scenario " + callee.getFuncName()
+                            + "; compose shared atomic services instead.");
+                } else if (callee.getType() != IConstance.CompilationUnitType.atomicservice) {
+                    errors.add("Scenario " + owner.getFuncName() + " can only call atomic services: " + callee.getFuncName() + ".");
+                } else if (owner.isReadonly()) {
+                    validateReadonlyCall(owner, callee, errors);
+                }
             }
             for (List<IServiceBodyStatement> children : statementChildren(statement))
                 validateScenarioCalls(owner, children, errors);
+        }
+    }
+
+    private void validateReadonlyCall(SppScenario owner, SppService callee, List<String> errors) {
+        SppService implementation = callee;
+        while (implementation.getLocalServiceProvider() != null) {
+            implementation = implementation.getLocalServiceProvider();
+        }
+        String label = "readonly Scenario " + owner.getFuncName() + " cannot call ";
+        if (callee.isQuantumService() || implementation.isQuantumService()) {
+            errors.add(label + "quantum service " + callee.getFuncName() + ".");
+        } else if (callee.getServiceType() == IConstance.ServiceType.update) {
+            String operation = callee.getPersistenceOperation() == null ? "update" : callee.getPersistenceOperation();
+            errors.add(label + operation + " service " + callee.getFuncName() + ".");
         }
     }
 
@@ -4767,10 +4783,6 @@ public class SppDomain {
                 return implicitCrudService(operation, type, 0);
         }
         return null;
-    }
-
-    public boolean deferCrudParameterValidation(SppService service) {
-        return !service.isReal() || isDefaultGeneratedService(service);
     }
 
     private void collectImplicitCrudCalls(SppService owner, List<IServiceBodyStatement> statements,
@@ -9868,26 +9880,6 @@ public class SppDomain {
             return "field is not quantum";
         }
         return null;
-    }
-
-    private void checkUnknowServiceCall(ISppErrorLogger listener) {
-        for(Object[] parameterChecker : unknownServiceCall){
-            ParserRuleContext ctx = (ParserRuleContext) parameterChecker[0];
-            SppClass currentCLass = (SppClass) parameterChecker[1];
-            SppLocalVar localVar = (SppLocalVar) parameterChecker[2];
-            SppService callee = (SppService) parameterChecker[3];
-            // Collection overloads are resolved per call and validated by bindParticipantCalls.
-            if (callee.isImplicitParticipantCrud()) continue;
-            int paramIndex = (int) parameterChecker[4];
-            if(callee.getServiceBody().getSppLocalVarList().size() <= paramIndex){
-                listener.logSppError(ctx,"Scenario " + currentCLass.getName() + ": Parameter " +
-                        paramIndex + " not exist in service " + callee.getName());
-            }else {
-                SppLocalVar indexVar = callee.getServiceBody().getLocalVar(paramIndex);
-                if (!isSameTypeWithParameter(indexVar, localVar))
-                    listener.logSppError(ctx, "Parameter " + name + " is  excepted " + indexVar.getType().getName() + (indexVar.getArrayString()));
-            }
-        }
     }
 
     public boolean isSameTypeWithParameter(SppLocalVar indexVar, SppLocalVar nameVar) {

@@ -48,7 +48,7 @@
   aliases remain allowed. Argument-free calls bind uniquely by type/collection
   dimensions. Query confirmation uses if(participant)/identify, not null tests.
 - Ordinary check failure controls its lexical block and does not roll back by
-  default. Explicit checkXXX,breakTransction rolls back the current transaction
+  default. Explicit checkXXX,breakTransaction rolls back the current transaction
   only on failure. Quantum services express increments/decrements; callers
   declare nullable bounds, automatically enforced at settlement with rollback
   of the bound transaction. Legacy built-in checks remain compatible, not for

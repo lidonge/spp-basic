@@ -4,9 +4,12 @@ import com.servpp.lang.general.SppGeneralHandler;
 import com.servpp.lang.models.SppProject;
 import com.servpp.lang.antlr.SppLexer;
 import com.servpp.lang.antlr.SppParser;
+import org.antlr.v4.runtime.BaseErrorListener;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.Parser;
+import org.antlr.v4.runtime.RecognitionException;
+import org.antlr.v4.runtime.Recognizer;
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 
 import java.io.*;
@@ -30,10 +33,22 @@ public class SppCompiler extends AntlrCompiler {
     @Override
     protected Parser getParser() throws IOException {
         CharStream stream = getCharStream();
-        SppLexer lexer1 = new SppLexer(stream);
-        CommonTokenStream tokens1 = new CommonTokenStream(lexer1);
-        SppParser parser1 = new SppParser(tokens1);
-        return parser1;
+        SppLexer lexer = new SppLexer(stream);
+        var lexicalErrors = new StringBuilder();
+        lexer.removeErrorListeners();
+        lexer.addErrorListener(new BaseErrorListener() {
+            @Override public void syntaxError(Recognizer<?, ?> recognizer, Object symbol, int line,
+                                              int column, String message, RecognitionException failure) {
+                lexicalErrors.append(System.lineSeparator()).append(antlrFile).append(':').append(line)
+                        .append(':').append(column + 1).append(' ').append(message);
+            }
+        });
+        var tokens = new CommonTokenStream(lexer);
+        tokens.fill();
+        if (lexicalErrors.length() != 0) {
+            throw new IOException("SPP lexical error(s):" + lexicalErrors);
+        }
+        return new SppParser(tokens);
     }
     @Override
     public ParseTreeListener compile() throws IOException {

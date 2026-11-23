@@ -1,7 +1,6 @@
 package com.servpp.lang.models;
 
 import com.servpp.lang.general.IConstance;
-import com.servpp.lang.general.IScenarioHandler;
 import com.servpp.lang.models.app.INamedObject;
 import com.servpp.lang.models.app.SppFieldReference;
 
@@ -34,7 +33,6 @@ public class SppClass extends SppCompilationUnit implements INamedObject {
     Map<String, SppField> sppFieldMap = new HashMap<>();
     List<SppField> sppFieldList = new ArrayList<>();
 
-    private IScenarioHandler.CurrentCall currentCall;
     private SppField instance;
 
     public SppClass(String name) {
@@ -89,13 +87,6 @@ public class SppClass extends SppCompilationUnit implements INamedObject {
         return sppFieldList;
     }
 
-    public IScenarioHandler.CurrentCall getCurrentCall() {
-        return currentCall;
-    }
-
-    public void setCurrentCall(IScenarioHandler.CurrentCall currentCall) {
-        this.currentCall = currentCall;
-    }
 
     public Map<String, SppField> getSppFieldMap() {
         return sppFieldMap;
@@ -158,7 +149,6 @@ public class SppClass extends SppCompilationUnit implements INamedObject {
         storageOwnershipResolved = cls.storageOwnershipResolved;
         sppFieldMap = cls.sppFieldMap;
         sppFieldList = cls.sppFieldList;
-        currentCall = cls.currentCall;
     }
 
 //    public String addMethod(SppMethod sppMethod){

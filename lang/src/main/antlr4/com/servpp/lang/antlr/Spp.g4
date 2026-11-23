@@ -3,7 +3,7 @@ grammar Spp;
 import JavaExpr;
 
 program
-    : servicedomain compilationUnits
+    : servicedomain compilationUnits EOF
     ;
 
 servicedomain
@@ -114,7 +114,11 @@ mapsame
     ;
 
 scenario
-    :  'Scenario' autosort? serviceDefinition '{' scenarioDeclaration '}'
+    : readonlyModifier? 'Scenario' autosort? serviceDefinition '{' scenarioDeclaration '}'
+    ;
+
+readonlyModifier
+    : {getCurrentToken().getText().equals("readonly")}? Identifier
     ;
 
 autosort
@@ -189,7 +193,7 @@ quantumService
     ;
 
 serviceDefinition
-    : Identifier '(' parameterDeclarations*')'
+    : Identifier '(' parameterDeclarations? ')'
     ;
 
 servicetype
@@ -263,7 +267,6 @@ atomiccall
 
 transactionBreak
     : {getCurrentToken().getText().equals("breakTransaction")}? Identifier
-    | legacy='breakTransction'
     ;
 
 readBinding

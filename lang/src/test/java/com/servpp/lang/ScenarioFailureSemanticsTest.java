@@ -42,8 +42,8 @@ public class ScenarioFailureSemanticsTest {
         assertTrue(domain.unusedParticipantWarnings().isEmpty());
     }
 
-    @Test public void deprecatedRollbackFlagBelongsOnlyToTheNestedCall() throws Exception {
-        var domain = compile("transaction { eligible(work) { eligible(work),breakTransction; }; }");
+    @Test public void rollbackFlagBelongsOnlyToTheNestedCall() throws Exception {
+        var domain = compile("transaction { eligible(work) { eligible(work),breakTransaction; }; }");
         var errors = domain.validateAppDeclarations();
         assertTrue(errors.toString(), errors.isEmpty());
         var scene = (SppScenario) domain.getSppClass("Run");
@@ -53,11 +53,18 @@ public class ScenarioFailureSemanticsTest {
         var branch = (ExecuteBlock) outer.getGuardStatements().get(0);
         assertFalse(outer.isBreaksTransaction());
         assertTrue(((SppServiceCall) branch.getExecuteCallList().get(0)).isBreaksTransaction());
-        assertEquals(1, domain.unusedParticipantWarnings().stream()
-                .filter(warning -> warning.contains("breakTransction is deprecated; use breakTransaction")).count());
+        assertTrue(domain.unusedParticipantWarnings().isEmpty());
     }
 
-    @Test public void correctedIdentifyFlagCompilesWithoutADeprecationWarning() throws Exception {
+    @Test public void formerRollbackSpellingIsASyntaxError() {
+        for (String call : new String[]{"eligible(work)", "identify(work)"}) {
+            var error = assertThrows(java.io.IOException.class,
+                    () -> compile("transaction { " + call + ",breakTransction; }"));
+            assertTrue(error.getMessage(), error.getMessage().contains("syntax error"));
+        }
+    }
+
+    @Test public void identifyCanRequestTransactionRollback() throws Exception {
         var domain = compile("transaction { identify(work),breakTransaction; }");
         var errors = domain.validateAppDeclarations();
         assertTrue(errors.toString(), errors.isEmpty());

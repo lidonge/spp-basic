@@ -279,6 +279,11 @@ language; they are not substitutes for the current user-facing guides.
 
 ## Scenario read bindings and transaction rejection
 
+Use `readonly Scenario serial preview(Entry, Facts)` for a front-end inquiry.
+It generates a normal scenario API entry and may call queries, checks and
+calculations. The compiler rejects insert, update, delete and quantum calls
+and explicit transaction blocks, including inside guarded branches.
+
 Use `findBook by Selection, Publication;` in a scenario when `Selection`
 and `Publication` each take the target role `Book`. Each listed participant
 supplies the APP primary-key fields covered by its take mapping. For example,
@@ -298,8 +303,7 @@ immediately before the read. The target keeps the bound keys, and list
 queries fill the destination collection.
 
 Use `,breakTransaction` on a bare check or `identify` inside a transaction
-to abort the transaction when the check fails. `breakTransction` is a
-deprecated spelling and emits a compile warning.
+to abort the transaction when the check fails.
 
 ## APP quantum role bindings
 

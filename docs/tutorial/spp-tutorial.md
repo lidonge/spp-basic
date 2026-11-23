@@ -76,7 +76,7 @@ atomic check verifyAmount(Facts) {
     require(Facts.amount == 14, "The amount must be 14");
 }
 
-Scenario serial preview(Facts) {
+readonly Scenario serial preview(Facts) {
     prepare;
     twice;
     verifyAmount;
@@ -267,8 +267,7 @@ For a declared list query such as
 `book`'s APP primary key. The query still fills `matches`.
 
 Use `,breakTransaction` on a bare check or `identify` inside a transaction
-when business rejection must abort that transaction. The older spelling
-`breakTransction` still compiles and emits a deprecation warning.
+when business rejection must abort that transaction.
 
 ### Bind a quantum role across domains
 

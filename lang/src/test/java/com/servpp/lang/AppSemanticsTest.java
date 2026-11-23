@@ -6967,33 +6967,15 @@ public class AppSemanticsTest {
 
     @Test
     public void obsoleteContextParametersAreRejected() throws Exception {
-        SppDomain domain = compileDomain("""
-                domain commerce;
-                Entity Product{ business("productId business credential") String productId; }
-                Role SalesItem{ int requestedQty; }
-                Contract SalesOrder{ String orderNo; }
-                atomic query inspectRole(context SalesItem item);
-                atomic query inspectEntity(context Product product);
-                atomic query inspectOrders(context SalesOrder[] orders);
-                """, """
-                domain commerce;
-                scope{
-                    local{
-                        inspectRole;
-                        inspectEntity;
-                        inspectOrders;
-                    }
-                }
-                """, """
-                domain commerce;
-                phy{}
-                """);
-
-        List<String> errors = domain.validateAppDeclarations();
-
-        for (String service : List.of("inspectRole", "inspectEntity", "inspectOrders")) {
-            assertTrue(errors.toString(), errors.stream().anyMatch(error -> error.contains("Service " + service)
-                    && error.contains("entrance requires a participant, not context")));
+        for (String parameter : List.of("SalesItem item", "Product product", "SalesOrder[] orders")) {
+            var error = org.junit.Assert.assertThrows(java.io.IOException.class, () -> compileDomain("""
+                    domain commerce;
+                    Entity Product{ String code; }
+                    Role SalesItem{ int requestedQty; }
+                    Contract SalesOrder{ String orderNo; }
+                    atomic query inspect(context %s);
+                    """.formatted(parameter), "domain commerce;", "domain commerce; phy{}"));
+            assertTrue(error.getMessage(), error.getMessage().contains("syntax error"));
         }
     }
 
@@ -8540,7 +8522,7 @@ public class AppSemanticsTest {
                 atomic query queryOrder(SalesOrder order);
                 atomic query queryCustomer(Customer customer);
                 atomic update openSalesOrder(SalesOrder order);
-                saga submitOrder(SalesOrder order){
+                Scenario serial submitOrder(SalesOrder order){
                     transaction{ openSalesOrder(order); }
                 }
                 """, """

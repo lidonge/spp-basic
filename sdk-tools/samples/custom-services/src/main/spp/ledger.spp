@@ -19,7 +19,7 @@ atomic calculate twice(Facts) {
     Facts.amount *= 2;
 }
 
-Scenario serial preview(Facts) {
+readonly Scenario serial preview(Facts) {
     twice;
 }
 
@@ -39,6 +39,16 @@ Scenario serial readRecord(Entry) {
     findEntry;
 }
 
+atomic calculate projectAmount(Entry, Facts) {
+    Facts.amount = Entry.amount * 2;
+}
+
+readonly Scenario serial previewRecord(Entry, Facts) {
+    findEntry;
+    identify(Entry);
+    projectAmount;
+}
+
 Scenario serial reviseRecord(Entry, Revision) {
     findEntry;
     applyRevision;
@@ -55,6 +65,6 @@ take Lookup as Entry {
     String code = entryCode;
 }
 
-Scenario serial readSelectedRecord(Entry, Lookup) {
+readonly Scenario serial readSelectedRecord(Entry, Lookup) {
     findEntry by Lookup;
 }

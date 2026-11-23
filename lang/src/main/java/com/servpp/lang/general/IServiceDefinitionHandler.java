@@ -21,9 +21,11 @@ public interface IServiceDefinitionHandler extends ICompilationUnitHandler {
         sppService.setFuncName(methodName);
         String err = getSppDomain().checkDupClass(clsName);
         if(err != null){
-            logSppError(ctx,err);
+            getSppDomain().addAppParseError("Duplicate service declaration: " + methodName
+                    + " at line " + ctx.getStart().getLine() + ".");
+        } else {
+            sppService = (SppService) getSppDomain().addClass(sppService);
         }
-        getSppDomain().addClass(sppService);
         push(sppService.getServiceBody());
 
     }
@@ -58,7 +60,8 @@ public interface IServiceDefinitionHandler extends ICompilationUnitHandler {
             if (container instanceof ServiceBody) {
                 ServiceBody serviceBody = (ServiceBody) container;
                 String err = serviceBody.addLocalVar(sppLocalVar);
-                logSppError(ctx, err);
+                if (err != null)
+                    getSppDomain().addAppParseError(err + " at line " + ctx.getStart().getLine() + ".");
             }
         }
 

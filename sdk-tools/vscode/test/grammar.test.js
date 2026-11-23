@@ -34,11 +34,12 @@ function assertScope(tokens, fragment, scope) {
 }
 
 test('TextMate recognizes SPP declarations and Chinese names', async () => {
-  const lines = await tokenize('domain ledger;\nRole 账户 {\n int amount;\n}\natomic calculate twice(Facts) {}\nScenario serial preview(Facts) {}\nEnum State { Pending }');
+  const lines = await tokenize('domain ledger;\nRole 账户 {\n int amount;\n}\natomic calculate twice(Facts) {}\nreadonly Scenario serial preview(Facts) {}\nEnum State { Pending }');
   assertScope(lines[0], 'ledger', 'entity.name.namespace.spp');
   assertScope(lines[1], '账户', 'entity.name.type.spp');
   assertScope(lines[2], 'int', 'storage.type.primitive.spp');
   assertScope(lines[4], 'twice', 'entity.name.function.spp');
+  assertScope(lines[5], 'readonly', 'keyword.control.spp');
   assertScope(lines[5], 'preview', 'entity.name.function.spp');
   assertScope(lines[6], 'State', 'entity.name.type.spp');
 });

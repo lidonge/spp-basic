@@ -15,6 +15,7 @@ public interface IScenarioHandler extends IServiceDefinitionHandler {
         SppScenario currentClass = new SppScenario("");
         currentClass.setType(CompilationUnitType.scenario);
         currentClass.setScenarioType(ScenarioType.parallel);
+        currentClass.setReadonly(ctx.readonlyModifier() != null);
         getSppDomain().setCurrentClass(currentClass);
     }
 
@@ -22,6 +23,9 @@ public interface IScenarioHandler extends IServiceDefinitionHandler {
     default void exitScenario(SppParser.ScenarioContext ctx) {
         getSppDomain().setCurrentClass(null);
     }
+    @Override default void enterReadonlyModifier(SppParser.ReadonlyModifierContext ctx) { }
+    @Override default void exitReadonlyModifier(SppParser.ReadonlyModifierContext ctx) { }
+
     @Override
     default void enterAutosort(SppParser.AutosortContext ctx) {
         String st = ctx.getChild(0).getText();
@@ -156,10 +160,6 @@ public interface IScenarioHandler extends IServiceDefinitionHandler {
     @Override
     default void enterAtomiccall(SppParser.AtomiccallContext ctx) {
         if (!(getSppDomain().getCurrentClass() instanceof SppScenario)) return;
-        if (ctx.transactionBreak() != null && ctx.transactionBreak().legacy != null) {
-            getSppDomain().addSourceWarning("[SPP_DEPRECATED] Line " + ctx.getStart().getLine()
-                    + ":" + (ctx.getStart().getCharPositionInLine() + 1) + ": breakTransction is deprecated; use breakTransaction.");
-        }
         if (ctx.Identifier() == null) {
             SppServiceCall call = new SppServiceCall();
             call.setIdentityTarget(NameUtil.normalizeParticipantReference(ctx.qualifiedName().getText()));
@@ -199,20 +199,14 @@ public interface IScenarioHandler extends IServiceDefinitionHandler {
         sppServiceCall.setBreaksTransaction(ctx.transactionBreak() != null);
         getCurrentServiceBaseBody().addServiceCall(sppServiceCall);
 
-        SppClass callee = (SppClass) checker.getSppClass(CompilationUnitType.atomicservice,serviceClassName);
-        if(callee instanceof SppService) {
-            sppServiceCall.setCallee((SppService) callee);
-            currentCLass.setCurrentCall(new CurrentCall((SppService) callee,0));
-        }else if(!callee.isReal()){
-            checker.addUnFoundClass(new ErrorContent(serviceClassName,
-                    ctx.getStart().getLine(),ctx.getStart().getCharPositionInLine(),
-                    "Callee:"+serviceClassName+" is not  exists!"));
-//            logSppError(ctx,"Callee:"+serviceClassName+" is not  exists!");
+        SppCompilationUnit callee = checker.getSppClass(CompilationUnitType.atomicservice, serviceClassName);
+        if (callee instanceof SppService service) {
+            sppServiceCall.setCallee(service);
+            logSppError(ctx, generateField(serviceClassName, 0, serviceName));
+        } else {
+            checker.addAppParseError("Scenario " + currentCLass.getFuncName() + " calls '" + serviceName
+                    + "', which is not an atomic service, at line " + ctx.getStart().getLine() + ".");
         }
-        else
-            logSppError(ctx,"Callee:"+serviceClassName+" is not a service!");
-        String err = generateField(serviceClassName,0,serviceName);
-        logSppError(ctx,err);
         if (ctx.scenarioBranch() != null) push(sppServiceCall);
     }
 
@@ -244,46 +238,24 @@ public interface IScenarioHandler extends IServiceDefinitionHandler {
     @Override
     default void enterParameter(SppParser.ParameterContext ctx) {
         if (!(getSppDomain().getCurrentClass() instanceof SppScenario)) return;
-        String name = NameUtil.normalizeParticipantReference(ctx.getChild(0).getText());
-        String paramName = name;
-        ServiceBaseBody serviceBaseBody = getCurrentServiceBaseBody();
-        SppClass currentCLass = (SppClass) getSppDomain().getCurrentClass();
-        //check call parameter type and position
-        CurrentCall currentCall = currentCLass.getCurrentCall();
-        SppLocalVar nameVar = serviceBaseBody.getQualifieField(paramName);
-        SppServiceCall sppServiceCall = serviceBaseBody instanceof SppServiceCall guarded
-                ? guarded : (SppServiceCall) serviceBaseBody.getLastServiceCall();
-        if (nameVar == null) {
-            String message = "Scenario " + currentCLass.getName() + ": participant argument '" + paramName
-                    + "' must resolve to an explicitly declared participant or its declared attribute.";
-            getSppDomain().addAppParseError(message + " At line " + ctx.getStart().getLine() + ".");
-            logSppError(ctx, message);
-            sppServiceCall.addParameter(new SppParameter(null, paramName));
-            currentCLass.setCurrentCall(new CurrentCall(currentCall.callee(), currentCall.paramIndex() + 1));
+        String name = NameUtil.normalizeParticipantReference(ctx.qualifiedName().getText());
+        ServiceBaseBody body = getCurrentServiceBaseBody();
+        SppServiceCall call = body instanceof SppServiceCall guarded
+                ? guarded : (SppServiceCall) body.getLastServiceCall();
+        SppLocalVar participant = body.getQualifieField(name);
+        String scenario = ((SppScenario) getSppDomain().getCurrentClass()).getFuncName();
+        if (participant == null) {
+            getSppDomain().addAppParseError("Scenario " + scenario + ": participant argument '" + name
+                    + "' must resolve to an explicitly declared participant or its declared attribute."
+                    + " At line " + ctx.getStart().getLine() + ".");
+            call.addParameter(new SppParameter(null, name));
             return;
         }
-        //callee's n parameter
-//        System.out.println("Callee "+currentCall.callee().getName() +" get parameter " + currentCall.paramIndex);
-        if(currentCall.callee().getServiceBody().getSppLocalVarList().size() <= currentCall.paramIndex()) {
-            if(!getSppDomain().deferCrudParameterValidation(currentCall.callee()))
-                throw new RuntimeException("Scenario " + currentCLass.getName() + ": Parameter " +
-                        currentCall.paramIndex() + " not exist in service " + currentCall.callee().getName());
-        }
-        //local var type
-        sppServiceCall.addParameter( new SppParameter(nameVar.getType(),paramName)
-                .setArrayDimension(nameVar.getArrayDimension()));
-        if(!getSppDomain().deferCrudParameterValidation(currentCall.callee())) {
-                SppLocalVar indexVar = currentCall.callee().getServiceBody().getLocalVar(currentCall.paramIndex());
-                if (!getSppDomain().isSameTypeWithParameter(indexVar, nameVar))
-                    logSppError(ctx, "Parameter " + name + " is  excepted " + indexVar.getType().getName() + (indexVar.getArrayString()));
-        }
-        if(getSppDomain().deferCrudParameterValidation(currentCall.callee())){
-            Object[] checker = new Object[]{
-                ctx, currentCLass, nameVar, currentCall.callee(), currentCall.paramIndex()
-            };
-            getSppDomain().getUnknownServiceCall().add(checker);
-        }
-        currentCLass.setCurrentCall(new CurrentCall(currentCall.callee,currentCall.paramIndex+1));
+        String duplicate = call.addParameter(new SppParameter(participant.getType(), name)
+                .setArrayDimension(participant.getArrayDimension()));
+        if (duplicate != null)
+            getSppDomain().addAppParseError("Scenario " + scenario + ": " + duplicate
+                    + " at line " + ctx.getStart().getLine() + ".");
     }
 
     @Override
@@ -294,9 +266,6 @@ public interface IScenarioHandler extends IServiceDefinitionHandler {
     default void exitScenarioDeclaration(SppParser.ScenarioDeclarationContext ctx) {
     }
 
-    record CurrentCall(SppService callee, int paramIndex){
-
-    }
     private ServiceBaseBody getCurrentServiceBaseBody() {
         SppService currentCLass = (SppService) getSppDomain().getCurrentClass();
         ServiceBaseBody serviceBaseBody = currentCLass.getServiceBody();

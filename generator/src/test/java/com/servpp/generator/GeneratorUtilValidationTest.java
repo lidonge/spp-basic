@@ -19,14 +19,14 @@ import static org.junit.Assert.fail;
 
 public class GeneratorUtilValidationTest {
     @Test
-    public void explicitSingleDomainApplicationUsesDeploymentCatalogs() throws Exception {
+    public void readonlyScenarioHasAnApiEntryAndDeploymentCatalogEntry() throws Exception {
         Path source = Files.createTempDirectory("spp-single-application-source");
         Path output = Files.createTempDirectory("spp-single-application-output");
         Files.writeString(source.resolve("ledger.spp"), """
                 domain ledger;
                 Role Facts { int amount; }
                 atomic calculate twice(Facts) { Facts.amount *= 2; }
-                Scenario serial preview(Facts) { twice; }
+                readonly Scenario serial preview(Facts) { twice; }
                 """);
         Files.writeString(source.resolve("ledger.app"), """
                 domain ledger;
@@ -40,6 +40,9 @@ public class GeneratorUtilValidationTest {
         assertTrue(Files.exists(resources.resolve("domains/ledger/services.properties")));
         String catalog = Files.readString(resources.resolve("domains/ledger/services.properties"));
         assertTrue(catalog, catalog.contains("ledger.preview"));
+        String api = Files.readString(output.resolve("yaml/ledger.spp.yaml"));
+        assertTrue(api, api.contains("operationId: preview"));
+        assertTrue(api, api.contains("PreviewRequest"));
     }
 
     @Test public void projectInspectionRunsBeforeWritingArtifacts()throws Exception {

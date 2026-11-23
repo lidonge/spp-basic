@@ -57,6 +57,25 @@ public class BasicPersistenceTest {
         }
     }
 
+    @Test public void generatedReadonlyInquiryProjectsStoredFactsWithoutWriting() throws Exception {
+        try (var fixture = new Fixture()) {
+            fixture.create();
+            var response = fixture.call("previewRecord", Map.of("Entry", Map.of("code", "A"),
+                    "Facts", Map.of("amount", 0)));
+            assertEquals("original", response.path("Entry").path("note").asText());
+            assertEquals(14, response.path("Facts").path("amount").asInt());
+            try (var connection = fixture.dataSource.getConnection();
+                 var statement = connection.createStatement();
+                 var rows = statement.executeQuery("SELECT code, note, amount FROM LEDGER_ENTRIES")) {
+                assertTrue(rows.next());
+                assertEquals("A", rows.getString("code"));
+                assertEquals("original", rows.getString("note"));
+                assertEquals(7, rows.getInt("amount"));
+                assertFalse(rows.next());
+            }
+        }
+    }
+
     @Test public void concurrentGeneratedUpdatesRejectOneStaleBaseline() throws Exception {
         try (var fixture = new Fixture()) {
             fixture.create();
