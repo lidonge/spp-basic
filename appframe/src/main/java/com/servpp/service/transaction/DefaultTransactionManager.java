@@ -14,7 +14,9 @@ import java.lang.reflect.Method;
 import com.servpp.service.Service;
 import com.servpp.service.jdbc.JdbcTransactionScope;
 import com.servpp.service.runtime.GeneratedRoleIdentityContextBinder;
+import com.servpp.service.runtime.GeneratedServiceKind;
 import com.servpp.service.runtime.GeneratedServiceKindProvider;
+import com.servpp.service.runtime.QuantumServiceMetadataProvider;
 import com.servpp.service.runtime.RemoteCompensationRuleProvider;
 import com.servpp.service.runtime.RemoteGeneratedService;
 import com.servpp.service.runtime.ScopeMetadataProvider;
@@ -215,7 +217,8 @@ public class DefaultTransactionManager {
                                 List<TransactionEntry> executed, boolean parallelUpdates) {
         for (int index = 0; index < entries.size();) {
             var entry = entries.get(index);
-            if (!parallelUpdates || !UpdateScheduling.isAvailable() || !entry.executor().isPreparedOrdinaryUpdate()) {
+            if (ordinaryUpdate(entry.executor())) settleLocalQuantum(context, executed);
+            if (!parallelUpdates || context.settledQuantumRecords() != 0 || !UpdateScheduling.isAvailable() || !entry.executor().isPreparedOrdinaryUpdate()) {
                 executeEntry(entry, context, executed); index++; continue;
             }
             var batch = new ArrayList<UpdateSchedulingProvider.Work>();
@@ -426,27 +429,48 @@ public class DefaultTransactionManager {
         }
     }
 
+    private static boolean ordinaryUpdate(IExecutor executor) {
+        return !executor.isQuantumUpdate()
+                && !(executor.getService() instanceof QuantumServiceMetadataProvider metadata
+                     && !metadata.getQuantumAttributeIds().isEmpty())
+                && executor.getService() instanceof GeneratedServiceKindProvider kind
+                && kind.getGeneratedServiceKind() == GeneratedServiceKind.ATOMIC_UPDATE;
+    }
+
+    private void settleLocalQuantum(TransactionContext context, List<TransactionEntry> executed) {
+        if (DeclaredTransactionContext.currentMode() != TransactionMode.LOCAL
+                || !(context.getQuantumJournalStore() instanceof JdbcQuantumJournalStore jdbc)
+                || quantumAccessAdapter.getClass() != JournalQuantumAccessAdapter.class
+                || ((JournalQuantumAccessAdapter) quantumAccessAdapter).getJournalStore() != jdbc) return;
+        QuantumEntanglementBoundary boundary = context.getQuantumEntanglementBoundary();
+        if (boundary == null || boundary.recordCount() == context.settledQuantumRecords()) return;
+        SourceTransactionBoundary.assertCommittable();
+        settleQuantum(boundary, executed, () -> jdbc.settlePending(context, boundary));
+    }
+
     private void commitQuantumBoundary(TransactionContext context, List<TransactionEntry> executed) {
         QuantumEntanglementBoundary boundary = context.getQuantumEntanglementBoundary();
-        if (boundary != null) {
-            try {
-                quantumAccessAdapter.commit(context, boundary);
-            } catch (RuntimeException | Error failure) {
-                String rejectedAttribute = failure instanceof FailureReasonProvider details
-                        ? details.getFailureAttribute() : null;
-                var candidates = executed.stream().filter(entry -> entry.executor().isQuantumUpdate()
-                                || entry.executor().getService() instanceof com.servpp.service.runtime.QuantumServiceMetadataProvider metadata
-                                    && !metadata.getQuantumAttributeIds().isEmpty()
-                                || QuantumInvocationBounds.hasLimits(entry.executor().getQuantumBounds()))
-                        .map(entry -> entry.executor().getService()).filter(java.util.Objects::nonNull)
-                        .filter(service -> rejectedAttribute == null
-                                || service instanceof com.servpp.service.runtime.QuantumServiceMetadataProvider metadata
-                                    && metadata.getQuantumAttributeIds().contains(rejectedAttribute))
-                        .map(com.servpp.service.Service::getName).distinct().toList();
-                TransactionFailureHandling.recordOrigin(failure, candidates.size() == 1 ? candidates.get(0) : "",
-                        String.join(",", boundary.getResourceIds()), "QUANTUM_SETTLEMENT");
-                throw failure;
-            }
+        if (boundary != null) settleQuantum(boundary, executed, () -> quantumAccessAdapter.commit(context, boundary));
+    }
+
+    private void settleQuantum(QuantumEntanglementBoundary boundary, List<TransactionEntry> executed, Runnable action) {
+        try {
+            action.run();
+        } catch (RuntimeException | Error failure) {
+            String rejectedAttribute = failure instanceof FailureReasonProvider details
+                    ? details.getFailureAttribute() : null;
+            var candidates = executed.stream().filter(entry -> entry.executor().isQuantumUpdate()
+                            || entry.executor().getService() instanceof QuantumServiceMetadataProvider metadata
+                                && !metadata.getQuantumAttributeIds().isEmpty()
+                            || QuantumInvocationBounds.hasLimits(entry.executor().getQuantumBounds()))
+                    .map(entry -> entry.executor().getService()).filter(java.util.Objects::nonNull)
+                    .filter(service -> rejectedAttribute == null
+                            || service instanceof QuantumServiceMetadataProvider metadata
+                                && metadata.getQuantumAttributeIds().contains(rejectedAttribute))
+                    .map(com.servpp.service.Service::getName).distinct().toList();
+            TransactionFailureHandling.recordOrigin(failure, candidates.size() == 1 ? candidates.get(0) : "",
+                    String.join(",", boundary.getResourceIds()), "QUANTUM_SETTLEMENT");
+            throw failure;
         }
     }
 

@@ -203,7 +203,7 @@ public class SppService extends SppClass{
     private final Set<String> transferPaths = new LinkedHashSet<>();
     Set<String> getTransferPaths() { return transferPaths; }
 
-    record QuantumEndpoint(String attributeId, List<String> keyPaths) { }
+    record QuantumEndpoint(String attributeId, List<String> keyPaths, String storageType) { }
     private Map<String, List<QuantumEndpoint>> quantumEndpoints = Map.of();
 
     void setQuantumEndpoints(Map<String, List<QuantumEndpoint>> endpoints) {
@@ -817,8 +817,102 @@ public class SppService extends SppClass{
         indent(java,indent).append("}\n");
     }
 
+    private record SchedulingInputs(Set<String> participants, Set<String> storageTypes) {
+        boolean overlaps(SchedulingInputs other) {
+            return participants.stream().anyMatch(path -> other.participants.stream().anyMatch(
+                    input -> path.equals(input) || path.startsWith(input + ".") || input.startsWith(path + ".")))
+                    || storageTypes.stream().anyMatch(other.storageTypes::contains);
+        }
+    }
+
+    private SchedulingInputs schedulingInputs(SppServiceCall call) {
+        var callee = call.getCallee();
+        while (callee.getLocalServiceProvider() != null) callee = callee.getLocalServiceProvider();
+        Set<String> participants = new LinkedHashSet<>();
+        Set<String> storageTypes = new LinkedHashSet<>();
+        for (var parameter : call.getSppParameterList()) {
+            String path = parameter.getName();
+            participants.add(path);
+            var participant = serviceBody.getQualifieField(path);
+            if (participant != null && participant.getType() instanceof SppClass type)
+                storageTypes.add(type.getReferenceSource() == null
+                        ? getDomainName() + "." + type.getName() : type.getReferenceSource());
+        }
+        call.getBoundReadKeys().stream().map(SppServiceCall.BoundReadKey::sourcePath)
+                .filter(java.util.Objects::nonNull).forEach(participants::add);
+        if (call.getResultTarget() != null) participants.add(call.getResultTarget());
+        for (var bound : call.getQuantumBounds()) {
+            UnusedParticipantWarnings.expression(bound.minimum, participants);
+            UnusedParticipantWarnings.expression(bound.maximum, participants);
+        }
+        if (callee.scopeItem != null) {
+            for (var rule : callee.scopeItem.getPersistenceRules())
+                storageTypes.add(storageType(callee, rule.objectType()));
+            for (var rule : callee.scopeItem.getRepositoryHydrationRules())
+                storageTypes.add(storageType(callee, rule.objectType()));
+        }
+        // A played quantum position can share storage with an ordinary write on a Reference.
+        for (var endpoints : callee.quantumEndpoints.values())
+            for (var endpoint : endpoints) storageTypes.add(endpoint.storageType());
+        return new SchedulingInputs(participants, storageTypes);
+    }
+
+    private static String storageType(SppService callee, String type) {
+        return type.contains(".") ? type : callee.getDomainName() + "." + type;
+    }
+
+    private boolean schedulableLocalCall(IServiceBodyStatement statement) {
+        if (!(statement instanceof SppServiceCall call) || isCheckCall(call) || call.getCallee() == null) return false;
+        var callee = call.getCallee();
+        return callee.getType() == IConstance.CompilationUnitType.atomicservice
+                && (callee.getServiceType() != IConstance.ServiceType.update || preparedOrdinaryUpdate(call) || quantumUpdate(call));
+    }
+
+    private List<IServiceBodyStatement> localQuantumFirst(List<IServiceBodyStatement> statements) {
+        var ordered = new ArrayList<>(statements);
+        int lastQuantum = -1;
+        for (int index = ordered.size() - 1; index >= 0; index--) {
+            var statement = ordered.get(index);
+            if (!schedulableLocalCall(statement)) {
+                lastQuantum = -1;
+                continue;
+            }
+            var call = (SppServiceCall) statement;
+            if (quantumUpdate(call) && lastQuantum < 0) {
+                lastQuantum = index;
+            } else if (lastQuantum >= 0 && preparedOrdinaryUpdate(call)) {
+                var inputs = schedulingInputs(call);
+                // Moving a save past a producer could change the values it persists. Moving
+                // it past a consumer could hide a participant or a row that consumer needs.
+                boolean required = false;
+                for (int later = index + 1; later <= lastQuantum && !required; later++)
+                    required = inputs.overlaps(schedulingInputs((SppServiceCall) ordered.get(later)));
+                if (!required) {
+                    ordered.remove(index);
+                    ordered.add(lastQuantum--, call);
+                }
+            }
+        }
+        return ordered;
+    }
+
+    private List<IServiceBodyStatement> localTransactionStatements(TransactionBlock boundary) {
+        var statements = new ArrayList<IServiceBodyStatement>();
+        for (var statement : boundary.getTransactionCallList()) {
+            if (statement instanceof TransactionBlock child && "REQUIRED".equals(child.getPropagation())
+                    && "LOCAL".equals(child.getDeclaredMode()) && !containsChecks(child.getTransactionCallList())) {
+                statements.addAll(localTransactionStatements(child));
+            } else statements.add(statement);
+        }
+        return localQuantumFirst(statements);
+    }
+
     private List<IServiceBodyStatement> readyQuantumFirst(List<IServiceBodyStatement> statements) {
         if (statements == null) return null;
+        if (!statements.isEmpty()) {
+            var boundary = enclosingTransaction(statements.get(0));
+            if (boundary != null && "LOCAL".equals(boundary.getDeclaredMode())) return localQuantumFirst(statements);
+        }
         var result = new ArrayList<IServiceBodyStatement>();
         var pending = new ArrayList<SppServiceCall>();
         for (var statement : statements) {
@@ -1011,11 +1105,13 @@ public class SppService extends SppClass{
         }
         indent(java, indent + 4).append("@Override public com.servpp.service.transaction.TransactionPropagation getPropagation() { return com.servpp.service.transaction.TransactionPropagation.")
                 .append(block.getPropagation()).append("; }\n");
-        if (containsChecks(block.getTransactionCallList())) {
+        var statements = "LOCAL".equals(block.getDeclaredMode())
+                ? localTransactionStatements(block) : block.getTransactionCallList();
+        if (containsChecks(statements)) {
             indent(java, indent + 4).append("public IExecutor[] getServices() { return new IExecutor[]{\n");
-            appendBlockExecutor(java, block.getTransactionCallList(), indent + 8);
+            appendBlockExecutor(java, statements, indent + 8);
             java.append("\n"); indent(java, indent + 4).append("}; }\n");
-        } else appendGroupExecutors(java, block.getTransactionCallList(), indent);
+        } else appendGroupExecutors(java, statements, indent);
         indent(java, indent).append("}");
         if (execute) {
             java.append(".execute();");

@@ -210,7 +210,8 @@ public final class DeploymentEnvironmentPlanner {
         positions.forEach((logical, candidates) -> {
             if (candidates.get(0).owner() != domain)
                 bindings.put(logical, candidates.stream().map(position ->
-                        new SppService.QuantumEndpoint(position.attributeId(), position.keys())).toList());
+                        new SppService.QuantumEndpoint(position.attributeId(), position.keys(),
+                                position.owner().getName() + "." + position.attributeId().split("\\.", 2)[0])).toList());
         });
         service.setQuantumEndpoints(bindings);
     }

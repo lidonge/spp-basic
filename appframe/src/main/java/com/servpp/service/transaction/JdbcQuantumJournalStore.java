@@ -145,6 +145,20 @@ public class JdbcQuantumJournalStore implements QuantumJournalStore {
         }
     }
 
+    /** Applies the ready quantum records on the connection that owns the source transaction. */
+    void settlePending(TransactionContext context, QuantumEntanglementBoundary boundary) {
+        int settled = context.settledQuantumRecords();
+        List<QuantumConservationRecord> records = boundary.getRecords();
+        if (settled == records.size()) return;
+        Connection connection = JdbcTransactionScope.currentConnection(dataSource).orElseThrow();
+        try {
+            upsertValues(connection, context, boundary, records.subList(settled, records.size()));
+            context.settledQuantumRecords(records.size());
+        } catch (SQLException failure) {
+            throw new IllegalStateException("Cannot settle quantum values", failure);
+        }
+    }
+
     @Override
     public List<QuantumJournalEntry> findByTransactionId(String transactionId) {
         try (Connection connection = dataSource.getConnection();
@@ -451,7 +465,7 @@ public class JdbcQuantumJournalStore implements QuantumJournalStore {
             }
             statement.executeBatch();
         }
-        upsertValues(connection, context, boundary, records);
+        upsertValues(connection, context, boundary, records.subList(context.settledQuantumRecords(), records.size()));
     }
 
     private void upsertValues(Connection connection, TransactionContext context, QuantumEntanglementBoundary boundary,

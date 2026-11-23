@@ -383,6 +383,22 @@ runtime strategy's name.
 | SEATA_AT | Managed branch participation and recovery through Seata AT facilities |
 | XA | Managed XA branch lifecycle and coordinator/resource-manager recovery |
 
+With the built-in LOCAL JDBC runtime, a transaction and its joined
+`REQUIRED` work share one quantum settlement boundary. In each straight-line
+segment, the compiler schedules quantum updates ahead of independent built-in
+saves. A save stays in source order when moving it would cross a call that
+shares a participant or storage type. This includes APP aliases and played
+quantum positions. Reads and calculations keep their relative order, so each
+quantum update receives its prepared inputs. Checks, branches, explicit
+execution groups, and independent boundaries retain their control flow.
+
+The runtime applies pending quantum changes and checks their bounds on the
+owning JDBC connection before the next ordinary write. An ordinary write that
+uses quantum results runs serially after the ready quantum work. A bound
+rejection takes precedence over a failure in a subsequent ordinary write.
+The outer transaction commits the quantum values, journal, and ordinary
+writes together. A later failure rolls them all back.
+
 The official Seata adapter integrates Apache Seata 2.5.0. Seata itself retains
 Apache-2.0; the paid component is the S++ integration and associated distribution
 and support, not exclusive ownership of Seata.
