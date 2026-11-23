@@ -36,8 +36,34 @@ public class ScenarioFailureSemanticsTest {
     }
 
     @Test public void explicitRollbackCheckRequiresATransaction() throws Exception {
-        var domain = compile("eligible(work),breakTransction; step(work);");
-        assertFalse(domain.validateAppDeclarations().isEmpty());
+        var domain = compile("eligible(work),breakTransaction; step(work);");
+        assertTrue(domain.validateAppDeclarations().toString(), domain.validateAppDeclarations().stream()
+                .anyMatch(error -> error.contains("breakTransaction requires an enclosing transaction")));
+        assertTrue(domain.unusedParticipantWarnings().isEmpty());
+    }
+
+    @Test public void deprecatedRollbackFlagBelongsOnlyToTheNestedCall() throws Exception {
+        var domain = compile("transaction { eligible(work) { eligible(work),breakTransction; }; }");
+        var errors = domain.validateAppDeclarations();
+        assertTrue(errors.toString(), errors.isEmpty());
+        var scene = (SppScenario) domain.getSppClass("Run");
+        var block = (ExecuteBlock) scene.getServiceBody().getSppServiceCallList().get(0);
+        var transaction = (TransactionBlock) block.getExecuteCallList().get(0);
+        var outer = (SppServiceCall) transaction.getTransactionCallList().get(0);
+        var branch = (ExecuteBlock) outer.getGuardStatements().get(0);
+        assertFalse(outer.isBreaksTransaction());
+        assertTrue(((SppServiceCall) branch.getExecuteCallList().get(0)).isBreaksTransaction());
+        assertEquals(1, domain.unusedParticipantWarnings().stream()
+                .filter(warning -> warning.contains("breakTransction is deprecated; use breakTransaction")).count());
+    }
+
+    @Test public void correctedIdentifyFlagCompilesWithoutADeprecationWarning() throws Exception {
+        var domain = compile("transaction { identify(work),breakTransaction; }");
+        var errors = domain.validateAppDeclarations();
+        assertTrue(errors.toString(), errors.isEmpty());
+        assertTrue(domain.unusedParticipantWarnings().isEmpty());
+        var scene = (SppScenario) domain.getSppClass("Run");
+        assertTrue(scene.getScenarioBodyJava().contains("SourceTransactionBoundary.rejectCurrent"));
     }
 
     @Test public void guardedCheckHasItsOwnBusinessScope() throws Exception {

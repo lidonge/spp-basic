@@ -357,6 +357,7 @@ public class SppDomain {
                     if(call.getGuardStatements()!=null && call.getCallee().getServiceType()!=IConstance.ServiceType.check)
                         errors.add("Only check/identify can guard a block: " + call.getCallee().getFuncName());
                 }
+                if (!call.getReadKeys().isEmpty()) ReadKeyBindings.bind(this, owner, call, errors);
                 if (call.getGuardStatements() == null && (call.getIdentityTarget() != null
                         || call.getCallee() != null && call.getCallee().getServiceType() == IConstance.ServiceType.check)
                         && call.getParent() instanceof ExecuteBlock group && group.getScenarioType() == IConstance.ScenarioType.parallel)
@@ -364,10 +365,10 @@ public class SppDomain {
                 if(call.isBreaksTransaction()) {
                     boolean inTransaction=false;
                     for(var parent=call.getParent();parent!=null;parent=parent.getParent()) if(parent instanceof TransactionBlock) inTransaction=true;
-                    if(!inTransaction) errors.add("breakTransction requires an enclosing transaction in " + owner.getFuncName());
-                    if(call.getGuardStatements()!=null) errors.add("A guarded check cannot combine with breakTransction");
+                    if(!inTransaction) errors.add("breakTransaction requires an enclosing transaction in " + owner.getFuncName());
+                    if(call.getGuardStatements()!=null) errors.add("A guarded check cannot combine with breakTransaction");
                     if(call.getCallee()!=null && call.getCallee().getServiceType()!=IConstance.ServiceType.check)
-                        errors.add("breakTransction applies only to check/identify");
+                        errors.add("breakTransaction applies only to check/identify");
                 }
             }
             for(var children:statementChildren(statement)) bindParticipantCalls(owner,children,errors);
@@ -604,8 +605,12 @@ public class SppDomain {
         }
     }
 
+    private final Set<String> sourceWarnings = new LinkedHashSet<>();
+
+    public void addSourceWarning(String warning) { sourceWarnings.add(warning); }
+
     public List<String> unusedParticipantWarnings() {
-        List<String> warnings = new ArrayList<>();
+        List<String> warnings = new ArrayList<>(sourceWarnings);
         for (SppCompilationUnit unit : mapsOfClass.values()) {
             if (unit instanceof SppService service) {
                 warnings.addAll(UnusedParticipantWarnings.collect(service));

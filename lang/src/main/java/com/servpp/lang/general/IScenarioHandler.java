@@ -2,7 +2,6 @@ package com.servpp.lang.general;
 
 import com.servpp.lang.models.*;
 import com.servpp.lang.antlr.SppParser;
-import com.servpp.lang.models.*;
 import org.antlr.v4.runtime.misc.NotNull;
 
 /**
@@ -157,10 +156,14 @@ public interface IScenarioHandler extends IServiceDefinitionHandler {
     @Override
     default void enterAtomiccall(SppParser.AtomiccallContext ctx) {
         if (!(getSppDomain().getCurrentClass() instanceof SppScenario)) return;
+        if (ctx.transactionBreak() != null && ctx.transactionBreak().legacy != null) {
+            getSppDomain().addSourceWarning("[SPP_DEPRECATED] Line " + ctx.getStart().getLine()
+                    + ":" + (ctx.getStart().getCharPositionInLine() + 1) + ": breakTransction is deprecated; use breakTransaction.");
+        }
         if (ctx.Identifier() == null) {
             SppServiceCall call = new SppServiceCall();
             call.setIdentityTarget(NameUtil.normalizeParticipantReference(ctx.qualifiedName().getText()));
-            call.setBreaksTransaction(ctx.getText().contains(",breakTransction"));
+            call.setBreaksTransaction(ctx.transactionBreak() != null);
             getCurrentServiceBaseBody().addServiceCall(call);
             if (ctx.scenarioBranch() != null) push(call);
             return;
@@ -175,8 +178,21 @@ public interface IScenarioHandler extends IServiceDefinitionHandler {
             sppServiceCall.getQuantumBounds().add(new QuantumCallBound(NameUtil.normalizeParticipantReference(interval.qualifiedName().getText()),
                     com.servpp.lang.general.expr.BusinessCalculationCompiler.expression(interval.expression(0), getSppDomain()),
                     com.servpp.lang.general.expr.BusinessCalculationCompiler.expression(interval.expression(1), getSppDomain())));
+        if (ctx.readBinding() != null) for (var key : ctx.readBinding().readKey()) {
+            var path = key.qualifiedName();
+            String text = key.getText();
+            String literalType = path != null ? null
+                    : key.StringLiteral() != null ? "String"
+                    : key.CharacterLiteral() != null ? "char"
+                    : key.BooleanLiteral() != null ? "boolean"
+                    : key.NullLiteral() != null ? "null"
+                    : key.IntegerLiteral() != null ? (text.matches(".*[lL]$") ? "long" : "int")
+                    : text.matches(".*[fF]$") ? "float" : "double";
+            sppServiceCall.getReadKeys().add(new SppServiceCall.ReadKey(
+                    path == null ? text : NameUtil.normalizeParticipantReference(text), literalType));
+        }
         sppServiceCall.setImplicitArguments(ctx.parameters() == null);
-        sppServiceCall.setBreaksTransaction(ctx.getText().contains(",breakTransction"));
+        sppServiceCall.setBreaksTransaction(ctx.transactionBreak() != null);
         getCurrentServiceBaseBody().addServiceCall(sppServiceCall);
 
         SppClass callee = (SppClass) checker.getSppClass(CompilationUnitType.atomicservice,serviceClassName);
@@ -200,6 +216,12 @@ public interface IScenarioHandler extends IServiceDefinitionHandler {
     default void exitAtomiccall(SppParser.AtomiccallContext ctx) {
         if (getSppDomain().getCurrentClass() instanceof SppScenario && ctx.scenarioBranch() != null) pop();
     }
+    @Override default void enterTransactionBreak(SppParser.TransactionBreakContext ctx) { }
+    @Override default void exitTransactionBreak(SppParser.TransactionBreakContext ctx) { }
+    @Override default void enterReadBinding(SppParser.ReadBindingContext ctx) { }
+    @Override default void exitReadBinding(SppParser.ReadBindingContext ctx) { }
+    @Override default void enterReadKey(SppParser.ReadKeyContext ctx) { }
+    @Override default void exitReadKey(SppParser.ReadKeyContext ctx) { }
     @Override default void enterQuantumBounds(SppParser.QuantumBoundsContext ctx) { }
     @Override default void exitQuantumBounds(SppParser.QuantumBoundsContext ctx) { }
     @Override default void enterQuantumBound(SppParser.QuantumBoundContext ctx) { }

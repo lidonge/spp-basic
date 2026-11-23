@@ -41,6 +41,22 @@ public class BasicPersistenceTest {
         }
     }
 
+    @Test public void generatedScenarioReadsUsingAnotherParticipantWithoutCalculation() throws Exception {
+        try (var fixture = new Fixture()) {
+            fixture.create();
+            fixture.call("createRecord", Map.of("Entry", Map.of("code", "B"),
+                    "Revision", Map.of("note", "other row", "amount", 19)));
+            var entry = fixture.call("readSelectedRecord",
+                    Map.of("Entry", Map.of("code", "B"), "Lookup", Map.of("entryCode", "A"))).path("Entry");
+            assertEquals("A", entry.path("code").asText());
+            assertEquals("original", entry.path("note").asText());
+            assertEquals(7, entry.path("amount").asInt());
+            var missing = fixture.call("readSelectedRecord",
+                    Map.of("Entry", Map.of("code", "B"), "Lookup", Map.of("entryCode", "missing"))).path("Entry");
+            assertEquals("missing", missing.path("code").asText());
+        }
+    }
+
     @Test public void concurrentGeneratedUpdatesRejectOneStaleBaseline() throws Exception {
         try (var fixture = new Fixture()) {
             fixture.create();

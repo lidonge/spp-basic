@@ -549,7 +549,35 @@ public class SppService extends SppClass{
             value = NameUtil.getNameCall(call.getResultTarget(),true) + "(" + value + ")";
         }
         String site=getDomainName()+"."+getFuncName()+":"+call.getInvocationOrdinal();
-        return "com.servpp.service.runtime.DomainServiceRouter.atCallSite(\""+site+"\", () -> { "+value+"; })";
+        var keys = call.getBoundReadKeys();
+        var invocation = new StringBuilder("com.servpp.service.runtime.DomainServiceRouter.atCallSite(\"")
+                .append(site).append("\", () -> { ");
+        for (int index = 0; index < keys.size(); index++) {
+            invocation.append("var $sppReadKey").append(index).append(" = ")
+                    .append(keys.get(index).javaValue()).append("; ");
+        }
+        appendReadKeys(invocation, keys, false);
+        invocation.append(value).append("; ");
+        appendReadKeys(invocation, keys, true);
+        return invocation.append("})").toString();
+    }
+
+    private void appendReadKeys(StringBuilder java, List<SppServiceCall.BoundReadKey> keys, boolean restore) {
+        var initialized = new java.util.HashSet<String>();
+        for (int index = 0; index < keys.size(); index++) {
+            var key = keys.get(index);
+            for (var parent : key.parents()) {
+                if (initialized.add(parent.path())) {
+                    java.append("if (").append(NameUtil.getNameCall(parent.path())).append(" == null) ")
+                            .append(NameUtil.getNameCall(parent.path(), true)).append("(new ").append(parent.type()).append("()); ");
+                }
+            }
+            if (restore) {
+                java.append("if (!java.util.Objects.equals(").append(NameUtil.getNameCall(key.target()))
+                        .append(", $sppReadKey").append(index).append(")) ");
+            }
+            java.append(NameUtil.getNameCall(key.target(), true)).append("($sppReadKey").append(index).append("); ");
+        }
     }
 
     private static boolean hasQuantumFields(SppCompilationUnit type) {

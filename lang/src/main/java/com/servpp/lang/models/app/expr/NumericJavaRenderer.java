@@ -455,8 +455,8 @@ public final class NumericJavaRenderer {
 
     private static String convert(String value, String type) {
         return switch (type) {
-            case "java.math.BigDecimal", "decimal" -> value;
-            case "java.math.BigInteger" -> "(" + value + ").toBigIntegerExact()";
+            case "java.math.BigDecimal", "BigDecimal", "decimal" -> value;
+            case "java.math.BigInteger", "BigInteger" -> "(" + value + ").toBigIntegerExact()";
             case "short", "int", "long" -> "(" + value + ")." + type + "ValueExact()";
             case "float", "double" -> NUMBERS + "." + type + "Exact(" + value + ")";
             default -> throw new IllegalArgumentException("Unsupported PHY numeric target " + type);
@@ -669,7 +669,7 @@ public final class NumericJavaRenderer {
         return current;
     }
 
-    static String normalizeLiteral(String source) {
+    public static String normalizeLiteral(String source) {
         if (source.startsWith("-") || source.startsWith("+")) {
             String value = normalizeLiteral(source.substring(1));
             return source.startsWith("-") ? new java.math.BigDecimal(value).negate().toString() : value;

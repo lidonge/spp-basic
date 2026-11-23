@@ -26,8 +26,10 @@ public final class BusinessCalculationCompiler {
         }
         if (ctx.atomiccall() != null) {
             var call = ctx.atomiccall();
-            if (call.Identifier() == null || call.scenarioBranch() != null || call.quantumBounds() != null || call.getText().contains(",breakTransction"))
-                throw new IllegalArgumentException("Calculate calls cannot identify or guard other services");
+            if (call.readBinding() != null)
+                throw new IllegalArgumentException("A by read binding is allowed only in scenarios");
+            if (call.Identifier() == null || call.scenarioBranch() != null || call.quantumBounds() != null || call.transactionBreak() != null)
+                throw new IllegalArgumentException("Calculate calls cannot identify, guard, or use breakTransaction or bounds");
             return new CalculationServiceCall(call.Identifier().getText(), domain, call.parameters() == null,
                 call.parameters() == null ? List.of() : call.parameters().parameter().stream().map(p -> p.getText()).toList());
         }

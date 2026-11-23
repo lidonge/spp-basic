@@ -275,3 +275,18 @@ recorded in [the validation note](tutorial-validation.md).
 New public documentation, example explanations and release notes are written in
 English first. Existing historical design notes may remain in their original
 language; they are not substitutes for the current user-facing guides.
+
+
+## Scenario read bindings and transaction rejection
+
+Use `findEntry by Lookup.entryCode;` to set the target participant's APP
+primary-key fields immediately before a read. Supply comma-separated values in
+APP key order. Values may be qualified scenario participant fields, SPP
+constants, or literals. The compiler checks key count, types, and declared
+widths. A declared keyed list query binds its scalar condition participant
+and fills its collection as usual. The condition participant retains the
+bound keys.
+
+Use `,breakTransaction` on a bare check or `identify` inside a transaction
+to abort the transaction when the check fails. `breakTransction` is a
+deprecated spelling and emits a compile warning.

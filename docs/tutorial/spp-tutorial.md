@@ -231,6 +231,31 @@ The example's `jdbc:h2:mem:...;DB_CLOSE_DELAY=-1` database lasts for the JVM's
 lifetime, even when connections close. A file URL persists across restarts.
 Check the effective PHY URL when investigating retained data.
 
+### Read a participant by key
+
+When another participant supplies the lookup value, bind it on the read itself.
+
+```spp
+Scenario serial readSelectedRecord(Entry, Lookup) {
+    findEntry by Lookup.entryCode;
+}
+```
+
+Here `Lookup.entryCode` supplies the value for `Entry.code`, the primary key
+declared in APP. For a composite key, give one comma-separated operand per
+APP key field, in declaration order. An operand can be a qualified scenario
+participant field, a named SPP constant, or a literal. Field types and declared
+widths must match. The generated scenario sets the keys just before the read
+and leaves them on the participant afterward. No calculation is needed.
+
+For a declared list query such as
+`atomic query listCopies(key Book book, Copy[] matches);`, the values bind to
+`book`'s APP primary key. The query still fills `matches`.
+
+Use `,breakTransaction` on a bare check or `identify` inside a transaction
+when business rejection must abort that transaction. The older spelling
+`breakTransction` still compiles and emits a deprecation warning.
+
 ## 7. Add a custom technical service
 
 The same example binds `callCounter` using APP:

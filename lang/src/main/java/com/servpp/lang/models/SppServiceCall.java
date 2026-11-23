@@ -1,15 +1,47 @@
 package com.servpp.lang.models;
 
+import com.servpp.lang.models.app.NumericBinding;
+import com.servpp.lang.models.app.expr.NumericJavaRenderer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * @author lidong@date 2023-11-01@version 1.0
  */
 public class SppServiceCall extends ServiceBaseBody implements IServiceBodyStatement{
     SppService callee;
+    public record ReadKey(String text, String literalType) {
+        public boolean literal() { return literalType != null; }
+    }
+    public record ReadKeyParent(String path, String type) { }
+    public record BoundReadKey(String target, SppField field, SppLocalVar source, String value,
+                               List<ReadKeyParent> parents) {
+        public String javaValue() {
+            String expression = source instanceof SppConstant constant ? constant.getJavaValue() : value;
+            String type = field.getType().getName();
+            if ("char".equals(type) && !(source instanceof SppField)) return "String.valueOf(" + expression + ")";
+            if (!NumericBinding.isNumeric(type)) return expression;
+            if (!(source instanceof SppField)) {
+                String literal = source instanceof SppConstant constant ? constant.getLiteral() : value;
+                if (source != null || List.of("decimal", "BigDecimal", "BigInteger").contains(type)) {
+                    expression = "new java.math.BigDecimal(\"" + ReadKeyBindings.numericLiteral(literal) + "\")";
+                }
+                return NumericJavaRenderer.convertNumber(expression, new SppLocalVar(field.getType(), target), field);
+            }
+            if (field.getJavaType().equals(source.getJavaType())
+                    && Objects.equals(field.getNumericAdapter(), source.getNumericAdapter())) return expression;
+            return NumericJavaRenderer.convertNumber(expression, source, field);
+        }
+    }
+
+    private final List<ReadKey> readKeys = new ArrayList<>();
+    private final List<BoundReadKey> boundReadKeys = new ArrayList<>();
+    public List<ReadKey> getReadKeys() { return readKeys; }
+    public List<BoundReadKey> getBoundReadKeys() { return boundReadKeys; }
+
     private final List<QuantumCallBound> quantumBounds = new ArrayList<>();
     public List<QuantumCallBound> getQuantumBounds() { return quantumBounds; }
     private boolean implicitArguments;

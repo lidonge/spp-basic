@@ -257,8 +257,26 @@ transactionPropagation
     ;
 
 atomiccall
-    : Identifier ('(' parameters ')')? (',' 'breakTransction')? quantumBounds? (';' | scenarioBranch ';')
-    | 'identify' '(' qualifiedName ')' (',' 'breakTransction')? (';' | scenarioBranch ';')
+    : Identifier ('(' parameters ')')? readBinding? (',' transactionBreak)? quantumBounds? (';' | scenarioBranch ';')
+    | 'identify' '(' qualifiedName ')' (',' transactionBreak)? (';' | scenarioBranch ';')
+    ;
+
+transactionBreak
+    : {getCurrentToken().getText().equals("breakTransaction")}? Identifier
+    | legacy='breakTransction'
+    ;
+
+readBinding
+    : {getCurrentToken().getText().equals("by")}? Identifier readKey (',' readKey)*
+    ;
+
+readKey
+    : qualifiedName
+    | '-'? (IntegerLiteral | FloatingPointLiteral)
+    | StringLiteral
+    | CharacterLiteral
+    | BooleanLiteral
+    | NullLiteral
     ;
 
 quantumBounds

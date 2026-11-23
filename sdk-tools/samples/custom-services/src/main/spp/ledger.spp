@@ -46,3 +46,11 @@ Scenario serial reviseRecord(Entry, Revision) {
         updateEntry;
     }
 }
+
+Role Lookup {
+    String entryCode;
+}
+
+Scenario serial readSelectedRecord(Entry, Lookup) {
+    findEntry by Lookup.entryCode;
+}

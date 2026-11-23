@@ -47,6 +47,8 @@ final class UnusedParticipantWarnings {
         for (IServiceBodyStatement statement : statements) {
             if (statement instanceof SppServiceCall call) {
                 call.getSppParameterList().forEach(parameter -> path(parameter.getName(), used));
+                call.getReadKeys().stream().filter(key -> !key.literal() && key.text().contains("."))
+                        .forEach(key -> path(key.text(), used));
                 path(call.getResultTarget(), used);
                 path(call.getIdentityTarget(),used); scenario(call.getGuardStatements(),used);
             } else if (statement instanceof ScenarioThrow rethrow) {
