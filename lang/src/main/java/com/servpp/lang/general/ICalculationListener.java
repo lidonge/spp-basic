@@ -5,6 +5,8 @@ import com.servpp.lang.antlr.SppParser;
 
 /** Calculations are built as a subtree when exiting the atomic service. */
 public interface ICalculationListener extends SppListener {
+    @Override default void enterRejectionCode(SppParser.RejectionCodeContext ctx) { }
+    @Override default void exitRejectionCode(SppParser.RejectionCodeContext ctx) { }
     @Override default void enterCalculationCase(SppParser.CalculationCaseContext ctx) { }
     @Override default void exitCalculationCase(SppParser.CalculationCaseContext ctx) { }
     @Override default void enterCalculationLocal(SppParser.CalculationLocalContext ctx) { }

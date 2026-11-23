@@ -139,7 +139,7 @@ calculationStatement
     | quantumTransfer ';'
     | calculationAssignment ';'
     | calculationLocal ';'
-    | 'require' '(' expression ',' (StringLiteral | qualifiedName) ')' ';'
+    | 'require' '(' expression ',' rejectionCode ')' ';'
     | 'check' '(' expression ')' ';'
     | atomiccall
     | 'if' '(' expression ')' calculationStatement ('else' calculationStatement)?
@@ -153,6 +153,10 @@ calculationStatement
 
 quantumTransfer
     : qualifiedName '->' qualifiedName ':' expression
+    ;
+
+rejectionCode
+    : expression
     ;
 
 calculationCase

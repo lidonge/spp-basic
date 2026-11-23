@@ -59,6 +59,102 @@ public class BasicCompilerTest {
     }
 
     @Test
+    public void constructedProviderCodeSurvivesClassificationAndScenarioRejection() throws Exception {
+        Path source = temporary.newFolder().toPath();
+        Files.writeString(source.resolve("provider-code.spp"), """
+                domain providerprobe;
+                const String CLOSED_CODE = "EC031";
+                Enum CardRejection { LIMIT_EXCEEDED:"EC012","LIMIT", PRODUCT_CLOSED:"EC031", UNKNOWN:other, MISSING:null }
+                Enum StrictRejection { LIMIT_EXCEEDED:"EC012" }
+                Enum LegacyRejection { LIMIT_EXCEEDED:"EC012", OTHER }
+                Role ProviderResult { String(5) code; CardRejection reason; boolean unknown; boolean closed; }
+                atomic check checkProvider(ProviderResult result) {
+                    require(result.code == "", CardRejection(result.code));
+                }
+                atomic check checkStrict(ProviderResult result) {
+                    require(result.code == "", StrictRejection(result.code));
+                }
+                atomic check checkLegacy(ProviderResult result) {
+                    require(result.code == "", LegacyRejection(result.code));
+                }
+                atomic calculate classify(ProviderResult result) {
+                    result.reason = CardRejection(result.code);
+                    result.closed = CardRejection(result.code) == CardRejection(CLOSED_CODE);
+                    switch (CardRejection(result.code)) {
+                        case UNKNOWN: result.unknown = result.reason == CardRejection.UNKNOWN; break;
+                        default: result.unknown = false;
+                    }
+                }
+                readonly Scenario serial readProvider(ProviderResult result) {
+                    checkProvider(result);
+                }
+                """);
+        Path output = temporary.getRoot().toPath().resolve("provider-probe");
+        Main.run(new String[]{"generate", "--source", source.toString(), "--output", output.toString()});
+        Path classes = temporary.newFolder().toPath();
+        var arguments = new java.util.ArrayList<>(List.of("-d", classes.toString()));
+        try (var files = Files.walk(output.resolve("src/main/java"))) {
+            files.filter(file -> file.toString().endsWith(".java")).map(Path::toString).sorted().forEach(arguments::add);
+        }
+        var compiler = javax.tools.ToolProvider.getSystemJavaCompiler();
+        assertEquals(0, compiler.run(null, null, null, arguments.toArray(String[]::new)));
+        try (var loader = new java.net.URLClassLoader(new java.net.URL[]{classes.toUri().toURL()}, getClass().getClassLoader())) {
+            String prefix = "com.servpp.generated.providerprobe.";
+            Class<?> role = loader.loadClass(prefix + "model.ProviderResult");
+            Object result = role.getDeclaredConstructor().newInstance();
+            var setCode = role.getMethod("setCode", String.class);
+            var classify = loader.loadClass(prefix + "service.SimpleClassify");
+            Object calculation = classify.getDeclaredConstructor().newInstance();
+            var classifyProvider = classify.getMethod("classify", role);
+            var check = (com.servpp.service.Service) loader.loadClass(prefix + "service.SimpleCheckProvider")
+                    .getDeclaredConstructor().newInstance();
+            var services = com.servpp.service.server.DefaultServiceContainer.getInstance();
+            services.registerService(check.getName(), check);
+            var scene = loader.loadClass(prefix + "service.SimpleReadProvider");
+            var scenario = (com.servpp.service.Service) scene.getDeclaredConstructor().newInstance();
+            var requestType = loader.loadClass(prefix + "model.ReadProviderRequest");
+            Object request = requestType.getDeclaredConstructor().newInstance();
+            requestType.getMethod("setResult", role).invoke(request, result);
+
+            ObjectMapper mapper = new ObjectMapper();
+            Object previous = null;
+            for (String[] entry : new String[][]{{"UN001", "UN001"}, {" UN2 ", " UN2 "}, {"LIMIT", "EC012"},
+                    {"EC031", "EC031"}, {null, "MISSING"}}) {
+                setCode.invoke(result, (Object) entry[0]);
+                classifyProvider.invoke(calculation, result);
+                Object reason = role.getMethod("getReason").invoke(result);
+                assertEquals(mapper.writeValueAsString(entry[1]), mapper.writeValueAsString(reason));
+                assertEquals(reason, mapper.readValue(mapper.writeValueAsString(reason), reason.getClass()));
+                assertEquals(entry[0] != null && entry[0].contains("UN"), role.getMethod("getUnknown").invoke(result));
+                assertEquals("EC031".equals(entry[0]), role.getMethod("getClosed").invoke(result));
+                if (previous != null) assertEquals("\"UN001\"", mapper.writeValueAsString(previous));
+                if ("UN001".equals(entry[0])) previous = reason;
+
+                scenario.execute(request);
+                assertEquals(new com.servpp.service.runtime.BusinessChecks.Result(false, entry[1]),
+                        com.servpp.service.runtime.BusinessChecks.scenarioResult());
+            }
+            setCode.invoke(result, "");
+            scenario.execute(request);
+            assertTrue(com.servpp.service.runtime.BusinessChecks.scenarioResult().passed());
+
+            setCode.invoke(result, "UN001");
+            for (String name : List.of("Strict", "Legacy")) {
+                var type = loader.loadClass(prefix + "service.SimpleCheck" + name);
+                var method = type.getMethod("check" + name, role);
+                Object instance = type.getDeclaredConstructor().newInstance();
+                var exception = assertThrows(java.lang.reflect.InvocationTargetException.class,
+                        () -> method.invoke(instance, result));
+                assertTrue(exception.getCause() instanceof IllegalArgumentException);
+                assertTrue(exception.getCause().getMessage().contains(name + "Rejection"));
+                assertTrue(exception.getCause().getMessage().contains("UN001"));
+            }
+        } finally {
+            com.servpp.service.runtime.BusinessChecks.restoreScenarioResult(null);
+        }
+    }
+
+    @Test
     public void enumFallbacksDistinguishMissingAndUnrecognizedValues() throws Exception {
         Path source = temporary.newFolder().toPath();
         Files.writeString(source.resolve("routing.spp"), """
@@ -91,13 +187,13 @@ public class BasicCompilerTest {
         String fallback = Files.readString(library.resolve("model/Route.java"));
         assertTrue(fallback.contains("OTHER(\"fallback\")"));
         assertTrue(fallback.contains("return values()[1];"));
-        assertFalse(fallback.contains("Unexpected value"));
+        assertTrue(fallback.contains("fromCode(String value)"));
         String strict = Files.readString(library.resolve("model/StrictRoute.java"));
         assertTrue(strict.contains("Unexpected value"));
         assertFalse(strict.contains("return values()["));
         String completion = Files.readString(library.resolve("model/Completion.java"));
-        assertTrue(completion.contains("if (value == null) return values()[1];"));
-        assertTrue(completion.contains("return values()[0];"));
+        assertTrue(completion.contains("if (value == null) return $MEMBERS[1];"));
+        assertTrue(completion.contains("return new Completion($MEMBERS[0].memberValue, value);"));
         String nullOnly = Files.readString(library.resolve("model/NullOnly.java"));
         assertTrue(nullOnly.contains("if (value == null) return values()[0];"));
         assertTrue(nullOnly.contains("Unexpected value"));
@@ -106,7 +202,7 @@ public class BasicCompilerTest {
         assertTrue(calculation.contains("Route.fromValue(\"fallback\")"));
         assertTrue(calculation.contains("Completion.fromValue(\"NULL_VALUE\")"));
         assertTrue(calculation.contains("case \"complete\":"));
-        assertTrue(calculation.contains("case \"02\", \"04\", \"06\", \"25\", \"42\", \"62\":"));
+        assertTrue(calculation.contains("case \"02\":"));
 
         Path classes = temporary.newFolder().toPath();
         Path storageFixture = temporary.newFolder().toPath().resolve("WireAccount.java");
@@ -131,7 +227,7 @@ public class BasicCompilerTest {
             var mapper = new ObjectMapper();
             var completionClass = loader.loadClass("com.servpp.generated.routing.model.Completion");
             assertEquals("NULL_VALUE", mapper.readValue("null", completionClass).toString());
-            assertEquals("complete", mapper.readValue("\"unrecognized\"", completionClass).toString());
+            assertEquals("unrecognized", mapper.readValue("\"unrecognized\"", completionClass).toString());
             assertEquals("OTHER", mapper.readValue("\"OTHER\"", completionClass).toString());
             assertEquals("ACTIVE", mapper.readValue("\"ACTIVE\"", completionClass).toString());
             var nullOnlyClass = loader.loadClass("com.servpp.generated.routing.model.NullOnly");
@@ -140,15 +236,15 @@ public class BasicCompilerTest {
                     () -> mapper.readValue("\"unrecognized\"", nullOnlyClass));
             var otherOnlyClass = loader.loadClass("com.servpp.generated.routing.model.OtherOnly");
             assertEquals("FALLBACK", mapper.readValue("null", otherOnlyClass).toString());
-            assertEquals("FALLBACK", mapper.readValue("\"unrecognized\"", otherOnlyClass).toString());
-            assertEquals(2, otherOnlyClass.getEnumConstants().length);
+            assertEquals("unrecognized", mapper.readValue("\"unrecognized\"", otherOnlyClass).toString());
+            Object publicMember = otherOnlyClass.getField("PUBLIC").get(null);
             for (String alias : java.util.List.of("02", "04", "06", "25", "42", "62")) {
                 var member = mapper.readValue("\"" + alias + "\"", otherOnlyClass);
-                assertSame(otherOnlyClass.getEnumConstants()[1], member);
+                assertSame(publicMember, member);
                 assertEquals("\"02\"", mapper.writeValueAsString(member));
             }
             verifyMappedEnumStorage(loader.loadClass("com.servpp.generated.routing.model.WireAccount"),
-                    otherOnlyClass, otherOnlyClass.getEnumConstants()[1]);
+                    otherOnlyClass, publicMember);
         }
     }
 
@@ -173,17 +269,25 @@ public class BasicCompilerTest {
         new JdbcAppDdlObjectTableWriter(source, catalog).save("WireAccount", account);
         try (var connection = source.getConnection(); var sql = connection.createStatement()) {
             assertEquals(1, sql.executeUpdate("insert into WIRE_ACCOUNTS(accountNumber,accountType) values ('LEGACY','62')"));
+            Object unknown = new ObjectMapper().readValue("\"XY901\"", enumType);
+            accountType.getMethod("setAccountNumber", String.class).invoke(account, "UNKNOWN");
+            accountType.getMethod("setAccountType", enumType).invoke(account, unknown);
+            new JdbcAppDdlObjectTableWriter(source, catalog).save("WireAccount", account);
             var reader = new JdbcAppDdlObjectTableReader(source, catalog);
             var method = accountType.getMethod("getAccountType");
             for (String id : List.of("CANONICAL", "LEGACY")) {
                 assertSame(publicMember, method.invoke(reader.find("WireAccount", id, accountType).orElseThrow()));
             }
             assertEquals(List.of("CANONICAL"), reader.findObjectIdsBy("WireAccount", "accountType", publicMember));
+            assertEquals(unknown, method.invoke(reader.find("WireAccount", "UNKNOWN", accountType).orElseThrow()));
+            assertEquals(List.of("UNKNOWN"), reader.findObjectIdsBy("WireAccount", "accountType", unknown));
             try (var rows = sql.executeQuery("select accountType from WIRE_ACCOUNTS order by accountNumber")) {
                 assertTrue(rows.next());
                 assertEquals("02", rows.getString(1));
                 assertTrue(rows.next());
                 assertEquals("62", rows.getString(1));
+                assertTrue(rows.next());
+                assertEquals("XY901", rows.getString(1));
                 assertFalse(rows.next());
             }
             sql.execute("SHUTDOWN");

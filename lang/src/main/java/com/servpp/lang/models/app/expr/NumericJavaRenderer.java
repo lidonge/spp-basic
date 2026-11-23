@@ -196,7 +196,9 @@ public final class NumericJavaRenderer {
 
     private String enumSwitch(CalculationControl control, SppEnum enumeration) {
         StringBuilder result = new StringBuilder("switch ((")
-                .append(nonNumericSwitchSelector(control.condition)).append(").getValue()) {\n");
+                .append(nonNumericSwitchSelector(control.condition)).append(")")
+                .append(enumeration.preservesUnknownWireValues() ? ".getMemberValue()" : ".getValue()")
+                .append(") {\n");
         for (IJavaStatement item : control.body) {
             CalculationControl entry = (CalculationControl) item;
             if (entry.condition == null) {
@@ -204,8 +206,9 @@ public final class NumericJavaRenderer {
             } else {
                 SppEnumItem member = enumCaseMember(enumeration, entry.condition);
                 if (member == null) return null;
-                String labels = member.getWireValues().stream().map(EnumValue::javaLiteral)
-                        .collect(java.util.stream.Collectors.joining(", "));
+                String labels = enumeration.preservesUnknownWireValues() ? EnumValue.javaLiteral(member.getWireValue())
+                        : member.getWireValues().stream().map(EnumValue::javaLiteral)
+                                .collect(java.util.stream.Collectors.joining(", "));
                 result.append("case ").append(labels).append(":\n");
             }
             result.append(statements(entry.body));
@@ -245,6 +248,9 @@ public final class NumericJavaRenderer {
     }
 
     public String expression(IExpression expression) {
+        if (expression instanceof EnumConstruction construction) {
+            return construction.render(this::expression);
+        }
         if (expression instanceof CalculationReference reference && reference.field instanceof com.servpp.lang.models.SppConstant constant)
             return constant.getJavaValue();
         if (scalarEnumReference(expression)) {
@@ -367,10 +373,17 @@ public final class NumericJavaRenderer {
             }
             if ("==".equals(operator) || "!=".equals(operator)) {
                 String a = expression(left), b = expression(right);
-                if (left instanceof Reference && left.getReturnType() instanceof com.servpp.lang.models.SppEnum && right instanceof Literal) {
-                    b = new AssignOperation().getRightExpr(left, right);
-                } else if (right instanceof Reference && right.getReturnType() instanceof com.servpp.lang.models.SppEnum && left instanceof Literal) {
-                    a = new AssignOperation().getRightExpr(right, left);
+                SppEnum enumeration = null;
+                if (left.getReturnType() instanceof SppEnum leftEnum) {
+                    enumeration = leftEnum;
+                    if (right instanceof Literal) b = new AssignOperation().getRightExpr(left, right);
+                } else if (right.getReturnType() instanceof SppEnum rightEnum) {
+                    enumeration = rightEnum;
+                    if (left instanceof Literal) a = new AssignOperation().getRightExpr(right, left);
+                }
+                if (enumeration != null && enumeration.preservesUnknownWireValues()) {
+                    return ("!=".equals(operator) ? "!" : "") + EnumValue.javaType(enumeration)
+                            + ".sameMember(" + a + ", " + b + ")";
                 }
                 if (!valueEquality(left) && !valueEquality(right)) { return "(" + a + " " + operator + " " + b + ")"; }
                 return ("!=".equals(operator) ? "!" : "") + "java.util.Objects.equals(" + a + ", " + b + ")";

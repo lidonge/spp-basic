@@ -119,7 +119,7 @@ public final class ParticipantFacts {
         var mutable=(List<Object>)target; mutable.clear(); mutable.addAll(output);
     }
     private static boolean bean(Class<?> type) {
-        if(type.isPrimitive() || type.isEnum() || type.isArray() || type.getName().startsWith("java.")
+        if(type.isPrimitive() || type.isEnum() || WireMappedEnum.class.isAssignableFrom(type) || type.isArray() || type.getName().startsWith("java.")
                 || Number.class.isAssignableFrom(type) || java.util.Collection.class.isAssignableFrom(type)) return false;
         try {
             for(var property:Introspector.getBeanInfo(type,Object.class).getPropertyDescriptors())
@@ -169,7 +169,7 @@ public final class ParticipantFacts {
             if (left instanceof Number a && right instanceof Number b) {
                 return ExactNumbers.decimal(a).compareTo(ExactNumbers.decimal(b)) == 0;
             }
-            if (left instanceof String || left instanceof Character || left instanceof Boolean || left instanceof Enum<?>) {
+            if (left instanceof String || left instanceof Character || left instanceof Boolean || left instanceof Enum<?> || left instanceof WireMappedEnum) {
                 return left.equals(right);
             }
             if (left.getClass() != right.getClass()) { return false; }

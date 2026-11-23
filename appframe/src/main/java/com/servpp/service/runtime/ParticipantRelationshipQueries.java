@@ -18,7 +18,7 @@ public final class ParticipantRelationshipQueries {
     }
     private static void visit(Object value, AppDdlCatalog catalog, boolean root) {
         if (value == null || value instanceof Number || value instanceof String || value instanceof Boolean
-                || value instanceof Enum<?> || value.getClass().getName().startsWith("java.time.")) return;
+                || value instanceof Enum<?> || value instanceof WireMappedEnum || value.getClass().getName().startsWith("java.time.")) return;
         if (value instanceof Iterable<?> members) { for (Object item : members) visit(item,catalog,false); return; }
         List<Object> completedKey = null;
         var table = catalog.tableForBusinessType(value.getClass().getSimpleName());

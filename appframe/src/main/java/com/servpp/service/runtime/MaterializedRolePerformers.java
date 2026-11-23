@@ -76,7 +76,7 @@ public final class MaterializedRolePerformers {
         if(value==null || !visited.add(value)) return;
         if(value instanceof Iterable<?> items) { for(Object item:items) walk(definitions,item,visited); return; }
         if(value.getClass().isArray()) { for(int i=0;i<Array.getLength(value);i++) walk(definitions,Array.get(value,i),visited); return; }
-        if(value.getClass().getName().startsWith("java.") || value instanceof Number || value instanceof Enum<?>) return;
+        if(value.getClass().getName().startsWith("java.") || value instanceof Number || value instanceof Enum<?> || value instanceof WireMappedEnum) return;
         try {
             for(Definition definition:definitions) {
                 if(!definition.role().isInstance(value)) continue;

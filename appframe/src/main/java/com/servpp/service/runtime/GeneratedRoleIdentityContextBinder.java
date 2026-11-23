@@ -184,7 +184,7 @@ public final class GeneratedRoleIdentityContextBinder {
 
     private static boolean isTraversable(Object value) {
         Class<?> type = value.getClass();
-        if (type.isPrimitive() || type.isEnum() || type.isArray()) {
+        if (type.isPrimitive() || type.isEnum() || WireMappedEnum.class.isAssignableFrom(type) || type.isArray()) {
             return false;
         }
         if (value instanceof CharSequence || value instanceof Number || value instanceof Boolean

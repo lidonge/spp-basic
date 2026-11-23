@@ -24,6 +24,10 @@ public class SppEnum extends SppCompilationUnit{
         return items.stream().filter(item -> item.acceptsWireValue(value)).findFirst().orElse(null);
     }
 
+    public boolean preservesUnknownWireValues() {
+        return getFallbackItem(SppEnumItem.Fallback.OTHER) != null;
+    }
+
     public SppEnumItem getOtherItem() {
         SppEnumItem explicit = getFallbackItem(SppEnumItem.Fallback.OTHER);
         return explicit != null ? explicit : items.stream()

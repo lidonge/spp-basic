@@ -49,7 +49,7 @@ public final class ParticipantWireState {
     }
     private static boolean scalar(Object value) {
         return value == null || value instanceof CharSequence || value instanceof Number || value instanceof Boolean
-                || value instanceof Character || value.getClass().isEnum() || value instanceof java.time.temporal.Temporal;
+                || value instanceof Character || value instanceof Enum<?> || value instanceof WireMappedEnum || value instanceof java.time.temporal.Temporal;
     }
     private static void visit(Object value, java.util.function.BiConsumer<String,Object> action) {
         if (value instanceof Iterable<?> items) {

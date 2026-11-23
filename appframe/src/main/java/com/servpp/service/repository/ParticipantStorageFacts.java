@@ -1,5 +1,7 @@
 package com.servpp.service.repository;
 
+import com.servpp.service.runtime.WireMappedEnum;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.servpp.service.runtime.AppDdlCatalog;
 import java.util.*;
@@ -17,7 +19,7 @@ final class ParticipantStorageFacts {
             for (int i = 0; i < stored.size(); i++) result.add(project(stored.get(i),originals.get(i),catalog,mapper));
             return result;
         }
-        if (original instanceof String || original instanceof Number || original instanceof Boolean || original instanceof Enum<?>
+        if (original instanceof String || original instanceof Number || original instanceof Boolean || original instanceof Enum<?> || original instanceof WireMappedEnum
                 || original.getClass().getName().startsWith("java.time.")) return facts;
         Map<String,Object> result = facts instanceof Map<?,?> map ? new LinkedHashMap<>((Map<String,Object>)map)
                 : mapper.convertValue(facts,Map.class);

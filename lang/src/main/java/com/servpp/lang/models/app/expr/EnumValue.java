@@ -16,10 +16,13 @@ public final class EnumValue extends Expression {
     public String getValue() { return item.getWireValue(); }
 
     @Override public String getExpr() {
-        String type = (getReturnType().getBasePackage() == null ? "" : getReturnType().getPackageName() + ".")
-                + getReturnType().getName();
         // Use the wire value: generated Java member names need not match SPP member names.
-        return type + ".fromValue(" + javaLiteral(getValue()) + ")";
+        return javaType((SppEnum) getReturnType()) + ".fromValue(" + javaLiteral(getValue()) + ")";
+    }
+
+    static String javaType(SppEnum enumeration) {
+        return (enumeration.getBasePackage() == null ? "" : enumeration.getPackageName() + ".")
+                + enumeration.getName();
     }
 
     static String javaLiteral(String value) {
