@@ -4,6 +4,7 @@ application basicLedger {
     environment develop {
         deploy ledger;
         deploy positions;
+        deploy reserves;
         transactions {
             mode: LOCAL;
             resource: ledgerResource;

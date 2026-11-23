@@ -5,3 +5,15 @@ tables roles {
         primarykey(Funds.wallet);
     }
 }
+
+play ProviderPlayedRole by positions.Position {
+    accountCode = account;
+    currency = currency;
+    claim = outstanding;
+}
+
+play ProviderPlayedRole by reserves.Reserve {
+    accountCode = referenceCode;
+    currency = denomination;
+    claim = available;
+}

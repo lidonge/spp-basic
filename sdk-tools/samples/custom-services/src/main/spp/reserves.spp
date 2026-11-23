@@ -1,0 +1,7 @@
+domain reserves;
+
+Entity Reserve {
+    String referenceCode;
+    String denomination;
+    quantum decimal available;
+}

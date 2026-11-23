@@ -13,27 +13,36 @@ public final class ParticipantRoleQueries {
             ParticipantIdentity.confirm(participant,!members.isEmpty());
         } else ParticipantIdentity.confirm(participant,true);
     }
-    /** Query through a take declared against the provider's generated Reference view. */
-    public static void complete(Object participant, Step step, String[] roleFacts, String[] quantumFacts) {
+    public record Play(String provider, Class<?> performer, Map<String, String> fields,
+                       java.util.List<String> keyPaths) { }
+
+    public static void play(Object participant, String[] quantumFields, Play... alternatives) {
         if (participant instanceof Iterable<?> members) {
             boolean identified = members.iterator().hasNext();
             for (Object role : members) {
-                complete(role, step, roleFacts, quantumFacts);
+                play(role, quantumFields, alternatives);
                 identified &= ParticipantIdentity.isIdentified(role);
             }
             ParticipantIdentity.confirm(participant, identified);
             return;
         }
-        if (!ParticipantIdentity.isIdentified(participant)) return;
-        Object view = LocalDomainServices.roleView(participant, step.definition().role());
-        LocalDomainServices.copyRoleQueryFacts(view, participant, roleFacts);
-        complete(view, step);
-        if (ParticipantIdentity.isIdentified(view)) {
-            LocalDomainServices.copyRoleQueryFacts(participant, view, roleFacts);
-        } else {
-            ParticipantIdentity.confirm(participant, false);
-            LocalDomainServices.clearAbsentQuantumFacts(participant, quantumFacts);
+        if (participant == null || !ParticipantIdentity.isIdentified(participant)) return;
+        Play selected = null;
+        Object performer = null;
+        for (var alternative : alternatives) {
+            Object hit = LocalDomainServices.queryPlay(participant, alternative);
+            if (hit == null) continue;
+            if (selected != null)
+                throw new IllegalStateException("QUANTUM_PLAY_AMBIGUOUS: " + participant.getClass().getSimpleName());
+            selected = alternative;
+            performer = hit;
         }
+        if (selected == null) {
+            LocalDomainServices.clearAbsentPlay(participant, quantumFields);
+        } else {
+            LocalDomainServices.copyPlayResult(participant, selected, performer);
+        }
+        ParticipantIdentity.confirm(participant, selected != null);
     }
 
     public static void complete(Object participant, Step step) {

@@ -8,48 +8,51 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class CrossDomainQuantumTransferTest {
-    private SppProject project(String providerTable, String mapping, String positionModifier) throws Exception {
-        return project(providerTable, mapping, positionModifier, false);
-    }
+    private static final String FIELDS = "accountCode = account; currency = currency; claim = outstanding;";
+    private static final String PLAY = "play ConsumerRole by provider.Position { " + FIELDS + " }";
+    private static final String ALTERNATE =
+            "play ConsumerRole by alternate.Reserve { accountCode = account; currency = currency; claim = outstanding; }";
 
-    private SppProject project(String providerTable, String mapping, String positionModifier, boolean providerSide) throws Exception {
+    private SppProject project(String plays, String providerType, String providerTable, String mode) throws Exception {
         var project = new SppProject();
-        String take = "take Position as ProviderPlayedRole { String accountCode = account; mapsame; " + mapping + " }";
-        parse(project, ".spp", """
-                domain provider;
-                Entity Position { String account; String currency; %s decimal outstanding; }
-                """.formatted(positionModifier) + (providerSide ? """
-                Reference ProviderPlayedRole from consumer.ProviderPlayedRole {
-                    String accountCode; String currency; quantum decimal claim;
-                }
-                """ + take : ""));
+        for (String domain : new String[]{"provider", "alternate"}) {
+            String type = domain.equals("provider") ? "Position" : "Reserve";
+            parse(project, ".spp", """
+                    domain %s;
+                    Entity %s { String account; String currency; %s outstanding; }
+                    """.formatted(domain, type, providerType));
+            String keys = domain.equals("provider") ? "Position.account, Position.currency" : "Reserve.currency, Reserve.account";
+            parse(project, ".app", """
+                    domain %s;
+                    tables entities { table %s(%s) { primarykey(%s); } }
+                    """.formatted(domain, type.toUpperCase(java.util.Locale.ROOT), type, keys));
+        }
         parse(project, ".spp", """
                 domain consumer;
                 Role Funds { String wallet; quantum decimal amount; }
-                Role ProviderPlayedRole { String accountCode; String currency; quantum decimal claim; }
-                %s
-                quantum update moveFunds(Funds consumerFunds, ProviderPlayedRole played) {
+                Role ConsumerRole { String accountCode; String currency; quantum decimal claim; }
+                quantum update moveFunds(Funds consumerFunds, ConsumerRole played) {
                     consumerFunds.amount -> played.claim : 1.125;
                 }
-                """.formatted(providerSide ? "" : """
-                Reference Position from provider.Position { String account; String currency; %s decimal outstanding; }
-                """.formatted(positionModifier) + take));
-        parse(project, ".app", """
-                domain provider;
-                tables entities { table POSITIONS(Position) { primarykey(Position.account, Position.currency); } }
                 """);
         parse(project, ".app", """
                 domain consumer;
                 application transfer { environment develop {
-                    deploy consumer; deploy provider;
-                    transactions { mode: LOCAL; resource: records; }
+                    deploy consumer; deploy provider; deploy alternate;
+                    transactions { mode: %s; resource: records; }
                 } }
                 tables roles { table FUNDS(Funds) { primarykey(Funds.wallet); } }
                 scope { local { moveFunds; } }
-                """);
+                %s
+                """.formatted(mode, plays));
         parse(project, ".phy", physical("consumer", "unifiedStore", "positions_value"));
         parse(project, ".phy", physical("provider", "unifiedStore", providerTable));
+        parse(project, ".phy", physical("alternate", "unifiedStore", "positions_value"));
         return project;
+    }
+
+    private SppProject project(String plays, String providerType) throws Exception {
+        return project(plays, providerType, "positions_value", "LOCAL");
     }
 
     private String physical(String domain, String store, String table) {
@@ -91,75 +94,76 @@ public class CrossDomainQuantumTransferTest {
         }
     }
 
-    @Test public void resolvesProviderAttributeAndOrderedCompositePlayKeyInLocalDeployment() throws Exception {
-        assertCanonicalEndpoint(project("positions_value", "decimal claim = outstanding;", "quantum"));
-    }
-
-    @Test public void resolvesProviderSideTakeWithoutConsumerReference() throws Exception {
-        var project = project("positions_value", "decimal claim = outstanding;", "quantum", true);
+    @Test public void resolvesAlternativesToCanonicalAttributesAndOrderedKeys() throws Exception {
+        var project = project(PLAY + "\n" + ALTERNATE, "quantum decimal");
+        assertEquals(2, project.getDomain("consumer").getRuleBlock().getRolePlays().size());
         assertNull(project.getDomain("consumer").getSppClass("Position"));
-        assertCanonicalEndpoint(project);
+        var service = compile(project);
+        assertEquals("LOCAL", service.getTransactionModeName());
+        assertTrue(service.getQuantumServiceMetadataMethod().contains("\"Position.outstanding\""));
+        assertTrue(service.getQuantumServiceMetadataMethod().contains("\"Reserve.outstanding\""));
+        assertTrue(service.getQuantumConservationParticipantMethod().contains(
+                "PlayEndpoint(\"Position.outstanding\", \"accountCode\", \"currency\")"));
+        assertTrue(service.getQuantumConservationParticipantMethod().contains(
+                "PlayEndpoint(\"Reserve.outstanding\", \"currency\", \"accountCode\")"));
     }
 
-    @Test public void selectsTheDeployedProviderSideTake() throws Exception {
-        var project = project("positions_value", "decimal claim = outstanding;", "quantum", true);
+    @Test public void changesProviderThroughAppAlone() throws Exception {
+        var first = compile(project(PLAY, "quantum decimal")).getQuantumServiceMetadataMethod();
+        var second = compile(project(ALTERNATE, "quantum decimal")).getQuantumServiceMetadataMethod();
+        assertTrue(first.contains("Position.outstanding"));
+        assertFalse(first.contains("Reserve.outstanding"));
+        assertTrue(second.contains("Reserve.outstanding"));
+        assertFalse(second.contains("Position.outstanding"));
+    }
+
+    @Test public void validatesEachAlternativeAndBothDirectionsOfQuantumMismatch() throws Exception {
+        rejects(project(PLAY, "decimal"), "quantum/non-quantum");
+        rejects(project(PLAY + "\n" + ALTERNATE.replace("accountCode = account", "accountCode = outstanding")
+                .replace("claim = outstanding", "claim = account"), "quantum decimal"), "quantum/non-quantum");
+        rejects(project(PLAY, "quantum long"), "type mismatch");
+        rejects(project(PLAY, "quantum decimal(12,2)"), "scale mismatch");
+        rejects(project(PLAY.replace("currency = currency;", ""), "quantum decimal"), "unmapped provider primary-key field");
+        rejects(project(PLAY.replace("provider.Position", "missing.Position"), "quantum decimal"), "unknown provider domain");
+        rejects(project(PLAY.replace("provider.Position", "provider.Missing"), "quantum decimal"), "unknown provider type");
+        rejects(project(PLAY.replace("claim = outstanding;", ""), "quantum decimal"), "unmapped consumer quantum field");
+    }
+
+    @Test public void rejectsDistributedStoresOrBackendWithoutLocalEnlistment() throws Exception {
+        String pending = "distributed cross-domain quantum transfer not yet supported (APP TCC pending)";
+        rejects(project(PLAY, "quantum decimal", "other_value", "LOCAL"), pending);
+        rejects(project(PLAY, "quantum decimal", "positions_value", "SAGA"), pending);
+        var project = project(PLAY, "quantum decimal");
+        project.getDomain("consumer").getRuleBlock().getAppPhysicalBackends().get(0)
+                .putConfiguration("supportedTransactions", "saga,quantum");
+        rejects(project, pending);
+    }
+
+    @Test public void rejectsProviderSideQuantumTake() throws Exception {
+        var project = project("", "quantum decimal");
         parse(project, ".spp", """
-                domain alternate;
-                Entity Alternate { String account; String currency; quantum decimal outstanding; }
-                Reference ProviderPlayedRole from consumer.ProviderPlayedRole {
+                domain provider;
+                Reference ConsumerRole from consumer.ConsumerRole {
                     String accountCode; String currency; quantum decimal claim;
                 }
-                take Alternate as ProviderPlayedRole {
+                take Position as ConsumerRole {
                     String accountCode = account; mapsame; decimal claim = outstanding;
                 }
                 """);
-        parse(project, ".app", """
-                domain alternate;
-                tables entities { table ALTERNATE(Alternate) { primarykey(Alternate.account, Alternate.currency); } }
-                """);
-        parse(project, ".phy", physical("alternate", "alternateStore", "alternate_value"));
-        assertCanonicalEndpoint(project);
+        rejects(project, "cross-domain quantum roles require APP play");
     }
 
-    private void assertCanonicalEndpoint(SppProject project) {
+    private SppService compile(SppProject project) {
         var errors = DomainDeploymentValidator.validate(project);
         assertTrue(errors.toString(), errors.isEmpty());
         var domain = project.getDomain("consumer");
         errors = domain.validateAppDeclarations();
         assertTrue(errors.toString(), errors.isEmpty());
-        var service = (SppService) domain.getSppClass("MoveFunds");
-        assertEquals("LOCAL", service.getTransactionModeName());
-        assertTrue(service.getQuantumServiceMetadataMethod().contains("\"Position.outstanding\""));
-        assertTrue(service.getQuantumConservationParticipantMethod().contains(
-                "\"Position.outstanding\", \"claim\", \"accountCode\", \"currency\""));
+        return (SppService) domain.getSppClass("MoveFunds");
     }
 
-    @Test public void rejectsSplitStoresOnTheSameJdbcResource() throws Exception {
-        for (boolean providerSide : new boolean[]{false, true}) {
-            var errors = DomainDeploymentValidator.validate(
-                    project("other_value", "decimal claim = outstanding;", "quantum", providerSide));
-            assertTrue(errors.toString(), errors.stream().anyMatch(error ->
-                    error.contains("distributed cross-domain quantum transfer not yet supported (APP TCC pending)")));
-        }
-    }
-
-    @Test public void rejectsBackendThatCannotEnlistInLocal() throws Exception {
-        var project = project("positions_value", "decimal claim = outstanding;", "quantum");
-        project.getDomain("consumer").getRuleBlock().getAppPhysicalBackends().get(0)
-                .putConfiguration("supportedTransactions", "saga,quantum");
+    private void rejects(SppProject project, String diagnostic) {
         var errors = DomainDeploymentValidator.validate(project);
-        assertTrue(errors.toString(), errors.stream().anyMatch(error ->
-                error.contains("requires a unified quantum store enlisted in LOCAL")));
-    }
-
-    @Test public void rejectsUnmappedAndNonQuantumProviderEndpoints() throws Exception {
-        for (var project : new SppProject[] {
-                project("positions_value", "", "quantum"),
-                project("positions_value", "decimal claim = outstanding;", "")
-        }) {
-            var errors = DomainDeploymentValidator.validate(project);
-            assertTrue(errors.toString(), errors.stream().anyMatch(error ->
-                    error.contains("Unmapped quantum transfer endpoint ProviderPlayedRole.claim")));
-        }
+        assertTrue(errors.toString(), errors.stream().anyMatch(error -> error.contains(diagnostic)));
     }
 }

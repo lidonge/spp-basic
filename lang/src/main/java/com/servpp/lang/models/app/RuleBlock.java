@@ -83,6 +83,8 @@ public class RuleBlock {
     public void setSupportedLocales(List<String> locales) { supportedLocales = List.copyOf(locales); }
     public Map<String, Map<String,String>> getConstantTranslations() { return constantTranslations; }
     private final Map<String, List<String>> applicationDeployments = new java.util.LinkedHashMap<>();
+    private final List<RolePlay> rolePlays = new ArrayList<>();
+    public List<RolePlay> getRolePlays() { return rolePlays; }
     private final List<LocalServiceBinding> localServiceBindings = new ArrayList<>();
     public Map<String, List<String>> getApplicationDeployments() { return applicationDeployments; }
     public List<LocalServiceBinding> getLocalServiceBindings() { return localServiceBindings; }

@@ -112,13 +112,14 @@ public class SppService extends SppClass{
     public boolean isQueryFromPerformers() { return queryFromPerformers; }
     public void setQueryFromPerformers(boolean value) { queryFromPerformers = value; }
     public record RoleHydration(int participantIndex, com.servpp.lang.models.app.LocalServiceBinding binding,
-                                SppRoleMapper mapper, SppClass performer, String mapperDomain) { }
+                                SppRoleMapper mapper, SppClass performer) { }
     private final List<RoleHydration> roleHydrations = new ArrayList<>();
     public List<RoleHydration> getRoleHydrations() { return roleHydrations; }
     public record OwnedRoleWrite(int participantIndex, String operation, SppRoleMapper mapper, SppClass performer, List<String> keys) { }
     private final List<OwnedRoleWrite> ownedRoleWrites = new ArrayList<>();
     public List<OwnedRoleWrite> getOwnedRoleWrites() { return ownedRoleWrites; }
-    private String roleDefinition(SppRoleMapper mapper, String model) {
+    private String roleDefinition(SppRoleMapper mapper) {
+        String model = getBasePackage() + "." + getDomainName() + ".model.";
         return "new com.servpp.service.runtime.MaterializedRolePerformers.Definition(" + model + mapper.getRole().getName()
                 + ".class, java.util.List.of(" + mapper.getEntities().stream().map(entity -> model + entity.getName() + ".class")
                 .collect(Collectors.joining(",")) + "), new " + model + mapper.getName() + "(), java.util.List.of("
@@ -130,25 +131,41 @@ public class SppService extends SppClass{
                 + actors.stream().map(actor -> model + actor.getName() + ".class").collect(Collectors.joining(","))
                 + ")").collect(Collectors.joining(",")) + ")";
     }
+    record PlayQuery(String service, String providerClass, Map<String, String> fields, List<String> keyPaths) { }
+    private final Map<Integer, List<PlayQuery>> playQueries = new LinkedHashMap<>();
+    Map<Integer, List<PlayQuery>> getPlayQueries() { return playQueries; }
+
+    private String playQueryStatements() {
+        return playQueries.entrySet().stream().map(entry -> {
+            var parameter = serviceBody.getLocalVar(entry.getKey());
+            var role = (SppClass) parameter.getType();
+            String quantumFields = role.getSppFieldList().stream().filter(SppField::isQuantum)
+                    .map(field -> "\"" + field.getName() + "\"").collect(Collectors.joining(", "));
+            String alternatives = entry.getValue().stream().map(step -> {
+                String mappings = step.fields().entrySet().stream().map(mapping ->
+                        "java.util.Map.entry(\"" + mapping.getKey() + "\", \"" + mapping.getValue() + "\")")
+                        .collect(Collectors.joining(", "));
+                String keys = step.keyPaths().stream().map(path -> "\"" + path + "\"").collect(Collectors.joining(", "));
+                return "new com.servpp.service.runtime.ParticipantRoleQueries.Play(\"" + step.service()
+                        + "\", " + getBasePackage() + "." + step.providerClass() + ".class, java.util.Map.ofEntries("
+                        + mappings + "), java.util.List.of(" + keys + "))";
+            }).collect(Collectors.joining(", "));
+            return "        com.servpp.service.runtime.ParticipantRoleQueries.play(" + parameter.getName()
+                    + ", new String[]{" + quantumFields + "}, " + alternatives + ");\n";
+        }).collect(Collectors.joining());
+    }
+
     public String getRoleHydrationStatement() {
+        String model = getBasePackage() + "." + getDomainName() + ".model.";
         String begin = queryFromPerformers ? "        com.servpp.service.runtime.ParticipantRoleQueries.begin(" + serviceBody.getLocalVar(0).getName() + ");\n" : "";
-        return begin + roleHydrations.stream().map(hydration -> {
+        return begin + playQueryStatements() + roleHydrations.stream().map(hydration -> {
             var parameter = serviceBody.getLocalVar(hydration.participantIndex());
             var facts = hydration.binding().getParticipantFacts().get(0).stream()
                     .map(fact -> "\"" + fact + "\"").collect(Collectors.joining(","));
-            String model = getBasePackage() + "." + hydration.mapperDomain() + ".model.";
-            String call = "        com.servpp.service.runtime.ParticipantRoleQueries.complete(" + parameter.getName()
+            return "        com.servpp.service.runtime.ParticipantRoleQueries.complete(" + parameter.getName()
                     + ", new com.servpp.service.runtime.ParticipantRoleQueries.Step(\"" + hydration.binding().getTarget()
                     + "\", " + model + hydration.performer().getName() + ".class, new String[]{" + facts + "}, "
-                    + roleDefinition(hydration.mapper(), model) + ")";
-            if (!getDomainName().equals(hydration.mapperDomain())) {
-                var roleFields = hydration.mapper().getRole().getSppFieldList();
-                call += ", new String[]{" + roleFields.stream().map(field -> "\"" + field.getName() + "\"")
-                        .collect(Collectors.joining(",")) + "}, new String[]{"
-                        + roleFields.stream().filter(SppField::isQuantum).map(field -> "\"" + field.getName() + "\"")
-                        .collect(Collectors.joining(",")) + "}";
-            }
-            return call + ");";
+                    + roleDefinition(hydration.mapper()) + "));";
         }).collect(Collectors.joining("\n"));
     }
     private String ownedRolePersistenceStatement() {
@@ -158,7 +175,7 @@ public class SppService extends SppClass{
                         + ", this.$sppRepositorySupplier, com.servpp.service.repository.RepositoryWriteRule.Operation." + write.operation().toUpperCase()
                         + ", new com.servpp.service.runtime.ParticipantRolePersistence.Step(" + model + write.performer().getName()
                         + ".class, java.util.List.of(" + write.keys().stream().map(key -> "\"" + key + "\"").collect(Collectors.joining(","))
-                        + "), " + roleDefinition(write.mapper(), model) + "));" ).collect(Collectors.joining("\n"));
+                        + "), " + roleDefinition(write.mapper()) + "));" ).collect(Collectors.joining("\n"));
     }
     protected IConstance.ServiceType serviceType;
     protected String funcName;
@@ -187,9 +204,9 @@ public class SppService extends SppClass{
     Set<String> getTransferPaths() { return transferPaths; }
 
     record QuantumEndpoint(String attributeId, List<String> keyPaths) { }
-    private Map<String, QuantumEndpoint> quantumEndpoints = Map.of();
+    private Map<String, List<QuantumEndpoint>> quantumEndpoints = Map.of();
 
-    void setQuantumEndpoints(Map<String, QuantumEndpoint> endpoints) {
+    void setQuantumEndpoints(Map<String, List<QuantumEndpoint>> endpoints) {
         quantumEndpoints = Map.copyOf(endpoints);
         quantumServiceAttributes = new ArrayList<>();
     }
@@ -350,10 +367,6 @@ public class SppService extends SppClass{
     }
 
     public void addQuantumServiceAttribute(QuantumServiceAttribute attribute) {
-        var endpoint = quantumEndpoints.get(attribute.getAttributeId());
-        if (endpoint != null)
-            attribute = new QuantumServiceAttribute(attribute.getArgumentIndex(), attribute.getGroupId(),
-                    endpoint.attributeId(), attribute.getPropertyName(), endpoint.keyPaths());
         quantumServiceAttributes.add(attribute);
     }
 
@@ -399,12 +412,11 @@ public class SppService extends SppClass{
         method.append("    @Override\n");
         method.append("    public List<String> getQuantumAttributeIds() {\n");
         method.append("        return List.of(");
-        for (int i = 0; i < attributes.size(); i++) {
-            if (i > 0) {
-                method.append(", ");
-            }
-            method.append("\"").append(attributes.get(i).getAttributeId()).append("\"");
-        }
+        method.append(attributes.stream().flatMap(attribute -> {
+            var endpoints = quantumEndpoints.get(attribute.getAttributeId());
+            return endpoints == null ? java.util.stream.Stream.of(attribute.getAttributeId())
+                    : endpoints.stream().map(QuantumEndpoint::attributeId);
+        }).distinct().map(id -> "\"" + id + "\"").collect(Collectors.joining(", ")));
         method.append(");\n");
         method.append("    }\n\n");
         method.append(quantumConstraintMethod());
@@ -421,15 +433,24 @@ public class SppService extends SppClass{
         method.append("    public TransactionParticipant getTransactionParticipant() {\n");
         method.append("        return new QuantumConservationParticipant(getTransactionResourceId())\n");
         for (QuantumServiceAttribute attribute : attributes) {
-            method.append(!attribute.getPlayKeyPaths().isEmpty() ? "                .conserveMappedArgument("
-                    : serviceBody.getSppLocalVarList().get(attribute.getArgumentIndex()).isParticipantCollection()
-                    ? "                .conserveEachArgument(" : "                .conserveArgument(")
-                    .append(attribute.getArgumentIndex()).append(", \"")
-                    .append(attribute.getGroupId()).append("\", \"")
-                    .append(attribute.getAttributeId()).append("\", \"")
-                    .append(attribute.getPropertyName()).append("\"");
-            for (String path : attribute.getPlayKeyPaths())
-                method.append(", \"").append(path).append("\"");
+            var endpoints = quantumEndpoints.get(attribute.getAttributeId());
+            if (endpoints != null) {
+                method.append("                .conservePlayedArgument(").append(attribute.getArgumentIndex())
+                        .append(", \"").append(attribute.getGroupId()).append("\", \"")
+                        .append(attribute.getAttributeId()).append("\", \"").append(attribute.getPropertyName()).append("\"");
+                for (var endpoint : endpoints) {
+                    method.append(", new QuantumConservationParticipant.PlayEndpoint(\"")
+                            .append(endpoint.attributeId()).append("\"");
+                    for (String path : endpoint.keyPaths()) method.append(", \"").append(path).append("\"");
+                    method.append(")");
+                }
+            } else {
+                method.append(serviceBody.getSppLocalVarList().get(attribute.getArgumentIndex()).isParticipantCollection()
+                        ? "                .conserveEachArgument(" : "                .conserveArgument(")
+                        .append(attribute.getArgumentIndex()).append(", \"").append(attribute.getGroupId())
+                        .append("\", \"").append(attribute.getAttributeId()).append("\", \"")
+                        .append(attribute.getPropertyName()).append("\"");
+            }
             method.append(")\n");
         }
         method.append("                ;\n");
@@ -1575,7 +1596,7 @@ public class SppService extends SppClass{
     public String getRoleBindingCompletionStatement() {
         if (isCheckService() || roleBindings.isEmpty()) return "";
         String model = getBasePackage()+"."+getDomainName()+".model.";
-        var definitions = roleBindings.stream().map(mapper -> roleDefinition(mapper, model)).collect(Collectors.joining(", "));
+        var definitions = roleBindings.stream().map(this::roleDefinition).collect(Collectors.joining(", "));
         var roots = serviceBody.getSppLocalVarList().stream().map(SppLocalVar::getName).collect(Collectors.joining(", "));
         return "        com.servpp.service.runtime.MaterializedRolePerformers.bind(java.util.List.of("+definitions+"), new Object[]{"+roots+"});";
     }

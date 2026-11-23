@@ -26,8 +26,12 @@ public final class DomainDeploymentValidator {
                             .anyMatch(column -> column.isPrimaryKey() && column.isObjectBacked()))))
                 reference.setIdentityPaths(ParticipantRoleBindings.primaryKeys(owner,type));
         }
+        var playErrors = DeploymentEnvironmentPlanner.validateRolePlays(project, false);
+        errors.addAll(playErrors);
+        if (!playErrors.isEmpty()) return errors;
         // All query destinations must be available before cross-domain signatures are resolved.
         for (var domain : project.getSppDomainMap().values()) errors.addAll(domain.prepareDefaultParticipantBindings());
+        errors.addAll(DeploymentEnvironmentPlanner.validateRolePlays(project, true));
         errors.addAll(DeploymentEnvironmentPlanner.bindQuantumTransfers(project));
         for (SppDomain domain : project.getSppDomainMap().values()) {
             for (SppCompilationUnit unit : domain.getMapsOfClass().values()) if (unit instanceof SppService service)
@@ -484,28 +488,50 @@ public final class DomainDeploymentValidator {
         }
         return List.of();
     }
+    private static void inferPlayQueries(SppProject project, SppDomain domain, SppService service, List<String> errors) {
+        if (!service.isQueryFromPerformers()) return;
+        var inputs = service.getServiceBody().getSppLocalVarList();
+        for (int index = 0; index < inputs.size(); index++) {
+            if (!(inputs.get(index).getType() instanceof SppClass role)) continue;
+            for (var play : DeploymentEnvironmentPlanner.plays(domain, role)) {
+                var owner = project.getDomain(play.providerDomain());
+                var provider = owner.resolveImplicitCrudService("find" + play.providerType());
+                if (provider == null || !provider.isImplicitParticipantCrud() || provider.getScopeItem() == null
+                        || provider.getScopeItem().getRepositoryHydrationRules().stream().noneMatch(rule ->
+                                play.providerType().equals(rule.getObjectType()) && rule.appDdlInferred())) {
+                    errors.add(domain.getName() + ": APP play requires a default primary-key query for "
+                            + play.providerDomain() + "." + play.providerType());
+                    continue;
+                }
+                service.getPlayQueries().computeIfAbsent(index, ignored -> new ArrayList<>())
+                        .add(new SppService.PlayQuery(owner.getName() + "." + provider.getFuncName(),
+                                owner.getName() + ".model." + play.providerType(), play.fields(),
+                                DeploymentEnvironmentPlanner.playKeys(owner,
+                                        (SppClass) owner.getSppClass(play.providerType()), play)));
+            }
+        }
+    }
+
     private static void inferRoleHydrations(SppProject project, SppDomain domain, List<String> errors) {
         for (var unit : domain.getMapsOfClass().values()) {
             if (!(unit instanceof SppService service) || service.getScopeItem() == null) continue;
+            service.getPlayQueries().clear();
+            inferPlayQueries(project, domain, service, errors);
             service.getRoleHydrations().clear(); service.getOwnedRoleWrites().clear();
             if (domain.getRuleBlock().getLocalServiceBindings().stream().anyMatch(binding -> binding.getServiceName().equals(service.getFuncName()))) continue;
-            var inputs = service.getServiceBody().getSppLocalVarList();
-            for (int index = 0; index < inputs.size(); index++) {
-                var parameter = inputs.get(index);
-                if (!(parameter.getType() instanceof SppClass role)) continue;
-                var takes = new ArrayList<>(DeploymentEnvironmentPlanner.providerTakes(domain, role));
-                for (var mapperUnit : domain.getMapsOfClass().values())
-                    if (mapperUnit instanceof SppRoleMapper mapper && mapper.getRole() == role)
-                        takes.add(new DeploymentEnvironmentPlanner.ProviderTake(domain, mapper));
-                for (var take : takes) {
-                    var mapper = take.mapper();
-                    if (mapper.getEntities() == null || mapper.getRole().getType() == IConstance.CompilationUnitType.entity
-                            || mapper.getRole().getReferenceSourceKind() == IConstance.CompilationUnitType.entity) continue;
+            for (var mapperUnit : domain.getMapsOfClass().values()) {
+                if (!(mapperUnit instanceof SppRoleMapper mapper) || mapper.getEntities() == null
+                        || mapper.getRole().getType() == IConstance.CompilationUnitType.entity
+                        || mapper.getRole().getReferenceSourceKind() == IConstance.CompilationUnitType.entity) continue;
+                var inputs = service.getServiceBody().getSppLocalVarList();
+                for (int index = 0; index < inputs.size(); index++) {
+                    var parameter = inputs.get(index);
+                    if (parameter.getType() != mapper.getRole() || service.getPlayQueries().containsKey(index)) continue;
                     boolean queried = service.getServiceType() == IConstance.ServiceType.query
                             && (service.isQueryFromPerformers() || service.getScopeItem().getRepositoryHydrationRules().stream()
                             .anyMatch(rule -> rule.responseMethodName().equals(parameter.getName())));
                     for (var performer : mapper.getEntities()) {
-                        String source = ParticipantRoleBindings.identity(take.domain(), performer);
+                        String source = ParticipantRoleBindings.identity(domain,performer);
                         var owner = project.getDomain(source.split("\\.")[0]);
                         if (owner == null) continue;
                         if (queried) {
@@ -526,10 +552,10 @@ public final class DomainDeploymentValidator {
                             var provider = providers.get(0);
                             var binding = new com.servpp.lang.models.app.LocalServiceBinding(service.getFuncName(),owner.getName() + "." + provider.getFuncName());
                             binding.getParticipantFacts().put(0,performer.getSppFieldList().stream().map(SppField::getName).toList());
-                            service.getRoleHydrations().add(new SppService.RoleHydration(index, binding, mapper, performer, take.domain().getName()));
+                            service.getRoleHydrations().add(new SppService.RoleHydration(index,binding,mapper,performer));
                         }
                         // Owned root entities are persisted with their role. References remain read-only here.
-                        if (take.domain() == domain && !domain.getRuleBlock().hasTransactionPolicy() && performer.getReferenceSource() == null && performer.getType() == IConstance.CompilationUnitType.entity) {
+                        if (!domain.getRuleBlock().hasTransactionPolicy() && performer.getReferenceSource() == null && performer.getType() == IConstance.CompilationUnitType.entity) {
                             for (var write : service.getScopeItem().getPersistenceRules()) {
                                 if (write.argumentIndex() != index) continue;
                                 var keys = ParticipantRoleBindings.primaryKeys(domain,performer);

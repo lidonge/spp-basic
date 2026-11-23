@@ -132,43 +132,47 @@ public final class DeploymentEnvironmentPlanner {
         if (attributes.stream().noneMatch(attribute -> {
             var type = domain.getSppClass(attribute.split("\\.")[0]);
             return type instanceof SppClass participant
-                    && (participant.getReferenceSource() != null || !externalQuantumMappers(domain, participant).isEmpty());
+                    && (participant.getReferenceSource() != null || !plays(domain, participant).isEmpty());
         })) return;
         attributes.addAll(service.getAssignedQuantumAttributeIds());
         if (service.getScopeItem() != null) attributes.addAll(service.getScopeItem().getQuantumConservationAttributeIds());
 
         String prefix = domain.getName() + "." + service.getFuncName() + ": ";
-        Map<String, QuantumPosition> positions = new LinkedHashMap<>();
+        Map<String, List<QuantumPosition>> positions = new LinkedHashMap<>();
         Set<QuantumStoreIdentity> stores = new HashSet<>();
-        Set<String> canonicalIds = new HashSet<>();
+        Map<String, String> canonicalIds = new HashMap<>();
         for (String attribute : attributes) {
             String[] parts = attribute.split("\\.");
             var type = domain.getSppClass(parts[0]);
-            QuantumPosition position = parts.length == 2 && type instanceof SppClass participant
-                    ? quantumPosition(project, domain, participant, parts[1]) : null;
-            if (position == null) {
+            List<QuantumPosition> candidates = parts.length == 2 && type instanceof SppClass participant
+                    ? quantumPositions(project, domain, participant, parts[1]) : List.of();
+            if (candidates.isEmpty()) {
                 errors.add(prefix + "Unmapped quantum transfer endpoint " + attribute
                         + " requires a unique provider quantum attribute and a complete play key");
                 return;
             }
-            if (!canonicalIds.add(position.attributeId())) {
-                errors.add(prefix + "Multiple quantum transfer attributes resolve to " + position.attributeId());
-                return;
+            for (var position : candidates) {
+                String previous = canonicalIds.putIfAbsent(position.attributeId(), attribute);
+                if (previous != null && !previous.equals(attribute)) {
+                    errors.add(prefix + "Multiple quantum transfer attributes resolve to " + position.attributeId());
+                    return;
+                }
+                String name = position.owner().quantumStoreNameForAttribute(position.attributeId());
+                var adapter = position.owner().quantumStoreAdapter(name);
+                if (adapter == null) {
+                    errors.add(prefix + TCC_PENDING + ": missing quantum store for " + attribute);
+                    return;
+                }
+                stores.add(QuantumStoreIdentity.of(adapter));
             }
-            String name = position.owner().quantumStoreNameForAttribute(position.attributeId());
-            var adapter = position.owner().quantumStoreAdapter(name);
-            if (adapter == null) {
-                errors.add(prefix + "Quantum transfer endpoint " + attribute + " has no APP/PHY quantum store");
-                return;
-            }
-            stores.add(QuantumStoreIdentity.of(adapter));
-            positions.put(attribute, position);
+            positions.put(attribute, candidates);
         }
         if (positions.size() < 2) return;
         var environments = quantumEnvironments(project, domain);
         if (stores.size() != 1 || !"LOCAL".equals(domain.getRuleBlock().getDeploymentTransactionMode())
                 || environments.isEmpty() || environments.stream().anyMatch(environment ->
-                positions.values().stream().anyMatch(position -> !environment.getDomains().contains(position.owner().getName())))) {
+                        positions.values().stream().flatMap(List::stream)
+                                .anyMatch(position -> !environment.getDomains().contains(position.owner().getName())))) {
             errors.add(prefix + TCC_PENDING);
             return;
         }
@@ -178,7 +182,7 @@ public final class DeploymentEnvironmentPlanner {
                 || environments.stream().anyMatch(environment -> !commonLocalStore(project, environment))
                 || domain.getRuleBlock().getAppPhysicalBackends().stream().noneMatch(backend ->
                         localQuantumBackend(domain, backend, service.getTransactionResourceIdLiteral(), store))) {
-            errors.add(prefix + "Cross-domain quantum transfer requires a unified quantum store enlisted in LOCAL");
+            errors.add(prefix + TCC_PENDING);
             return;
         }
         if (environments.stream().flatMap(environment -> environment.getDomains().stream()).distinct()
@@ -202,10 +206,11 @@ public final class DeploymentEnvironmentPlanner {
                 }
             }
         }
-        Map<String, SppService.QuantumEndpoint> bindings = new LinkedHashMap<>();
-        positions.forEach((logical, position) -> {
-            if (position.owner() != domain)
-                bindings.put(logical, new SppService.QuantumEndpoint(position.attributeId(), position.keys()));
+        Map<String, List<SppService.QuantumEndpoint>> bindings = new LinkedHashMap<>();
+        positions.forEach((logical, candidates) -> {
+            if (candidates.get(0).owner() != domain)
+                bindings.put(logical, candidates.stream().map(position ->
+                        new SppService.QuantumEndpoint(position.attributeId(), position.keys())).toList());
         });
         service.setQuantumEndpoints(bindings);
     }
@@ -232,107 +237,133 @@ public final class DeploymentEnvironmentPlanner {
                 .filter(environment -> environment.getDomains().contains(domain.getName())).toList();
     }
 
-    record ProviderTake(SppDomain domain, SppRoleMapper mapper) { }
-
-    static List<ProviderTake> providerTakes(SppDomain domain, SppClass role) {
-        if (domain.getProject() == null || role.getType() != CompilationUnitType.role
-                || role.getSppFieldList().stream().noneMatch(SppField::isQuantum)) return List.of();
-        String identity = ParticipantRoleBindings.identity(domain, role);
-        var candidates = domain.getProject().getSppDomainMap().values().stream()
-                .filter(provider -> provider != domain)
-                .flatMap(provider -> provider.getMapsOfClass().values().stream()
-                        .filter(unit -> unit instanceof SppRoleMapper mapper
-                                && identity.equals(mapper.getRole().getReferenceSource())
-                                && mapper.getDeclaredPerformers().stream().anyMatch(performer ->
-                                        performer.getReferenceSource() == null))
-                        .map(unit -> new ProviderTake(provider, (SppRoleMapper) unit)))
-                .toList();
-        if (candidates.size() < 2) return candidates;
-        Set<String> deployed = new HashSet<>();
-        for (var environment : quantumEnvironments(domain.getProject(), domain))
-            deployed.addAll(environment.getDomains());
-        var selected = candidates.stream().filter(take -> deployed.contains(take.domain().getName())).toList();
-        // Retain undeployed candidates if none are selected so the transfer still fails deployment validation.
-        return selected.isEmpty() ? candidates : selected;
+    static List<RolePlay> plays(SppDomain domain, SppClass role) {
+        return domain.getRuleBlock().getRolePlays().stream()
+                .filter(play -> play.role().equals(role.getName())).toList();
     }
 
-    private static List<ProviderTake> externalQuantumMappers(SppDomain domain, SppClass type) {
-        List<ProviderTake> takes = new ArrayList<>(providerTakes(domain, type));
-        for (var unit : domain.getMapsOfClass().values())
-            if (unit instanceof SppRoleMapper mapper && mapper.getRole() == type
-                    && mapper.getDeclaredPerformers().stream().anyMatch(performer -> performer.getReferenceSource() != null))
-                takes.add(new ProviderTake(domain, mapper));
-        return takes;
+    static boolean isAppPlayedRole(SppDomain domain, SppClass role) {
+        return role.getType() == CompilationUnitType.role && domain.getRuleBlock().getRolePlays().stream()
+                .anyMatch(play -> play.role().equals(role.getName()));
     }
 
-    static boolean isProviderQuantumField(SppDomain domain, SppClass role, String field) {
-        return externalQuantumMappers(domain, role).stream().anyMatch(take -> {
-            String source = mappedField(take.mapper(), field);
-            return source != null && take.mapper().getRole().getField(field) != null
-                    && take.mapper().getDeclaredPerformers().stream().anyMatch(performer ->
-                            isExternalPerformer(domain, take, performer) && performer.getField(source) != null
-                                    && performer.getField(source).isQuantum());
-        });
-    }
-
-    private static boolean isExternalPerformer(SppDomain domain, ProviderTake take, SppClass performer) {
-        return take.domain() == domain ? performer.getReferenceSource() != null
-                : performer.getReferenceSource() == null;
-    }
-
-    private static QuantumPosition quantumPosition(SppProject project, SppDomain domain, SppClass type, String field) {
-        if (type.getField(field) == null || !type.getField(field).isQuantum()) return null;
-        if (type.getReferenceSource() != null) return referencedPosition(project, type, field, type, null);
-        var takes = externalQuantumMappers(domain, type);
-        if (takes.isEmpty()) return new QuantumPosition(domain, type.getName() + "." + field, List.of());
-        List<QuantumPosition> candidates = new ArrayList<>();
-        for (var take : takes) {
-            var mapper = take.mapper();
-            if (mapper.getRole().getField(field) == null) continue;
-            String source = mappedField(mapper, field);
-            if (source == null) continue;
-            for (var performer : mapper.getDeclaredPerformers()) {
-                if (!isExternalPerformer(domain, take, performer)) continue;
-                QuantumPosition position = take.domain() == domain
-                        ? referencedPosition(project, performer, source, type, mapper)
-                        : providerPosition(take.domain(), performer, source, type, mapper);
-                if (position != null) candidates.add(position);
+    static List<String> validateRolePlays(SppProject project, boolean storesReady) {
+        List<String> errors = new ArrayList<>();
+        for (var domain : project.getSppDomainMap().values()) {
+            if (!storesReady) for (var unit : domain.getMapsOfClass().values()) {
+                if (!(unit instanceof SppRoleMapper mapper)) continue;
+                boolean crossDomain = mapper.getRole().getReferenceSource() != null
+                        || mapper.getDeclaredPerformers().stream().anyMatch(performer -> performer.getReferenceSource() != null);
+                if (crossDomain && mapper.getRole().getSppFieldList().stream().anyMatch(SppField::isQuantum))
+                    errors.add(domain.getName() + ": cross-domain quantum roles require APP play: " + mapper.getRole().getName());
+            }
+            for (var play : domain.getRuleBlock().getRolePlays()) {
+                String prefix = domain.getName() + ": play " + play.role() + " by "
+                        + play.providerDomain() + "." + play.providerType() + ": ";
+                if (!(domain.getSppClass(play.role()) instanceof SppClass role)
+                        || role.getType() != CompilationUnitType.role) {
+                    errors.add(prefix + "unknown consumer role");
+                    continue;
+                }
+                var owner = project.getDomain(play.providerDomain());
+                if (owner == null) {
+                    errors.add(prefix + "unknown provider domain");
+                    continue;
+                }
+                if (!(owner.getSppClass(play.providerType()) instanceof SppClass performer) || !performer.isReal()) {
+                    errors.add(prefix + "unknown provider type");
+                    continue;
+                }
+                if (!Set.of(CompilationUnitType.entity, CompilationUnitType.contract, CompilationUnitType.role)
+                                .contains(performer.getType()) || performer.getReferenceSource() != null
+                        || owner == domain || !plays(owner, performer).isEmpty()) {
+                    errors.add(prefix + "invalid provider type");
+                    continue;
+                }
+                if (!storesReady) {
+                    for (var mapping : play.fields().entrySet()) {
+                        var left = role.getField(mapping.getKey());
+                        var right = performer.getField(mapping.getValue());
+                        if (left == null || right == null) errors.add(prefix + "unknown field " + mapping);
+                        else if (left.isQuantum() != right.isQuantum())
+                            errors.add(prefix + "quantum/non-quantum field mismatch " + mapping);
+                        else if (!left.getType().getName().equals(right.getType().getName())
+                                || left.getArrayDimension() != right.getArrayDimension())
+                            errors.add(prefix + "type mismatch " + mapping);
+                        else if (left.isQuantum() && !Objects.equals(
+                                scale(domain, role, left), scale(owner, performer, right)))
+                            errors.add(prefix + "scale mismatch " + mapping);
+                    }
+                    for (var field : role.getSppFieldList()) if (field.isQuantum()
+                            && !play.fields().containsKey(field.getName()))
+                        errors.add(prefix + "unmapped consumer quantum field " + field.getName());
+                    if (playKeys(owner, performer, play).isEmpty())
+                        errors.add(prefix + "unmapped provider primary-key field or missing provider primary key");
+                } else {
+                    var environments = quantumEnvironments(project, domain);
+                    var stores = performer.getSppFieldList().stream()
+                            .filter(field -> field.isQuantum() && play.fields().containsValue(field.getName()))
+                            .map(field -> owner.quantumStoreAdapter(owner.quantumStoreNameForAttribute(
+                                    performer.getName() + "." + field.getName()))).toList();
+                    if (environments.isEmpty() || !"LOCAL".equals(domain.getRuleBlock().getDeploymentTransactionMode())
+                            || environments.stream().anyMatch(env -> !env.getDomains().contains(owner.getName())
+                                    || !commonLocalStore(project, env))
+                            || stores.stream().anyMatch(Objects::isNull)
+                            || stores.stream().map(QuantumStoreIdentity::of).anyMatch(store ->
+                                    !"jdbcQuantum".equals(store.adapter())
+                                    || environments.stream().flatMap(env -> env.getDomains().stream()).distinct()
+                                            .map(project::getDomain).filter(Objects::nonNull)
+                                            .flatMap(member -> member.getRuleBlock().getAppQuantumStoreAdapters().stream())
+                                            .map(QuantumStoreIdentity::of).anyMatch(candidate -> !store.equals(candidate))
+                                    || domain.getRuleBlock().getAppPhysicalBackends().stream().noneMatch(backend ->
+                                            localQuantumBackend(domain, backend, domain.getRuleBlock().getDefaultUpdateResource(), store))))
+                        errors.add(prefix + TCC_PENDING);
+                }
             }
         }
-        return candidates.size() == 1 ? candidates.get(0) : null;
+        return errors;
     }
 
-    private static QuantumPosition referencedPosition(SppProject project, SppClass reference, String field,
-                                                      SppClass view, SppRoleMapper mapper) {
-        String[] source = reference.getReferenceSource().split("\\.");
-        if (source.length != 2 || reference.getField(field) == null || !reference.getField(field).isQuantum()) return null;
-        SppDomain owner = project.getDomain(source[0]);
-        return owner != null && owner.getSppClass(source[1]) instanceof SppClass performer
-                ? providerPosition(owner, performer, field, view, mapper) : null;
+    private static Integer scale(SppDomain domain, SppClass type, SppField field) {
+        String original = field.getDeclaredNumericSpecification();
+        String specification = original;
+        for (var binding : domain.getRuleBlock().getNumericBindings())
+            if (binding.matches(original)) specification = binding.representation();
+        for (var binding : domain.getRuleBlock().getNumericBindings())
+            if (binding.target().equals(type.getName() + "." + field.getName())) specification = binding.representation();
+        try {
+            var dimensions = NumericBinding.dimensions(specification);
+            return dimensions == null ? null : dimensions[1];
+        } catch (IllegalArgumentException invalid) {
+            return null; // Reported by numeric declaration validation.
+        }
     }
 
-    private static QuantumPosition providerPosition(SppDomain owner, SppClass performer, String field,
-                                                    SppClass view, SppRoleMapper mapper) {
-        if (!Set.of(CompilationUnitType.entity, CompilationUnitType.contract).contains(performer.getType())
-                || performer.getField(field) == null || !performer.getField(field).isQuantum()
-                || !com.servpp.lang.models.app.NumericBinding.isNumeric(performer.getField(field).getType().getName())
-                || performer.getField(field).getArrayDimension() != 0) return null;
-        List<String> keys = new ArrayList<>();
+    static List<String> playKeys(SppDomain owner, SppClass performer, RolePlay play) {
+        List<String> paths = new ArrayList<>();
         for (String key : ParticipantRoleBindings.primaryKeys(owner, performer)) {
             String[] path = key.split("\\.", 2);
-            List<String> matches = view.getSppFieldList().stream().filter(property -> property.getArrayDimension() == 0
-                    && (mapper == null || mapper.getRole().getField(property.getName()) != null)
-                    && path[0].equals(mapper == null ? property.getName() : mappedField(mapper, property.getName())))
-                    .map(property -> property.getName() + (path.length == 2 ? "." + path[1] : "")).toList();
-            if (matches.size() != 1) return null;
-            keys.add(matches.get(0));
+            String source = play.fields().entrySet().stream().filter(mapping -> path[0].equals(mapping.getValue()))
+                    .map(Map.Entry::getKey).findFirst().orElse(null);
+            if (source == null) return List.of();
+            paths.add(source + (path.length == 2 ? "." + path[1] : ""));
         }
-        return keys.isEmpty() ? null : new QuantumPosition(owner, performer.getName() + "." + field, keys);
+        return paths;
     }
 
-    private static String mappedField(SppRoleMapper mapper, String roleField) {
-        if (mapper.getField(roleField) instanceof SppRoleField mapping) return mapping.getEntityName();
-        return mapper.isMapSame() || mapper.isTakeAll() ? roleField : null;
+    private static List<QuantumPosition> quantumPositions(SppProject project, SppDomain domain, SppClass type, String field) {
+        if (type.getField(field) == null || !type.getField(field).isQuantum() || type.getReferenceSource() != null)
+            return List.of();
+        var plays = plays(domain, type);
+        if (plays.isEmpty()) return List.of(new QuantumPosition(domain, type.getName() + "." + field, List.of()));
+        List<QuantumPosition> positions = new ArrayList<>();
+        for (var play : plays) {
+            var owner = project.getDomain(play.providerDomain());
+            var performer = (SppClass) owner.getSppClass(play.providerType());
+            positions.add(new QuantumPosition(owner, performer.getName() + "." + play.fields().get(field),
+                    playKeys(owner, performer, play)));
+        }
+        return positions;
     }
 
     private static void validateQuantumSystem(SppProject project, DeploymentEnvironment environment, List<String> errors) {

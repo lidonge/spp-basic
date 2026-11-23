@@ -56,6 +56,17 @@
           <configOptions><useSpringBoot3>true</useSpringBoot3></configOptions>
           <addTestCompileSourceRoot>false</addTestCompileSourceRoot>
         </configuration></execution>
+                <execution><id>generate-reserves</id><goals><goal>generate</goal></goals><configuration>
+          <inputSpec>${project.build.directory}/spp/src/main/resources/reserves.spp.yaml</inputSpec>
+          <configurationFile>${project.build.directory}/spp/src/main/resources/reserves.numeric-codegen.json</configurationFile>
+          <generatorName>spring</generatorName><skipValidateSpec>true</skipValidateSpec>
+          <apiPackage>example.generated.reserves.handler</apiPackage>
+          <modelPackage>example.generated.reserves.model</modelPackage>
+          <invokerPackage>example.generated.reserves.handler</invokerPackage>
+          <templateDirectory>${project.build.directory}/spp/src/main/resources/JavaSpring</templateDirectory>
+          <configOptions><useSpringBoot3>true</useSpringBoot3></configOptions>
+          <addTestCompileSourceRoot>false</addTestCompileSourceRoot>
+        </configuration></execution>
         </executions>
       </plugin>
       <plugin><artifactId>maven-compiler-plugin</artifactId><version>3.11.0</version></plugin>

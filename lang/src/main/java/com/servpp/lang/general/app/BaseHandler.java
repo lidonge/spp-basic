@@ -190,6 +190,22 @@ public abstract class BaseHandler implements IHeaderHandler, IPrimaryHandler,
     @Override public void enterPhyEnvironment(AppParser.PhyEnvironmentContext ctx) { }
     @Override public void exitPhyEnvironment(AppParser.PhyEnvironmentContext ctx) { }
     @Override public void exitApplicationDeployment(AppParser.ApplicationDeploymentContext ctx) { }
+    @Override public void enterRolePlay(AppParser.RolePlayContext ctx) {
+        var fields = new java.util.LinkedHashMap<String, String>();
+        var targets = new java.util.HashSet<String>();
+        for (var field : ctx.rolePlayField()) {
+            String source = field.consumer.getText();
+            String target = field.provider.getText();
+            if (fields.putIfAbsent(source, target) != null || !targets.add(target))
+                logSppError(field, "Duplicate APP play field mapping " + source + " = " + target);
+        }
+        getCurrentRuleBlock().getRolePlays().add(new com.servpp.lang.models.app.RolePlay(
+                ctx.role.getText(), ctx.providerDomain.getText(), ctx.providerType.getText(), fields));
+    }
+    @Override public void exitRolePlay(AppParser.RolePlayContext ctx) { }
+    @Override public void enterRolePlayField(AppParser.RolePlayFieldContext ctx) { }
+    @Override public void exitRolePlayField(AppParser.RolePlayFieldContext ctx) { }
+
     @Override public void exitLocalServiceBinding(AppParser.LocalServiceBindingContext ctx) { }
     @Override public void enterLocalParticipantBinding(AppParser.LocalParticipantBindingContext ctx) { }
     @Override public void exitLocalParticipantBinding(AppParser.LocalParticipantBindingContext ctx) { }

@@ -270,6 +270,29 @@ Use `,breakTransaction` on a bare check or `identify` inside a transaction
 when business rejection must abort that transaction. The older spelling
 `breakTransction` still compiles and emits a deprecation warning.
 
+### Bind a quantum role across domains
+
+Declare the role and the transfer in the consumer SPP. The provider SPP defines
+its own position independently. In the consumer APP, select the provider and
+map the role fields to its position fields.
+
+```app
+play ProviderPlayedRole by positions.Position {
+    accountCode = account;
+    currency = currency;
+    claim = outstanding;
+}
+```
+
+Here `account` and `currency` are the provider's primary key. The transfer
+into `played.claim` books `Position.outstanding` for that key. Deploy both
+domains in a LOCAL environment with one JDBC quantum store. To try a second
+provider, see the `reserves.Reserve` binding in the
+[generated H2 sample](../../sdk-tools/samples/custom-services/README.md).
+Each lookup checks both alternatives. One matching position supplies the
+balance. A missing position reads as zero and rejects transfers. An overlapping
+key is an error for both reads and transfers.
+
 ## 7. Add a custom technical service
 
 The same example binds `callCounter` using APP:

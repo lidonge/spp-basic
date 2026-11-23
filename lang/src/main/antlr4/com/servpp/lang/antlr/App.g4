@@ -29,6 +29,7 @@ annotatableRule
     | examples
     | web
     | applicationDeployment
+    | rolePlay
     | localServiceBinding
     | internationalization
     | requestPolicy
@@ -92,6 +93,16 @@ internationalization
 
 applicationDeployment
     : 'application' Identifier '{' (deployDomain | deploymentEnvironment)+ '}'
+    ;
+
+// Contextual keywords keep this provisional syntax local to the declaration.
+rolePlay
+    : {"play".equals(getCurrentToken().getText())}? Identifier role=Identifier
+      'by' providerDomain=Identifier '.' providerType=Identifier '{' rolePlayField+ '}'
+    ;
+
+rolePlayField
+    : consumer=Identifier '=' provider=Identifier ';'
     ;
 
 localServiceBinding

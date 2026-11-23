@@ -62,15 +62,40 @@ public final class LocalDomainServices {
             throw new IllegalStateException("ROLE_PROJECTION_FAILED", failure);
         }
     }
-    static void copyRoleQueryFacts(Object target, Object source, String[] facts) {
-        copyFacts(target, source, target.getClass(), facts, new String[0], false, true);
+    static Object queryPlay(Object participant, ParticipantRoleQueries.Play play) {
+        for (String path : play.keyPaths()) {
+            Object value = com.servpp.service.repository.ObjectPropertyAccess.read(participant, path);
+            if (value == null || value.toString().isBlank()) return null;
+        }
+        var values = new LinkedHashMap<String, Object>();
+        play.fields().forEach((roleField, providerField) -> values.put(providerField,
+                com.servpp.service.repository.ObjectPropertyAccess.read(participant, roleField)));
+        Object performer = MAPPER.convertValue(values, play.performer());
+        String[] fields = play.fields().values().toArray(String[]::new);
+        com.servpp.service.repository.TransactionQueryReads.project(new Object[]{participant}, new Object[]{performer},
+                () -> invoke(play.provider(), new Object[]{performer}, new Class<?>[]{play.performer()},
+                        new String[][]{fields}, new String[][]{new String[0]}, new boolean[]{false}, true));
+        return ParticipantIdentity.isIdentified(performer) ? performer : null;
     }
 
-    static void clearAbsentQuantumFacts(Object participant, String[] fields) {
-        var zeros = new LinkedHashMap<String, Object>();
-        for (String field : fields) zeros.put(field, java.math.BigDecimal.ZERO);
-        Object empty = MAPPER.convertValue(zeros, participant.getClass());
-        copyFacts(participant, empty, participant.getClass(), fields, new String[0], false, false);
+    static void copyPlayResult(Object participant, ParticipantRoleQueries.Play play, Object performer) {
+        var values = new LinkedHashMap<String, Object>();
+        play.fields().forEach((roleField, providerField) -> values.put(roleField,
+                com.servpp.service.repository.ObjectPropertyAccess.read(performer, providerField)));
+        copyPlayValues(participant, values);
+    }
+
+    static void clearAbsentPlay(Object participant, String[] fields) {
+        var values = new LinkedHashMap<String, Object>();
+        for (String field : fields) values.put(field, java.math.BigDecimal.ZERO);
+        copyPlayValues(participant, values);
+    }
+
+    private static void copyPlayValues(Object participant, java.util.Map<String, Object> values) {
+        Object result = MAPPER.convertValue(values, participant.getClass());
+        copyFacts(participant, result, participant.getClass(), values.keySet().toArray(String[]::new),
+                new String[0], false, false);
+        PropertyChanges.clean(participant);
     }
 
     private static Method providerMethod(Class<?> type, String name, int count) {

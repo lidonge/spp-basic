@@ -300,3 +300,27 @@ queries fill the destination collection.
 Use `,breakTransaction` on a bare check or `identify` inside a transaction
 to abort the transaction when the check fails. `breakTransction` is a
 deprecated spelling and emits a compile warning.
+
+## APP quantum role bindings
+
+Declare `play ConsumerRole by provider.ProviderType { consumerField = providerField; }`
+in the APP for the consumer domain. The SPP role owns the business interface.
+Each `play` independently maps all of its quantum fields and all parts of the
+provider's primary key. The compiler uses the provider's APP primary-key order
+and checks field types, quantum modifiers and numeric scale. Each mapped
+quantum attribute uses the provider's storage, bounds, journal and automatic
+reverse transaction. The played role has no quantum storage of its own.
+
+Several `play` declarations for the same role are alternatives. For each
+lookup, exactly one provider row must match. With zero matches, a role query
+returns zero for the quantum fields and transfers fail with
+`QUANTUM_PLAY_POSITION_NOT_FOUND`. Several matches fail with
+`QUANTUM_PLAY_AMBIGUOUS`. Each provider's default primary-key query supplies
+the role's read data. Switch the APP declaration to change providers between
+deployments.
+
+The consumer and providers must be deployed in one unified LOCAL JDBC store.
+The compiler reports distributed deployments as
+`distributed cross-domain quantum transfer not yet supported (APP TCC pending)`.
+The `play ... by` spelling is provisional. Same-domain SPP `take` continues to
+define local role composition.

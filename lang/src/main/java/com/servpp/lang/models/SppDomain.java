@@ -4688,11 +4688,13 @@ public class SppDomain {
         return false;
     }
 
+    private ScopeDefine appPlayProviderScope;
+
     /** Domain-local services inherit the unique local scope; explicit bindings take precedence. */
     private List<String> bindDefaultLocalServices() {
         List<String> errors = new ArrayList<>();
         List<ScopeDefine> localScopes = ruleBlock.getAppScope().getScopelist().stream()
-                .filter(ScopeDefine::isLocal).toList();
+                .filter(scope -> scope.isLocal() && scope != appPlayProviderScope).toList();
         if (localScopes.isEmpty()) return errors;
         for (SppCompilationUnit unit : mapsOfClass.values()) {
             if (!(unit instanceof SppService service) || unit instanceof SppRoleMapper
@@ -4856,10 +4858,30 @@ public class SppDomain {
         return service;
     }
 
+    private void bindAppPlayProviderQueries() {
+        if (project == null) return;
+        for (var consumer : project.getSppDomainMap().values()) {
+            for (var play : consumer.getRuleBlock().getRolePlays()) {
+                if (!getName().equals(play.providerDomain())) continue;
+                var query = resolveImplicitCrudService("find" + play.providerType());
+                if (query == null || !query.isImplicitParticipantCrud() || query.getScopeItem() != null) continue;
+                if (appPlayProviderScope == null) {
+                    appPlayProviderScope = new ScopeDefine();
+                    ruleBlock.getAppScope()._addLocalScope(appPlayProviderScope);
+                }
+                ScopeItem item = new ScopeItem();
+                item.setDeclaredServiceName(query.getFuncName());
+                appPlayProviderScope.addScopeItem(item);
+                item.setService(query);
+            }
+        }
+    }
+
     /** Materialize standard bindings after all APP/PHY sources have been parsed. */
     public List<String> prepareDefaultParticipantBindings() {
         prepareImplicitParticipantServices();
         List<String> errors = bindDefaultLocalServices();
+        bindAppPlayProviderQueries();
         inferQuantumBindings(errors);
         var tables = appTableByBusinessType();
         var defaults = ruleBlock.getAppRepositoryAdapters().stream().filter(adapter ->
@@ -4887,10 +4909,14 @@ public class SppDomain {
             if (participant.getReferenceSource() != null) continue;
             // A take-based call targets the named participant, never the caller's own table.
             if (service.getImplicitCrudTarget() != null && service.getImplicitCrudTarget() != participant) continue;
+            if (service.getServiceType() == IConstance.ServiceType.query
+                    && DeploymentEnvironmentPlanner.isAppPlayedRole(this, participant)) {
+                service.setQueryFromPerformers(true);
+                continue;
+            }
             if (!tables.containsKey(participant.getName())) {
                 if (service.getServiceType() == IConstance.ServiceType.query && participant.getReferenceSource() == null
-                        && (mapsOfClass.values().stream().anyMatch(mapping -> mapping instanceof SppRoleMapper mapper && mapper.getRole() == participant)
-                                || !DeploymentEnvironmentPlanner.providerTakes(this, participant).isEmpty()))
+                        && mapsOfClass.values().stream().anyMatch(mapping -> mapping instanceof SppRoleMapper mapper && mapper.getRole() == participant))
                     service.setQueryFromPerformers(true);
                 if (service.isImplicitParticipantCrud() && participant.getReferenceSource() == null
                         && !service.isQueryFromPerformers())
@@ -5002,7 +5028,7 @@ public class SppDomain {
         var attributes = new java.util.LinkedHashSet<String>();
         for (var unit : mapsOfClass.values()) if (unit instanceof SppClass type && type.isReal()
                 && type.getReferenceSource() == null && !(type instanceof SppService))
-            for (var field : type.getSppFieldList()) if (field.isQuantum() && !DeploymentEnvironmentPlanner.isProviderQuantumField(this, type, field.getName()))
+            for (var field : type.getSppFieldList()) if (field.isQuantum() && !DeploymentEnvironmentPlanner.isAppPlayedRole(this, type))
                 attributes.add(type.getName() + "." + field.getName());
         String storeName = ruleBlock.getDeploymentQuantumResource();
         if (storeName == null && ruleBlock.getAppQuantumStoreAdapters().size() == 1)
@@ -7622,8 +7648,7 @@ public class SppDomain {
                 if (owner instanceof SppClass imported && imported.getReferenceSource() != null)
                     error = "external quantum attributes belong to their provider domain";
                 if (owner instanceof SppClass role && attributeId.contains(".")
-                        && DeploymentEnvironmentPlanner.isProviderQuantumField(this, role,
-                                attributeId.substring(attributeId.indexOf('.') + 1)))
+                        && DeploymentEnvironmentPlanner.isAppPlayedRole(this, role))
                     error = "role quantum attributes mapped to external performers belong to their provider domain";
                 if (error != null) {
                     errors.add("Quantum store " + store.getName()
@@ -7639,7 +7664,7 @@ public class SppDomain {
             for (SppField field : sppClass.getSppFieldList()) {
                 if (field.isQuantum()) {
                     String attributeId = sppClass.getName() + "." + field.getName();
-                    if (!DeploymentEnvironmentPlanner.isProviderQuantumField(this, sppClass, field.getName())
+                    if (!DeploymentEnvironmentPlanner.isAppPlayedRole(this, sppClass)
                             && !storeByAttribute.containsKey(attributeId)) {
                         errors.add("Quantum field " + attributeId
                                 + " must be assigned to an APP quantum store.");

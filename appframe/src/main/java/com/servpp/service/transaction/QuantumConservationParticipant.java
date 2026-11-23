@@ -21,7 +21,10 @@ public class QuantumConservationParticipant extends ObjectSnapshotTransactionPar
 
     private final List<QuantumAttribute> attributes = new ArrayList<>();
     private final List<CollectionAttribute> collectionAttributes = new ArrayList<>();
-    private final Map<QuantumAttribute, List<String>> mappedKeyPaths = new LinkedHashMap<>();
+    public record PlayEndpoint(String attributeId, String... keyPaths) { }
+    private record PerformerKey(String objectType, String objectId) { }
+    private record PlayedAttribute(QuantumAttribute logical, List<PlayEndpoint> endpoints) { }
+    private final Map<Integer, PlayedAttribute> playedAttributes = new LinkedHashMap<>();
     private final Map<QuantumAttribute, String> bookedObjectIds = new LinkedHashMap<>();
     private java.util.function.BiPredicate<String, String> mappedPerformerExists;
     private int scalarAttributeCount;
@@ -56,10 +59,11 @@ public class QuantumConservationParticipant extends ObjectSnapshotTransactionPar
         return this;
     }
 
-    public QuantumConservationParticipant conserveMappedArgument(int argumentIndex, String groupId,
-            String attributeId, String propertyName, String... keyPaths) {
-        conserveArgument(argumentIndex, groupId, attributeId, propertyName);
-        mappedKeyPaths.put(attributes.get(attributes.size() - 1), List.of(keyPaths));
+    public QuantumConservationParticipant conservePlayedArgument(int argumentIndex, String groupId,
+            String logicalId, String propertyName, PlayEndpoint... endpoints) {
+        conserveArgument(argumentIndex, groupId, logicalId, propertyName);
+        int index = attributes.size() - 1;
+        playedAttributes.put(index, new PlayedAttribute(attributes.get(index), List.of(endpoints)));
         return this;
     }
 
@@ -101,7 +105,8 @@ public class QuantumConservationParticipant extends ObjectSnapshotTransactionPar
     public void beforeExecute(TransactionContext context) {
         expandCollectionAttributes();
         bookedObjectIds.clear();
-        mappedKeyPaths.forEach((attribute, paths) -> bookedObjectIds.put(attribute, mappedObjectId(attribute, paths)));
+        Map<PerformerKey, Boolean> performers = new LinkedHashMap<>();
+        playedAttributes.forEach((index, played) -> selectPerformer(index, played, performers));
         syncCurrentValuesFromStore(context);
         super.beforeExecute(context);
         beforeValues = readValues();
@@ -224,37 +229,48 @@ public class QuantumConservationParticipant extends ObjectSnapshotTransactionPar
                 continue;
             }
             String identity = objectId(attribute);
-            boolean mapped = mappedKeyPaths.containsKey(attribute);
-            if (mapped && mappedPerformerExists != null
-                    && !mappedPerformerExists.test(objectType(attribute.attributeId()), identity))
-                throw new IllegalStateException("QUANTUM_PLAY_POSITION_NOT_FOUND: " + attribute.attributeId());
             Optional<BigDecimal> currentValue = getRecords(context).stream()
                     .filter(record -> record.getAttributeId().equals(attribute.attributeId()) && record.getObjectId().equals(identity))
                     .reduce((previous,next) -> next).map(QuantumConservationRecord::getAfterValue);
             if (currentValue.isEmpty()) currentValue = store.findCurrentValueForUpdate(attribute.attributeId(), identity);
-            if (currentValue.isEmpty() && mapped)
-                throw new IllegalStateException("QUANTUM_PLAY_POSITION_NOT_FOUND: " + attribute.attributeId());
-            currentValue.ifPresent(value -> writeNumberProperty(participant(attribute), attribute.propertyName(), value));
+            if (bookedObjectIds.containsKey(attribute)) {
+                writeNumberProperty(participant(attribute), attribute.propertyName(), currentValue.orElse(BigDecimal.ZERO));
+            } else {
+                currentValue.ifPresent(value -> writeNumberProperty(participant(attribute), attribute.propertyName(), value));
+            }
         }
     }
 
-    private String mappedObjectId(QuantumAttribute attribute, List<String> paths) {
+    private void selectPerformer(int index, PlayedAttribute played, Map<PerformerKey, Boolean> performers) {
+        var logical = played.logical();
+        if (mappedPerformerExists == null) throw new IllegalStateException("QUANTUM_PLAY_LOOKUP_UNAVAILABLE");
+        QuantumAttribute selected = null;
+        String selectedId = null;
+        for (var endpoint : played.endpoints()) {
+            String id = mappedObjectId(participant(logical), endpoint.keyPaths());
+            if (id == null) continue;
+            var key = new PerformerKey(objectType(endpoint.attributeId()), id);
+            if (!performers.computeIfAbsent(key, candidate ->
+                    mappedPerformerExists.test(candidate.objectType(), candidate.objectId()))) continue;
+            if (selected != null)
+                throw new IllegalStateException("QUANTUM_PLAY_AMBIGUOUS: " + logical.attributeId());
+            selected = new QuantumAttribute(logical.groupId(), endpoint.attributeId(), logical.reader(),
+                    logical.argumentIndex(), logical.propertyName(), null);
+            selectedId = id;
+        }
+        if (selected == null)
+            throw new IllegalStateException("QUANTUM_PLAY_POSITION_NOT_FOUND: " + logical.attributeId());
+        attributes.set(index, selected);
+        bookedObjectIds.put(selected, selectedId);
+    }
+
+    private String mappedObjectId(Object participant, String[] paths) {
         List<String> keys = new ArrayList<>();
         for (String path : paths) {
-            Object value = participant(attribute);
-            try {
-                for (String property : path.split("\\.")) {
-                    if (value == null) break;
-                    value = readProperty(value, property);
-                }
-            } catch (ReflectiveOperationException e) {
-                throw new IllegalStateException("Cannot read quantum play key " + path, e);
-            }
-            if (value == null || value.toString().isBlank())
-                throw new IllegalStateException("QUANTUM_PLAY_KEY_REQUIRED: " + attribute.attributeId());
+            Object value = com.servpp.service.repository.ObjectPropertyAccess.read(participant, path);
+            if (value == null || value.toString().isBlank()) return null;
             keys.add(value.toString());
         }
-        if (keys.isEmpty()) throw new IllegalStateException("QUANTUM_PLAY_KEY_REQUIRED: " + attribute.attributeId());
         return keys.size() == 1 ? keys.get(0) : CompositeObjectId.encode(keys);
     }
 
