@@ -600,7 +600,7 @@ public interface IScopeHandler extends IApplicationHandler {
         ScopeItem item = getLastElement(getLastElement(getCurrentRuleBlock().getAppScope().getScopelist()).getScopeItems());
         KeyTarget expected = persistenceTarget(ctx.repositoryTarget(0));
         KeyTarget proposed = ctx.repositoryTarget().size() == 1 ? expected : persistenceTarget(ctx.repositoryTarget(1));
-        item.getPersistenceVersions().add(new com.servpp.lang.models.app.PersistenceVersion(expected, proposed, ctx.getText().contains("advanceVersion")));
+        item.getPersistenceVersions().add(new com.servpp.lang.models.app.PersistenceVersion(expected, proposed, ctx.advance != null));
         if (!expected.isPlatform()) validateRepositoryObjectPath(ctx.repositoryTarget(0), expected);
         if (ctx.repositoryTarget().size() > 1 && !proposed.isPlatform()) validateRepositoryObjectPath(ctx.repositoryTarget(1), proposed);
     }

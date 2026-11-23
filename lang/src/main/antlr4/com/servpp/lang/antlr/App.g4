@@ -572,7 +572,7 @@ scopeModifier
     | 'optional' # optionalRepositoryModifier
     | 'persist' '(' persistenceOperation ',' repositoryTarget (',' repositoryTarget)* ')' # persistenceModifier
     | 'number' '(' repositoryTarget ',' StringLiteral ')' # businessNumberModifier
-    | 'compareVersion' '(' repositoryTarget (',' repositoryTarget)? ')' 'advanceVersion'? # persistenceVersionModifier
+    | 'compareVersion' '(' repositoryTarget (',' repositoryTarget)? ')' advance='advanceVersion'? # persistenceVersionModifier
     ;
 
 persistenceOperation

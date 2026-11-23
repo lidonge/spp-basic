@@ -7,7 +7,7 @@ public class PersistenceDeclarationTest {
     private SppDomain compile(String parameters,String modifiers) throws Exception {
         var spp=Files.createTempFile("persistence", ".spp"); var app=Files.createTempFile("persistence", ".app");
         try {
-            Files.writeString(spp,"domain rules; Role Stored { string id; long version; } atomic update store("+parameters+");");
+            Files.writeString(spp,"domain rules; Role Stored { string id; long version; long advanceVersionCounter; } atomic update store("+parameters+");");
             Files.writeString(app,"domain rules; scope { local { "+(modifiers.startsWith("quantum ") ? "" : "at resource(records) ")+modifiers+" store; } }");
             SppProject p=new SppProject(); new SppCompiler(spp.toFile(),p).compile(); new AppCompiler(app.toFile(),p).compile();
             return p.getSppDomainMap().get("rules");
@@ -30,6 +30,16 @@ public class PersistenceDeclarationTest {
         assertTrue(service.getPersistenceRuleMethods().contains("VersionCheck(0, \"version\", \"version\", false)"));
         assertTrue(service.getPersistencePreparationStatement().contains("new Object[]{before, after}"));
         assertTrue(service.getPersistenceCompletionStatement().contains(".persist()"));
+    }
+    @Test public void versionPathDoesNotEnableAutomaticAdvance() throws Exception {
+        String modifiers = "persist(update, argument(0, Stored.id)) compareVersion(argument(0, Stored.advanceVersionCounter))";
+        var domain = compile("Stored record", modifiers);
+        assertTrue(domain.validatePersistenceDeclarations().toString(), domain.validatePersistenceDeclarations().isEmpty());
+        var service = (SppService) domain.getSppClass("Store");
+        assertTrue(service.getPersistenceRuleMethods().contains("VersionCheck(0, \"advanceVersionCounter\", \"advanceVersionCounter\", false)"));
+
+        var advancing = (SppService) compile("Stored record", modifiers + " advanceVersion").getSppClass("Store");
+        assertTrue(advancing.getPersistenceRuleMethods().contains("VersionCheck(0, \"advanceVersionCounter\", \"advanceVersionCounter\", true)"));
     }
     @Test public void singleParticipantVersionGuardUsesItsQueryBaseline() throws Exception {
         var d=compile("Stored record","persist(update, argument(0, Stored.id)) compareVersion(argument(0, Stored.version), argument(0, Stored.version))");
