@@ -1,5 +1,6 @@
 package com.servpp.service.transaction;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumMap;
@@ -11,7 +12,9 @@ import java.util.Optional;
 import java.lang.reflect.Method;
 
 import com.servpp.service.Service;
+import com.servpp.service.jdbc.JdbcTransactionScope;
 import com.servpp.service.runtime.GeneratedRoleIdentityContextBinder;
+import com.servpp.service.runtime.GeneratedServiceKindProvider;
 import com.servpp.service.runtime.RemoteCompensationRuleProvider;
 import com.servpp.service.runtime.RemoteGeneratedService;
 import com.servpp.service.runtime.ScopeMetadataProvider;
@@ -128,20 +131,45 @@ public class DefaultTransactionManager {
         return nestedRollback.get() != null;
     }
 
+    Optional<BigDecimal> pendingLocalQuantumValue(JdbcQuantumJournalStore store, String attributeId, String objectId) {
+        var active = activeExecution.get();
+        if (active == null || active.mode() != TransactionMode.LOCAL
+                || !(active.context().getQuantumJournalStore() instanceof JdbcQuantumJournalStore owner)
+                || owner.getDataSource() != store.getDataSource() || !owner.getValueTable().equals(store.getValueTable()))
+            return Optional.empty();
+        return QuantumConservationParticipant.pendingValue(active.context(), attributeId, objectId);
+    }
+
     private void executeInCurrentScope(Collection<IExecutor> executors, boolean parallelUpdates) {
         ActiveExecution parentExecution = activeExecution.get();
         TransactionMode executionMode = DeclaredTransactionContext.currentMode();
+        if (executionMode == TransactionMode.LOCAL && SourceTransactionPlan.isActive()
+                && JdbcTransactionScope.currentConnections().size() > 1) {
+            var failure = new IllegalStateException("LOCAL_TRANSACTION_REQUIRES_SHARED_JDBC_RESOURCE");
+            SourceTransactionBoundary.markRollbackOnly(failure);
+            throw failure;
+        }
         if (parentExecution != null && executionMode == parentExecution.mode()
                 && (executionMode == TransactionMode.LOCAL || executionMode == TransactionMode.XA || executionMode == TransactionMode.AT || executionMode == TransactionMode.QUANTUM)) {
-            List<TransactionEntry> entries = collectEntries(executors);
-            for (TransactionEntry entry : entries) strategy(entry).begin(parentExecution.context(),entry.participant());
-            executeEntries(entries,parentExecution.context(),parentExecution.executed(),parallelUpdates);
+            try {
+                List<TransactionEntry> entries = collectEntries(executors);
+                for (TransactionEntry entry : entries) {
+                    if (entry.executor().getService() instanceof TransactionalService
+                            && (entry.mode() == TransactionMode.LOCAL || entry.mode() == TransactionMode.QUANTUM))
+                        parentExecution.context().enlistResource(entry.resourceId(), entry.mode());
+                    strategy(entry).begin(parentExecution.context(), entry.participant());
+                }
+                executeEntries(entries,parentExecution.context(),parentExecution.executed(),parallelUpdates);
+            } catch (RuntimeException | Error failure) {
+                SourceTransactionBoundary.markRollbackOnly(failure);
+                throw failure;
+            }
             return;
         }
         var queryBaselines = com.servpp.service.repository.RepositoryParticipantSnapshots.checkpoint();
         var modifiedProperties = com.servpp.service.runtime.PropertyChanges.checkpoint(queryBaselines.keySet());
         List<TransactionEntry> entries = collectEntries(executors);
-        TransactionContext context = new TransactionContext(collectResourceModes(entries), quantumJournalStore);
+        TransactionContext context = new TransactionContext(collectResourceModes(entries, executionMode), quantumJournalStore);
         LAST_CONTEXT.set(context);
         List<TransactionEntry> executed = java.util.Collections.synchronizedList(new ArrayList<>());
         List<java.util.function.Consumer<Throwable>> parentRollback = nestedRollback.get();
@@ -218,14 +246,14 @@ public class DefaultTransactionManager {
             if (entry.executor().getService() instanceof RemoteGeneratedService)
                 throw new IllegalStateException("REMOTE_SERVICE_QUANTUM_BOUNDS_TRANSPORT_UNSUPPORTED");
         }
-        QuantumInvocationBounds.execute(bounds, () -> {
+        QuantumInvocationBounds.execute(bounds, () -> QuantumTransferExecution.execute(entry.executor().getService(), context, () -> {
             strategy(entry).beforeExecute(context, entry.participant());
             executed.add(entry);
             entry.executor().execute();
             strategy(entry).afterExecute(context, entry.participant());
             if (entry.executor().getService() instanceof QuantumConstraintProvider constraints)
                 constraints.validateQuantumConstraints(transactionArguments(entry.executor().getService(), entry.executor()));
-        });
+        }));
     }
 
     private Runnable bindWorker(Runnable action) {
@@ -355,9 +383,15 @@ public class DefaultTransactionManager {
         }
     }
 
-    private Map<String, TransactionMode> collectResourceModes(List<TransactionEntry> entries) {
+    private Map<String, TransactionMode> collectResourceModes(List<TransactionEntry> entries, TransactionMode executionMode) {
         Map<String, TransactionMode> resourceModes = new LinkedHashMap<>();
         for (TransactionEntry entry : entries) {
+            if (executionMode == TransactionMode.LOCAL
+                    && entry.executor().getService() instanceof GeneratedServiceKindProvider generated
+                    && switch (generated.getGeneratedServiceKind()) {
+                        case ATOMIC_QUERY, ATOMIC_CALCULATE, ATOMIC_CHECK -> true;
+                        default -> false;
+                    }) continue;
             TransactionMode previous = resourceModes.putIfAbsent(entry.resourceId(), entry.mode());
             if (previous != null && previous != entry.mode()) {
                 throw new IllegalStateException("Resource " + entry.resourceId()

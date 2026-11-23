@@ -45,6 +45,12 @@ public class QuantumConservationParticipant extends ObjectSnapshotTransactionPar
         return context.getOrCreateAttribute(LEDGER_ATTRIBUTE, ConservationLedger::new).records();
     }
 
+    static Optional<BigDecimal> pendingValue(TransactionContext context, String attributeId, String objectId) {
+        return getRecords(context).stream()
+                .filter(record -> record.getAttributeId().equals(attributeId) && record.getObjectId().equals(objectId))
+                .reduce((previous, next) -> next).map(QuantumConservationRecord::getAfterValue);
+    }
+
     public QuantumConservationParticipant conserve(String groupId, String attributeId, Supplier<? extends Number> reader) {
         attributes.add(new QuantumAttribute(groupId, attributeId, reader, -1, null, null));
         scalarAttributeCount++;
@@ -229,9 +235,7 @@ public class QuantumConservationParticipant extends ObjectSnapshotTransactionPar
                 continue;
             }
             String identity = objectId(attribute);
-            Optional<BigDecimal> currentValue = getRecords(context).stream()
-                    .filter(record -> record.getAttributeId().equals(attribute.attributeId()) && record.getObjectId().equals(identity))
-                    .reduce((previous,next) -> next).map(QuantumConservationRecord::getAfterValue);
+            Optional<BigDecimal> currentValue = pendingValue(context, attribute.attributeId(), identity);
             if (currentValue.isEmpty()) currentValue = store.findCurrentValueForUpdate(attribute.attributeId(), identity);
             if (bookedObjectIds.containsKey(attribute)) {
                 writeNumberProperty(participant(attribute), attribute.propertyName(), currentValue.orElse(BigDecimal.ZERO));

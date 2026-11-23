@@ -73,6 +73,44 @@ public class SourceTransactionPropagationTest {
         })).execute());
         assertEquals(List.of(2), facts());
     }
+
+    @Test public void localReadAndWriteUseOneConnectionDespiteDifferentServiceModes() throws Exception {
+        var writer = new LocalNode(dataSource) {
+            public TransactionMode getTransactionMode() { return TransactionMode.LOCAL; }
+        };
+        class Query extends LocalNode implements com.servpp.service.runtime.GeneratedServiceKindProvider {
+            Query() { super(dataSource); }
+            public String getName() { return "read"; }
+            public TransactionMode getTransactionMode() { return TransactionMode.AT; }
+            public com.servpp.service.runtime.GeneratedServiceKind getGeneratedServiceKind() {
+                return com.servpp.service.runtime.GeneratedServiceKind.ATOMIC_QUERY;
+            }
+        }
+        var writerConnection = new java.util.concurrent.atomic.AtomicReference<java.sql.Connection>();
+        var query = new IExecutor() {
+            public Service getService() { return new Query(); }
+            public void execute() {
+                var connection = JdbcTransactionScope.currentConnection(dataSource).orElseThrow();
+                assertSame(writerConnection.get(), connection);
+                try (var sql = connection.createStatement(); var rows = sql.executeQuery("select id from facts")) {
+                    assertTrue(rows.next());
+                    assertEquals(1, rows.getInt(1));
+                } catch (SQLException failure) {
+                    throw new IllegalStateException(failure);
+                }
+            }
+        };
+        SourceTransactionPlan.execute(new ITransactionGroup() {
+            public TransactionMode getDeclaredTransactionMode() { return TransactionMode.LOCAL; }
+            public IExecutor[] getServices() {
+                return new IExecutor[]{prepared(writer, () -> {
+                    writerConnection.set(JdbcTransactionScope.currentConnection(dataSource).orElseThrow());
+                    insert(1);
+                }), query, prepared(writer, 2)};
+            }
+        });
+        assertEquals(List.of(1, 2), facts());
+    }
     @Test public void pureSagaPlanCommitsPreparedLocalNodesTogether() throws Exception {
         var connections = new ArrayList<java.sql.Connection>();
         var store = new com.servpp.service.repository.JdbcObjectSnapshotStore(dataSource, value -> "{}");

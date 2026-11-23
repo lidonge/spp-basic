@@ -204,6 +204,8 @@ public class JdbcQuantumJournalStore implements QuantumJournalStore {
     }
 
     public Optional<BigDecimal> findCurrentValue(String attributeId, String objectId) {
+        var pending = DefaultTransactionManager.getInstance().pendingLocalQuantumValue(this, attributeId, normalizeObjectId(objectId));
+        if (pending.isPresent()) return pending;
         try {
             Optional<Connection> current = JdbcTransactionScope.currentConnection(dataSource);
             if (current.isPresent()) {

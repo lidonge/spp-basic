@@ -60,7 +60,7 @@ public final class NumericJavaRenderer {
                 + "com.servpp.service.transaction.QuantumConstraintProvider.check("
                 + name + " != null && " + name + ".signum() >= 0, \"QUANTUM_TRANSFER_INVALID_AMOUNT\");\n"
                 + String.join("\n", transfer.movements(target).stream().map(this::statement).toList())
-                + "\n}";
+                + "\ncom.servpp.service.transaction.QuantumTransferExecution.applied();\n}";
     }
 
     public String boundEndpoint(IExpression expression, SppLocalVar field) {

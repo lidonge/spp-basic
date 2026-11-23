@@ -757,6 +757,7 @@ public class SppDomain {
     private List<List<IServiceBodyStatement>> statementChildren(IServiceBodyStatement statement) {
         if (statement instanceof SppServiceCall call && call.getGuardStatements()!=null) return List.of(call.getGuardStatements());
         if (statement instanceof TryBlock block) return List.of(block.getTryStatements(), block.getCatchStatements());
+        if (statement instanceof ConditionalBlock block) return List.of(block.getThenStatements(), block.getElseStatements());
         if (statement instanceof ExecuteBlock block) return List.of(block.getExecuteCallList() == null ? List.of() : block.getExecuteCallList());
         if (statement instanceof TransactionBlock block) return List.of(block.getTransactionCallList() == null ? List.of() : block.getTransactionCallList());
         return List.of();

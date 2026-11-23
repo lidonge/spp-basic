@@ -4,7 +4,7 @@ import com.servpp.service.scenario.*;
 import com.servpp.service.runtime.*;
 import java.util.*;
 
-/** Source boundaries compile to quantum-first stages. Committed stages recover by reversal/compensation. */
+/** Runs homogeneous source transactions and plans recovery for independently committed stages. */
 public final class SourceTransactionPlan {
     private record Stage(TransactionMode mode, List<IExecutor> calls) { }
     private record Committed(Stage stage, String quantumPayload, TransactionContext context,
@@ -36,14 +36,39 @@ public final class SourceTransactionPlan {
             throw new IllegalStateException("TRANSACTION_PLAN_NESTED_UNSUPPORTED");
         List<IExecutor> calls = new ArrayList<>(); flatten(boundary.getServices(),calls);
         boolean parallelUpdates = boundary.parallelOrdinaryUpdates();
-        if (parallelUpdates) calls = UpdateScheduling.order(calls);
-        final List<IExecutor> planned = calls;
-        // Capture all caller intervals before any quantum call can change a participant.
-        for (int i = 0; i < calls.size(); i++) {
-            IExecutor original = calls.get(i);
+        Set<TransactionMode> modes = new LinkedHashSet<>();
+        for (IExecutor call : calls)
+            if (!(call instanceof ITransactionGroup) && call.getService() != null && isUpdate(call))
+                modes.add(mode(call));
+        if (boundary.getDeclaredTransactionMode() != null)
+            modes.add(boundary.getDeclaredTransactionMode());
+        boolean independent = calls.stream().anyMatch(call -> call instanceof ITransactionGroup);
+        if (modes.size() <= 1 && !modes.contains(TransactionMode.SAGA)
+                && (!independent || modes.isEmpty() || (modes.contains(TransactionMode.AT) || modes.contains(TransactionMode.LOCAL)))) {
+            TransactionMode mode = modes.isEmpty() ? TransactionMode.AT : modes.iterator().next();
+            // LOCAL calls can consume writes made earlier in the same JDBC transaction.
+            var planned = parallelUpdates && mode != TransactionMode.LOCAL ? UpdateScheduling.order(calls) : calls;
+            SourceTransactionBoundary.execute(boundary.getPropagation(),mode,
+                    () -> DefaultTransactionManager.getInstance().execute(planned,parallelUpdates));
+            return;
+        }
+        var planned = parallelUpdates ? UpdateScheduling.order(calls) : calls;
+        captureStageBounds(planned);
+        SourceTransactionBoundary.execute(boundary.getPropagation(),TransactionMode.SAGA, () -> {
+            // Startup preparation has missing-only retry semantics, not business compensation.
+            if (DatabaseInitializationContext.isActive()) executeSaga(planned, parallelUpdates);
+            else SagaTransactionGroupManager.executeSourceStages(boundary.getSourceTransactionId(), () -> sourceStages(planned),
+                    () -> executeSaga(planned, parallelUpdates));
+        });
+    }
+
+    private static void captureStageBounds(List<IExecutor> calls) {
+        // Capture caller intervals before the independently committed stages change participants.
+        for (int index = 0; index < calls.size(); index++) {
+            IExecutor original = calls.get(index);
             if (original instanceof ITransactionGroup || mode(original) != TransactionMode.QUANTUM) continue;
             var bounds = List.copyOf(original.getQuantumBounds());
-            calls.set(i,new IExecutor() {
+            calls.set(index, new IExecutor() {
                 public com.servpp.service.Service getService() { return original.getService(); }
                 public List<com.servpp.service.Service> getRepositoryScopeServices() { return original.getRepositoryScopeServices(); }
                 public Object[] getArguments() { return original.getArguments(); }
@@ -55,24 +80,6 @@ public final class SourceTransactionPlan {
                 public void execute() { original.execute(); }
             });
         }
-        Set<TransactionMode> modes = new LinkedHashSet<>();
-        for (IExecutor call : calls) if (!(call instanceof ITransactionGroup) && isUpdate(call)) modes.add(mode(call));
-        boolean independent = calls.stream().anyMatch(call -> call instanceof ITransactionGroup);
-        if (modes.size() <= 1 && !modes.contains(TransactionMode.SAGA)
-                && (!independent || modes.isEmpty() || (modes.contains(TransactionMode.AT) || modes.contains(TransactionMode.LOCAL)))) {
-            TransactionMode mode = modes.isEmpty() ? TransactionMode.AT : modes.iterator().next();
-            if (parallelUpdates && calls.stream().allMatch(call -> call.getService() == null)
-                    && boundary.getDeclaredTransactionMode() != null) mode = boundary.getDeclaredTransactionMode();
-            SourceTransactionBoundary.execute(boundary.getPropagation(),mode,
-                    () -> DefaultTransactionManager.getInstance().execute(planned,parallelUpdates));
-            return;
-        }
-        SourceTransactionBoundary.execute(boundary.getPropagation(),TransactionMode.SAGA, () -> {
-            // Startup preparation has missing-only retry semantics, not business compensation.
-            if (DatabaseInitializationContext.isActive()) executeSaga(planned, parallelUpdates);
-            else SagaTransactionGroupManager.executeSourceStages(boundary.getSourceTransactionId(), () -> sourceStages(planned),
-                    () -> executeSaga(planned, parallelUpdates));
-        });
     }
 
     private static List<SourceSagaStage> sourceStages(List<IExecutor> calls) {

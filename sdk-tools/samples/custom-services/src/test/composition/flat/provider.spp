@@ -1,0 +1,7 @@
+domain provider;
+Entity CustodyHandover { String receiptNumber; quantum decimal cash; }
+Entity CustodyTill { String receiptNumber; quantum decimal cash; }
+
+atomic update insertCustodyHandover(CustodyHandover);
+
+atomic update openTill(CustodyTill);

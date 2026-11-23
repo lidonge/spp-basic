@@ -15,7 +15,7 @@ public class QuantumEntanglementBoundary {
 
     public QuantumEntanglementBoundary(String serviceId, List<String> resourceIds) {
         this.serviceId = serviceId;
-        this.resourceIds = List.copyOf(resourceIds);
+        this.resourceIds = new ArrayList<>(resourceIds);
     }
 
     public String getServiceId() {
@@ -23,7 +23,11 @@ public class QuantumEntanglementBoundary {
     }
 
     public List<String> getResourceIds() {
-        return resourceIds;
+        return List.copyOf(resourceIds);
+    }
+
+    void enlistResource(String resourceId) {
+        resourceIds.add(resourceId);
     }
 
     public void addRecord(QuantumConservationRecord record) {
@@ -32,6 +36,10 @@ public class QuantumEntanglementBoundary {
 
     public List<QuantumConservationRecord> getRecords() {
         return List.copyOf(records);
+    }
+
+    int recordCount() {
+        return records.size();
     }
 
     public QuantumEntanglementBoundary negativeDeltaReversal() {

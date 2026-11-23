@@ -419,8 +419,15 @@ public class SppService extends SppClass{
         }).distinct().map(id -> "\"" + id + "\"").collect(Collectors.joining(", ")));
         method.append(");\n");
         method.append("    }\n\n");
+        if (!transferPaths.isEmpty()) {
+            method.append("    @Override public boolean hasQuantumTransfers() { return true; }\n\n");
+        }
         method.append(quantumConstraintMethod());
         return method.toString();
+    }
+
+    private boolean hasTransferBody() {
+        return localServiceProvider == null ? !transferPaths.isEmpty() : localServiceProvider.hasTransferBody();
     }
 
     public String getQuantumConservationParticipantMethod() {
@@ -507,7 +514,13 @@ public class SppService extends SppClass{
                         }
                         java.append("));\n");
                     } else appendScenarioStatement(java, batch.get(0), indent + 4);
-                } else { appendScenarioStatement(java, statement, indent + 4); index++; }
+                } else {
+                    if (statement instanceof SppServiceCall call && isCheckCall(call) && call.getGuardStatements() == null)
+                        appendCheck(java, call, indent + 4, insideDeclaredTransaction(call)
+                                && hasRequiredTransfer(statements.subList(index + 1, statements.size())));
+                    else appendScenarioStatement(java, statement, indent + 4);
+                    index++;
+                }
             }
         }
         finally { scenarioBlocks.pop(); }
@@ -517,7 +530,7 @@ public class SppService extends SppClass{
         return call.getIdentityTarget() != null || (call.getCallee() != null
                 && call.getCallee().getServiceType() == IConstance.ServiceType.check);
     }
-    private void appendCheck(StringBuilder java, SppServiceCall call, int indent) {
+    private void appendCheck(StringBuilder java, SppServiceCall call, int indent, boolean skipsTransfer) {
         String condition = call.getIdentityTarget() != null
                 ? "com.servpp.service.runtime.BusinessChecks.identify(" + NameUtil.getNameCall(call.getIdentityTarget()) + ")"
                 : "com.servpp.service.runtime.BusinessChecks.evaluate(() -> " + scenarioInvocation(call) + ").passed()";
@@ -527,12 +540,23 @@ public class SppService extends SppClass{
             indent(java, indent).append("}\n");
         } else {
             indent(java, indent).append("if (!(").append(condition).append(")) {\n");
-            if (call.isBreaksTransaction()) indent(java, indent + 4)
+            if (call.isBreaksTransaction() || skipsTransfer) indent(java, indent + 4)
                     .append("com.servpp.service.transaction.SourceTransactionBoundary.rejectCurrent(com.servpp.service.runtime.BusinessChecks.lastResult().code());\n");
             indent(java, indent + 4).append("com.servpp.service.runtime.BusinessChecks.recordBlockFailure();\n");
             indent(java, indent + 4).append("break ").append(scenarioBlocks.element()).append(";\n");
             indent(java, indent).append("}\n");
         }
+    }
+
+    private boolean hasRequiredTransfer(List<IServiceBodyStatement> statements) {
+        if (statements == null) return false;
+        for (var statement : statements) {
+            if (statement instanceof SppServiceCall call && call.getCallee() != null && call.getCallee().hasTransferBody()) return true;
+            if (statement instanceof ExecuteBlock block && hasRequiredTransfer(block.getExecuteCallList())) return true;
+            if (statement instanceof TransactionBlock block && "REQUIRED".equals(block.getPropagation())
+                    && hasRequiredTransfer(block.getTransactionCallList())) return true;
+        }
+        return false;
     }
     private boolean containsChecks(List<IServiceBodyStatement> statements) {
         if (statements == null) return false;
@@ -557,6 +581,7 @@ public class SppService extends SppClass{
                 collectRepositoryScopeServices(call.getGuardStatements(),services);
             } else if(statement instanceof ExecuteBlock block)collectRepositoryScopeServices(block.getExecuteCallList(),services);
             else if(statement instanceof ConditionalBlock block){collectRepositoryScopeServices(block.getThenStatements(),services);collectRepositoryScopeServices(block.getElseStatements(),services);}
+            else if(statement instanceof TryBlock block){collectRepositoryScopeServices(block.getTryStatements(),services);collectRepositoryScopeServices(block.getCatchStatements(),services);}
             else if(statement instanceof TransactionBlock block && "REQUIRED".equals(block.getPropagation()))collectRepositoryScopeServices(block.getTransactionCallList(),services);
         }
     }
@@ -564,15 +589,6 @@ public class SppService extends SppClass{
         indent(java, indent).append("new IExecutor() {\n");
         indent(java, indent + 4).append("public Service getService() { return null; }\n");
         appendRepositoryScopeServices(java,statements,indent+4);
-        if (statements != null && !statements.isEmpty() && insideParallelTransaction(statements.get(0))) {
-            for (ServiceBaseBody parent = statements.get(0).getParent(); parent != null; parent = parent.getParent()) {
-                if (parent instanceof TransactionBlock block && block.getDeclaredMode() != null) {
-                    indent(java, indent + 4).append("public com.servpp.service.transaction.TransactionMode getTransactionModeHint() { return com.servpp.service.transaction.TransactionMode.")
-                            .append(block.getDeclaredMode()).append("; }\n");
-                    break;
-                }
-            }
-        }
         indent(java, indent + 4).append("public Object[] getArguments() { return new Object[]{ ")
                 .append(serviceBody.getSppLocalVarList().stream().map(SppLocalVar::getName).collect(Collectors.joining(","))).append(" }; }\n");
         indent(java, indent + 4).append("public void execute() {\n");
@@ -645,9 +661,7 @@ public class SppService extends SppClass{
         SppService provider=call.getCallee();
         while (provider!=null && provider.localServiceProvider!=null) provider=provider.localServiceProvider;
         if (provider==null || provider.serviceType!=IConstance.ServiceType.query || provider.scopeItem==null) return false;
-        TransactionBlock boundary=null;
-        for (var parent=call.getParent();parent!=null;parent=parent.getParent())
-            if (parent instanceof TransactionBlock transaction) { boundary=transaction; break; }
+        TransactionBlock boundary = queryTransaction(call);
         if (boundary==null) return false;
         Set<String> mutations=new LinkedHashSet<>();
         collectOrdinarySceneMutations(boundary.getTransactionCallList(),mutations);
@@ -668,9 +682,7 @@ public class SppService extends SppClass{
         SppService provider = call.getCallee();
         while (provider != null && provider.localServiceProvider != null) provider = provider.localServiceProvider;
         if (provider == null || provider.serviceType != IConstance.ServiceType.query || provider.scopeItem == null) return invocation;
-        TransactionBlock transaction = null;
-        for (var parent = call.getParent(); parent != null; parent = parent.getParent())
-            if (parent instanceof TransactionBlock boundary) { transaction = boundary; break; }
+        TransactionBlock transaction = queryTransaction(call);
         if (transaction == null) return invocation;
         Set<String> mutations = new LinkedHashSet<>();
         collectOrdinarySceneMutations(transaction.getTransactionCallList(), mutations);
@@ -693,6 +705,17 @@ public class SppService extends SppClass{
                 + "}, new boolean[]{" + String.join(",", policies) + "}, () -> " + invocation + ")";
     }
 
+    private TransactionBlock queryTransaction(SppServiceCall call) {
+        TransactionBlock boundary = null;
+        for (var parent = call.getParent(); parent != null; parent = parent.getParent()) {
+            if (parent instanceof TransactionBlock block) {
+                boundary = block;
+                if (!"REQUIRED".equals(block.getPropagation())) break;
+            }
+        }
+        return boundary;
+    }
+
     private void collectOrdinarySceneMutations(List<IServiceBodyStatement> statements, Set<String> paths) {
         if (statements == null) return;
         for (var statement : statements) {
@@ -703,6 +726,9 @@ public class SppService extends SppClass{
             } else if (statement instanceof ConditionalBlock branch) {
                 collectOrdinarySceneMutations(branch.getThenStatements(), paths);
                 collectOrdinarySceneMutations(branch.getElseStatements(), paths);
+            } else if (statement instanceof TryBlock block) {
+                collectOrdinarySceneMutations(block.getTryStatements(), paths);
+                collectOrdinarySceneMutations(block.getCatchStatements(), paths);
             } else if (statement instanceof ExecuteBlock block) collectOrdinarySceneMutations(block.getExecuteCallList(), paths);
             else if (statement instanceof TransactionBlock block && !"REQUIRES_NEW".equals(block.getPropagation()))
                 collectOrdinarySceneMutations(block.getTransactionCallList(), paths);
@@ -797,6 +823,7 @@ public class SppService extends SppClass{
         var pending = new ArrayList<SppServiceCall>();
         for (var statement : statements) {
             if (statement instanceof SppServiceCall call && insideParallelTransaction(call)
+                    && !"LOCAL".equals(enclosingTransaction(call).getDeclaredMode())
                     && (preparedOrdinaryUpdate(call) || quantumUpdate(call))) pending.add(call);
             else { flushReadyCalls(pending, result); result.add(statement); }
         }
@@ -822,14 +849,19 @@ public class SppService extends SppClass{
                 && callee.getQuantumServiceAttributes().isEmpty();
     }
     private boolean insideParallelTransaction(IServiceBodyStatement statement) {
-        for (ServiceBaseBody body = statement.getParent(); body != null; body = body.getParent())
+        for (ServiceBaseBody body = statement.getParent(); body != null; body = body.getParent()) {
             if (body instanceof TransactionBlock block) return block.isParallelOrdinaryUpdates();
+            if (body instanceof ExecuteBlock block && block.getScenarioType() == IConstance.ScenarioType.serial) return false;
+        }
         return false;
     }
     private boolean insideDeclaredTransaction(IServiceBodyStatement statement) {
+        return enclosingTransaction(statement) != null;
+    }
+    private TransactionBlock enclosingTransaction(IServiceBodyStatement statement) {
         for (ServiceBaseBody body = statement.getParent(); body != null; body = body.getParent())
-            if (body instanceof TransactionBlock) return true;
-        return false;
+            if (body instanceof TransactionBlock block) return block;
+        return null;
     }
 
     private void appendScenarioStatement(StringBuilder java, IServiceBodyStatement statement, int indent) {
@@ -845,7 +877,7 @@ public class SppService extends SppClass{
         } else if (statement instanceof TryBlock block) {
             appendTry(java,block,indent);
         } else if (statement instanceof SppServiceCall serviceCall) {
-            if (isCheckCall(serviceCall)) { appendCheck(java, serviceCall, indent); return; }
+            if (isCheckCall(serviceCall)) { appendCheck(java, serviceCall, indent, false); return; }
             if (serviceCall.getCallee().getType() == IConstance.CompilationUnitType.atomicservice
                     && serviceCall.getCallee().getServiceType() == IConstance.ServiceType.update
                     && insideDeclaredTransaction(statement)) {
@@ -868,6 +900,7 @@ public class SppService extends SppClass{
         if (statement instanceof TransactionFailureBlock || statement instanceof TryBlock || statement instanceof ScenarioThrow) {
             indent(java,indent).append("new IExecutor() {\n");
             indent(java,indent+4).append("public Service getService() { return null; }\n");
+            appendRepositoryScopeServices(java, List.of(statement), indent + 4);
             indent(java,indent+4).append("public void execute() {\n");
             appendScenarioStatement(java,statement,indent+8);
             indent(java,indent+4).append("}\n");

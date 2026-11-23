@@ -1,0 +1,30 @@
+domain client;
+Role Handover { String receiptNumber; quantum decimal cash; }
+Reference Intake from provider.CustodyHandover { String receiptNumber; quantum decimal cash; }
+atomic update insertIntake(Intake);
+atomic calculate prepareIntake(Receipt, Intake) { Intake.receiptNumber = Receipt.receiptNumber; Intake.cash = Receipt.amount; }
+Role Till { String receiptNumber; quantum decimal cash; }
+Contract Receipt { String receiptNumber; decimal amount; }
+take Receipt as Handover { mapsame; }
+take Receipt as Till { mapsame; }
+atomic calculate prepare(Receipt, Handover) {
+    Handover.receiptNumber = Receipt.receiptNumber;
+    Handover.cash = Receipt.amount;
+}
+quantum update receive(Receipt, Handover, Till) { Handover.cash -> Till.cash : Receipt.amount; }
+Scenario serial confirm(Receipt, Handover, Till, Intake, Accepted) {
+    findTill by Receipt;
+    identify(Till);
+    prepareIntake;
+    stageAccepted;
+    transaction {
+        insertIntake;
+        findHandover by Receipt;
+        identify(Handover);
+        receive bounds { Handover.cash: [0, 0]; Till.cash: [0, null]; };
+        if (Receipt.amount > 0) { insertAccepted; }
+    }
+}
+Entity Accepted { String receiptNumber; quantum decimal funds; }
+atomic update insertAccepted(Accepted);
+atomic calculate stageAccepted(Receipt, Accepted) { Accepted.receiptNumber = Receipt.receiptNumber; }

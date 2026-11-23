@@ -42,6 +42,11 @@ public final class SourceTransactionBoundary {
             throw new IllegalStateException("TRANSACTION_ROLLBACK_ONLY", frame.rollbackCause);
     }
 
+    static void markRollbackOnly(Throwable failure) {
+        Frame frame = CURRENT.get();
+        if (frame != null && frame.rollbackCause == null) frame.rollbackCause = failure;
+    }
+
     static void executeIndependent(Runnable action) {
         Frame previous = CURRENT.get(); CURRENT.remove();
         try { JdbcTransactionScope.suspend(() -> DefaultTransactionManager.getInstance().executeIndependently(action)); }

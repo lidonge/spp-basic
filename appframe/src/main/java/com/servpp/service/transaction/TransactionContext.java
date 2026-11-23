@@ -10,7 +10,7 @@ import java.util.function.Supplier;
 public class TransactionContext {
     private final String id;
     private final Map<String, TransactionMode> resourceModes;
-    private final QuantumEntanglementBoundary quantumEntanglementBoundary;
+    private QuantumEntanglementBoundary quantumEntanglementBoundary;
     private final QuantumJournalStore quantumJournalStore;
     private final String globalSerialNumber;
     private final Map<String, Object> attributes = new LinkedHashMap<>();
@@ -31,7 +31,7 @@ public class TransactionContext {
                                Map<String, TransactionMode> resourceModes,
                                QuantumJournalStore quantumJournalStore) {
         this.id = id;
-        this.resourceModes = Collections.unmodifiableMap(new LinkedHashMap<>(resourceModes));
+        this.resourceModes = new LinkedHashMap<>(resourceModes);
         this.quantumEntanglementBoundary = createQuantumEntanglementBoundary(resourceModes);
         this.quantumJournalStore = quantumJournalStore;
         this.globalSerialNumber = globalSerialNumber;
@@ -67,11 +67,22 @@ public class TransactionContext {
         return id;
     }
 
-    public Map<String, TransactionMode> getResourceModes() {
-        return resourceModes;
+    public synchronized Map<String, TransactionMode> getResourceModes() {
+        return Collections.unmodifiableMap(new LinkedHashMap<>(resourceModes));
     }
 
-    public QuantumEntanglementBoundary getQuantumEntanglementBoundary() {
+    synchronized void enlistResource(String resource, TransactionMode mode) {
+        TransactionMode previous = resourceModes.putIfAbsent(resource, mode);
+        if (previous != null && previous != mode)
+            throw new IllegalStateException("Resource " + resource + " uses multiple transaction modes: " + previous + " and " + mode);
+        if (previous == null && (mode == TransactionMode.LOCAL || mode == TransactionMode.QUANTUM)) {
+            if (quantumEntanglementBoundary == null)
+                quantumEntanglementBoundary = createQuantumEntanglementBoundary(resourceModes);
+            else quantumEntanglementBoundary.enlistResource(resource);
+        }
+    }
+
+    public synchronized QuantumEntanglementBoundary getQuantumEntanglementBoundary() {
         return quantumEntanglementBoundary;
     }
 

@@ -1,0 +1,6 @@
+domain client;
+phy {
+    repository store { adapter jdbcObjectRepository; config default = true; config appDdlTables = true; config datasourceUrl = "jdbc:h2:mem:cv1"; config driverClassName = "org.h2.Driver"; }
+    backend database { adapter localJdbc; at; quantum custody; quantumStore valuesStore; repository store; config datasourceUrl = "jdbc:h2:mem:cv1"; config driverClassName = "org.h2.Driver"; }
+    quantumStore valuesStore { adapter jdbcQuantum; config datasourceUrl = "jdbc:h2:mem:cv1"; config driverClassName = "org.h2.Driver"; config journalStore = "com.servpp.service.transaction.JdbcQuantumJournalStore"; config journalTable = "cv1_journal"; config valueTable = "cv1_value"; }
+}
