@@ -51,6 +51,10 @@ Role Lookup {
     String entryCode;
 }
 
+take Lookup as Entry {
+    String code = entryCode;
+}
+
 Scenario serial readSelectedRecord(Entry, Lookup) {
-    findEntry by Lookup.entryCode;
+    findEntry by Lookup;
 }
