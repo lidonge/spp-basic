@@ -24,6 +24,7 @@
             <id>basic-example</id>
             <modules>
                 <module>sdk-tools/samples/custom-services</module>
+                <module>examples</module>
             </modules>
         </profile>
     </profiles>

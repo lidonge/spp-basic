@@ -10,10 +10,6 @@ Role Buyer {
     quantum BigDecimal(19, 2) wallet;
 }
 
-take Person as Buyer {
-    mapsame;
-}
-
 Contract RegistrationAgreement {
     Buyer buyer;
     Cart cart;

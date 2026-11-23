@@ -22,6 +22,27 @@ application petstore {
     }
 }
 
+play Buyer by customer.Person {
+    customerNumber = customerNumber;
+    name = name;
+    email = email;
+    address = address;
+}
+
+play Merchant by customer.Person {
+    customerNumber = customerNumber;
+    name = name;
+    email = email;
+    address = address;
+}
+
+play Goods by product.Product {
+    sku = productCode;
+    category = category;
+    name = name;
+    description = description;
+}
+
 requests {
     idempotency retention 3 days;
     duplicateWindow 5 seconds;

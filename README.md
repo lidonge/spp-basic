@@ -27,9 +27,16 @@ from public repositories. The included `vendor/antlrmustache` modules build the
 template engine from source; a sibling checkout or preinstalled S++ JAR is not needed.
 
 ```sh
-mvn -Pbasic,basic-example clean package
+mvn -B -Pbasic,basic-example clean install
 java -jar sdk-tools/basic-cli/target/spp-basic-cli-1.0-SNAPSHOT.jar --version
 ```
+
+Run the Maven command from the SDK root for standard verification. The
+`basic-example` profile adds the custom-services sample and every demo listed
+in `examples/pom.xml` to the same reactor. Maven regenerates and compiles their
+Java and runs their tests with the SDK built from this checkout. Set
+`MAVEN_OPTS=-Dmaven.repo.local=/path/to/repository` to use a separate local
+Maven repository.
 
 Before building generated Maven applications outside this source reactor, install
 the basic compiler/runtime artifacts into your local Maven repository:
