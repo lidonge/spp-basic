@@ -18,6 +18,7 @@ public final class DeploymentContracts {
         String mode = applications.getProperty(prefix + "transactionMode");
         String system = applications.getProperty(prefix + "quantumSystem");
         String quantumResource = applications.getProperty(prefix + "quantumResource");
+        boolean crossDomainQuantum = usesCrossDomainQuantumTransfer(domains);
         Set<String> localStores = new LinkedHashSet<>(), quantumStores = new LinkedHashSet<>(), coordinators = new LinkedHashSet<>();
         for (var domain : domains.entrySet()) {
             Properties physical = domain.getValue();
@@ -55,7 +56,18 @@ public final class DeploymentContracts {
                 if (!backendFound && !"false".equals(physical.getProperty("domain." + domain.getKey() + ".requiresLocalStorage")))
                     throw new IllegalStateException("LOCAL_PHYSICAL_BACKEND_REQUIRED: " + domain.getKey());
                 for (String repository : list(physical, "repositories")) localStores.add(identity(physical, "repository." + repository + ".config."));
-                for (String store : list(physical, "quantumStores")) localStores.add(identity(physical, "quantumStore." + store + ".config."));
+                for (String store : list(physical, "quantumStores")) {
+                    String root = "quantumStore." + store + ".";
+                    String jdbc = identity(physical, root + "config.");
+                    localStores.add(jdbc);
+                    if (crossDomainQuantum) {
+                        if (!Set.of("jdbcQuantum", "jdbc-quantum").contains(physical.getProperty(root + "adapter", "")))
+                            throw new IllegalStateException("LOCAL_REQUIRES_JDBC_QUANTUM_STORE: " + domain.getKey());
+                        quantumStores.add(jdbc + "|" + value(physical, root + "config.valueTable", "") + "|"
+                                + value(physical, root + "config.journalTable", "") + "|"
+                                + value(physical, root + "config.decimalStorage", "decimal"));
+                    }
+                }
             }
             if ("UNIFIED_STORE".equals(system) && !list(physical, "quantumStores").isEmpty()) {
                 String root = "quantumStore." + quantumResource + ".";
@@ -86,7 +98,14 @@ public final class DeploymentContracts {
             throw new IllegalStateException("LOCAL_REQUIRES_SHARED_DATABASE_SCHEMA_AND_RESOURCE");
         if (Set.of("XA","SEATA_AT").contains(mode) && coordinators.size()!=1)
             throw new IllegalStateException("APP_TRANSACTION_COORDINATION_IDENTITY_MISMATCH");
+        if (crossDomainQuantum && (!"LOCAL".equals(mode) || quantumStores.size() != 1))
+            throw new IllegalStateException("distributed cross-domain quantum transfer not yet supported (APP TCC pending)");
         if (quantumStores.size() > 1) throw new IllegalStateException("APP_QUANTUM_SYSTEM_IDENTITY_MISMATCH");
+    }
+
+    static boolean usesCrossDomainQuantumTransfer(Map<String, Properties> domains) {
+        return domains.entrySet().stream().anyMatch(domain -> Boolean.parseBoolean(
+                domain.getValue().getProperty("domain." + domain.getKey() + ".crossDomainQuantumTransfer")));
     }
 
     private static String identity(Properties values, String prefix) {

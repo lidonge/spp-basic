@@ -5,6 +5,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
@@ -29,6 +30,8 @@ public final class GeneratedApplicationDeployment {
         var allPhysical = new java.util.LinkedHashMap<String,Properties>(domainPhysical);
         for (String domain : applications.getProperty("sourceDomains",String.join(",",domains)).split(","))
             allPhysical.putIfAbsent(domain,read("/META-INF/spp/domains/"+domain+"/physical.properties",true));
+        if (DeploymentContracts.usesCrossDomainQuantumTransfer(domainPhysical))
+            unifyLocalQuantumStores(domainPhysical);
         Properties ddl = new Properties(), physical = new Properties(), services = new Properties(), roles = new Properties(), web = new Properties();
         roles.setProperty("roleParticipant.count", "0");
         web.setProperty("expose.count", "0"); web.setProperty("start.count", "0");
@@ -77,6 +80,35 @@ public final class GeneratedApplicationDeployment {
             } else throw new IllegalStateException("APP_SHARED_RESOURCE_CONFIGURATION_CONFLICT: " + name);
         }
     }
+    /** The deployment contract has already checked that these aliases share one JDBC store. */
+    private static void unifyLocalQuantumStores(Map<String, Properties> domains) {
+        Properties owner = domains.values().stream()
+                .filter(properties -> !properties.getProperty("quantumStores", "").isBlank()).findFirst().orElseThrow();
+        String canonical = owner.getProperty("quantumStores").split(",")[0];
+        String canonicalRoot = "quantumStore." + canonical + ".";
+        Properties configuration = new Properties();
+        for (String key : owner.stringPropertyNames())
+            if (key.startsWith(canonicalRoot) && !key.equals(canonicalRoot + "attributes"))
+                configuration.setProperty(key, owner.getProperty(key));
+        configuration.setProperty(canonicalRoot + "adapter", "jdbcQuantum");
+
+        for (Properties domain : domains.values()) {
+            var attributes = new LinkedHashSet<String>();
+            for (String name : domain.getProperty("quantumStores", "").split(",")) {
+                if (name.isBlank()) continue;
+                String root = "quantumStore." + name + ".";
+                for (String attribute : domain.getProperty(root + "attributes", "").split(","))
+                    if (!attribute.isBlank()) attributes.add(attribute);
+            }
+            domain.keySet().removeIf(key -> key.toString().startsWith("quantumStore."));
+            domain.setProperty("quantumStores", canonical);
+            domain.setProperty(canonicalRoot + "attributes", String.join(",", attributes));
+            for (String backend : domain.getProperty("backends", "").split(","))
+                if (!backend.isBlank()) domain.setProperty("backend." + backend + ".quantumStore", canonical);
+        }
+        owner.putAll(configuration);
+    }
+
     private static void appendIndexed(Properties target, Properties source, String section) {
         int offset = Integer.parseInt(target.getProperty(section + ".count", "0"));
         int count = Integer.parseInt(source.getProperty(section + ".count", "0"));

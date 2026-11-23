@@ -44,7 +44,19 @@
           <templateDirectory>${project.build.directory}/spp/src/main/resources/JavaSpring</templateDirectory>
           <configOptions><useSpringBoot3>true</useSpringBoot3></configOptions>
           <addTestCompileSourceRoot>false</addTestCompileSourceRoot>
-        </configuration></execution></executions>
+        </configuration></execution>
+                <execution><id>generate-positions</id><goals><goal>generate</goal></goals><configuration>
+          <inputSpec>${project.build.directory}/spp/src/main/resources/positions.spp.yaml</inputSpec>
+          <configurationFile>${project.build.directory}/spp/src/main/resources/positions.numeric-codegen.json</configurationFile>
+          <generatorName>spring</generatorName><skipValidateSpec>true</skipValidateSpec>
+          <apiPackage>example.generated.positions.handler</apiPackage>
+          <modelPackage>example.generated.positions.model</modelPackage>
+          <invokerPackage>example.generated.positions.handler</invokerPackage>
+          <templateDirectory>${project.build.directory}/spp/src/main/resources/JavaSpring</templateDirectory>
+          <configOptions><useSpringBoot3>true</useSpringBoot3></configOptions>
+          <addTestCompileSourceRoot>false</addTestCompileSourceRoot>
+        </configuration></execution>
+        </executions>
       </plugin>
       <plugin><artifactId>maven-compiler-plugin</artifactId><version>3.11.0</version></plugin>
       <plugin><artifactId>maven-surefire-plugin</artifactId><version>3.2.5</version></plugin>

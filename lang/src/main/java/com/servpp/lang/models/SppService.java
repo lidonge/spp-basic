@@ -173,12 +173,32 @@ public class SppService extends SppClass{
         javaStatements = statements;
         declaredBusinessStatements = statements;
         expressions = new java.util.ArrayList<>();
+        transferPaths.clear();
         collectBusinessAssignments(statements);
     }
+    private final Set<String> transferPaths = new LinkedHashSet<>();
+    Set<String> getTransferPaths() { return transferPaths; }
+
+    record QuantumEndpoint(String attributeId, List<String> keyPaths) { }
+    private Map<String, QuantumEndpoint> quantumEndpoints = Map.of();
+
+    void setQuantumEndpoints(Map<String, QuantumEndpoint> endpoints) {
+        quantumEndpoints = Map.copyOf(endpoints);
+        quantumServiceAttributes = new ArrayList<>();
+    }
+
+    public boolean hasMappedQuantumEndpoints() { return !quantumEndpoints.isEmpty(); }
+
+    boolean hasCanonicalQuantumEndpoint(String logicalAttribute) {
+        return quantumEndpoints.containsKey(logicalAttribute);
+    }
+
     private void collectBusinessAssignments(List<IJavaStatement> statements) {
         for (IJavaStatement statement : statements) {
             if (statement instanceof IOperationExpression expression) { expressions.add(expression); }
             if (statement instanceof com.servpp.lang.models.app.expr.QuantumTransferStatement transfer) {
+                transferPaths.add(transfer.source().getValue());
+                transferPaths.add(transfer.destination().getValue());
                 expressions.addAll(transfer.movements(transfer.amount()));
             }
             if (statement instanceof com.servpp.lang.models.app.expr.CalculationControl control) {
@@ -323,6 +343,10 @@ public class SppService extends SppClass{
     }
 
     public void addQuantumServiceAttribute(QuantumServiceAttribute attribute) {
+        var endpoint = quantumEndpoints.get(attribute.getAttributeId());
+        if (endpoint != null)
+            attribute = new QuantumServiceAttribute(attribute.getArgumentIndex(), attribute.getGroupId(),
+                    endpoint.attributeId(), attribute.getPropertyName(), endpoint.keyPaths());
         quantumServiceAttributes.add(attribute);
     }
 
@@ -390,12 +414,16 @@ public class SppService extends SppClass{
         method.append("    public TransactionParticipant getTransactionParticipant() {\n");
         method.append("        return new QuantumConservationParticipant(getTransactionResourceId())\n");
         for (QuantumServiceAttribute attribute : attributes) {
-            method.append(serviceBody.getSppLocalVarList().get(attribute.getArgumentIndex()).isParticipantCollection()
+            method.append(!attribute.getPlayKeyPaths().isEmpty() ? "                .conserveMappedArgument("
+                    : serviceBody.getSppLocalVarList().get(attribute.getArgumentIndex()).isParticipantCollection()
                     ? "                .conserveEachArgument(" : "                .conserveArgument(")
                     .append(attribute.getArgumentIndex()).append(", \"")
                     .append(attribute.getGroupId()).append("\", \"")
                     .append(attribute.getAttributeId()).append("\", \"")
-                    .append(attribute.getPropertyName()).append("\")\n");
+                    .append(attribute.getPropertyName()).append("\"");
+            for (String path : attribute.getPlayKeyPaths())
+                method.append(", \"").append(path).append("\"");
+            method.append(")\n");
         }
         method.append("                ;\n");
         method.append("    }\n\n");

@@ -1,0 +1,42 @@
+domain ledger;
+
+Role Funds {
+    String wallet;
+    quantum decimal amount;
+}
+
+Role ProviderPlayedRole {
+    String accountCode;
+    String currency;
+    quantum decimal claim;
+}
+
+Reference Position from positions.Position {
+    String account;
+    String currency;
+    quantum decimal outstanding;
+}
+
+take Position as ProviderPlayedRole {
+    String accountCode = account;
+    decimal claim = outstanding;
+    mapsame;
+}
+
+Contract TransferInput {
+    decimal amount;
+}
+
+quantum update moveFunds(Funds consumerFunds, ProviderPlayedRole played, TransferInput transfer) {
+    consumerFunds.amount -> played.claim : transfer.amount;
+}
+
+Scenario serial transferFunds(Funds consumerFunds, ProviderPlayedRole played, TransferInput transfer) {
+    transaction {
+        moveFunds bounds { played.claim: [null, 0]; };
+    }
+}
+
+Scenario serial readClaim(ProviderPlayedRole played) {
+    findProviderPlayedRole;
+}

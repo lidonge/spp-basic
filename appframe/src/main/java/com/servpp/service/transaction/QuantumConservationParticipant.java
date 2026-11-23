@@ -21,6 +21,8 @@ public class QuantumConservationParticipant extends ObjectSnapshotTransactionPar
 
     private final List<QuantumAttribute> attributes = new ArrayList<>();
     private final List<CollectionAttribute> collectionAttributes = new ArrayList<>();
+    private final Map<QuantumAttribute, List<String>> mappedKeyPaths = new LinkedHashMap<>();
+    private final Map<QuantumAttribute, String> bookedObjectIds = new LinkedHashMap<>();
     private int scalarAttributeCount;
     private List<QuantumValue> beforeValues = List.of();
     private Object[] arguments = new Object[0];
@@ -50,6 +52,13 @@ public class QuantumConservationParticipant extends ObjectSnapshotTransactionPar
         attributes.add(new QuantumAttribute(groupId, attributeId, () -> readNumberProperty(argumentIndex, propertyName),
                 argumentIndex, propertyName, null));
         scalarAttributeCount++;
+        return this;
+    }
+
+    public QuantumConservationParticipant conserveMappedArgument(int argumentIndex, String groupId,
+            String attributeId, String propertyName, String... keyPaths) {
+        conserveArgument(argumentIndex, groupId, attributeId, propertyName);
+        mappedKeyPaths.put(attributes.get(attributes.size() - 1), List.of(keyPaths));
         return this;
     }
 
@@ -84,6 +93,8 @@ public class QuantumConservationParticipant extends ObjectSnapshotTransactionPar
     @Override
     public void beforeExecute(TransactionContext context) {
         expandCollectionAttributes();
+        bookedObjectIds.clear();
+        mappedKeyPaths.forEach((attribute, paths) -> bookedObjectIds.put(attribute, mappedObjectId(attribute, paths)));
         syncCurrentValuesFromStore(context);
         super.beforeExecute(context);
         beforeValues = readValues();
@@ -210,11 +221,35 @@ public class QuantumConservationParticipant extends ObjectSnapshotTransactionPar
                     .filter(record -> record.getAttributeId().equals(attribute.attributeId()) && record.getObjectId().equals(identity))
                     .reduce((previous,next) -> next).map(QuantumConservationRecord::getAfterValue);
             if (currentValue.isEmpty()) currentValue = store.findCurrentValueForUpdate(attribute.attributeId(), identity);
+            if (currentValue.isEmpty() && mappedKeyPaths.containsKey(attribute))
+                throw new IllegalStateException("QUANTUM_PLAY_POSITION_NOT_FOUND: " + attribute.attributeId());
             currentValue.ifPresent(value -> writeNumberProperty(participant(attribute), attribute.propertyName(), value));
         }
     }
 
+    private String mappedObjectId(QuantumAttribute attribute, List<String> paths) {
+        List<String> keys = new ArrayList<>();
+        for (String path : paths) {
+            Object value = participant(attribute);
+            try {
+                for (String property : path.split("\\.")) {
+                    if (value == null) break;
+                    value = readProperty(value, property);
+                }
+            } catch (ReflectiveOperationException e) {
+                throw new IllegalStateException("Cannot read quantum play key " + path, e);
+            }
+            if (value == null || value.toString().isBlank())
+                throw new IllegalStateException("QUANTUM_PLAY_KEY_REQUIRED: " + attribute.attributeId());
+            keys.add(value.toString());
+        }
+        if (keys.isEmpty()) throw new IllegalStateException("QUANTUM_PLAY_KEY_REQUIRED: " + attribute.attributeId());
+        return keys.size() == 1 ? keys.get(0) : CompositeObjectId.encode(keys);
+    }
+
     private String objectId(QuantumAttribute attribute) {
+        String booked = bookedObjectIds.get(attribute);
+        if (booked != null) return booked;
         String objectType = objectType(attribute.attributeId());
         Object[] identityArguments = arguments;
         if (attribute.collectionMember() != null) {

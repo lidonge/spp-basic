@@ -1,0 +1,9 @@
+domain positions;
+
+Entity Position {
+    String account;
+    String currency;
+    quantum decimal outstanding;
+}
+
+atomic query readPosition(Position);

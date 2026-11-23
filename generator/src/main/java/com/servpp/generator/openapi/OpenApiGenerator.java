@@ -451,6 +451,9 @@ public class OpenApiGenerator extends BaseClassGenerator implements ILogable {
                         && service.getServiceType() == com.servpp.lang.general.IConstance.ServiceType.update
                         && !service.hasLocalServiceBinding());
             out.println("domain." + sppDomain.getName() + ".requiresLocalStorage=" + storageRequired);
+            if (sppDomain.getMapsOfClass().values().stream().anyMatch(unit ->
+                    unit instanceof SppService service && service.hasMappedQuantumEndpoints()))
+                out.println("domain." + sppDomain.getName() + ".crossDomainQuantumTransfer=true");
             out.println("backends=" + joinBackendNames(backends));
             for (AppPhysicalBackend backend : backends) {
                 if (backend.getAdapterName() != null && !backend.getAdapterName().isBlank()) {

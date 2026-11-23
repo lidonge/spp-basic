@@ -3,6 +3,7 @@ domain ledger;
 application basicLedger {
     environment develop {
         deploy ledger;
+        deploy positions;
         transactions {
             mode: LOCAL;
             resource: ledgerResource;
@@ -23,6 +24,7 @@ transactions {
 scope {
     local {
         repository(argument(0, Entry.code), Entry) using records findEntry;
+        moveFunds;
     }
 }
 

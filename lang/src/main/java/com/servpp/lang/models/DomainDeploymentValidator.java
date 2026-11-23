@@ -28,6 +28,7 @@ public final class DomainDeploymentValidator {
         }
         // All query destinations must be available before cross-domain signatures are resolved.
         for (var domain : project.getSppDomainMap().values()) errors.addAll(domain.prepareDefaultParticipantBindings());
+        errors.addAll(DeploymentEnvironmentPlanner.bindQuantumTransfers(project));
         for (SppDomain domain : project.getSppDomainMap().values()) {
             for (SppCompilationUnit unit : domain.getMapsOfClass().values()) if (unit instanceof SppService service)
                 service.setBusinessConstants(domain.getConstants());

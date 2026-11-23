@@ -1729,7 +1729,7 @@ public class SppDomain {
         }
     }
 
-    private boolean backendSupportsTransaction(AppPhysicalBackend backend, String transactionKind) {
+    boolean backendSupportsTransaction(AppPhysicalBackend backend, String transactionKind) {
         return backendSupportedTransactions(backend).contains(transactionKind);
     }
 
@@ -4528,7 +4528,7 @@ public class SppDomain {
         return adapter;
     }
 
-    private AppQuantumStoreAdapter quantumStoreAdapter(String storeName) {
+    AppQuantumStoreAdapter quantumStoreAdapter(String storeName) {
         for (AppQuantumStoreAdapter adapter : ruleBlock.getAppQuantumStoreAdapters()) {
             if (Objects.equals(storeName, adapter.getName())) {
                 return adapter;
@@ -5001,17 +5001,28 @@ public class SppDomain {
         var attributes = new java.util.LinkedHashSet<String>();
         for (var unit : mapsOfClass.values()) if (unit instanceof SppClass type && type.isReal()
                 && type.getReferenceSource() == null && !(type instanceof SppService))
-            for (var field : type.getSppFieldList()) if (field.isQuantum()) attributes.add(type.getName() + "." + field.getName());
-        if (attributes.isEmpty()) return;
+            for (var field : type.getSppFieldList()) if (field.isQuantum() && !DeploymentEnvironmentPlanner.isProviderQuantumField(this, type, field.getName()))
+                attributes.add(type.getName() + "." + field.getName());
         String storeName = ruleBlock.getDeploymentQuantumResource();
         if (storeName == null && ruleBlock.getAppQuantumStoreAdapters().size() == 1)
             storeName = ruleBlock.getAppQuantumStoreAdapters().get(0).getName();
-        if (storeName == null) { errors.add("Domain " + getName() + " requires a unique PHY quantum store or an environment quantum resource"); return; }
-        final String selectedStore = storeName;
-        var store = ruleBlock.getAppQuantumStores().stream().filter(candidate -> selectedStore.equals(candidate.getName())).findFirst().orElse(null);
-        if (store == null) { store = new AppQuantumStore(storeName); ruleBlock.addQuantumStore(store); }
-        for (String attribute : attributes) if (!store.getAttributeIds().contains(attribute)) store.addAttributeId(attribute);
+        attributes.removeIf(this::isDeclaredInQuantumStore);
+        if (!attributes.isEmpty()) {
+            if (storeName == null) {
+                errors.add("Domain " + getName() + " requires a unique PHY quantum store or an environment quantum resource");
+                return;
+            }
+            String selectedStore = storeName;
+            var store = ruleBlock.getAppQuantumStores().stream()
+                    .filter(candidate -> selectedStore.equals(candidate.getName())).findFirst().orElse(null);
+            if (store == null) {
+                store = new AppQuantumStore(storeName);
+                ruleBlock.addQuantumStore(store);
+            }
+            attributes.forEach(store.getAttributeIds()::add);
+        }
         String resource = "LOCAL".equals(ruleBlock.getDeploymentTransactionMode()) ? ruleBlock.getDefaultUpdateResource() : storeName;
+        if (resource == null) return;
         for (var unit : mapsOfClass.values()) if (unit instanceof SppService service && service.isDeclaredQuantumService()) {
             var scope = service.getScopeItem();
             if (scope == null) continue;
@@ -7553,7 +7564,7 @@ public class SppDomain {
                             + " declares inaccessible attribute " + attributeId + " on service "
                             + service.getFuncName() + ": " + error);
                 }
-                if (!isDeclaredInQuantumStore(attributeId)) {
+                if (!service.hasCanonicalQuantumEndpoint(attributeId) && !isDeclaredInQuantumStore(attributeId)) {
                     errors.add("Quantum resource " + service.getTransactionResourceIdLiteral()
                             + " declares attribute " + attributeId
                             + " that is not assigned to any APP quantum store.");
@@ -7609,6 +7620,10 @@ public class SppDomain {
                 var owner = mapsOfClass.get(attributeId.split("\\.")[0]);
                 if (owner instanceof SppClass imported && imported.getReferenceSource() != null)
                     error = "external quantum attributes belong to their provider domain";
+                if (owner instanceof SppClass role && attributeId.contains(".")
+                        && DeploymentEnvironmentPlanner.isProviderQuantumField(this, role,
+                                attributeId.substring(attributeId.indexOf('.') + 1)))
+                    error = "role quantum attributes mapped to external performers belong to their provider domain";
                 if (error != null) {
                     errors.add("Quantum store " + store.getName()
                             + " declares invalid attribute " + attributeId + ": " + error);
@@ -7623,7 +7638,8 @@ public class SppDomain {
             for (SppField field : sppClass.getSppFieldList()) {
                 if (field.isQuantum()) {
                     String attributeId = sppClass.getName() + "." + field.getName();
-                    if (!storeByAttribute.containsKey(attributeId)) {
+                    if (!DeploymentEnvironmentPlanner.isProviderQuantumField(this, sppClass, field.getName())
+                            && !storeByAttribute.containsKey(attributeId)) {
                         errors.add("Quantum field " + attributeId
                                 + " must be assigned to an APP quantum store.");
                     }
@@ -7681,7 +7697,7 @@ public class SppDomain {
                 + String.join(", ", storeAssignments) + ".");
     }
 
-    private String quantumStoreNameForAttribute(String attributeId) {
+    String quantumStoreNameForAttribute(String attributeId) {
         for (AppQuantumStore store : ruleBlock.getAppQuantumStores()) {
             if (store.getAttributeIds().contains(attributeId)) {
                 return store.getName();
