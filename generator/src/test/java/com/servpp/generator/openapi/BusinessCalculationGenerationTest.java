@@ -207,10 +207,45 @@ public class BusinessCalculationGenerationTest {
                     new BigDecimal("3"), BigDecimal.ZERO);
             assertEquals(expressions[i], 0, new BigDecimal(expected[i]).compareTo((BigDecimal) result[0]));
         }
-        SppDomain exact = compile("v.a = v.b / v.c;", "numeric double as BigDecimal;");
-        assertTrue(assertThrows(java.lang.reflect.InvocationTargetException.class,
-                () -> execute(exact, "java.math.BigDecimal", BigDecimal.ONE, new BigDecimal("3"), BigDecimal.ZERO))
-                .getCause() instanceof ArithmeticException);
+        SppDomain intermediate = compile("v.a = v.b / v.c;", "numeric double as BigDecimal;");
+        assertEquals(BigDecimal.ONE.divide(new BigDecimal("3"), MathContext.DECIMAL128),
+                execute(intermediate, "java.math.BigDecimal", BigDecimal.ONE, new BigDecimal("3"), BigDecimal.ZERO)[0]);
+    }
+
+    @Test public void declaredRoundingAppliesAtAssignmentIncludingCompoundAssignments() throws Exception {
+        String[] modes = {"DOWN", "UP", "HALF_UP", "HALF_DOWN", "HALF_EVEN", "CEILING", "FLOOR"};
+        String[] expected = {"-2", "-3", "-3", "-2", "-2", "-2", "-3"};
+        for (int i = 0; i < modes.length; i++) {
+            SppDomain domain = compile("v.a = v.b; v.a /= v.c;", "", "BigDecimal(15,0," + modes[i] + ")");
+            assertEquals(modes[i], new BigDecimal(expected[i]),
+                    execute(domain, "java.math.BigDecimal", "double", -5d, 2d, 0d)[0]);
+        }
+        SppDomain down = compile("v.a = v.b / v.c;", "", "BigDecimal(15,0,DOWN)");
+        assertEquals(new BigDecimal("9"), execute(down, "java.math.BigDecimal", "double", 0.29d, 0.03d, 0d)[0]);
+        SppDomain compound = compile("v.a = -2; v.a += (v.b / v.c) * 3;", "", "BigDecimal(15,0,HALF_UP)");
+        assertEquals(new BigDecimal("6"), execute(compound, "java.math.BigDecimal", "double", 5d, 2d, 0d)[0]);
+        SppDomain implicit = compile("v.a = v.b / v.c;", "", "BigDecimal(15,0)");
+        assertEquals(new BigDecimal("9"), execute(implicit, "java.math.BigDecimal", "double", 0.29d, 0.03d, 0d)[0]);
+        assertTrue(implicit.numericRoundingWarnings().get(0).contains("v.a may need rounding"));
+    }
+
+    @Test public void declaredModeAndScaleSurvivePhyReplacement() throws Exception {
+        SppDomain builtin = compile("""
+                BigDecimal(15,0,HALF_EVEN) local = v.b / v.c;
+                v.a = local - 0.3;
+                """, "numeric { replace BigDecimal(15,0) with BigDecimal(20,2); }", "BigDecimal(15,0,FLOOR)");
+        assertEquals(new BigDecimal("-3.00"), execute(builtin, "java.math.BigDecimal", "double", -5d, 2d, 0d)[0]);
+        SppDomain custom = compile("v.a = v.b / v.c;",
+                "numeric Values.a as " + FRACTION + " using " + ADAPTER + ";", "BigDecimal(15,0,CEILING)");
+        assertEquals(new Fraction(BigInteger.valueOf(-2), BigInteger.ONE),
+                execute(custom, FRACTION, "double", -5d, 2d, 0d)[0]);
+    }
+
+    @Test public void undeclaredModePreservesExactValuesWithinWidenedPhysicalScale() throws Exception {
+        SppDomain domain = compile("v.a = v.b;",
+                "numeric { replace BigDecimal(19,2) with BigDecimal(25,6); }", "BigDecimal(19,2)");
+        assertEquals(new BigDecimal("1.005000"),
+                execute(domain, "java.math.BigDecimal", "double", 1.005d, 0d, 0d)[0]);
     }
 
     @Test public void bigIntegerBindingAvoidsMachineRangeAndRejectsFractionalAssignment() throws Exception {
@@ -249,11 +284,12 @@ public class BusinessCalculationGenerationTest {
         Path source = Files.createTempDirectory("spp-business-source");
         Files.writeString(source.resolve("rules.spp"), business("""
                 v.a = v.b / v.c; v.allowed = v.a * v.c == v.b;
-                if (v.allowed) { v.total = roundHalfUp(v.a, 2); } else { v.total = 0; }
+                if (v.allowed) { v.total = v.a; } else { v.total = 0; }
                 v.label = v.allowed ? "yes" : "no";
-                """));
+                """).replace("double total;", "BigDecimal(15,2,HALF_UP) total;"));
         Files.writeString(source.resolve("rules.app"), "domain rules; scope { local { decide; } }");
-        Files.writeString(source.resolve("rules.phy"), "domain rules; phy { " + customBinding() + " }");
+        Files.writeString(source.resolve("rules.phy"), "domain rules; phy { " + customBinding()
+                + " numeric Values.total as " + FRACTION + " using " + ADAPTER + "; }");
         Path root = Files.createTempDirectory("spp-business-generated");
         GeneratorUtil.execute(source.toFile(), root.resolve("yaml").toFile(), root.resolve("java").toFile(), "example");
         var api = io.swagger.v3.core.util.Yaml.mapper().readValue(Files.readString(root.resolve("yaml/rules.spp.yaml")),
@@ -290,8 +326,11 @@ public class BusinessCalculationGenerationTest {
     private static String customBinding() { return "numeric double as " + FRACTION + " using " + ADAPTER + ";"; }
     private static String business(String body) { return ROLE + "atomic calculate decide(Values v) { " + body + " }"; }
     private SppDomain compile(String body, String binding) throws Exception {
+        return compile(body, binding, "double");
+    }
+    private SppDomain compile(String body, String binding, String targetType) throws Exception {
         Path root = Files.createTempDirectory("spp-business-language");
-        Files.writeString(root.resolve("rules.spp"), business(body));
+        Files.writeString(root.resolve("rules.spp"), business(body).replace("double a;", targetType + " a;"));
         Files.writeString(root.resolve("rules.phy"), "domain rules; phy { " + binding + " }");
         SppProject project = new SppProject(); new SppCompiler(root.resolve("rules.spp").toFile(), project).compile();
         SppDomain domain = project.getSppDomainMap().get("rules"); domain.dealEntityToRoleMaps();

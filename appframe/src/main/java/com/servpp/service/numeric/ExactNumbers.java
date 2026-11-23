@@ -2,16 +2,31 @@ package com.servpp.service.numeric;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.math.MathContext;
+import java.math.RoundingMode;
 
 /** Physical conversions either preserve the exact value or fail. */
 public final class ExactNumbers {
     private ExactNumbers() { }
 
     public static BigDecimal specification(BigDecimal value, int precision, int scale) {
+        return specification(value, precision, scale, RoundingMode.UNNECESSARY);
+    }
+
+    public static BigDecimal specification(BigDecimal value, int precision, int scale, RoundingMode rounding) {
         if (value == null) return null;
-        BigDecimal represented = value.setScale(scale, java.math.RoundingMode.UNNECESSARY);
+        BigDecimal represented = value.setScale(scale, rounding);
         if (represented.precision() > precision) throw new ArithmeticException("PHYSICAL_NUMERIC_CAPACITY_EXCEEDED");
         return represented;
+    }
+
+    /** Keeps terminating quotients exact and evaluates repeating quotients at decimal128 precision. */
+    public static BigDecimal divide(BigDecimal dividend, BigDecimal divisor) {
+        try {
+            return dividend.divide(divisor);
+        } catch (ArithmeticException nonExact) {
+            return dividend.divide(divisor, MathContext.DECIMAL128);
+        }
     }
 
     public static BigDecimal decimal(Number value) {

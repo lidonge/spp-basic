@@ -1,6 +1,9 @@
 package com.servpp.lang.models;
 
 import com.servpp.lang.general.NameUtil;
+import com.servpp.lang.models.app.NumericBinding;
+
+import java.math.RoundingMode;
 
 /**
  * @author lidong@date 2023-11-01@version 1.0
@@ -10,8 +13,27 @@ public class SppParameter {
     String name;
     private String declaredNumericSpecification;
     private String physicalNumericSpecification;
+    private RoundingMode declaredRoundingMode;
     public String getDeclaredNumericSpecification() { return declaredNumericSpecification == null ? type.getName() : declaredNumericSpecification; }
-    public void setDeclaredNumericSpecification(String value) { declaredNumericSpecification = value; }
+    public void setDeclaredNumericSpecification(String value) {
+        int firstComma = value.indexOf(',');
+        int modeComma = firstComma < 0 ? -1 : value.indexOf(',', firstComma + 1);
+        RoundingMode mode = modeComma < 0 ? null
+                : NumericBinding.roundingMode(value.substring(modeComma + 1, value.length() - 1));
+        String specification = modeComma < 0 ? value : value.substring(0, modeComma) + ")";
+        NumericBinding.dimensions(specification);
+        declaredNumericSpecification = specification;
+        declaredRoundingMode = mode;
+    }
+    public RoundingMode getDeclaredRoundingMode() { return declaredRoundingMode; }
+    public Integer getDeclaredNumericScale() {
+        int[] dimensions = NumericBinding.dimensions(getDeclaredNumericSpecification());
+        if (dimensions != null) return dimensions[1];
+        return switch (type.getName()) {
+            case "short", "int", "long", "BigInteger", "java.math.BigInteger" -> 0;
+            default -> null;
+        };
+    }
     public String getPhysicalNumericSpecification() { return physicalNumericSpecification; }
     public void setPhysicalNumericSpecification(String value) { physicalNumericSpecification = value; }
     private String physicalJavaType;
@@ -41,6 +63,7 @@ public class SppParameter {
 
     protected void copyNumericConfiguration(SppParameter target) {
         target.declaredNumericSpecification = declaredNumericSpecification;
+        target.declaredRoundingMode = declaredRoundingMode;
         target.physicalNumericSpecification = physicalNumericSpecification;
         target.physicalJavaType = physicalJavaType;
         target.numericAdapter = numericAdapter;

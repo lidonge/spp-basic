@@ -6,6 +6,7 @@ import com.servpp.lang.models.SppEnum;
 import com.servpp.lang.models.SppEnumItem;
 import com.servpp.lang.models.SppField;
 import com.servpp.lang.models.SppLocalVar;
+import com.servpp.lang.models.SppParameter;
 import com.servpp.lang.models.SppService;
 import com.servpp.lang.models.app.NumericBinding;
 
@@ -148,8 +149,14 @@ public final class NumericJavaRenderer {
         String element = temporary("$sppElement");
         String value = element;
         if (NumericBinding.isNumeric(control.local.getType().getName())) {
-            value = convertNumber(element, resolve((Reference)control.condition), control.local);
-            if ("short".equals(control.local.getJavaType())) { value = "(short) (" + value + ")"; }
+            String sourceAdapter = resolve((Reference)control.condition).getNumericAdapter();
+            String targetAdapter = control.local.getNumericAdapter();
+            if (targetAdapter != null) {
+                value = convertAdapter(element, sourceAdapter, targetAdapter);
+            } else if (sourceAdapter == null) {
+                value = NUMBERS + ".decimal(" + element + ")";
+            }
+            value = assignmentValue(value, targetAdapter == null ? sourceAdapter : targetAdapter, control.local);
         } else if ("char".equals(control.local.getType().getName())) { value = "String.valueOf(" + element + ")"; }
         return "for (var " + element + " : " + expression(control.condition) + ") {\n"
                 + localType(control.local) + " $sppLocal_" + control.local.getName() + " = " + value + ";\n"
@@ -291,7 +298,8 @@ public final class NumericJavaRenderer {
                 }
                 if (isNull(right) && assignment.getAssocOperation() == null && reference.getValue().contains("."))
                     return NameUtil.getNameCall(referenceName(reference), true) + "(null)";
-                String adapter = resolve(reference).getNumericAdapter();
+                SppLocalVar target = resolve(reference);
+                String adapter = target.getNumericAdapter();
                 if (adapter == null) { adapter = findAdapter(right); }
                 String value = adapter == null ? decimal(right) : adapted(right, adapter);
                 String compound = assignment.getAssocOperation();
@@ -299,11 +307,8 @@ public final class NumericJavaRenderer {
                     value = adapter == null ? arithmetic(compound, decimal(left), value)
                             : adapterCall(adapter) + "." + arithmeticMethod(compound) + "(" + adapted(left, adapter) + ", " + value + ")";
                 }
-                String targetAdapter = resolve(reference).getNumericAdapter();
-                String converted = targetAdapter == null
-                        ? convertSpecification(adapter == null ? value : adapterDecimal(value, adapter), resolve(reference))
-                        : value;
-                if (reference.getValue().contains(".") && "short".equals(resolve(reference).getJavaType())) {
+                String converted = assignmentValue(value, adapter, target);
+                if (reference.getValue().contains(".") && "short".equals(target.getJavaType())) {
                     converted = "(int) (" + converted + ")";
                 }
                 return reference.getValue().contains(".")
@@ -409,6 +414,7 @@ public final class NumericJavaRenderer {
     }
 
     private String arithmetic(String operator, String left, String right) {
+        if ("/".equals(operator)) return NUMBERS + ".divide(" + left + ", " + right + ")";
         String method = arithmeticMethod(operator);
         return "(" + left + ")." + method + "(" + right + ")";
     }
@@ -418,7 +424,7 @@ public final class NumericJavaRenderer {
             case "+" -> "add";
             case "-" -> "subtract";
             case "*" -> "multiply";
-            case "/" -> "divide";
+            case "/" -> "divideIntermediate";
             case "%" -> "remainder";
             default -> throw new IllegalArgumentException("PHY numeric operator " + operator + " has no exact implementation.");
         };
@@ -434,10 +440,7 @@ public final class NumericJavaRenderer {
         String sourceAdapter = source.getNumericAdapter();
         String targetAdapter = target.getNumericAdapter();
         if (targetAdapter != null) {
-            return "com.servpp.service.numeric.NumericAdapters.get(" + targetAdapter + ".class).convert("
-                    + (sourceAdapter == null ? NUMBERS + ".decimal(" + value + ")" : value)
-                    + ", com.servpp.service.numeric.NumericAdapters.get("
-                    + (sourceAdapter == null ? "com.servpp.service.numeric.DecimalNumericAdapter" : sourceAdapter) + ".class))";
+            return convertAdapter(value, sourceAdapter, targetAdapter);
         }
         String decimal = sourceAdapter == null ? NUMBERS + ".decimal(" + value + ")"
                 : "com.servpp.service.numeric.NumericAdapters.toDecimal(" + value
@@ -446,7 +449,45 @@ public final class NumericJavaRenderer {
         return "short".equals(target.getJavaType()) ? "(int) (" + result + ")" : result;
     }
 
-    private static String convertSpecification(String value, com.servpp.lang.models.SppParameter field) {
+    private static String convertAdapter(String value, String sourceAdapter, String targetAdapter) {
+        return adapterCall(targetAdapter) + ".convert("
+                + (sourceAdapter == null ? NUMBERS + ".decimal(" + value + ")" : value)
+                + ", " + adapterCall(sourceAdapter == null ? "com.servpp.service.numeric.DecimalNumericAdapter" : sourceAdapter) + ")";
+    }
+
+    private String assignmentValue(String value, String adapter, SppLocalVar target) {
+        var declaredMode = target.getDeclaredRoundingMode();
+        String mode = "java.math.RoundingMode." + (declaredMode == null ? "DOWN" : declaredMode.name());
+        Integer declaredScale = target.getDeclaredNumericScale();
+        if (target.getNumericAdapter() != null) {
+            return declaredMode == null ? value
+                    : adapterCall(adapter) + ".round(" + value + ", " + declaredScale + ", " + mode + ")";
+        }
+        if (adapter != null) value = adapterDecimal(value, adapter);
+        String spec = target.getPhysicalNumericSpecification();
+        int[] physical = NumericBinding.dimensions(spec == null ? target.getDeclaredNumericSpecification() : spec);
+        // Preserve legacy capacity when PHY replaces a decimal declaration without a business rounding mode.
+        Integer scale = declaredMode != null ? declaredScale
+                : physical != null ? Integer.valueOf(physical[1])
+                : integralRepresentation(target.getJavaType()) ? declaredScale : null;
+        if (scale != null) {
+            if (physical != null && physical[1] == scale) {
+                value = NUMBERS + ".specification(" + value + ", " + physical[0] + ", " + scale + ", " + mode + ")";
+                return convert(value, target.getJavaType());
+            }
+            value = "(" + value + ").setScale(" + scale + ", " + mode + ")";
+        }
+        return convertSpecification(value, target);
+    }
+
+    private static boolean integralRepresentation(String type) {
+        return switch (type) {
+            case "short", "int", "long", "BigInteger", "java.math.BigInteger" -> true;
+            default -> false;
+        };
+    }
+
+    private static String convertSpecification(String value, SppParameter field) {
         String spec = field.getPhysicalNumericSpecification();
         int[] dimensions = spec == null ? null : NumericBinding.dimensions(spec);
         if (dimensions != null) value = NUMBERS + ".specification(" + value + ", " + dimensions[0] + ", " + dimensions[1] + ")";
@@ -489,7 +530,7 @@ public final class NumericJavaRenderer {
         return statements.stream().map(this::statement).collect(java.util.stream.Collectors.joining("\n", "", "\n"));
     }
 
-    private String adapterCall(String adapter) { return "com.servpp.service.numeric.NumericAdapters.get(" + adapter + ".class)"; }
+    private static String adapterCall(String adapter) { return "com.servpp.service.numeric.NumericAdapters.get(" + adapter + ".class)"; }
     private String adapterDecimal(String value, String adapter) {
         return "com.servpp.service.numeric.NumericAdapters.toDecimal(" + value + ", " + adapterCall(adapter) + ")";
     }

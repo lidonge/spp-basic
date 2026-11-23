@@ -9,6 +9,7 @@ import java.util.*;
 public final class BusinessCalculationValidator {
     private final SppService service;
     private final List<String> errors = new ArrayList<>();
+    private List<String> roundingWarnings;
     private final Deque<Map<String, SppLocalVar>> scopes = new ArrayDeque<>();
     private int loops, switches;
     private enum Kind { NUMBER, BOOLEAN, STRING, CHAR, ENUM, OBJECT, NULL, UNKNOWN }
@@ -32,7 +33,22 @@ public final class BusinessCalculationValidator {
 
         scopes.push(new HashMap<>());
         statements(service.getDeclaredJavaStatements());
+        scopes.pop();
         return errors;
+    }
+    public List<String> collectRoundingWarnings() {
+        roundingWarnings = new ArrayList<>();
+        validate();
+        return roundingWarnings;
+    }
+
+    private void checkRounding(SppLocalVar target, String name, IExpression value, String compound, String source) {
+        if (roundingWarnings != null && new NumericRoundingWarnings(this::resolve).needsRounding(target, value, compound)) {
+            String location = source == null ? "" : source + " ";
+            String effect = target.getDeclaredNumericScale() == null ? "" : " Default rounding is DOWN.";
+            roundingWarnings.add(location + "Calculation " + service.getFuncName() + ": numeric target "
+                    + name + " may need rounding. Declare a rounding mode." + effect);
+        }
     }
     private void statements(List<IJavaStatement> statements) {
         for (IJavaStatement statement : statements) {
@@ -57,7 +73,7 @@ public final class BusinessCalculationValidator {
             }
             else if (statement instanceof CalculationRule rule) {
                 bool(rule.getCondition()); scoped(rule.getWhenTrue()); scoped(rule.getWhenFalse());
-            } else if (statement instanceof IOperationExpression assignment) {
+            } else if (statement instanceof IOperationExpression assignment && assignment.getOperation() instanceof IAssignOperation operator) {
                 if (service.isDeclaredQuantumService()) {
                     var target = assignment.getLeft() instanceof Reference reference ? resolve(reference.getValue()) : null;
                     if (!(target instanceof SppField field) || !field.isQuantum())
@@ -85,8 +101,13 @@ public final class BusinessCalculationValidator {
                         && dimensions(assignment.getLeft()) != dimensions(assignment.getRight())) {
                     error("Participant assignment requires the same collection dimension.");
                 }
-                String compound = ((IAssignOperation) assignment.getOperation()).getAssocOperation();
+                String compound = operator.getAssocOperation();
                 if (compound != null && left != Kind.NUMBER) { error("Compound assignment requires numeric operands."); }
+                if (roundingWarnings != null && left == Kind.NUMBER && right == Kind.NUMBER
+                        && assignment.getLeft() instanceof Reference ref) {
+                    checkRounding(resolve(ref.getValue()), ref.getValue(), assignment.getRight(), compound,
+                            assignment instanceof AssignExpression source ? source.sourceLocation : null);
+                }
             }
         }
     }
@@ -216,6 +237,8 @@ public final class BusinessCalculationValidator {
                         default -> control.local.getType() instanceof SppEnum ? Kind.ENUM : Kind.OBJECT;
                     };
                     if (!compatible(expected, actual)) { error("Local initializer type mismatch for " + control.local.getName()); }
+                    if (expected == Kind.NUMBER && actual == Kind.NUMBER)
+                        checkRounding(control.local, control.local.getName(), control.condition, null, control.sourceLocation);
                     if (expected == Kind.OBJECT && actual == Kind.OBJECT && control.condition.getReturnType() != null
                             && !control.local.getType().getName().equals(control.condition.getReturnType().getName())) {
                         error("Local initializer requires the same participant type.");

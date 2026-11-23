@@ -269,6 +269,33 @@ For a declared list query such as
 Use `,breakTransaction` on a bare check or `identify` inside a transaction
 when business rejection must abort that transaction.
 
+### Declare decimal rounding
+
+Declare the precision, scale and rounding mode on the result. Use ordinary
+division in the calculation.
+
+```spp
+Role AccrualBasis {
+    BigDecimal(15,2) amount;
+    BigDecimal(15,2) unit;
+}
+Role AccrualResult {
+    BigDecimal(15,0,DOWN) qualifiedUnits;
+}
+atomic calculate accrue(AccrualBasis, AccrualResult) {
+    AccrualResult.qualifiedUnits = AccrualBasis.amount / AccrualBasis.unit;
+}
+```
+
+With `amount` equal to `0.29` and `unit` equal to `0.03`, the repeating
+quotient is computed at high precision. Assignment rounds it toward zero,
+giving `9` at scale zero. A calculation local can declare rounding the same
+way, for example `BigDecimal(18,6,HALF_UP) rate`.
+
+If a calculation may lose fractional digits at a target with a scale and
+no rounding mode, the compiler warns and uses `DOWN`. Choose the mode in
+SPP so the same business rule applies across PHY representations.
+
 ### Bind a quantum role across domains
 
 Declare the role and the transfer in the consumer SPP. The provider SPP defines

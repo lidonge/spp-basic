@@ -277,6 +277,27 @@ English first. Existing historical design notes may remain in their original
 language; they are not substitutes for the current user-facing guides.
 
 
+## Decimal declarations and rounding
+
+Use `BigDecimal(precision, scale, mode)` for Entity, Role and Contract fields,
+quantum attributes and calculation locals. The supported modes are `DOWN`,
+`UP`, `HALF_UP`, `HALF_DOWN`, `HALF_EVEN`, `CEILING` and `FLOOR`.
+`DOWN` truncates toward zero, `UP` rounds away from zero, `CEILING` rounds
+toward positive infinity and `FLOOR` rounds toward negative infinity.
+
+Write division as `a / b`. Repeating decimal quotients use 34 significant
+digits in intermediate calculations. Ordinary and compound assignments
+apply the declared mode once at the target's scale. PHY can select the
+representation, which must be able to store the rounded result exactly.
+
+For a target with no declared mode, the compiler warns on division and when
+a sum or product may exceed the declared scale. When rounding is needed,
+assignment uses `DOWN` at the target's effective scale. An existing PHY
+replacement of the precision or scale can still preserve an exact value
+for a declaration without a mode. A decimal with no effective scale keeps
+the calculated quotient. Explicit functions such as `roundDown(value, places)` and
+`roundHalfUp(value, places)` remain available.
+
 ## Scenario read bindings and transaction rejection
 
 Use `readonly Scenario serial preview(Entry, Facts)` for a front-end inquiry.

@@ -9,12 +9,14 @@ public final class QuantumTransferStatement implements IJavaStatement {
     private final Reference source;
     private final Reference destination;
     private final IExpression amount;
+    private final String sourceLocation;
     private IContainer parent;
 
-    public QuantumTransferStatement(Reference source, Reference destination, IExpression amount) {
+    public QuantumTransferStatement(Reference source, Reference destination, IExpression amount, String sourceLocation) {
         this.source = source;
         this.destination = destination;
         this.amount = amount;
+        this.sourceLocation = sourceLocation;
     }
 
     public Reference source() { return source; }
@@ -25,11 +27,12 @@ public final class QuantumTransferStatement implements IJavaStatement {
         return List.of(movement(source, "-", amountValue), movement(destination, "+", amountValue));
     }
 
-    private static AssignExpression movement(Reference target, String direction, IExpression amount) {
+    private AssignExpression movement(Reference target, String direction, IExpression amount) {
         var operation = new AssignOperation();
         operation.setAssoc(direction);
         operation.setType(IOperation.Opers_Type.Double);
         var assignment = new AssignExpression();
+        assignment.sourceLocation = sourceLocation;
         assignment.setOperation(operation);
         assignment.setLeft(target);
         assignment.setRight(amount);

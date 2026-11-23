@@ -5,6 +5,7 @@
     { "include": "#comments" },
     { "include": "#strings" },
     { "include": "#declarations" },
+    { "include": "#decimal-specification" },
     { "include": "#literals" },
     { "include": "#keywords" },
     { "match": "(@)([\\p{L}_$][\\p{L}\\p{N}_$]*)", "captures": { "1": { "name": "punctuation.definition.annotation.spp" }, "2": { "name": "storage.type.annotation.spp" } } },
@@ -32,6 +33,21 @@
         { "match": "\\b(Scenario)\\s+(?:(serial|parallel)\\s+)?([\\p{L}_$][\\p{L}\\p{N}_$]*)(?=\\s*\\()", "captures": { "1": { "name": "storage.type.spp" }, "2": { "name": "keyword.control.spp" }, "3": { "name": "entity.name.function.spp" } } },
         { "match": "\\b(atomic)\\s+(query|check|calculate|update|insert|delete)\\s+([\\p{L}_$][\\p{L}\\p{N}_$]*)(?=\\s*\\()", "captures": { "1": { "name": "storage.type.spp" }, "2": { "name": "storage.modifier.spp" }, "3": { "name": "entity.name.function.spp" } } },
         { "match": "\\b(quantum)\\s+(query|check|calculate|update|insert|delete)\\s+([\\p{L}_$][\\p{L}\\p{N}_$]*)(?=\\s*\\()", "captures": { "1": { "name": "storage.type.spp" }, "2": { "name": "storage.modifier.spp" }, "3": { "name": "entity.name.function.spp" } } }
+      ]
+    },
+    "decimal-specification": {
+      "begin": "\\b(BigDecimal|decimal)\\s*(\\()",
+      "end": "\\)",
+      "beginCaptures": {
+        "1": { "name": "storage.type.primitive.spp" },
+        "2": { "name": "punctuation.section.spp" }
+      },
+      "endCaptures": { "0": { "name": "punctuation.section.spp" } },
+      "patterns": [
+        { "include": "#comments" },
+        { "include": "#literals" },
+        { "match": ",", "name": "punctuation.separator.spp" },
+        { "match": "\\b(?:DOWN|UP|HALF_UP|HALF_DOWN|HALF_EVEN|CEILING|FLOOR)\\b", "name": "constant.language.rounding-mode.spp" }
       ]
     },
     "literals": {

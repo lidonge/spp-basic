@@ -23,6 +23,8 @@ public interface IJavaExprHandler extends IRecursionProcess, IConstance, ISppErr
     default void _enterAssignExpr(ParserRuleContext ctx) {
         String text = ctx.getChild(1).getText();
         AssignExpression assignExpression = getAssignExpression(text);
+        var start = ctx.getStart();
+        assignExpression.sourceLocation = getAntlrFile() + ":" + start.getLine() + ":" + (start.getCharPositionInLine() + 1);
         addRecursionComponent(assignExpression);
     }
 

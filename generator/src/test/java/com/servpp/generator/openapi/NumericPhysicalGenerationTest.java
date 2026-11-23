@@ -8,6 +8,7 @@ import com.servpp.lang.models.SppDomain;
 import com.servpp.lang.models.SppProject;
 import com.servpp.lang.models.SppService;
 import java.math.BigDecimal;
+import java.math.MathContext;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -57,7 +58,7 @@ public class NumericPhysicalGenerationTest {
     }
 
     @Test
-    public void defaultIntegerRepresentationRejectsOverflowAndFractionalResults() throws Exception {
+    public void defaultIntegerRepresentationRejectsOverflowAndWarnsOnFractionalResults() throws Exception {
         String business = BUSINESS.replace("double a", "int a").replace("double b", "int b");
         SppDomain overflow = compile(business, "amount.a = amount.b * amount.c + 5;", "");
         assertTrue(overflow.validateAppDeclarations().isEmpty());
@@ -67,20 +68,19 @@ public class NumericPhysicalGenerationTest {
         assertTrue(failure instanceof ArithmeticException);
         SppDomain fraction = compile(business, "amount.a = amount.b / amount.c;", "");
         assertTrue(fraction.validateAppDeclarations().isEmpty());
-        assertTrue(assertThrows(java.lang.reflect.InvocationTargetException.class,
-                () -> execute(service(fraction).getJavaStatements().get(0).getJavaStatement(),
-                        "int", "int", 1, 2)).getCause() instanceof ArithmeticException);
+        assertEquals(0, execute(service(fraction).getJavaStatements().get(0).getJavaStatement(),
+                "int", "int", -1, 2));
+        assertTrue(fraction.numericRoundingWarnings().get(0).contains("amount.a may need rounding"));
     }
 
     @Test
-    public void exactDivisionReportsInsufficientRepresentationInsteadOfRounding() throws Exception {
+    public void unconstrainedDecimalKeepsExactOrHighPrecisionQuotient() throws Exception {
         SppDomain domain = compile(BUSINESS, "amount.a = amount.b / amount.c;", "numeric double as BigDecimal;");
         assertTrue(domain.validateAppDeclarations().isEmpty());
         String statement = service(domain).getJavaStatements().get(0).getJavaStatement();
         assertEquals(new BigDecimal("0.5"), execute(statement, "java.math.BigDecimal", "java.math.BigDecimal", BigDecimal.ONE, 2));
-        assertTrue(assertThrows(java.lang.reflect.InvocationTargetException.class,
-                () -> execute(statement, "java.math.BigDecimal", "java.math.BigDecimal", BigDecimal.ONE, 3))
-                .getCause() instanceof ArithmeticException);
+        assertEquals(BigDecimal.ONE.divide(new BigDecimal("3"), MathContext.DECIMAL128),
+                execute(statement, "java.math.BigDecimal", "java.math.BigDecimal", BigDecimal.ONE, 3));
     }
 
     @Test

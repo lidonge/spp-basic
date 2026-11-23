@@ -22,6 +22,16 @@ public interface NumericAdapter<T> {
         return round(divide(a, b), places, mode);
     }
 
+    /** Adapters with exact quotients can inherit this. Others can provide a
+     * 34-significant-digit quotient or a decimal codec for the fallback. */
+    default T divideIntermediate(T a, T b) {
+        try {
+            return divide(a, b);
+        } catch (ArithmeticException nonExact) {
+            return literal(ExactNumbers.divide(toDecimal(a), toDecimal(b)).toPlainString());
+        }
+    }
+
     /** Optional bridge. A custom representation need not support a decimal codec. */
     default BigDecimal toDecimal(T value) {
         if (value instanceof Number number) { return ExactNumbers.decimal(number); }

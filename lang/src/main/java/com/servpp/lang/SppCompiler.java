@@ -27,7 +27,7 @@ public class SppCompiler extends AntlrCompiler {
 
     @Override
     protected CharStream getCharStream() throws IOException {
-        return super.getCharStream();
+        return org.antlr.v4.runtime.CharStreams.fromPath(antlrFile.toPath());
     }
 
     @Override
