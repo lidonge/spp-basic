@@ -1370,7 +1370,14 @@ public class OpenApiGenerator extends BaseClassGenerator implements ILogable {
         schema.setType("string");
         List<SppEnumItem> fields = sppEnum.getItems();
         schema.addExtension("x-spp-mapped-enum", true);
-        if (sppEnum.preservesUnknownWireValues()) schema.addExtension("x-spp-open-wire-enum", true);
+        if (sppEnum.preservesUnknownWireValues()) {
+            schema.addExtension("x-spp-open-wire-enum", true);
+            String enumName = sppEnum.getName();
+            boolean kindNameInUse = "Kind".equals(enumName) || "kind".equals(enumName)
+                    || fields.stream().anyMatch(field -> "Kind".equals(field.getName()));
+            schema.addExtension("x-spp-enum-kind-type",
+                    kindNameInUse ? "$Kind" : "Kind");
+        }
         schema.addExtension("x-enum-varnames", fields.stream().map(SppEnumItem::getName).toList());
         var other = sppEnum.getOtherItem();
         if (other != null) schema.addExtension("x-spp-enum-other-index", Integer.toString(fields.indexOf(other)));

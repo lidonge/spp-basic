@@ -223,6 +223,14 @@ installed runtime artifacts. Preserve its generated `META-INF/spp` resources
 when packaging a host application; they describe services, deployments and
 physical bindings.
 
+For an SPP enum that declares an `other` member, the generated Java value
+class exposes `kind()`. Use `switch (value.kind())` in Java 17 to branch on its
+nested Java enum constants. The constants use the declared member names,
+including `OTHER` when that is the name of the fallback member. An unrecognized
+wire code has the fallback member's kind and retains its original code in
+`getValue()` for serialization and storage. The nested enum is named `Kind`
+(`$Kind` if the class or a member already uses `Kind`).
+
 The generated Maven project is an integration library. It does not automatically
 supply a configured HTTP server, credentials, database migrations, a reverse
 proxy or a browser UI. A host must install the generated deployment and runtime,

@@ -5,18 +5,24 @@
 {{>generatedAnnotation}}
 @com.fasterxml.jackson.databind.annotation.JsonDeserialize(using = __ENUM_TYPE__.$SppNullDeserializer.class)
 public final class __ENUM_TYPE__ implements com.servpp.service.runtime.WireMappedEnum {
+  public enum {{vendorExtensions.x-spp-enum-kind-type}} {
+    {{#allowableValues}}{{#enumVars}}{{{name}}}{{^-last}}, {{/-last}}{{/enumVars}}{{/allowableValues}}
+  }
+
   {{#allowableValues}}{{#enumVars}}
-  public static final __ENUM_TYPE__ {{{name}}} = new __ENUM_TYPE__({{{value}}}, {{{value}}});
+  public static final __ENUM_TYPE__ {{{name}}} = new __ENUM_TYPE__({{vendorExtensions.x-spp-enum-kind-type}}.{{{name}}}, {{{value}}}, {{{value}}});
   {{/enumVars}}{{/allowableValues}}
 
   private static final __ENUM_TYPE__[] $MEMBERS = {
     {{#allowableValues}}{{#enumVars}}{{{name}}}{{^-last}}, {{/-last}}{{/enumVars}}{{/allowableValues}}
   };
 
+  private final {{vendorExtensions.x-spp-enum-kind-type}} kind;
   private final String memberValue;
   private final String value;
 
-  private __ENUM_TYPE__(String memberValue, String value) {
+  private __ENUM_TYPE__({{vendorExtensions.x-spp-enum-kind-type}} kind, String memberValue, String value) {
+    this.kind = kind;
     this.memberValue = memberValue;
     this.value = value;
   }
@@ -29,6 +35,10 @@ public final class __ENUM_TYPE__ implements com.servpp.service.runtime.WireMappe
 
   public String getMemberValue() {
     return memberValue;
+  }
+
+  public {{vendorExtensions.x-spp-enum-kind-type}} kind() {
+    return kind;
   }
 
   public static boolean sameMember(__ENUM_TYPE__ left, __ENUM_TYPE__ right) {
@@ -58,6 +68,7 @@ public final class __ENUM_TYPE__ implements com.servpp.service.runtime.WireMappe
     {{#vendorExtensions.x-spp-enum-input-aliases}}
     if ("{{{literal}}}".equals(value)) return $MEMBERS[{{index}}];
     {{/vendorExtensions.x-spp-enum-input-aliases}}
-    return new __ENUM_TYPE__($MEMBERS[{{vendorExtensions.x-spp-enum-other-index}}].memberValue, value);
+    __ENUM_TYPE__ fallback = $MEMBERS[{{vendorExtensions.x-spp-enum-other-index}}];
+    return new __ENUM_TYPE__(fallback.kind, fallback.memberValue, value);
   }
 }

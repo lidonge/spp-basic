@@ -164,6 +164,8 @@ public class BasicCompilerTest {
                 Enum Completion { COMPLETE:"complete":other, NULL_VALUE:null, ACTIVE, OTHER }
                 Enum NullOnly { NULL_VALUE:null, ACTIVE }
                 Enum OtherOnly { FALLBACK:other, PUBLIC:"02","04","06","25","42","62" }
+                Enum Kind { KNOWN, OTHER:other }
+                Enum MemberNamedKind { Kind, OTHER:other }
                 Role Facts { Route route; StrictRoute strictRoute; Completion completion; NullOnly nullOnly; OtherOnly otherOnly; boolean unknown; int selected; }
                 atomic calculate choose(Facts) {
                     Facts.unknown = Facts.route == Route.OTHER;
@@ -193,7 +195,6 @@ public class BasicCompilerTest {
         assertFalse(strict.contains("return values()["));
         String completion = Files.readString(library.resolve("model/Completion.java"));
         assertTrue(completion.contains("if (value == null) return $MEMBERS[1];"));
-        assertTrue(completion.contains("return new Completion($MEMBERS[0].memberValue, value);"));
         String nullOnly = Files.readString(library.resolve("model/NullOnly.java"));
         assertTrue(nullOnly.contains("if (value == null) return values()[0];"));
         assertTrue(nullOnly.contains("Unexpected value"));
@@ -216,19 +217,41 @@ public class BasicCompilerTest {
                     public void setAccountNumber(String value) { accountNumber = value; }
                     public OtherOnly getAccountType() { return accountType; }
                     public void setAccountType(OtherOnly value) { accountType = value; }
+
+                    public static String classify(String value) {
+                        var member = Kind.fromValue(value);
+                        return switch (member.kind()) {
+                            case KNOWN -> "known";
+                            case OTHER -> member.getValue();
+                        };
+                    }
                 }
                 """);
         var compiler = javax.tools.ToolProvider.getSystemJavaCompiler();
-        assertEquals(0, compiler.run(null, null, null, "-d", classes.toString(),
+        assertEquals(0, compiler.run(null, null, null, "--release", "17", "-d", classes.toString(),
                 library.resolve("model/Completion.java").toString(),
+                library.resolve("model/Kind.java").toString(),
+                library.resolve("model/MemberNamedKind.java").toString(),
                 library.resolve("model/NullOnly.java").toString(),
                 library.resolve("model/OtherOnly.java").toString(), storageFixture.toString()));
         try (var loader = new java.net.URLClassLoader(new java.net.URL[]{classes.toUri().toURL()}, getClass().getClassLoader())) {
             var mapper = new ObjectMapper();
+            var accountClass = loader.loadClass("com.servpp.generated.routing.model.WireAccount");
+            var classify = accountClass.getMethod("classify", String.class);
+            assertEquals("known", classify.invoke(null, "KNOWN"));
+            assertEquals(" XY901 ", classify.invoke(null, " XY901 "));
             var completionClass = loader.loadClass("com.servpp.generated.routing.model.Completion");
-            assertEquals("NULL_VALUE", mapper.readValue("null", completionClass).toString());
-            assertEquals("unrecognized", mapper.readValue("\"unrecognized\"", completionClass).toString());
-            assertEquals("OTHER", mapper.readValue("\"OTHER\"", completionClass).toString());
+            var kind = completionClass.getMethod("kind");
+            Object missing = mapper.readValue("null", completionClass);
+            assertEquals("NULL_VALUE", missing.toString());
+            assertEquals("NULL_VALUE", ((Enum<?>) kind.invoke(missing)).name());
+            Object unknown = mapper.readValue("\"unrecognized\"", completionClass);
+            assertEquals("unrecognized", unknown.toString());
+            assertEquals("COMPLETE", ((Enum<?>) kind.invoke(unknown)).name());
+            assertEquals("\"unrecognized\"", mapper.writeValueAsString(unknown));
+            Object other = mapper.readValue("\"OTHER\"", completionClass);
+            assertEquals("OTHER", other.toString());
+            assertEquals("OTHER", ((Enum<?>) kind.invoke(other)).name());
             assertEquals("ACTIVE", mapper.readValue("\"ACTIVE\"", completionClass).toString());
             var nullOnlyClass = loader.loadClass("com.servpp.generated.routing.model.NullOnly");
             assertEquals("NULL_VALUE", mapper.readValue("null", nullOnlyClass).toString());
@@ -241,10 +264,10 @@ public class BasicCompilerTest {
             for (String alias : java.util.List.of("02", "04", "06", "25", "42", "62")) {
                 var member = mapper.readValue("\"" + alias + "\"", otherOnlyClass);
                 assertSame(publicMember, member);
+                assertEquals("PUBLIC", ((Enum<?>) otherOnlyClass.getMethod("kind").invoke(member)).name());
                 assertEquals("\"02\"", mapper.writeValueAsString(member));
             }
-            verifyMappedEnumStorage(loader.loadClass("com.servpp.generated.routing.model.WireAccount"),
-                    otherOnlyClass, publicMember);
+            verifyMappedEnumStorage(accountClass, otherOnlyClass, publicMember);
         }
     }
 

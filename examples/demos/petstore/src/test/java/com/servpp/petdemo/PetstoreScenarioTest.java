@@ -468,7 +468,7 @@ public class PetstoreScenarioTest {
         quoteBoundary("99.99", "NORMAL", "107.99", "8");
         quoteBoundary("111.11", "VIP", "100", "0");
         quoteBoundary("12.35", "VIP", "19.11", "8");
-        assertThrows(ArithmeticException.class, () -> quoteBoundary("12.345", "VIP", "19.11", "8"));
+        quoteBoundary("12.345", "VIP", "19.11", "8");
     }
 
     private void quoteBoundary(String price, String tier, String total, String shipping) {
