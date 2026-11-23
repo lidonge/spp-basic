@@ -7,3 +7,15 @@ Entity Position {
 }
 
 atomic query readPosition(Position);
+
+Reference ProviderPlayedRole from ledger.ProviderPlayedRole {
+    String accountCode;
+    String currency;
+    quantum decimal claim;
+}
+
+take Position as ProviderPlayedRole {
+    String accountCode = account;
+    decimal claim = outstanding;
+    mapsame;
+}

@@ -4889,7 +4889,8 @@ public class SppDomain {
             if (service.getImplicitCrudTarget() != null && service.getImplicitCrudTarget() != participant) continue;
             if (!tables.containsKey(participant.getName())) {
                 if (service.getServiceType() == IConstance.ServiceType.query && participant.getReferenceSource() == null
-                        && mapsOfClass.values().stream().anyMatch(mapping -> mapping instanceof SppRoleMapper mapper && mapper.getRole() == participant))
+                        && (mapsOfClass.values().stream().anyMatch(mapping -> mapping instanceof SppRoleMapper mapper && mapper.getRole() == participant)
+                                || !DeploymentEnvironmentPlanner.providerTakes(this, participant).isEmpty()))
                     service.setQueryFromPerformers(true);
                 if (service.isImplicitParticipantCrud() && participant.getReferenceSource() == null
                         && !service.isQueryFromPerformers())

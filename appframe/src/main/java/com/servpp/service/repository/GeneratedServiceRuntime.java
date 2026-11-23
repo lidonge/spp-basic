@@ -275,6 +275,7 @@ public class GeneratedServiceRuntime {
                         quantumObjectIdentityResolver(snapshotRules);
                 return quantumParticipant
                         .resolveRoleIdentities(roleIdentityResolver)
+                        .resolveMappedPerformers((type, id) -> getSnapshotStore().findForUpdate(type, id).isPresent())
                         .resolveObjectIdentities((objectType, arguments) ->
                                 quantumObjectIdentityResolver.resolve(objectType, arguments)
                                         .or(() -> snapshotCompatibilityResolver.resolve(objectType, arguments)));

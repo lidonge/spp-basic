@@ -9,21 +9,31 @@ import static org.junit.Assert.*;
 
 public class CrossDomainQuantumTransferTest {
     private SppProject project(String providerTable, String mapping, String positionModifier) throws Exception {
+        return project(providerTable, mapping, positionModifier, false);
+    }
+
+    private SppProject project(String providerTable, String mapping, String positionModifier, boolean providerSide) throws Exception {
         var project = new SppProject();
+        String take = "take Position as ProviderPlayedRole { String accountCode = account; mapsame; " + mapping + " }";
         parse(project, ".spp", """
                 domain provider;
                 Entity Position { String account; String currency; %s decimal outstanding; }
-                """.formatted(positionModifier));
+                """.formatted(positionModifier) + (providerSide ? """
+                Reference ProviderPlayedRole from consumer.ProviderPlayedRole {
+                    String accountCode; String currency; quantum decimal claim;
+                }
+                """ + take : ""));
         parse(project, ".spp", """
                 domain consumer;
                 Role Funds { String wallet; quantum decimal amount; }
                 Role ProviderPlayedRole { String accountCode; String currency; quantum decimal claim; }
-                Reference Position from provider.Position { String account; String currency; %s decimal outstanding; }
-                take Position as ProviderPlayedRole { String accountCode = account; mapsame; %s }
+                %s
                 quantum update moveFunds(Funds consumerFunds, ProviderPlayedRole played) {
                     consumerFunds.amount -> played.claim : 1.125;
                 }
-                """.formatted(positionModifier, mapping));
+                """.formatted(providerSide ? "" : """
+                Reference Position from provider.Position { String account; String currency; %s decimal outstanding; }
+                """.formatted(positionModifier) + take));
         parse(project, ".app", """
                 domain provider;
                 tables entities { table POSITIONS(Position) { primarykey(Position.account, Position.currency); } }
@@ -82,7 +92,36 @@ public class CrossDomainQuantumTransferTest {
     }
 
     @Test public void resolvesProviderAttributeAndOrderedCompositePlayKeyInLocalDeployment() throws Exception {
-        var project = project("positions_value", "decimal claim = outstanding;", "quantum");
+        assertCanonicalEndpoint(project("positions_value", "decimal claim = outstanding;", "quantum"));
+    }
+
+    @Test public void resolvesProviderSideTakeWithoutConsumerReference() throws Exception {
+        var project = project("positions_value", "decimal claim = outstanding;", "quantum", true);
+        assertNull(project.getDomain("consumer").getSppClass("Position"));
+        assertCanonicalEndpoint(project);
+    }
+
+    @Test public void selectsTheDeployedProviderSideTake() throws Exception {
+        var project = project("positions_value", "decimal claim = outstanding;", "quantum", true);
+        parse(project, ".spp", """
+                domain alternate;
+                Entity Alternate { String account; String currency; quantum decimal outstanding; }
+                Reference ProviderPlayedRole from consumer.ProviderPlayedRole {
+                    String accountCode; String currency; quantum decimal claim;
+                }
+                take Alternate as ProviderPlayedRole {
+                    String accountCode = account; mapsame; decimal claim = outstanding;
+                }
+                """);
+        parse(project, ".app", """
+                domain alternate;
+                tables entities { table ALTERNATE(Alternate) { primarykey(Alternate.account, Alternate.currency); } }
+                """);
+        parse(project, ".phy", physical("alternate", "alternateStore", "alternate_value"));
+        assertCanonicalEndpoint(project);
+    }
+
+    private void assertCanonicalEndpoint(SppProject project) {
         var errors = DomainDeploymentValidator.validate(project);
         assertTrue(errors.toString(), errors.isEmpty());
         var domain = project.getDomain("consumer");
@@ -96,9 +135,12 @@ public class CrossDomainQuantumTransferTest {
     }
 
     @Test public void rejectsSplitStoresOnTheSameJdbcResource() throws Exception {
-        var errors = DomainDeploymentValidator.validate(project("other_value", "decimal claim = outstanding;", "quantum"));
-        assertTrue(errors.toString(), errors.stream().anyMatch(error ->
-                error.contains("distributed cross-domain quantum transfer not yet supported (APP TCC pending)")));
+        for (boolean providerSide : new boolean[]{false, true}) {
+            var errors = DomainDeploymentValidator.validate(
+                    project("other_value", "decimal claim = outstanding;", "quantum", providerSide));
+            assertTrue(errors.toString(), errors.stream().anyMatch(error ->
+                    error.contains("distributed cross-domain quantum transfer not yet supported (APP TCC pending)")));
+        }
     }
 
     @Test public void rejectsBackendThatCannotEnlistInLocal() throws Exception {

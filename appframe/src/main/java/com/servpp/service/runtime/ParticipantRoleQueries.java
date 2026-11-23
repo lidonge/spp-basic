@@ -13,6 +13,29 @@ public final class ParticipantRoleQueries {
             ParticipantIdentity.confirm(participant,!members.isEmpty());
         } else ParticipantIdentity.confirm(participant,true);
     }
+    /** Query through a take declared against the provider's generated Reference view. */
+    public static void complete(Object participant, Step step, String[] roleFacts, String[] quantumFacts) {
+        if (participant instanceof Iterable<?> members) {
+            boolean identified = members.iterator().hasNext();
+            for (Object role : members) {
+                complete(role, step, roleFacts, quantumFacts);
+                identified &= ParticipantIdentity.isIdentified(role);
+            }
+            ParticipantIdentity.confirm(participant, identified);
+            return;
+        }
+        if (!ParticipantIdentity.isIdentified(participant)) return;
+        Object view = LocalDomainServices.roleView(participant, step.definition().role());
+        LocalDomainServices.copyRoleQueryFacts(view, participant, roleFacts);
+        complete(view, step);
+        if (ParticipantIdentity.isIdentified(view)) {
+            LocalDomainServices.copyRoleQueryFacts(participant, view, roleFacts);
+        } else {
+            ParticipantIdentity.confirm(participant, false);
+            LocalDomainServices.clearAbsentQuantumFacts(participant, quantumFacts);
+        }
+    }
+
     public static void complete(Object participant, Step step) {
         if (participant instanceof Iterable<?> members) {
             boolean identified = members.iterator().hasNext();

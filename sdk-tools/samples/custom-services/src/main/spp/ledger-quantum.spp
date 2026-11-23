@@ -11,18 +11,6 @@ Role ProviderPlayedRole {
     quantum decimal claim;
 }
 
-Reference Position from positions.Position {
-    String account;
-    String currency;
-    quantum decimal outstanding;
-}
-
-take Position as ProviderPlayedRole {
-    String accountCode = account;
-    decimal claim = outstanding;
-    mapsame;
-}
-
 Contract TransferInput {
     decimal amount;
 }

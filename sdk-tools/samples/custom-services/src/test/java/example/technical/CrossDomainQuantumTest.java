@@ -27,7 +27,7 @@ public class CrossDomainQuantumTest {
     private static final String CLAIM = "Position.outstanding";
     private static final String PROVIDER_KEY = CompositeObjectId.encode(List.of("P-1", "UNIT"));
 
-    @Test public void generatedLocalTransferCommitsRollsBackAndReversesProviderPosition() throws Exception {
+    @Test public void providerSideTakeCommitsRollsBackAndReversesProviderPosition() throws Exception {
         String property = "spp.basic-ledger.datasource-url";
         String previous = System.getProperty(property);
         String url = "jdbc:h2:mem:cross_domain_" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1";
@@ -81,6 +81,7 @@ public class CrossDomainQuantumTest {
 
             transfer.accept("P-1", "2");
             assertEquals("QUANTUM_BOUND_REJECTED", BusinessChecks.scenarioResult().code());
+            assertAbsentClaim(runtime, mapper, "missing");
             var wrongKey = assertThrows(IllegalStateException.class, () -> transfer.accept("missing", "1.125"));
             assertEquals("QUANTUM_PLAY_POSITION_NOT_FOUND: Position.outstanding", wrongKey.getMessage());
             assertEquals(booked, observer.findCurrentValues());
@@ -91,11 +92,28 @@ public class CrossDomainQuantumTest {
             assertEquals(4, observer.findAll().size());
             manager.reverseCommittedQuantumBoundary(committed);
             assertEquals(4, observer.findAll().size());
+
+            // Deleting a performer leaves its ledger history. That history cannot play the role.
+            DeclaredTransactionContext.execute(TransactionMode.LOCAL, () -> repository.executeInTransaction(() ->
+                    repository.delete("Position", PROVIDER_KEY)));
+            assertAbsentClaim(runtime, mapper, "P-1");
+            var deleted = assertThrows(IllegalStateException.class, () -> transfer.accept("P-1", "1.125"));
+            assertEquals("QUANTUM_PLAY_POSITION_NOT_FOUND: Position.outstanding", deleted.getMessage());
+            assertPositions(observer, "5.250", "-2.375");
+            assertEquals(4, observer.findAll().size());
         } finally {
             container.clear();
             if (previous == null) System.clearProperty(property);
             else System.setProperty(property, previous);
         }
+    }
+
+    private void assertAbsentClaim(LocalGeneratedServiceRuntime runtime, ObjectMapper mapper, String account) {
+        var request = mapper.convertValue(Map.of("played", Map.of(
+                "accountCode", account, "currency", "UNIT", "claim", new BigDecimal("99"))), ReadClaimRequest.class);
+        runtime.executeGeneratedService("ledger.readClaim", request);
+        assertEquals(0, BigDecimal.ZERO.compareTo(request.getPlayed().getClaim()));
+        assertEquals(account, request.getPlayed().getAccountCode());
     }
 
     private void assertPositions(JdbcQuantumJournalStore store, String funds, String claim) {

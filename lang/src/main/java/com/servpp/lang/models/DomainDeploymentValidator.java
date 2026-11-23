@@ -489,19 +489,23 @@ public final class DomainDeploymentValidator {
             if (!(unit instanceof SppService service) || service.getScopeItem() == null) continue;
             service.getRoleHydrations().clear(); service.getOwnedRoleWrites().clear();
             if (domain.getRuleBlock().getLocalServiceBindings().stream().anyMatch(binding -> binding.getServiceName().equals(service.getFuncName()))) continue;
-            for (var mapperUnit : domain.getMapsOfClass().values()) {
-                if (!(mapperUnit instanceof SppRoleMapper mapper) || mapper.getEntities() == null
-                        || mapper.getRole().getType() == IConstance.CompilationUnitType.entity
-                        || mapper.getRole().getReferenceSourceKind() == IConstance.CompilationUnitType.entity) continue;
-                var inputs = service.getServiceBody().getSppLocalVarList();
-                for (int index = 0; index < inputs.size(); index++) {
-                    var parameter = inputs.get(index);
-                    if (parameter.getType() != mapper.getRole()) continue;
+            var inputs = service.getServiceBody().getSppLocalVarList();
+            for (int index = 0; index < inputs.size(); index++) {
+                var parameter = inputs.get(index);
+                if (!(parameter.getType() instanceof SppClass role)) continue;
+                var takes = new ArrayList<>(DeploymentEnvironmentPlanner.providerTakes(domain, role));
+                for (var mapperUnit : domain.getMapsOfClass().values())
+                    if (mapperUnit instanceof SppRoleMapper mapper && mapper.getRole() == role)
+                        takes.add(new DeploymentEnvironmentPlanner.ProviderTake(domain, mapper));
+                for (var take : takes) {
+                    var mapper = take.mapper();
+                    if (mapper.getEntities() == null || mapper.getRole().getType() == IConstance.CompilationUnitType.entity
+                            || mapper.getRole().getReferenceSourceKind() == IConstance.CompilationUnitType.entity) continue;
                     boolean queried = service.getServiceType() == IConstance.ServiceType.query
                             && (service.isQueryFromPerformers() || service.getScopeItem().getRepositoryHydrationRules().stream()
                             .anyMatch(rule -> rule.responseMethodName().equals(parameter.getName())));
                     for (var performer : mapper.getEntities()) {
-                        String source = ParticipantRoleBindings.identity(domain,performer);
+                        String source = ParticipantRoleBindings.identity(take.domain(), performer);
                         var owner = project.getDomain(source.split("\\.")[0]);
                         if (owner == null) continue;
                         if (queried) {
@@ -522,10 +526,10 @@ public final class DomainDeploymentValidator {
                             var provider = providers.get(0);
                             var binding = new com.servpp.lang.models.app.LocalServiceBinding(service.getFuncName(),owner.getName() + "." + provider.getFuncName());
                             binding.getParticipantFacts().put(0,performer.getSppFieldList().stream().map(SppField::getName).toList());
-                            service.getRoleHydrations().add(new SppService.RoleHydration(index,binding,mapper,performer));
+                            service.getRoleHydrations().add(new SppService.RoleHydration(index, binding, mapper, performer, take.domain().getName()));
                         }
                         // Owned root entities are persisted with their role. References remain read-only here.
-                        if (!domain.getRuleBlock().hasTransactionPolicy() && performer.getReferenceSource() == null && performer.getType() == IConstance.CompilationUnitType.entity) {
+                        if (take.domain() == domain && !domain.getRuleBlock().hasTransactionPolicy() && performer.getReferenceSource() == null && performer.getType() == IConstance.CompilationUnitType.entity) {
                             for (var write : service.getScopeItem().getPersistenceRules()) {
                                 if (write.argumentIndex() != index) continue;
                                 var keys = ParticipantRoleBindings.primaryKeys(domain,performer);

@@ -23,6 +23,7 @@ public class QuantumConservationParticipant extends ObjectSnapshotTransactionPar
     private final List<CollectionAttribute> collectionAttributes = new ArrayList<>();
     private final Map<QuantumAttribute, List<String>> mappedKeyPaths = new LinkedHashMap<>();
     private final Map<QuantumAttribute, String> bookedObjectIds = new LinkedHashMap<>();
+    private java.util.function.BiPredicate<String, String> mappedPerformerExists;
     private int scalarAttributeCount;
     private List<QuantumValue> beforeValues = List.of();
     private Object[] arguments = new Object[0];
@@ -81,6 +82,12 @@ public class QuantumConservationParticipant extends ObjectSnapshotTransactionPar
         this.objectIdentityResolver = objectIdentityResolver == null
                 ? ObjectIdentityResolver.none()
                 : objectIdentityResolver;
+        return this;
+    }
+
+    public QuantumConservationParticipant resolveMappedPerformers(
+            java.util.function.BiPredicate<String, String> existsForUpdate) {
+        this.mappedPerformerExists = Objects.requireNonNull(existsForUpdate);
         return this;
     }
 
@@ -217,11 +224,15 @@ public class QuantumConservationParticipant extends ObjectSnapshotTransactionPar
                 continue;
             }
             String identity = objectId(attribute);
+            boolean mapped = mappedKeyPaths.containsKey(attribute);
+            if (mapped && mappedPerformerExists != null
+                    && !mappedPerformerExists.test(objectType(attribute.attributeId()), identity))
+                throw new IllegalStateException("QUANTUM_PLAY_POSITION_NOT_FOUND: " + attribute.attributeId());
             Optional<BigDecimal> currentValue = getRecords(context).stream()
                     .filter(record -> record.getAttributeId().equals(attribute.attributeId()) && record.getObjectId().equals(identity))
                     .reduce((previous,next) -> next).map(QuantumConservationRecord::getAfterValue);
             if (currentValue.isEmpty()) currentValue = store.findCurrentValueForUpdate(attribute.attributeId(), identity);
-            if (currentValue.isEmpty() && mappedKeyPaths.containsKey(attribute))
+            if (currentValue.isEmpty() && mapped)
                 throw new IllegalStateException("QUANTUM_PLAY_POSITION_NOT_FOUND: " + attribute.attributeId());
             currentValue.ifPresent(value -> writeNumberProperty(participant(attribute), attribute.propertyName(), value));
         }

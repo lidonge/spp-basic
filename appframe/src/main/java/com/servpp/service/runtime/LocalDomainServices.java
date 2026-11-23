@@ -62,6 +62,17 @@ public final class LocalDomainServices {
             throw new IllegalStateException("ROLE_PROJECTION_FAILED", failure);
         }
     }
+    static void copyRoleQueryFacts(Object target, Object source, String[] facts) {
+        copyFacts(target, source, target.getClass(), facts, new String[0], false, true);
+    }
+
+    static void clearAbsentQuantumFacts(Object participant, String[] fields) {
+        var zeros = new LinkedHashMap<String, Object>();
+        for (String field : fields) zeros.put(field, java.math.BigDecimal.ZERO);
+        Object empty = MAPPER.convertValue(zeros, participant.getClass());
+        copyFacts(participant, empty, participant.getClass(), fields, new String[0], false, false);
+    }
+
     private static Method providerMethod(Class<?> type, String name, int count) {
         for (Class<?> contract : type.getInterfaces()) {
             Method declared = providerMethod(contract, name, count);
