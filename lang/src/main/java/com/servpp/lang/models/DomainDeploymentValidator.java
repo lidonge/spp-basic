@@ -29,6 +29,10 @@ public final class DomainDeploymentValidator {
         var playErrors = DeploymentEnvironmentPlanner.validateRolePlays(project, false);
         errors.addAll(playErrors);
         if (!playErrors.isEmpty()) return errors;
+        var storedPlayErrors = DeploymentEnvironmentPlanner.bindStoredRolePlays(project);
+        errors.addAll(storedPlayErrors);
+        if (!storedPlayErrors.isEmpty()) return errors;
+        for (var domain : project.getSppDomainMap().values()) errors.addAll(domain.prepareRoleCompositions());
         // All query destinations must be available before cross-domain signatures are resolved.
         for (var domain : project.getSppDomainMap().values()) errors.addAll(domain.prepareDefaultParticipantBindings());
         errors.addAll(DeploymentEnvironmentPlanner.validateRolePlays(project, true));

@@ -9,11 +9,6 @@ Role Goods {
     boolean active;
 }
 
-take Product as Goods {
-    mapsame;
-    String sku = productCode;
-}
-
 Reference StockLine from inventory.StockLine {
     Goods goods;
     quantum int available;

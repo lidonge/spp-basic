@@ -5037,10 +5037,16 @@ public class SppDomain {
         var mapper=mappings.get(0); var performer=mapper.getEntities().get(0);
         var performerTable=tables.get(performer.getName());
         var paths=performerTable==null?performer.getIdentityPaths():ParticipantRoleBindings.primaryKeys(this,performer);
-        if (paths.size()!=1 || !(mapper.isTakeAll() || mapper.isMapSame())) return List.of();
-        var key=participant.getField(paths.get(0)); var original=performer.getField(paths.get(0));
+        if (paths.size()!=1) return List.of();
+        String path = paths.get(0);
+        String keyName = mapper.getSppFieldList().stream()
+                .filter(field -> field instanceof SppRoleField mapping && path.equals(mapping.getEntityName()))
+                .map(SppField::getName).findFirst().orElse(null);
+        if (keyName == null && (mapper.isTakeAll() || mapper.isMapSame())) keyName = path;
+        if (keyName == null) return List.of();
+        var key=participant.getField(keyName); var original=performer.getField(path);
         if (key==null || original==null || !key.getType().getName().equals(original.getType().getName()) || key.getArrayDimension()!=0) return List.of();
-        return List.of(new RepositoryHydrationRule.KeyTarget(0,participant.getName()+"."+paths.get(0),
+        return List.of(new RepositoryHydrationRule.KeyTarget(0,participant.getName()+"."+keyName,
                 participant.getName()+"."+columns.get(0).getName()));
     }
 

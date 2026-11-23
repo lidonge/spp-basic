@@ -10,7 +10,8 @@
     "Integrated build instructions and contribution paths",
     "Original MIT scope and book reserved-rights retained",
     "English A-E capability tutorials and source-checked excerpts; navigation-only legacy documents removed, with references updated to substantive guides or immutable historical evidence",
-    "Renamed a bank-deposit loop variable for the reserved other keyword and updated Petstore enum aliases to the colon syntax"
+    "Renamed a bank-deposit loop variable for the reserved other keyword and updated Petstore enum aliases to the colon syntax",
+    "Moved the Petstore Buyer, Merchant and Goods performer bindings to the composing APP"
   ],
   "files": [
     {
@@ -1234,7 +1235,7 @@
     {
       "path": "demos/petstore/AGENTS.md",
       "sourceSha256": "305d642f3fd867e4e418a51777e1119dcb39db731f521164b3a844c22f51cd0d",
-      "importedSha256": "d9296b41f018d08c73758e80420cf46ce320ef60bd34c60abe927d7db88e043a",
+      "importedSha256": "e9feceac1c0f0b15b7578d687869a6aeaada022d2c15d3796ca6a4a2146ab575",
       "executable": false
     },
     {
@@ -1270,7 +1271,7 @@
     {
       "path": "demos/petstore/docs/language-tour.md",
       "sourceSha256": "5c75cd64fce4288d9f3d72fdc32ee3890d0d251bdab10b7b205a3b2306b1641e",
-      "importedSha256": "5c75cd64fce4288d9f3d72fdc32ee3890d0d251bdab10b7b205a3b2306b1641e",
+      "importedSha256": "12c92b35017c00450216ecf7495128cb064aec2a3c37679d890a654ab7da6cc7",
       "executable": false
     },
     {
@@ -1438,7 +1439,7 @@
     {
       "path": "demos/petstore/src/main/spp/petshop/catalogue/petshop-00-model.spp",
       "sourceSha256": "9a58c80ec4fb97300da541dc7971ebe3dae519f5e43ae813015fcb14f36de09d",
-      "importedSha256": "9a58c80ec4fb97300da541dc7971ebe3dae519f5e43ae813015fcb14f36de09d",
+      "importedSha256": "1c1130e739f9999c65b004cdad46e8a6ca22639bbe889c9b498857a7ca94eb30",
       "executable": false
     },
     {
@@ -1522,7 +1523,7 @@
     {
       "path": "demos/petstore/src/main/spp/petshop/membership/petshop-00-model.spp",
       "sourceSha256": "7f28c51391c3f9cc80dae3321c59a44b928cbce957b1c21fa1690e7a629fa77c",
-      "importedSha256": "7f28c51391c3f9cc80dae3321c59a44b928cbce957b1c21fa1690e7a629fa77c",
+      "importedSha256": "b813a6b0acabaed32467bb0bf41e1d4cb8f5c9b9eccc7dd059056531fbb6a7ed",
       "executable": false
     },
     {
@@ -1666,7 +1667,7 @@
     {
       "path": "demos/petstore/src/main/spp/petshop/petshop.app",
       "sourceSha256": "0a7ee302475b735177721adb3f1c5a7ea247c5595bb84cbe5e98de839f52da7d",
-      "importedSha256": "0a7ee302475b735177721adb3f1c5a7ea247c5595bb84cbe5e98de839f52da7d",
+      "importedSha256": "d586794dcb95d9e92f828a5e736168554685738b11462df4d37047281af03440",
       "executable": false
     },
     {
@@ -1738,7 +1739,7 @@
     {
       "path": "demos/petstore/src/main/spp/petshop/shared/petshop-00-model.spp",
       "sourceSha256": "3adef9527b9060bc6ef56535009004f57c708ea1a939fee2d97939a9574c720f",
-      "importedSha256": "3adef9527b9060bc6ef56535009004f57c708ea1a939fee2d97939a9574c720f",
+      "importedSha256": "2f0000348caee941da7fb4b3ab0819345170a52a1654460900c4b79232e59c61",
       "executable": false
     },
     {

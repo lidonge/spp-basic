@@ -5,17 +5,21 @@ not standalone compilation units; generate the complete demo.
 
 ## Role: a subject in a business interaction
 
-From [membership model](../src/main/spp/petshop/membership/petshop-00-model.spp):
+The [membership model](../src/main/spp/petshop/membership/petshop-00-model.spp)
+declares Buyer's membership facts and quantum wallet. The
+[Petstore APP](../src/main/spp/petshop/petshop.app) binds the customer profile.
 
-```spp
-take Person as Buyer {
-    mapsame;
+```app
+play Buyer by customer.Person {
+    customerNumber = customerNumber;
+    name = name;
+    email = email;
+    address = address;
 }
 ```
 
-Buyer is declared as a Role with membership facts and a quantum wallet. Person is
-a Reference to the customer domain. This take mapping connects the player to its
-role; mapsame maps same-named facts, not every business responsibility.
+The customer domain owns the mapped profile fields. Petstore owns the membership
+record and wallet.
 
 ## Contract: record the agreement, not the execution machinery
 

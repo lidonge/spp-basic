@@ -239,12 +239,70 @@ public final class DeploymentEnvironmentPlanner {
 
     static List<RolePlay> plays(SppDomain domain, SppClass role) {
         return domain.getRuleBlock().getRolePlays().stream()
-                .filter(play -> play.role().equals(role.getName())).toList();
+                .filter(play -> play.role().equals(role.getName()) && !isStoredRolePlay(domain, role, play)).toList();
     }
 
     static boolean isAppPlayedRole(SppDomain domain, SppClass role) {
-        return role.getType() == CompilationUnitType.role && domain.getRuleBlock().getRolePlays().stream()
-                .anyMatch(play -> play.role().equals(role.getName()));
+        return role.getType() == CompilationUnitType.role && !plays(domain, role).isEmpty();
+    }
+
+    private static boolean isStoredRolePlay(SppDomain domain, SppClass role, RolePlay play) {
+        return domain.getRuleBlock().getAppTables().stream().flatMap(group -> group.getAppTableList().stream())
+                .anyMatch(table -> table.getEntity() == role)
+                && play.fields().keySet().stream().map(role::getField).filter(Objects::nonNull)
+                        .noneMatch(SppField::isQuantum);
+    }
+
+    /** Compile ordinary performer facts for a stored role into the shared role mapping model. */
+    static List<String> bindStoredRolePlays(SppProject project) {
+        List<String> errors = new ArrayList<>();
+        for (var domain : project.getSppDomainMap().values()) {
+            Set<String> bound = new HashSet<>();
+            for (var play : domain.getRuleBlock().getRolePlays()) {
+                if (!(domain.getSppClass(play.role()) instanceof SppClass role)
+                        || !isStoredRolePlay(domain, role, play)) continue;
+                String provider = play.providerDomain() + "." + play.providerType();
+                String prefix = domain.getName() + ": play " + play.role() + " by " + provider + ": ";
+                if (isAppPlayedRole(domain, role)) {
+                    errors.add(prefix + "cannot mix stored role bindings and provider-owned quantum bindings");
+                    continue;
+                }
+                var references = domain.getMapsOfClass().values().stream()
+                        .filter(unit -> unit instanceof SppClass reference && provider.equals(reference.getReferenceSource()))
+                        .map(unit -> (SppClass) unit).toList();
+                if (references.size() != 1 || !play.fields().values().stream()
+                        .allMatch(field -> references.get(0).getField(field) != null)) {
+                    errors.add(prefix + "stored role bindings require one Reference declaring the mapped provider facts");
+                    continue;
+                }
+                var reference = references.get(0);
+                String name = "Mapper" + reference.getName() + "To" + role.getName();
+                if (!bound.add(name)) {
+                    errors.add(prefix + "duplicate stored role binding");
+                    continue;
+                }
+                var existing = domain.getSppClass(name);
+                if (existing instanceof SppRoleMapper existingMapper && existingMapper.isAppPlay()) continue;
+                if (existing != null) {
+                    errors.add(prefix + "conflicts with an existing role mapping");
+                    continue;
+                }
+                var mapper = new SppRoleMapper(name);
+                mapper.setAppPlay();
+                mapper.setRole(role);
+                mapper.setDomainName(domain.getName());
+                mapper.setReal(true);
+                mapper.addEntity(reference);
+                play.fields().forEach((field, source) -> {
+                    var fact = role.getField(field);
+                    var mapping = new SppRoleField(fact.getType(), field, source);
+                    mapping.setArrayDimension(fact.getArrayDimension());
+                    mapper.addField(mapping);
+                });
+                domain.getMapsOfClass().put(name, mapper);
+            }
+        }
+        return errors;
     }
 
     static List<String> validateRolePlays(SppProject project, boolean storesReady) {
@@ -252,6 +310,7 @@ public final class DeploymentEnvironmentPlanner {
         for (var domain : project.getSppDomainMap().values()) {
             if (!storesReady) for (var unit : domain.getMapsOfClass().values()) {
                 if (!(unit instanceof SppRoleMapper mapper)) continue;
+                if (mapper.isAppPlay()) continue;
                 boolean crossDomain = mapper.getRole().getReferenceSource() != null
                         || mapper.getDeclaredPerformers().stream().anyMatch(performer -> performer.getReferenceSource() != null);
                 if (crossDomain && mapper.getRole().getSppFieldList().stream().anyMatch(SppField::isQuantum))
@@ -294,12 +353,12 @@ public final class DeploymentEnvironmentPlanner {
                                 scale(domain, role, left), scale(owner, performer, right)))
                             errors.add(prefix + "scale mismatch " + mapping);
                     }
-                    for (var field : role.getSppFieldList()) if (field.isQuantum()
+                    for (var field : role.getSppFieldList()) if (!isStoredRolePlay(domain, role, play) && field.isQuantum()
                             && !play.fields().containsKey(field.getName()))
                         errors.add(prefix + "unmapped consumer quantum field " + field.getName());
                     if (playKeys(owner, performer, play).isEmpty())
                         errors.add(prefix + "unmapped provider primary-key field or missing provider primary key");
-                } else {
+                } else if (!isStoredRolePlay(domain, role, play)) {
                     var environments = quantumEnvironments(project, domain);
                     var stores = performer.getSppFieldList().stream()
                             .filter(field -> field.isQuantum() && play.fields().containsValue(field.getName()))

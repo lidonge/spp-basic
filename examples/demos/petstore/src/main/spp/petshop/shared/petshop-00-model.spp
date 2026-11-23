@@ -1,13 +1,13 @@
 domain petshop;
 
 Role Merchant {
-}
-
-take Person as Merchant {
-    takeall;
     String tradingName;
     String shopName;
     quantum BigDecimal(19, 2) cash;
+    business("Customer-domain subject registration number") String customerNumber;
+    String name;
+    String email;
+    String address;
 }
 
 Entity Receipt {

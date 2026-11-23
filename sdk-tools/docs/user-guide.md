@@ -326,11 +326,15 @@ queries fill the destination collection.
 Use `,breakTransaction` on a bare check or `identify` inside a transaction
 to abort the transaction when the check fails.
 
-## APP quantum role bindings
+## APP cross-domain role bindings
 
 Declare `play ConsumerRole by provider.ProviderType { consumerField = providerField; }`
 in the APP for the consumer domain. The SPP role owns the business interface.
-Each `play` independently maps all of its quantum fields and all parts of the
+For a role with its own APP table, a binding of ordinary fields uses a local
+SPP `Reference` to declare the provider facts. The consumer keeps its own
+table and quantum storage. Petstore uses this form for Buyer and Merchant.
+
+For provider-owned quantum storage, each `play` maps all quantum fields and all parts of the
 provider's primary key. The compiler uses the provider's APP primary-key order
 and checks field types, quantum modifiers and numeric scale. Each mapped
 quantum attribute uses the provider's storage, bounds, journal and automatic

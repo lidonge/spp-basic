@@ -18,6 +18,10 @@ public class SppRoleMapper extends SppService{
     public void setAlternatives(List<List<SppClass>> value) { alternatives = value; }
     boolean isMapSame;
     boolean isTakeAll;
+    private boolean appPlay;
+
+    boolean isAppPlay() { return appPlay; }
+    void setAppPlay() { appPlay = true; }
 
     public SppRoleMapper(String name) {
         super(name, IConstance.CompilationUnitType.rolemapper);
@@ -92,7 +96,7 @@ public class SppRoleMapper extends SppService{
     }
 
     public boolean getHasPhysicalNumericMappings() {
-        return role.getSppFieldList().stream().anyMatch(SppField::isSnapshotStorageFact) || getSppFieldList().stream().anyMatch(f -> f instanceof SppRoleField m
+        return appPlay || role.getSppFieldList().stream().anyMatch(SppField::isSnapshotStorageFact) || getSppFieldList().stream().anyMatch(f -> f instanceof SppRoleField m
                 && entities != null && entities.stream().anyMatch(e -> e.getName().equals(m.getType().getName())
                     && e.getName().equals(m.getEntityName())))
                 || entities != null && entities.stream().anyMatch(entity -> entity.getSppFieldList().stream()
