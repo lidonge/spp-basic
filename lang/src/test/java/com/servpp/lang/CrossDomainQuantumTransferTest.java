@@ -1,9 +1,13 @@
 package com.servpp.lang;
 
 import com.servpp.lang.models.DomainDeploymentValidator;
+import com.servpp.lang.models.ExecuteBlock;
 import com.servpp.lang.models.SppProject;
 import com.servpp.lang.models.SppService;
+import com.servpp.lang.models.SppServiceCall;
 import java.nio.file.Files;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
@@ -30,7 +34,7 @@ public class CrossDomainQuantumTransferTest {
         parse(project, ".spp", """
                 domain consumer;
                 Role Funds { String wallet; quantum decimal amount; }
-                Role ConsumerRole { String accountCode; String currency; quantum decimal claim; }
+                Role ConsumerRole { String accountCode; String(2) currency; String(2) alternateCurrency; quantum decimal claim; }
                 quantum update moveFunds(Funds consumerFunds, ConsumerRole played) {
                     consumerFunds.amount -> played.claim : 1.125;
                 }
@@ -115,6 +119,68 @@ public class CrossDomainQuantumTransferTest {
         assertFalse(first.contains("Reserve.outstanding"));
         assertTrue(second.contains("Reserve.outstanding"));
         assertFalse(second.contains("Position.outstanding"));
+    }
+
+    @Test public void bindsPlayedReadKeysWithConstantsAndTakeMappings() throws Exception {
+        var project = project(PLAY + "\n" + ALTERNATE, "quantum decimal");
+        parseRead(project, "ConsumerRole.accountCode = \"sample\", ConsumerRole.currency = \"01\"");
+        compile(project);
+        assertEquals(Map.of("played.accountCode", "\"sample\"", "played.currency", "\"01\""), readSources(project));
+
+        project = project(PLAY, "quantum decimal");
+        parseRead(project, "FromInput, CurrencyInput.code = \"01\"");
+        compile(project);
+        assertEquals(Map.of("played.accountCode", "fromInput.getChosen()", "played.currency", "\"01\""), readSources(project));
+    }
+
+    @Test public void rejectsMissingDuplicateMistypedAndOverwidthPlayedReadSources() throws Exception {
+        rejectsRead("FromInput", "missing source for currency");
+        rejectsRead("FromInput, ConsumerRole.accountCode = \"sample\", ConsumerRole.currency = \"01\"",
+                "duplicate source for accountCode");
+        rejectsRead("FromInput, ConsumerRole.currency = 1", "type mismatch for currency");
+        rejectsRead("FromInput, ConsumerRole.currency = \"001\"", "declared-width mismatch for currency");
+    }
+
+    @Test public void rejectsPlayedReadWhenAlternativesUseDifferentConsumerKeyFields() throws Exception {
+        var project = project(PLAY + "\n" + ALTERNATE.replace("currency = currency", "alternateCurrency = currency"),
+                "quantum decimal");
+        parseRead(project, "FromInput, ConsumerRole.currency = \"01\"");
+        assertReadDiagnostic(project, "requires the same primary-key fields for every APP play binding");
+    }
+
+    private void parseRead(SppProject project, String operands) throws Exception {
+        parse(project, ".spp", """
+                domain consumer;
+                Role FromInput { String chosen; }
+                Role CurrencyInput { String(2) code; }
+                take FromInput as ConsumerRole { String accountCode = chosen; }
+                take CurrencyInput as ConsumerRole { String currency = code; }
+                Scenario serial readClaim(ConsumerRole played, FromInput fromInput) {
+                    findConsumerRole by %s;
+                }
+                """.formatted(operands));
+    }
+
+    private Map<String, String> readSources(SppProject project) {
+        var scenario = (SppService) project.getDomain("consumer").getSppClass("ReadClaim");
+        var block = (ExecuteBlock) scenario.getServiceBody().getSppServiceCallList().get(0);
+        var call = (SppServiceCall) block.getExecuteCallList().get(0);
+        return call.getBoundReadKeys().stream().collect(Collectors.toMap(
+                SppServiceCall.BoundReadKey::target, SppServiceCall.BoundReadKey::value));
+    }
+
+    private void rejectsRead(String operands, String diagnostic) throws Exception {
+        var project = project(PLAY, "quantum decimal");
+        parseRead(project, operands);
+        assertReadDiagnostic(project, diagnostic);
+    }
+
+    private void assertReadDiagnostic(SppProject project, String diagnostic) {
+        var errors = DomainDeploymentValidator.validate(project);
+        assertTrue(errors.toString(), errors.isEmpty());
+        errors = project.getDomain("consumer").validateAppDeclarations();
+        assertTrue(errors.toString(), errors.stream().anyMatch(error -> error.startsWith(
+                "Scenario readClaim by read binding for findConsumerRole ") && error.contains(diagnostic)));
     }
 
     @Test public void validatesEachAlternativeAndBothDirectionsOfQuantumMismatch() throws Exception {

@@ -64,10 +64,12 @@ public interface IAnnotateHandler extends IApplicationHandler, IRecursionProcess
             currentRuleBlock.clearLineAnn();
             return;
         }
-        if (ctx.applicationDeployment() != null || ctx.localServiceBinding() != null || ctx.internationalization() != null || ctx.requestPolicy() != null || ctx.transactionPolicy() != null || ctx.propertyTrackingPolicy() != null
+        if (ctx.applicationDeployment() != null || ctx.rolePlay() != null || ctx.localServiceBinding() != null
+                || ctx.internationalization() != null || ctx.requestPolicy() != null || ctx.transactionPolicy() != null
+                || ctx.propertyTrackingPolicy() != null
                 || ctx.technicalServices() != null || ctx.serviceInterception() != null || ctx.systemServices() != null) {
             if (currentLineAnns != null && !currentLineAnns.isEmpty())
-                getSppDomian().addAppParseError("Deployment, binding, i18n, request, transaction and technical interception declarations do not support APP annotations.");
+                getSppDomian().addAppParseError("Deployment, play, binding, i18n, request, transaction and technical interception declarations do not support APP annotations.");
             currentRuleBlock.clearLineAnn();
             return;
         }

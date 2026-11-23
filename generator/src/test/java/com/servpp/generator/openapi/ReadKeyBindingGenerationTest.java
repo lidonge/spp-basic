@@ -1,5 +1,6 @@
 package com.servpp.generator.openapi;
 
+import com.servpp.generator.GeneratorUtil;
 import com.servpp.lang.AppCompiler;
 import com.servpp.lang.SppCompiler;
 import com.servpp.lang.models.SppProject;
@@ -14,6 +15,65 @@ import static org.junit.Assert.*;
 
 public class ReadKeyBindingGenerationTest {
     @Rule public TemporaryFolder temporary = new TemporaryFolder();
+
+    @Test public void generatedPlayedReadUsesTheProviderPrimaryKey() throws Exception {
+        var source = temporary.newFolder("played-sources").toPath();
+        Files.writeString(source.resolve("consumer.spp"), """
+                domain consumer;
+                Role Played { String accountCode; String currency; }
+                Scenario serial readPlayed(Played played) {
+                    findPlayed by Played.accountCode = "sample", Played.currency = "01";
+                }
+                """);
+        Files.writeString(source.resolve("consumer.app"), """
+                domain consumer;
+                application reads { environment develop {
+                    deploy consumer; deploy provider;
+                    transactions { mode: LOCAL; resource: records; }
+                } }
+                play Played by provider.Position { accountCode = account; currency = unit; }
+                scope { local {} }
+                """);
+        Files.writeString(source.resolve("provider.spp"), """
+                domain provider;
+                Entity Position { String account; String unit; }
+                """);
+        Files.writeString(source.resolve("provider.app"), """
+                domain provider;
+                tables entities { table POSITIONS(Position) { primarykey(Position.unit, Position.account); } }
+                """);
+        Files.writeString(source.resolve("provider.phy"), """
+                domain provider;
+                phy {
+                    repository data {
+                        adapter jdbcObjectRepository;
+                        config default = true;
+                        config appDdlTables = true;
+                        config datasourceUrl = "jdbc:h2:mem:played_reads";
+                        config driverClassName = "org.h2.Driver";
+                    }
+                    backend database {
+                        adapter localJdbc;
+                        config datasourceUrl = "jdbc:h2:mem:played_reads";
+                        config driverClassName = "org.h2.Driver";
+                    }
+                }
+                """);
+        var output = temporary.newFolder("played-output").toPath();
+        var javaOutput = output.resolve("java");
+        GeneratorUtil.execute(source.toFile(), output.resolve("resources").toFile(), javaOutput.toFile(), "example");
+        String scenario = Files.readString(javaOutput.resolve("example/consumer/handler/ReadPlayed.java"));
+        int find = scenario.indexOf(".findPlayed(played)");
+        assertTrue(scenario, find >= 0);
+        String beforeFind = scenario.substring(0, find);
+        assertTrue(beforeFind, beforeFind.contains("played.setAccountCode("));
+        assertTrue(beforeFind, beforeFind.contains("played.setCurrency("));
+        String query = Files.readString(javaOutput.resolve("example/consumer/service/SimpleFindPlayed.java"));
+        assertTrue(query, query.contains("ParticipantRoleQueries.Play(\"provider.findPosition\", example.provider.model.Position.class"));
+        assertTrue(query, query.contains("Map.entry(\"accountCode\", \"account\")"));
+        assertTrue(query, query.contains("Map.entry(\"currency\", \"unit\")"));
+        assertTrue(query, query.contains("java.util.List.of(\"currency\", \"accountCode\")"));
+    }
 
     @Test public void generatedReadBindsCompositeKeysBeforeCallingQueryAndKeepsThemAfterwards() throws Exception {
         var spp = temporary.newFile("reads.spp");

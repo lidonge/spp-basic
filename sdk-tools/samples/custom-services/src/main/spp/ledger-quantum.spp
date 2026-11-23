@@ -28,3 +28,8 @@ Scenario serial transferFunds(Funds consumerFunds, ProviderPlayedRole played, Tr
 Scenario serial readClaim(ProviderPlayedRole played) {
     findProviderPlayedRole;
 }
+
+Scenario serial readClaimBy(ProviderPlayedRole played) {
+    findProviderPlayedRole by ProviderPlayedRole.accountCode = "P-1",
+        ProviderPlayedRole.currency = "UNIT";
+}

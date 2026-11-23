@@ -12,6 +12,7 @@ import com.servpp.service.transaction.DeclaredTransactionContext;
 import com.servpp.service.transaction.DefaultTransactionManager;
 import com.servpp.service.transaction.JdbcQuantumJournalStore;
 import com.servpp.service.transaction.TransactionMode;
+import example.generated.ledger.model.ReadClaimByRequest;
 import example.generated.ledger.model.ReadClaimRequest;
 import example.generated.ledger.model.TransferFundsRequest;
 import example.generated.positions.model.Position;
@@ -68,9 +69,9 @@ public class CrossDomainQuantumTest {
             var observer = new JdbcQuantumJournalStore(
                     new DriverManagerJdbcDataSource("org.h2.Driver", url, null, null),
                     "transfer_journal", "transfer_values");
-            var played = Map.of("accountCode", "P-1", "currency", "UNIT");
-            var read = mapper.convertValue(Map.of("played", played), ReadClaimRequest.class);
-            runtime.executeGeneratedService("ledger.readClaim", read);
+            var read = readClaimBy(runtime, mapper);
+            assertEquals("P-1", read.getPlayed().getAccountCode());
+            assertEquals("UNIT", read.getPlayed().getCurrency());
             assertEquals(0, new BigDecimal("-2.375").compareTo(read.getPlayed().getClaim()));
             java.util.function.BiConsumer<String, String> transfer = (account, amount) -> runtime.executeGeneratedService(
                     "ledger.transferFunds", mapper.convertValue(Map.of(
@@ -79,10 +80,15 @@ public class CrossDomainQuantumTest {
                             "transfer", Map.of("amount", new BigDecimal(amount))),
                             TransferFundsRequest.class));
 
-            transfer.accept("P-1", "1.125");
+            var transferReadRole = mapper.convertValue(Map.of(
+                    "consumerFunds", Map.of("wallet", "F-1"),
+                    "transfer", Map.of("amount", new BigDecimal("1.125"))), TransferFundsRequest.class);
+            transferReadRole.setPlayed(read.getPlayed());
+            runtime.executeGeneratedService("ledger.transferFunds", transferReadRole);
             var manager = DefaultTransactionManager.getInstance();
             String committed = manager.committedQuantumBoundaryPayload().orElseThrow();
             assertPositions(observer, "4.125", "-1.250");
+            assertEquals(0, new BigDecimal("-1.250").compareTo(readClaimBy(runtime, mapper).getPlayed().getClaim()));
             assertEquals(2, observer.findAll().size());
             assertTrue(observer.findAll().stream().anyMatch(row ->
                     CLAIM.equals(row.getAttributeId()) && PROVIDER_KEY.equals(row.getObjectId())));
@@ -121,7 +127,13 @@ public class CrossDomainQuantumTest {
             DeclaredTransactionContext.execute(TransactionMode.LOCAL, () -> repository.executeInTransaction(() ->
                     repository.delete("Position", PROVIDER_KEY)));
             assertAbsentClaim(runtime, mapper, "P-1");
-            var deleted = assertThrows(IllegalStateException.class, () -> transfer.accept("P-1", "1.125"));
+            var absent = readClaimBy(runtime, mapper).getPlayed();
+            assertEquals("P-1", absent.getAccountCode());
+            assertEquals("UNIT", absent.getCurrency());
+            assertEquals(0, BigDecimal.ZERO.compareTo(absent.getClaim()));
+            transferReadRole.setPlayed(absent);
+            var deleted = assertThrows(IllegalStateException.class, () ->
+                    runtime.executeGeneratedService("ledger.transferFunds", transferReadRole));
             assertEquals("QUANTUM_PLAY_POSITION_NOT_FOUND: ProviderPlayedRole.claim", deleted.getMessage());
             assertPositions(observer, "5.250", "-2.375");
             assertEquals(4, observer.findAll().size());
@@ -139,6 +151,13 @@ public class CrossDomainQuantumTest {
             if (previous == null) System.clearProperty(property);
             else System.setProperty(property, previous);
         }
+    }
+
+    private ReadClaimByRequest readClaimBy(LocalGeneratedServiceRuntime runtime, ObjectMapper mapper) {
+        var request = mapper.convertValue(Map.of("played", Map.of(
+                "accountCode", "wrong", "currency", "wrong", "claim", new BigDecimal("99"))), ReadClaimByRequest.class);
+        runtime.executeGeneratedService("ledger.readClaimBy", request);
+        return request;
     }
 
     private void assertAbsentClaim(LocalGeneratedServiceRuntime runtime, ObjectMapper mapper, String account) {

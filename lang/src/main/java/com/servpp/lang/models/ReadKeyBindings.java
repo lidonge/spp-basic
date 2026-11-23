@@ -54,11 +54,8 @@ final class ReadKeyBindings {
             return;
         }
         var actual = call.getSppParameterList().get(formals.indexOf(conditions.get(0)));
-        var keys = ParticipantRoleBindings.primaryKeys(domain, type);
-        if (keys.isEmpty()) {
-            errors.add(label + " requires APP primary-key fields");
-            return;
-        }
+        var keys = readKeys(domain, type, label, errors);
+        if (keys.isEmpty()) return;
         Map<String, Source> sources = new HashMap<>();
         for (var key : call.getReadKeys()) {
             collectSources(domain, owner, type, actual.getName(), keys, key, sources, label, errors);
@@ -87,6 +84,33 @@ final class ReadKeyBindings {
             call.getBoundReadKeys().add(new SppServiceCall.BoundReadKey(actual.getName() + "." + path,
                     field, source.field(), source.java(), source.path(), List.copyOf(parents)));
         }
+    }
+
+    private static List<String> readKeys(SppDomain domain, SppClass target, String label, List<String> errors) {
+        if (DeploymentEnvironmentPlanner.isAppPlayedRole(domain, target)) {
+            List<String> keys = List.of();
+            var project = domain.getProject();
+            for (var play : DeploymentEnvironmentPlanner.plays(domain, target)) {
+                var provider = project == null ? null : project.getDomain(play.providerDomain());
+                var performer = provider == null ? null : provider.getSppClass(play.providerType());
+                var alternative = performer instanceof SppClass type
+                        ? DeploymentEnvironmentPlanner.playKeys(provider, type, play) : List.<String>of();
+                if (alternative.isEmpty()) {
+                    errors.add(label + " requires APP primary-key fields");
+                    return List.of();
+                }
+                // The provider query keeps its own key order. The scenario only binds consumer fields.
+                if (keys.isEmpty()) keys = alternative;
+                else if (!Set.copyOf(keys).equals(Set.copyOf(alternative))) {
+                    errors.add(label + " requires the same primary-key fields for every APP play binding");
+                    return List.of();
+                }
+            }
+            return keys;
+        }
+        var keys = ParticipantRoleBindings.primaryKeys(domain, target);
+        if (keys.isEmpty()) errors.add(label + " requires APP primary-key fields");
+        return keys;
     }
 
     private static void collectSources(SppDomain domain, SppService owner, SppClass target, String targetName,
