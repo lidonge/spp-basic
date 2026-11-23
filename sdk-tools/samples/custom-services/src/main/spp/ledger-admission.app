@@ -1,0 +1,20 @@
+domain ledger;
+
+play ProviderResult by positions.Admission {
+    accountNumber = account;
+    code = returnCode;
+}
+
+play AdmissionLookup by positions.Admission {
+    keyCode = account;
+    code = returnCode;
+}
+
+tables roles {
+    table STORED_RESULTS(StoredResult) { primarykey(StoredResult.receipt); }
+}
+
+play StoredResult by positions.Admission {
+    accountNumber = account;
+    code = returnCode;
+}

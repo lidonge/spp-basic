@@ -5,3 +5,7 @@ tables entities {
         primarykey(Position.account, Position.currency);
     }
 }
+
+tables entities {
+    table ADMISSIONS(Admission) { primarykey(Admission.account); }
+}

@@ -5,3 +5,8 @@ Entity Position {
     String currency;
     quantum decimal outstanding;
 }
+
+Entity Admission {
+    String(28) account;
+    String(5) returnCode;
+}

@@ -24,6 +24,17 @@ public class SppEnum extends SppCompilationUnit{
         return items.stream().filter(item -> item.acceptsWireValue(value)).findFirst().orElse(null);
     }
 
+    static boolean bindsProviderString(SppField consumer, SppField provider) {
+        return consumer.getArrayDimension() == 0 && provider.getArrayDimension() == 0
+                && consumer.getType() instanceof SppEnum enumeration
+                && "String".equals(provider.getType().getName())
+                && enumeration.items.stream().anyMatch(item -> !item.getAliases().isEmpty());
+    }
+
+    public String codeFactory() {
+        return preservesUnknownWireValues() ? "fromValue" : "fromCode";
+    }
+
     public boolean preservesUnknownWireValues() {
         return getFallbackItem(SppEnumItem.Fallback.OTHER) != null;
     }

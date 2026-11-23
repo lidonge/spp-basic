@@ -64,12 +64,14 @@ public final class LocalDomainServices {
     }
     static Object queryPlay(Object participant, ParticipantRoleQueries.Play play) {
         for (String path : play.keyPaths()) {
-            Object value = com.servpp.service.repository.ObjectPropertyAccess.read(participant, path);
+            Object value = WireMappedEnum.wireValue(com.servpp.service.repository.ObjectPropertyAccess.read(participant, path));
             if (value == null || value.toString().isBlank()) return null;
         }
         var values = new LinkedHashMap<String, Object>();
-        play.fields().forEach((roleField, providerField) -> values.put(providerField,
-                com.servpp.service.repository.ObjectPropertyAccess.read(participant, roleField)));
+        play.fields().forEach((roleField, providerField) -> {
+            Object value = com.servpp.service.repository.ObjectPropertyAccess.read(participant, roleField);
+            values.put(providerField, WireMappedEnum.wireValue(value));
+        });
         Object performer = MAPPER.convertValue(values, play.performer());
         String[] fields = play.fields().values().toArray(String[]::new);
         com.servpp.service.repository.TransactionQueryReads.project(new Object[]{participant}, new Object[]{performer},
@@ -80,8 +82,11 @@ public final class LocalDomainServices {
 
     static void copyPlayResult(Object participant, ParticipantRoleQueries.Play play, Object performer) {
         var values = new LinkedHashMap<String, Object>();
-        play.fields().forEach((roleField, providerField) -> values.put(roleField,
-                com.servpp.service.repository.ObjectPropertyAccess.read(performer, providerField)));
+        play.fields().forEach((roleField, providerField) -> {
+            Object value = com.servpp.service.repository.ObjectPropertyAccess.read(performer, providerField);
+            var decoder = play.decoders().get(roleField);
+            values.put(roleField, decoder == null ? value : decoder.apply((String) value));
+        });
         copyPlayValues(participant, values);
     }
 

@@ -22,8 +22,7 @@ public final class EnumConstruction extends Expression {
     }
 
     String render(Function<IExpression, String> renderExpression) {
-        String factory = enumeration.preservesUnknownWireValues() ? ".fromValue(" : ".fromCode(";
-        return EnumValue.javaType(enumeration) + factory + renderExpression.apply(code) + ")";
+        return EnumValue.javaType(enumeration) + "." + enumeration.codeFactory() + "(" + renderExpression.apply(code) + ")";
     }
 
     @Override

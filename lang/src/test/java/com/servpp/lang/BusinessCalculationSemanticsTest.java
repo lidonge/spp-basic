@@ -31,6 +31,20 @@ public class BusinessCalculationSemanticsTest {
         assertTrue(errors.toString(), errors.isEmpty());
     }
 
+    @Test public void enumConstructorAndRejectionArgumentsCountAsParticipantUses() throws Exception {
+        var domain = compile("""
+                domain rules;
+                Enum Outcome { SUCCESS:"", UNKNOWN:other }
+                Role Result { String code; }
+                atomic check checkProvider(Result result, Result reason, Result unused) {
+                    require(Outcome(result.code) == Outcome.SUCCESS, Outcome(reason.code));
+                }
+                """);
+        var warnings = domain.unusedParticipantWarnings();
+        assertEquals(warnings.toString(), 1, warnings.size());
+        assertTrue(warnings.toString(), warnings.get(0).contains("participant 'unused'"));
+    }
+
     @Test public void rejectsEnumConstructionWithWrongArityOrType() throws Exception {
         String source = """
                 domain rules;

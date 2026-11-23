@@ -1,7 +1,9 @@
 package com.servpp.service.runtime;
 
 import com.servpp.service.repository.RepositoryParticipantSnapshots;
+import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 /** A generated default query recursively resolves the participants that perform its role. */
 public final class ParticipantRoleQueries {
@@ -14,7 +16,7 @@ public final class ParticipantRoleQueries {
         } else ParticipantIdentity.confirm(participant,true);
     }
     public record Play(String provider, Class<?> performer, Map<String, String> fields,
-                       java.util.List<String> keyPaths) { }
+                       List<String> keyPaths, Map<String, Function<String, WireMappedEnum>> decoders) { }
 
     public static void play(Object participant, String[] quantumFields, Play... alternatives) {
         if (participant instanceof Iterable<?> members) {

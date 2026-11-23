@@ -1,0 +1,28 @@
+domain ledger;
+
+Enum ProviderOutcome { NOT_FOUND:"E1214","OLD", SUCCESS:"", UNRECOGNIZED:other }
+Role ProviderResult { String(28) accountNumber; ProviderOutcome code; }
+
+atomic check checkProvider(ProviderResult result) {
+    require(result.code == ProviderOutcome.SUCCESS, result.code);
+}
+
+Scenario serial verifyAdmission(ProviderResult result) {
+    findProviderResult;
+    identify(result);
+    checkProvider(result);
+}
+
+Enum AccountCode { FIRST:"A1", UNLISTED:other }
+Enum StrictOutcome { NOT_FOUND:"E1214", OTHER }
+Role AdmissionLookup { AccountCode keyCode; StrictOutcome code; }
+Scenario serial readAdmission(AdmissionLookup lookup) {
+    findAdmissionLookup;
+    identify(lookup);
+}
+
+Reference Admission from positions.Admission {
+    String(28) account;
+    String(5) returnCode;
+}
+Role StoredResult { String receipt; String accountNumber; ProviderOutcome code; }

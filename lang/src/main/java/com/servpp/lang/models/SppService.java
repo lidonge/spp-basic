@@ -131,7 +131,8 @@ public class SppService extends SppClass{
                 + actors.stream().map(actor -> model + actor.getName() + ".class").collect(Collectors.joining(","))
                 + ")").collect(Collectors.joining(",")) + ")";
     }
-    record PlayQuery(String service, String providerClass, Map<String, String> fields, List<String> keyPaths) { }
+    record PlayQuery(String service, String providerClass, Map<String, String> fields, List<String> keyPaths,
+                     Map<String, SppEnum> decoders) { }
     private final Map<Integer, List<PlayQuery>> playQueries = new LinkedHashMap<>();
     Map<Integer, List<PlayQuery>> getPlayQueries() { return playQueries; }
 
@@ -145,10 +146,14 @@ public class SppService extends SppClass{
                 String mappings = step.fields().entrySet().stream().map(mapping ->
                         "java.util.Map.entry(\"" + mapping.getKey() + "\", \"" + mapping.getValue() + "\")")
                         .collect(Collectors.joining(", "));
+                String decoders = step.decoders().entrySet().stream().map(mapping ->
+                        "java.util.Map.entry(\"" + mapping.getKey() + "\", " + mapping.getValue().getPackageName()
+                                + "." + mapping.getValue().getName() + "::" + mapping.getValue().codeFactory() + ")")
+                        .collect(Collectors.joining(", "));
                 String keys = step.keyPaths().stream().map(path -> "\"" + path + "\"").collect(Collectors.joining(", "));
                 return "new com.servpp.service.runtime.ParticipantRoleQueries.Play(\"" + step.service()
                         + "\", " + getBasePackage() + "." + step.providerClass() + ".class, java.util.Map.ofEntries("
-                        + mappings + "), java.util.List.of(" + keys + "))";
+                        + mappings + "), java.util.List.of(" + keys + "), java.util.Map.ofEntries(" + decoders + "))";
             }).collect(Collectors.joining(", "));
             return "        com.servpp.service.runtime.ParticipantRoleQueries.play(" + parameter.getName()
                     + ", new String[]{" + quantumFields + "}, " + alternatives + ");\n";

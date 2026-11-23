@@ -98,6 +98,25 @@ public class CrossDomainQuantumTransferTest {
         }
     }
 
+    @Test public void playAcceptsOnlyScalarStringToWireEnumConversion() throws Exception {
+        for (String type : new String[]{"Mapped", "Plain", "int", "Mapped[]"}) {
+            var project = project("", "quantum decimal");
+            parse(project, ".spp", """
+                    domain consumer;
+                    Enum Mapped { SUCCESS:"", UNKNOWN:other }
+                    Enum Plain { FIRST, SECOND }
+                    Role Outcome { %s code; String account; }
+                    """.formatted(type));
+            parse(project, ".app", """
+                    domain consumer;
+                    play Outcome by provider.Position { code = currency; account = account; }
+                    """);
+            var errors = DomainDeploymentValidator.validate(project);
+            if (type.equals("Mapped")) assertTrue(errors.toString(), errors.isEmpty());
+            else assertTrue(errors.toString(), errors.stream().anyMatch(e -> e.contains("type mismatch code=currency")));
+        }
+    }
+
     @Test public void resolvesAlternativesToCanonicalAttributesAndOrderedKeys() throws Exception {
         var project = project(PLAY + "\n" + ALTERNATE, "quantum decimal");
         assertEquals(2, project.getDomain("consumer").getRuleBlock().getRolePlays().size());

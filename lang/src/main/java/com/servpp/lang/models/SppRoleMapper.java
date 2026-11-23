@@ -141,7 +141,11 @@ public class SppRoleMapper extends SppService{
                 String value = toRole ? object + ".get" + source.getUpperName() + "()" : "role.get" + target.getUpperName() + "()";
                 SppField destination = toRole ? target : source;
                 SppField origin = toRole ? source : target;
-                if (!source.getJavaType().equals(target.getJavaType())
+                if (appPlay && SppEnum.bindsProviderString(target, source)) {
+                    var enumeration = (SppEnum) target.getType();
+                    value = toRole ? enumeration.getName() + "." + enumeration.codeFactory() + "(" + value + ")"
+                            : value + " == null ? null : " + value + ".getValue()";
+                } else if (!source.getJavaType().equals(target.getJavaType())
                         || !java.util.Objects.equals(source.getNumericAdapter(), target.getNumericAdapter())) {
                     value = com.servpp.lang.models.app.expr.NumericJavaRenderer.convertNumber(value, origin, destination);
                 }

@@ -1,5 +1,6 @@
 package com.servpp.service.transaction;
 
+import com.servpp.service.runtime.WireMappedEnum;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -271,7 +272,7 @@ public class QuantumConservationParticipant extends ObjectSnapshotTransactionPar
     private String mappedObjectId(Object participant, String[] paths) {
         List<String> keys = new ArrayList<>();
         for (String path : paths) {
-            Object value = com.servpp.service.repository.ObjectPropertyAccess.read(participant, path);
+            Object value = WireMappedEnum.wireValue(com.servpp.service.repository.ObjectPropertyAccess.read(participant, path));
             if (value == null || value.toString().isBlank()) return null;
             keys.add(value.toString());
         }

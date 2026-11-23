@@ -231,6 +231,9 @@ wire code has the fallback member's kind and retains its original code in
 `getValue()` for serialization and storage. The nested enum is named `Kind`
 (`$Kind` if the class or a member already uses `Kind`).
 
+An APP play can apply this same constructor when reading a provider string into a
+consumer enum field. See [APP cross-domain role bindings](#app-cross-domain-role-bindings).
+
 The generated Maven project is an integration library. It does not automatically
 supply a configured HTTP server, credentials, database migrations, a reverse
 proxy or a browser UI. A host must install the generated deployment and runtime,
@@ -341,6 +344,25 @@ in the APP for the consumer domain. The SPP role owns the business interface.
 For a role with its own APP table, a binding of ordinary fields uses a local
 SPP `Reference` to declare the provider facts. The consumer keeps its own
 table and quantum storage. Petstore uses this form for Buyer and Merchant.
+
+A scalar consumer enum with declared wire codes can bind to a provider
+`String(n)`. For example, given `Enum ProviderOutcome { NOT_FOUND:"E1214","OLD", SUCCESS:"", UNRECOGNIZED:other }`,
+map the fields directly in the consumer APP:
+
+```spp
+play ProviderResult by providerdomain.Admission {
+    accountNumber = account;
+    code = returnCode;
+}
+```
+
+Reading `returnCode` constructs `ProviderOutcome(returnCode)`. Both `E1214` and
+`OLD` resolve to `NOT_FOUND`. An unknown code such as `E9999` selects
+`UNRECOGNIZED` and retains `E9999` for rejection, write-back and lookup.
+Without an explicit `other` fallback, an unknown non-null code raises a runtime
+error. Here a null provider code selects `UNRECOGNIZED`. A declared `null`
+fallback takes precedence for null input. Writes and lookup
+keys use the member's `getValue()`, so an alias writes the canonical code.
 
 For provider-owned quantum storage, each `play` maps all quantum fields and all parts of the
 provider's primary key. The compiler uses the provider's APP primary-key order

@@ -507,11 +507,17 @@ public final class DomainDeploymentValidator {
                             + play.providerDomain() + "." + play.providerType());
                     continue;
                 }
+                var performer = (SppClass) owner.getSppClass(play.providerType());
+                var decoders = new java.util.LinkedHashMap<String, SppEnum>();
+                play.fields().forEach((name, source) -> {
+                    var target = role.getField(name);
+                    if (SppEnum.bindsProviderString(target, performer.getField(source)))
+                        decoders.put(name, (SppEnum) target.getType());
+                });
                 service.getPlayQueries().computeIfAbsent(index, ignored -> new ArrayList<>())
                         .add(new SppService.PlayQuery(owner.getName() + "." + provider.getFuncName(),
                                 owner.getName() + ".model." + play.providerType(), play.fields(),
-                                DeploymentEnvironmentPlanner.playKeys(owner,
-                                        (SppClass) owner.getSppClass(play.providerType()), play)));
+                                DeploymentEnvironmentPlanner.playKeys(owner, performer, play), decoders));
             }
         }
     }

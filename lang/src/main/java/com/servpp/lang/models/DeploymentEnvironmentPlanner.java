@@ -347,8 +347,9 @@ public final class DeploymentEnvironmentPlanner {
                         if (left == null || right == null) errors.add(prefix + "unknown field " + mapping);
                         else if (left.isQuantum() != right.isQuantum())
                             errors.add(prefix + "quantum/non-quantum field mismatch " + mapping);
-                        else if (!left.getType().getName().equals(right.getType().getName())
+                        else if ((!left.getType().getName().equals(right.getType().getName())
                                 || left.getArrayDimension() != right.getArrayDimension())
+                                && !SppEnum.bindsProviderString(left, right))
                             errors.add(prefix + "type mismatch " + mapping);
                         else if (left.isQuantum() && !Objects.equals(
                                 scale(domain, role, left), scale(owner, performer, right)))

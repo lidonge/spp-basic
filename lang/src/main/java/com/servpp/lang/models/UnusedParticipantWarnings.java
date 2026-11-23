@@ -79,6 +79,11 @@ final class UnusedParticipantWarnings {
                 expression(expression, used);
             } else if (statement instanceof RequireStatement require) {
                 expression(require.getCondition(), used);
+                expression(require.getRejectionCode(), used);
+            } else if (statement instanceof QuantumTransferStatement transfer) {
+                expression(transfer.source(), used);
+                expression(transfer.destination(), used);
+                expression(transfer.amount(), used);
             } else if (statement instanceof CalculationRule rule) {
                 expression(rule.getCondition(), used);
                 calculations(rule.getWhenTrue(), used);
@@ -99,6 +104,8 @@ final class UnusedParticipantWarnings {
         } else if (expression instanceof IOperationExpression operation) {
             expression(operation.getLeft(), used);
             expression(operation.getRight(), used);
+        } else if (expression instanceof EnumConstruction construction) {
+            expression(construction.getCode(), used);
         } else if (expression instanceof CalculationFunction function) {
             function.getArguments().forEach(argument -> expression(argument, used));
         } else if (expression instanceof ConditionalExpression conditional) {
