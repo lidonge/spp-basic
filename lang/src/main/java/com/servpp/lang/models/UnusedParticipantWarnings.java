@@ -90,7 +90,7 @@ final class UnusedParticipantWarnings {
         }
     }
 
-    private static void expression(IExpression expression, Set<String> used) {
+    static void expression(IExpression expression, Set<String> used) {
         if (expression instanceof Reference reference) {
             // Resolved lexical locals must not count as formal participants.
             if (!(reference instanceof CalculationReference calculation && calculation.local)) {

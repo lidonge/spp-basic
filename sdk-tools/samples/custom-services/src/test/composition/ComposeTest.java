@@ -39,10 +39,17 @@ public class ComposeTest {
 
             try (var sql = db.createStatement()) {
                 sql.execute("ALTER TABLE ACCEPTED ADD CONSTRAINT REJECT_R CHECK (receiptNumber <> 'R')");
+                if (!"serial".equals(args[0])) {
+                    confirm(runtime, "100", "40");
+                    assertEquals("QUANTUM_BOUND_REJECTED", BusinessChecks.scenarioResult().code());
+                    assertDatabase(db, false);
+                }
                 var failure = assertThrows(RuntimeException.class, () -> confirm(runtime));
-                assertTrue("Failure must come from the final ACCEPTED insert: " + failure,
+                assertTrue("Failure must come from the ACCEPTED insert: " + failure,
                         java.util.stream.Stream.iterate((Throwable) failure, java.util.Objects::nonNull, Throwable::getCause)
-                                .anyMatch(cause -> cause.getMessage() != null && cause.getMessage().contains("REJECT_R")));
+                                .anyMatch(cause -> cause instanceof java.sql.SQLException sqlFailure
+                                        && "23513".equals(sqlFailure.getSQLState())
+                                        && sqlFailure.getMessage().contains("REJECT_R")));
                 assertDatabase(db, false);
                 sql.execute("ALTER TABLE ACCEPTED DROP CONSTRAINT REJECT_R");
             }
@@ -52,25 +59,35 @@ public class ComposeTest {
             confirm(runtime);
             assertEquals("", BusinessChecks.scenarioResult().code());
             assertDatabase(db, true);
+            if ("nested".equals(args[0])) {
+                try (var sql = db.createStatement(); var rows = sql.executeQuery("SELECT balance FROM ACCEPTED")) {
+                    assertTrue(rows.next());
+                    assertEquals(0, rows.getBigDecimal(1).compareTo(new BigDecimal("30")));
+                }
+            }
         } finally {
             services.clear();
         }
     }
 
     private static void confirm(LocalGeneratedServiceRuntime runtime) {
-        runtime.executeGeneratedService("client.confirm", request());
+        confirm(runtime, "10", "10");
     }
 
-    private static ConfirmRequest request() {
+    private static void confirm(LocalGeneratedServiceRuntime runtime, String amount, String funding) {
+        runtime.executeGeneratedService("client.confirm", request(amount, funding));
+    }
+
+    private static ConfirmRequest request(String amount, String funding) {
         return new ConfirmRequest()
-                .receipt(new Receipt().receiptNumber("R").amount(new BigDecimal("10")))
+                .receipt(new Receipt().receiptNumber("R").amount(new BigDecimal(amount)).funding(new BigDecimal(funding)))
                 .handover(new Handover()).till(new Till()).intake(new Intake()).accepted(new Accepted());
     }
 
     private static void verifyMissingPerformer(LocalGeneratedServiceRuntime runtime, Connection db) throws Exception {
         var mapper = new ObjectMapper();
         // The additional serial entry points use the same participants as confirm.
-        com.fasterxml.jackson.databind.JsonNode json = mapper.valueToTree(request());
+        com.fasterxml.jackson.databind.JsonNode json = mapper.valueToTree(request("10", "10"));
         var absentRequest = mapper.treeToValue(json, Class.forName("com.example.cv1.client.model.ConfirmAbsentRequest"));
         var absent = assertThrows(RuntimeException.class,
                 () -> runtime.executeGeneratedService("client.confirmAbsent", absentRequest));

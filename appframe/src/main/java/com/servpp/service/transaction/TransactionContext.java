@@ -12,6 +12,11 @@ public class TransactionContext {
     private final Map<String, TransactionMode> resourceModes;
     private QuantumEntanglementBoundary quantumEntanglementBoundary;
     private final QuantumJournalStore quantumJournalStore;
+    // Prefix of the boundary already applied on the owning LOCAL JDBC connection.
+    private int settledQuantumRecords;
+
+    int settledQuantumRecords() { return settledQuantumRecords; }
+    void settledQuantumRecords(int count) { settledQuantumRecords = count; }
     private final String globalSerialNumber;
     private final Map<String, Object> attributes = new LinkedHashMap<>();
 
