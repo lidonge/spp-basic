@@ -77,7 +77,8 @@ public class LocalRedundancyTest {
                 source("more.spp", "domain d; Role Other { String(9) code; } "
                         + "Role WidthOne { String(8) code; } Role WidthTwo { String(9) code; }"));
         var warnings = run(sources);
-        assertEquals(List.of("SPP_REDUNDANT_PADDED_BLANK"), warnings);
+        assertEquals(List.of("SPP_REDUNDANT_COPY_TYPE", "SPP_REDUNDANT_COPY_TYPE",
+                "SPP_REDUNDANT_PADDED_BLANK"), warnings);
     }
 
     private static List<String> run(List<RedundancyLint.Source> sources) {
