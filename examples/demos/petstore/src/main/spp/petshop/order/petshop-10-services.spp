@@ -28,3 +28,8 @@ atomic calculate prepareOrderInventory(ShopOrder, StockLine[]) {
 }
 
 atomic update reserveInventory(StockLine[], ShopOrder);
+
+readonly Scenario serial readShopOrderLine(OrderLine) {
+    findOrderLine;
+    identify(OrderLine);
+}

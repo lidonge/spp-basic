@@ -135,8 +135,11 @@ public class PetstoreScenarioTest {
         assertEquals(originalName, after.path("name").asText());
         amount(after.path("unitPrice"), "29.90");
         amount(after.path("amount"), "59.80");
-        assertEquals(before.path("lineNumber"), after.path("lineNumber"));
-        assertEquals("Renamed food", after.path("goods").path("name").asText());
+        JsonNode detail = shop.call("readShopOrderLine", Map.of("OrderLine",
+                Map.of("lineNumber", before.path("lineNumber").asText()))).path("OrderLine");
+        assertEquals(originalName, detail.path("name").asText());
+        amount(detail.path("unitPrice"), "29.90");
+        assertEquals("Renamed food", detail.path("goods").path("name").asText());
         pay(session);
         JsonNode paid = storedOrder(session).path("lines").get(0);
         assertEquals(originalName, paid.path("name").asText());

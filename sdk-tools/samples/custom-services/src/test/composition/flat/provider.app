@@ -4,5 +4,5 @@ tables entities {
     table TILLS(CustodyTill) { primarykey(CustodyTill.receiptNumber); }
 }
 
-scope { local { at resource(records) persist(insert, argument(0, CustodyHandover.receiptNumber)) insertCustodyHandover; at resource(records) persist(insert, argument(0, CustodyTill.receiptNumber)) openTill; } }
+scope { local { at resource(records) persist(insert, argument(0, CustodyHandover.receiptNumber)) insertCustodyHandover; at resource(records) persist(insert, argument(0, CustodyTill.receiptNumber)) insertCustodyTill; } }
 quantumStore valuesStore { attribute CustodyHandover.cash; attribute CustodyTill.cash; }

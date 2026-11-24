@@ -4,4 +4,10 @@ Entity CustodyTill { String receiptNumber; quantum decimal cash; }
 
 atomic update insertCustodyHandover(CustodyHandover);
 
-atomic update openTill(CustodyTill);
+atomic update insertCustodyTill(CustodyTill);
+Contract TillOpening { String receiptNumber; }
+atomic calculate identifyOpening(TillOpening, CustodyTill) { CustodyTill.receiptNumber = TillOpening.receiptNumber; }
+Scenario serial openTill(TillOpening, CustodyTill) {
+    identifyOpening;
+    transaction { insertCustodyTill; }
+}
