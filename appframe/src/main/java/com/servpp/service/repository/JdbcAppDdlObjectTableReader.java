@@ -14,6 +14,7 @@ import java.util.Optional;
 import javax.sql.DataSource;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.servpp.service.jdbc.JdbcTransactionScope;
 import com.servpp.service.runtime.AppDdlCatalog;
 import com.servpp.service.runtime.WireMappedEnum;
 
@@ -25,6 +26,16 @@ public class JdbcAppDdlObjectTableReader {
     public JdbcAppDdlObjectTableReader(DataSource dataSource, AppDdlCatalog catalog) {
         this.dataSource = dataSource;
         this.catalog = catalog == null ? AppDdlCatalog.empty() : catalog;
+    }
+
+    private <T> T read(JdbcTransactionScope.JdbcWork<T> work) throws SQLException {
+        var enlisted = JdbcTransactionScope.currentConnection(dataSource);
+        if (enlisted.isPresent()) return work.execute(enlisted.get());
+        // A data source may lend a caller-owned connection through a closeable handle.
+        // A SELECT must never commit or change auto-commit on that handle.
+        try (Connection connection = dataSource.getConnection()) {
+            return work.execute(connection);
+        }
     }
 
     public <T> boolean hydrate(String objectType, String objectId, T target) {
@@ -194,7 +205,7 @@ public class JdbcAppDdlObjectTableReader {
                 + " from " + safeIdentifier(table.name(), "APP DDL table")
                 + " where " + whereSql(keyPredicate.columns(), "APP DDL primary key");
         try {
-            return com.servpp.service.jdbc.JdbcTransactionScope.execute(dataSource, connection -> {
+            return read(connection -> {
                 try (PreparedStatement statement = connection.prepareStatement(sql)) {
                     bind(statement, keyPredicate.values());
                     try (ResultSet resultSet = statement.executeQuery()) {
@@ -281,7 +292,7 @@ public class JdbcAppDdlObjectTableReader {
                 + (predicates.isEmpty() ? "" : " where " + String.join(" and ", predicates))
                 + orderBySql(table) + (locked ? " for update" : "");
         try {
-            return com.servpp.service.jdbc.JdbcTransactionScope.execute(dataSource, connection -> {
+            return read(connection -> {
                 try (var statement = connection.prepareStatement(sql)) {
                     if (uniqueRejection != null) statement.setMaxRows(2);
                     bind(statement, parameters);
@@ -334,7 +345,7 @@ public class JdbcAppDdlObjectTableReader {
 
     private <T> List<T> query(AppDdlCatalog.Table table, Class<T> type, String sql, List<Object> values) {
         try {
-            return com.servpp.service.jdbc.JdbcTransactionScope.execute(dataSource, connection -> {
+            return read(connection -> {
                 try (PreparedStatement statement = connection.prepareStatement(sql)) {
                     bind(statement, values);
                     try (ResultSet resultSet = statement.executeQuery()) {
@@ -356,7 +367,7 @@ public class JdbcAppDdlObjectTableReader {
             return List.of();
         }
         try {
-            return com.servpp.service.jdbc.JdbcTransactionScope.execute(dataSource, connection -> {
+            return read(connection -> {
                 try (PreparedStatement statement = connection.prepareStatement(sql)) {
                     bind(statement, values);
                     try (ResultSet resultSet = statement.executeQuery()) {
@@ -397,7 +408,7 @@ public class JdbcAppDdlObjectTableReader {
             return false;
         }
         try {
-            return com.servpp.service.jdbc.JdbcTransactionScope.execute(dataSource, connection -> {
+            return read(connection -> {
                 try (PreparedStatement statement = connection.prepareStatement(selectSql(table, keyPredicate))) {
                     bind(statement, keyPredicate.values());
                     try (ResultSet resultSet = statement.executeQuery()) {
