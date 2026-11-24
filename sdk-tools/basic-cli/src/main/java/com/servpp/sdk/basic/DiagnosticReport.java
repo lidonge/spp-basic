@@ -32,21 +32,24 @@ final class DiagnosticReport {
         String message = Objects.toString(detail.getMessage(), detail.getClass().getSimpleName());
         var location = java.util.regex.Pattern.compile(java.util.regex.Pattern.quote(snapshot + java.io.File.separator)
                 + "(.+?):(\\d+):(\\d+):?\\s*(.*)");
-        boolean located = false;
+        var unlocated = new LinkedHashSet<String>();
         for (String entry : message.lines().toList()) {
             var match = location.matcher(entry);
             if (match.find() && !match.group(4).isBlank()) {
-                located = true;
                 String cause = match.group(4);
                 if (diagnostics.stream().anyMatch(d -> d.severity().equals("error")
                         && d.file().equals(match.group(1)) && d.line() == Integer.parseInt(match.group(2))
                         && d.message().equals(cause))) continue;
                 add(RepairDiagnostic.error("SPP_SEMANTIC_ERROR", match.group(1), Integer.parseInt(match.group(2)),
                         Integer.parseInt(match.group(3)), cause, "Correct the declaration or expression at this location."));
+            } else if (!entry.isBlank() && !entry.endsWith(":")) {
+                unlocated.add(entry);
             }
         }
-        if (located || diagnostics.stream().anyMatch(d -> d.severity().equals("error"))) return;
-        for (String entry : message.lines().filter(line -> !line.isBlank() && !line.endsWith(":")).toList())
+        // A single wrapper follows lexer/parser callbacks. A multiline validator
+        // failure can contain independent unlocated errors alongside located ones.
+        if (!message.contains("\n") && diagnostics.stream().anyMatch(d -> d.severity().equals("error"))) return;
+        for (String entry : unlocated)
             add(RepairDiagnostic.error("SPP_COMPILATION_FAILED", "", 0, 0, entry,
                     "Correct the reported compiler validation failure and run check again."));
         if (diagnostics.stream().noneMatch(d -> d.severity().equals("error")))

@@ -74,6 +74,19 @@ public class RepairCliTest {
         assertTrue(page.stdout.contains("BLANK") && page.stdout.contains("Right"));
     }
 
+    @Test public void validationReportPreservesLocatedAndUnlocatedErrors() throws Exception {
+        Path root = temporary.newFolder().toPath();
+        var report = new DiagnosticReport(root);
+        report.failed(new IllegalArgumentException("Validation failed:\n"
+                + root.resolve("shop.spp") + ":4:2 First error\nUnknown participant elsewhere"));
+        Path json = root.resolve("report.json");
+        report.write(json);
+        var rows = new ObjectMapper().readTree(json.toFile()).get("diagnostics");
+        assertEquals(2, rows.size());
+        assertEquals("Unknown participant elsewhere", rows.get(0).get("message").asText());
+        assertEquals("shop.spp", rows.get(1).get("file").asText());
+    }
+
     @Test public void syntaxFailureCarriesOriginalLocation() throws Exception {
         Path root = temporary.newFolder().toPath();
         Files.writeString(root.resolve("broken.spp"), "domain shop;\nRole Item { int ; }\n");
