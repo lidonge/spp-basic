@@ -79,7 +79,7 @@ atomic calculate prepareDepositAgreement(
     CashDepositAgreement.interestPaid = DepositPlan.interestPaid;
     CashDepositAgreement.collectionPaid = DepositPlan.collectionInterestPaid;
     CashDepositAgreement.principalPaid = DepositPlan.principalPaid;
-    CashDepositAgreement.exposureDelta = DepositPlan.newOverdraftExposure - DepositAccount.overdraftExposure;
+    CashDepositAgreement.exposureDelta = -DepositPlan.principalPaid;
     CashDepositAgreement.fee = DepositFeePlan.fee;
     CashDepositAgreement.transactionDate = BusinessDay.date;
     CashDepositAgreement.previousTransactionDate = AccountEligibility.lastTransactionDate;
@@ -113,7 +113,6 @@ quantum update settleCashDeposit(
     CashSettlementAccount,
     InterestIncomeAccount,
     CollectionInterestIncomeAccount,
-    PrincipalRecoveryAccount,
     CashDepositAgreement
 ) {
     if (CashDepositAgreement.interestBaseDelta >= 0) {
@@ -121,13 +120,9 @@ quantum update settleCashDeposit(
     } else {
         DepositAccount.interestBase -> CashSettlementAccount.balance : -CashDepositAgreement.interestBaseDelta;
     }
-    CashSettlementAccount.balance -> InterestIncomeAccount.balance : CashDepositAgreement.interestPaid;
-    CashSettlementAccount.balance -> CollectionInterestIncomeAccount.balance : CashDepositAgreement.collectionPaid;
-    CashSettlementAccount.balance -> PrincipalRecoveryAccount.balance : CashDepositAgreement.principalPaid;
-    DepositAccount.overdraftInterest -= CashDepositAgreement.interestPaid;
-    DepositAccount.collectionInterest -= CashDepositAgreement.collectionPaid;
-    DepositAccount.overdraftPrincipal -= CashDepositAgreement.principalPaid;
-    DepositAccount.overdraftExposure += CashDepositAgreement.exposureDelta;
+    CashSettlementAccount.balance -> DepositAccount.overdraftInterest : CashDepositAgreement.interestPaid;
+    CashSettlementAccount.balance -> DepositAccount.collectionInterest : CashDepositAgreement.collectionPaid;
+    CashSettlementAccount.balance -> DepositAccount.overdraftPrincipal : CashDepositAgreement.principalPaid;
 }
 
 atomic calculate recordDepositFailure(CashDepositAgreement, CashFailureRecord) {

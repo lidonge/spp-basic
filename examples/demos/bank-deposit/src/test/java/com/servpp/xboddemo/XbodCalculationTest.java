@@ -32,6 +32,19 @@ public class XbodCalculationTest {
             }
         }
     }
+    @Test public void testEntryInvokesOneGeneratedAtomicService() throws Exception {
+        try (var demo = new XbodTestSupport()) {
+            var request = demo.request("calculateDepositPlan", Map.of("DepositRequest", Map.of("amount", 25)));
+            String atomic = "cboddeposit.calculateDepositPlan";
+            com.servpp.service.runtime.AtomicServiceTesting.invokeAtomic(demo.runtime, atomic, request);
+            XbodTransactionTest.amount("25", demo.mapper.valueToTree(request).path("DepositPlan").path("newInterestBase"));
+            assertTrue(assertThrows(IllegalStateException.class,
+                    () -> demo.runtime.executeGeneratedService(atomic, request)).getMessage().contains("P0-b"));
+            assertThrows(IllegalArgumentException.class, () -> com.servpp.service.runtime.AtomicServiceTesting
+                    .invokeAtomic(demo.runtime, "cboddeposit.previewDeposit", request));
+        }
+    }
+
     @Test public void negativeCashIsRejectedBeforeCalculation() throws Exception {
         try (var demo = new XbodTestSupport()) {
             var failure = assertThrows(IllegalStateException.class, () -> demo.call("previewDeposit", Map.of("DepositRequest", Map.of("amount", -1))));
@@ -56,8 +69,8 @@ public class XbodCalculationTest {
             var request = Map.of("amount", 100);
             var calculation = demo.call("previewDeposit", Map.of(
                     "DepositRequest", request,
-                    "DepositAccount", Map.of("loanState", "NORMAL", "overdraftInterest", 10,
-                            "collectionInterest", 5, "overdraftPrincipal", 20, "overdraftExposure", 20)));
+                    "DepositAccount", Map.of("loanState", "NORMAL", "overdraftInterest", -10,
+                            "collectionInterest", -5, "overdraftPrincipal", -20, "overdraftExposure", 20)));
             var classified = demo.call("previewDepositAllocation", Map.of("DepositRequest", request,
                     "DepositPlan", demo.mapper.convertValue(calculation.path("DepositPlan"), Map.class)));
             var accounting = demo.mapper.convertValue(classified.path("DepositAccounting"), Map.class);
@@ -66,9 +79,9 @@ public class XbodCalculationTest {
                     Map.of("slot", 1, "subject", "CASH_SETTLEMENT", "side", "Debit"),
                     Map.of("slot", 2, "subject", "DEPOSIT_DECREASE", "side", "Debit"),
                     Map.of("slot", 3, "subject", "CUSTOMER_DEPOSIT", "side", "Credit"),
-                    Map.of("slot", 4, "subject", "PRINCIPAL_RECOVERY", "side", "Credit"),
-                    Map.of("slot", 5, "subject", "INTEREST_INCOME", "side", "Credit"),
-                    Map.of("slot", 6, "subject", "COLLECTION_INTEREST_INCOME", "side", "Credit"),
+                    Map.of("slot", 4, "subject", "OVERDRAFT_PRINCIPAL_RECEIVABLE", "side", "Credit"),
+                    Map.of("slot", 5, "subject", "OVERDRAFT_INTEREST_RECEIVABLE", "side", "Credit"),
+                    Map.of("slot", 6, "subject", "COLLECTION_INTEREST_RECEIVABLE", "side", "Credit"),
                     Map.of("slot", 7, "subject", "FEE_SETTLEMENT", "side", "Debit"),
                     Map.of("slot", 8, "subject", "FEE_INCOME", "side", "Credit"));
 

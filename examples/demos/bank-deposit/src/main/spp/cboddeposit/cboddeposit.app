@@ -103,20 +103,34 @@ scope {
     local(in requestContext, out responseContext) {
         quantum resource(
             cashLedger,
-            DepositAccount.interestBase,
             CashSettlementAccount.balance,
+            DepositAccount.interestBase,
+            DepositAccount.overdraftInterest,
+            DepositAccount.collectionInterest,
+            DepositAccount.overdraftPrincipal,
             InterestIncomeAccount.balance,
-            CollectionInterestIncomeAccount.balance,
-            PrincipalRecoveryAccount.balance
+            CollectionInterestIncomeAccount.balance
         ) settleCashDeposit;
         quantum resource(
             cashLedger,
-            DepositAccount.interestBase,
             CashSettlementAccount.balance,
+            DepositAccount.interestBase,
+            DepositAccount.overdraftInterest,
+            DepositAccount.collectionInterest,
+            DepositAccount.overdraftPrincipal,
             InterestIncomeAccount.balance,
-            CollectionInterestIncomeAccount.balance,
-            PrincipalRecoveryAccount.balance
+            CollectionInterestIncomeAccount.balance
         ) reverseCashDeposit;
+        quantum resource(
+            cashLedger,
+            CashSettlementAccount.balance,
+            DepositAccount.interestBase,
+            DepositAccount.overdraftInterest,
+            DepositAccount.collectionInterest,
+            DepositAccount.overdraftPrincipal,
+            InterestIncomeAccount.balance,
+            CollectionInterestIncomeAccount.balance
+        ) originateClaims;
         duplicate key(
             DepositAccount.accountNumber,
             CashSettlementAccount.accountNumber

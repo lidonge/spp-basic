@@ -54,7 +54,7 @@ function display(service,data) {
   if (!error && service==='reverseCash' && number) { $('lookup').value=number;remember(number,'reversal',service,p);saveConfig(); }
   const currency=agreement?.currency || agreement?.original?.currency || p.CashDepositAgreement?.currency || $('currency').value || 'USD';
   const exactMoney=value=>currency+' '+String(value);
-  const facts=[['DepositAccount','interestBase','Customer balance'],['CashSettlementAccount','balance','Cash settlement balance'],['InterestIncomeAccount','balance','Interest income'],['CollectionInterestIncomeAccount','balance','Collection interest income'],['PrincipalRecoveryAccount','balance','Principal recovery'],['DepositAccount','overdraftPrincipal','Outstanding principal']];
+  const facts=[['AccountEligibility','accountBalance','Customer balance'],['DepositAccount','interestBase','Interest base'],['CashSettlementAccount','balance','Cash settlement balance'],['InterestIncomeAccount','balance','Interest income'],['CollectionInterestIncomeAccount','balance','Collection interest income'],['PrincipalRecoveryAccount','balance','Principal recovery'],['DepositAccount','overdraftExposure','Outstanding principal']];
   $('balances').replaceChildren();
   for (const [role,key,label] of facts) if(!error && p[role]?.[key]!=null) {const el=textElement('div','','balance');el.append(textElement('small',label),textElement('strong',exactMoney(p[role][key])));$('balances').append(el);}
   const lines=error?[]:(p.CashReversalPostingLineArray||p.DepositPostingLineArray||[]);$('lines').replaceChildren();$('lineCount').textContent=lines.length?`${lines.length} lines`: '—';

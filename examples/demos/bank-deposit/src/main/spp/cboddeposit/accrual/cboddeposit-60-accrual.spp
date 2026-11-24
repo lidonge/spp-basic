@@ -17,7 +17,7 @@ atomic check checkAccrualPolicy(DepositAccount, DepositInterestPolicy) {
         DepositInterestPolicy.normalUnit > 0 && DepositInterestPolicy.overdraftUnit > 0,
         RejectionCode.INVALID_ACCRUAL_UNIT
     );
-    require(DepositAccount.overdraftPrincipal >= 0, RejectionCode.E1155);
+    require(DepositAccount.overdraftPrincipal <= 0 && DepositAccount.overdraftInterest <= 0 && DepositAccount.collectionInterest <= 0, RejectionCode.E1155);
 }
 
 atomic calculate prepareAccrualDates(DepositAccrualState, BusinessDay, BankDate start, BankDate end) {
@@ -49,12 +49,12 @@ atomic calculate calculateAccrual(
     DepositAccrualPlan.overdraftDays = end.epochDay - start.epochDay;
     DepositAccrualPlan.normalIncrement = InterestProduct.product;
     DepositAccrualPlan.overdraftIncrement = roundDown(
-        DepositAccount.overdraftPrincipal / DepositInterestPolicy.overdraftUnit,
+        -DepositAccount.overdraftPrincipal / DepositInterestPolicy.overdraftUnit,
         0
     ) * DepositInterestPolicy.overdraftUnit * DepositAccrualPlan.overdraftDays;
     DepositAccrualPlan.overdraftInterestIncrement = roundDown(
-        (DepositAccount.overdraftInterest
-            + DepositAccount.collectionInterest)
+        (-DepositAccount.overdraftInterest
+            - DepositAccount.collectionInterest)
             / DepositInterestPolicy.overdraftUnit,
         0
     ) * DepositInterestPolicy.overdraftUnit * DepositAccrualPlan.overdraftDays;
@@ -155,10 +155,10 @@ atomic calculate calculateDepositAccrual(
     DepositAccrualPlan.agreementIncrement = products.bandProduct;
     DepositAccrualPlan.principalDays = 0;
     DepositAccrualPlan.interestDays = 0;
-    if (DepositAccount.overdraftPrincipal > 0) {
+    if (DepositAccount.overdraftPrincipal < 0) {
         DepositAccrualPlan.principalDays = DepositAccrualPlan.overdraftDays;
     }
-    if (DepositAccount.overdraftInterest > 0) {
+    if (DepositAccount.overdraftInterest < 0) {
         DepositAccrualPlan.interestDays = DepositAccrualPlan.overdraftDays;
     }
 }

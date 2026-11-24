@@ -50,7 +50,7 @@ atomic check checkCashReversalCapacity(DepositAccount, CashDepositAgreement, Dep
     require(
         !(interestBase > 0
             && DepositAccount.overdraftPrincipal
-            + CashDepositAgreement.principalPaid > 0
+            - CashDepositAgreement.principalPaid < 0
             && interestBase > DepositAccount.frozenAmount),
         RejectionCode.EN177
     );
@@ -108,7 +108,6 @@ quantum update reverseCashDeposit(
     CashSettlementAccount,
     InterestIncomeAccount,
     CollectionInterestIncomeAccount,
-    PrincipalRecoveryAccount,
     CashDepositAgreement
 ) {
     if (CashDepositAgreement.interestBaseDelta >= 0) {
@@ -116,13 +115,9 @@ quantum update reverseCashDeposit(
     } else {
         CashSettlementAccount.balance -> DepositAccount.interestBase : -CashDepositAgreement.interestBaseDelta;
     }
-    InterestIncomeAccount.balance -> CashSettlementAccount.balance : CashDepositAgreement.interestPaid;
-    CollectionInterestIncomeAccount.balance -> CashSettlementAccount.balance : CashDepositAgreement.collectionPaid;
-    PrincipalRecoveryAccount.balance -> CashSettlementAccount.balance : CashDepositAgreement.principalPaid;
-    DepositAccount.overdraftInterest += CashDepositAgreement.interestPaid;
-    DepositAccount.collectionInterest += CashDepositAgreement.collectionPaid;
-    DepositAccount.overdraftPrincipal += CashDepositAgreement.principalPaid;
-    DepositAccount.overdraftExposure += CashDepositAgreement.principalPaid;
+    DepositAccount.overdraftInterest -> CashSettlementAccount.balance : CashDepositAgreement.interestPaid;
+    DepositAccount.collectionInterest -> CashSettlementAccount.balance : CashDepositAgreement.collectionPaid;
+    DepositAccount.overdraftPrincipal -> CashSettlementAccount.balance : CashDepositAgreement.principalPaid;
 }
 
 atomic calculate completeCashReversal(
@@ -133,9 +128,9 @@ atomic calculate completeCashReversal(
     DepositAccrualState
 ) {
     AccountEligibility.accountBalance = DepositAccount.interestBase
-        - DepositAccount.overdraftInterest
-        - DepositAccount.collectionInterest
-        - DepositAccount.overdraftPrincipal;
+        + DepositAccount.overdraftInterest
+        + DepositAccount.collectionInterest
+        + DepositAccount.overdraftPrincipal;
     AccountEligibility.cashDepositedToday = CashReversalMetadataPlan.cashDepositedToday;
     CashDepositAgreement.reversed = true;
     AccountEligibility.detailCount = CashReversalMetadataPlan.detailCount;

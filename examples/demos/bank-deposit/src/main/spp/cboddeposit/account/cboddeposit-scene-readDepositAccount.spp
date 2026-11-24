@@ -26,4 +26,6 @@ Scenario serial readDepositAccount(
     identify(CollectionInterestIncomeAccount);
     identify(PrincipalRecoveryAccount);
     checkAccountParticipants;
+    deriveOverdraftExposure;
+    describeAccountBalance;
 }

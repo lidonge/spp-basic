@@ -7,6 +7,13 @@ Contract AccountOpeningAgreement {
     CashSettlementAccount settlement;
 }
 
+atomic check checkOpeningClaims(DepositAccount) {
+    require((DepositAccount.overdraftPrincipal == null || DepositAccount.overdraftPrincipal == 0)
+        && (DepositAccount.overdraftInterest == null || DepositAccount.overdraftInterest == 0)
+        && (DepositAccount.collectionInterest == null || DepositAccount.collectionInterest == 0),
+        RejectionCode.E1155);
+}
+
 atomic calculate prepareAccountOpening(
     BankAccount,
     DepositAccount,
@@ -19,6 +26,7 @@ atomic calculate prepareAccountOpening(
     AccountEligibility.accountNumber = BankAccount.accountNumber;
     DepositAccrualState.accountNumber = BankAccount.accountNumber;
     DepositAccrualState.lastProductDate = AccountEligibility.openedOn;
+    DepositAccount.overdraftExposure = 0;
     DepositAccount.loanState = LoanState.NORMAL;
     if (AccountEligibility.temporary == null) {
         AccountEligibility.temporary = false;

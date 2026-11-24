@@ -10,7 +10,7 @@ public class XbodReversalCapacityTest {
             Object[][] cases = {
                     {Map.of("interestBase",5),Map.of("amount",10,"interestBaseDelta",10),Map.of("overdraftPermitted",false),"ES020"},
                     {Map.of("interestBase",5),Map.of("amount",10,"interestBaseDelta",10),Map.of("overdraftPermitted",true,"overdraftLimit",10),"EN249"},
-                    {Map.of("interestBase",100,"overdraftPrincipal",50),Map.of("amount",50,"interestBaseDelta",0,"principalPaid",50),Map.of("overdraftPermitted",true,"overdraftLimit",100),"EN177"}};
+                    {Map.of("interestBase",100,"overdraftPrincipal",-50),Map.of("amount",50,"interestBaseDelta",0,"principalPaid",50),Map.of("overdraftPermitted",true,"overdraftLimit",100),"EN177"}};
             for (var row : cases) {
                 var request = demo.request("assessCashReversalFunding",Map.of("DepositAccount",row[0],"CashDepositAgreement",row[1],"DepositReversalCapacity",row[2]));
                 var before = demo.mapper.valueToTree(request);

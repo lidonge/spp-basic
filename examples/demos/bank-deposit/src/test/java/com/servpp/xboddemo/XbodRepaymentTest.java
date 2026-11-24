@@ -7,7 +7,7 @@ import java.util.Map;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
-/** Existing debt is test data. All repayment and reversal operations execute generated SPP. */
+/** Claim origination, repayment and reversal execute generated SPP against the JDBC ledger. */
 public class XbodRepaymentTest {
     private JdbcQuantumJournalStore ledger() {
         String url = System.getProperty("testing".equals(System.getProperty("spp.environment"))
@@ -15,72 +15,86 @@ public class XbodRepaymentTest {
         return new JdbcQuantumJournalStore(new DriverManagerJdbcDataSource("org.h2.Driver", url, null, null),
                 "xbod_quantum_journal", "xbod_quantum_value", "text");
     }
-    @Test public void cashReversalKeepsXbodPrincipalBasedExposureRule() throws Exception {
+    @Test public void exposureFollowsPartialRepaymentAndReversal() throws Exception {
         try (var demo = new XbodTestSupport()) {
             XbodTransactionTest.open(demo);
-            var store = ledger();
-            for (var entry : Map.of("overdraftPrincipal","20","overdraftExposure","5").entrySet()) {
-                String attribute = "DepositAccount."+entry.getKey();
-                var value = store.findCurrentValues().stream().filter(v -> v.attributeId().equals(attribute)).findFirst().orElseThrow();
-                store.seedCurrentValue(value.groupId(),attribute,value.objectId(),new BigDecimal(entry.getValue()));
-            }
+            bookClaims(demo, "0", "0", "20");
             var paid = demo.call("depositCash",XbodTransactionTest.deposit(10));
             assertEquals("SUCCEEDED",paid.path("CashDepositAgreement").path("resultInfo").path("status").asText());
-            XbodTransactionTest.amount("-5",paid.path("CashDepositAgreement").path("exposureDelta"));
+            XbodTransactionTest.amount("-10",paid.path("CashDepositAgreement").path("exposureDelta"));
             XbodTransactionTest.amount("10",paid.path("CashDepositAgreement").path("principalPaid"));
-            XbodTransactionTest.amount("0",paid.path("DepositAccount").path("overdraftExposure"));
+            XbodTransactionTest.amount("10",paid.path("DepositAccount").path("overdraftExposure"));
             var input = XbodTransactionTest.reversal(paid.path("CashDepositAgreement"),20261007,false);
             input.put("DepositReversalCapacity",Map.of("overdraftPermitted",true,"overdraftLimit",20));
             var reversed = demo.call("reverseCash",input);
             assertEquals("SUCCEEDED",reversed.path("CashReversalAgreement").path("resultInfo").path("status").asText());
             var account = demo.readAccounts().path("DepositAccount");
-            XbodTransactionTest.amount("20",account.path("overdraftPrincipal"));
-            XbodTransactionTest.amount("10",account.path("overdraftExposure"));
+            XbodTransactionTest.amount("-20",account.path("overdraftPrincipal"));
+            XbodTransactionTest.amount("20",account.path("overdraftExposure"));
             XbodTransactionTest.amount("0",demo.readAccounts().path("PrincipalRecoveryAccount").path("balance"));
         }
     }
-    private void seedDebt() {
-        var store = ledger();
-        for (var entry : Map.of("overdraftInterest", "10", "collectionInterest", "5",
-                "overdraftPrincipal", "20", "overdraftExposure", "20").entrySet()) {
-            String attribute = "DepositAccount." + entry.getKey();
-            var value = store.findCurrentValues().stream().filter(v -> v.attributeId().equals(attribute)).findFirst().orElseThrow();
-            store.seedCurrentValue(value.groupId(), attribute, value.objectId(), new BigDecimal(entry.getValue()));
+    @Test public void openingCannotCreateAnUnbookedClaim() throws Exception {
+        try (var demo = new XbodTestSupport()) {
+            var input = Map.of("BankAccount", Map.of("accountNumber", "ACCOUNT-001"),
+                    "DepositAccount", Map.of("overdraftInterest", -10));
+            var failure = assertThrows(IllegalStateException.class, () -> demo.call("openDepositAccount", input));
+            assertEquals("E1155", failure.getMessage());
         }
     }
-    private void bankBalances(XbodTestSupport demo, String interest, String collection, String principal) throws Exception {
-        var i = demo.readAccounts();
-        var c = demo.readAccounts();
-        var p = demo.readAccounts();
-        XbodTransactionTest.amount(interest, i.path("InterestIncomeAccount").path("balance"));
-        XbodTransactionTest.amount(collection, c.path("CollectionInterestIncomeAccount").path("balance"));
-        XbodTransactionTest.amount(principal, p.path("PrincipalRecoveryAccount").path("balance"));
+
+    private void bookClaims(XbodTestSupport demo, String interest, String collection, String principal) throws Exception {
+        demo.call("bookOverdraftClaims", Map.of(
+                "OverdraftCharge", Map.of("interest", interest, "collection", collection, "principal", principal),
+                "DepositAccount", Map.of("accountNumber", "ACCOUNT-001"),
+                "CashSettlementAccount", Map.of("accountNumber", "CASH-001"),
+                "InterestIncomeAccount", Map.of("accountNumber", "BANK-INTEREST"),
+                "CollectionInterestIncomeAccount", Map.of("accountNumber", "BANK-COLLECTION")));
+        assertConserved();
     }
-    @Test public void repaymentCreditsActualBankAccountsAndReversalRestoresDebt() throws Exception {
+
+    private void assertConserved() {
+        var totals = new java.util.HashMap<String, BigDecimal>();
+        for (var position : ledger().findCurrentValues()) {
+            totals.merge(position.groupId(), position.currentValue(), BigDecimal::add);
+        }
+        assertFalse(totals.isEmpty());
+        totals.forEach((group, total) -> assertEquals(group, 0, total.signum()));
+    }
+
+    private void bankBalances(XbodTestSupport demo, String interest, String collection, String principal) throws Exception {
+        var account = demo.readAccounts();
+        XbodTransactionTest.amount(interest, account.path("InterestIncomeAccount").path("balance"));
+        XbodTransactionTest.amount(collection, account.path("CollectionInterestIncomeAccount").path("balance"));
+        XbodTransactionTest.amount(principal, account.path("PrincipalRecoveryAccount").path("balance"));
+    }
+    @Test public void repaymentClearsClaimsAndReversalRestoresDebt() throws Exception {
         try (var demo = new XbodTestSupport()) {
-            XbodTransactionTest.open(demo); seedDebt();
+            XbodTransactionTest.open(demo); bookClaims(demo, "10", "5", "20");
             var paid = demo.call("depositCash", XbodTransactionTest.deposit(100));
             assertEquals(paid.toString(), "SUCCEEDED", paid.path("CashDepositAgreement").path("resultInfo").path("status").asText());
             XbodTransactionTest.amount("65", paid.path("DepositAccount").path("interestBase"));
             XbodTransactionTest.amount("0", paid.path("DepositAccount").path("overdraftInterest"));
             XbodTransactionTest.amount("10", paid.path("InterestIncomeAccount").path("balance"));
-            bankBalances(demo, "10", "5", "20");
+            bankBalances(demo, "10", "5", "0");
+            assertConserved();
             var input = XbodTransactionTest.reversal(paid.path("CashDepositAgreement"), 20261008, false);
             input.put("DepositReversalCapacity", Map.of("overdraftPermitted", true, "overdraftLimit", 1000));
             var reversed = demo.call("reverseCash", input);
             assertEquals(reversed.toString(), "SUCCEEDED", reversed.path("CashReversalAgreement").path("resultInfo").path("status").asText());
-            bankBalances(demo, "0", "0", "0");
+            bankBalances(demo, "10", "5", "0");
+            assertConserved();
             var account = demo.readAccounts();
             XbodTransactionTest.amount("0", account.path("DepositAccount").path("interestBase"));
-            XbodTransactionTest.amount("10", account.path("DepositAccount").path("overdraftInterest"));
-            XbodTransactionTest.amount("5", account.path("DepositAccount").path("collectionInterest"));
-            XbodTransactionTest.amount("20", account.path("DepositAccount").path("overdraftPrincipal"));
+            XbodTransactionTest.amount("-10", account.path("DepositAccount").path("overdraftInterest"));
+            XbodTransactionTest.amount("-5", account.path("DepositAccount").path("collectionInterest"));
+            XbodTransactionTest.amount("-20", account.path("DepositAccount").path("overdraftPrincipal"));
             XbodTransactionTest.amount("20", account.path("DepositAccount").path("overdraftExposure"));
         }
     }
-    @Test public void laterOrdinaryFailureReversesBankCreditsAndDebtTogether() throws Exception {
+    @Test public void laterOrdinaryFailureRestoresClaimsAndCashTogether() throws Exception {
         try (var demo = new XbodTestSupport()) {
-            XbodTransactionTest.open(demo); seedDebt();
+            XbodTransactionTest.open(demo); bookClaims(demo, "10", "5", "20");
             Object request = demo.request("depositCash", XbodTransactionTest.deposit(100));
             try (var fault = com.servpp.service.runtime.ExampleServiceFaults.activate("cboddeposit.insertDepositPostingLine", "before")) {
                 if ("testing".equals(System.getProperty("spp.environment")))
@@ -88,16 +102,17 @@ public class XbodRepaymentTest {
                 else demo.execute("depositCash", request);
                 fault.verifyTriggered();
             }
-            bankBalances(demo, "0", "0", "0");
+            bankBalances(demo, "10", "5", "0");
+            assertConserved();
             var account = demo.readAccounts();
             XbodTransactionTest.amount("0", account.path("DepositAccount").path("interestBase"));
-            XbodTransactionTest.amount("10", account.path("DepositAccount").path("overdraftInterest"));
-            XbodTransactionTest.amount("20", account.path("DepositAccount").path("overdraftPrincipal"));
+            XbodTransactionTest.amount("-10", account.path("DepositAccount").path("overdraftInterest"));
+            XbodTransactionTest.amount("-20", account.path("DepositAccount").path("overdraftPrincipal"));
         }
     }
-    @Test public void internalAccountBoundRejectsReversalWithoutRestoringDebt() throws Exception {
+    @Test public void reversalRestoresDebtAfterIncomeIsSwept() throws Exception {
         try (var demo = new XbodTestSupport()) {
-            XbodTransactionTest.open(demo); seedDebt();
+            XbodTransactionTest.open(demo); bookClaims(demo, "10", "5", "20");
             var paid = demo.call("depositCash", XbodTransactionTest.deposit(100));
             var store = ledger();
             var income = store.findCurrentValues().stream()
@@ -106,29 +121,21 @@ public class XbodRepaymentTest {
             store.seedCurrentValue(income.groupId(), income.attributeId(), income.objectId(), BigDecimal.ZERO);
             var input = XbodTransactionTest.reversal(paid.path("CashDepositAgreement"), 20261008, false);
             input.put("DepositReversalCapacity", Map.of("overdraftPermitted", true, "overdraftLimit", 1000));
-            var failed = demo.call("reverseCash", input);
-            assertEquals(failed.toString(), "FAILED", failed.path("CashReversalAgreement").path("resultInfo").path("status").asText());
-            bankBalances(demo, "0", "5", "20");
+            var reversed = demo.call("reverseCash", input);
+            assertEquals("SUCCEEDED", reversed.path("CashReversalAgreement").path("resultInfo").path("status").asText());
+            bankBalances(demo, "0", "5", "0");
             var account = demo.readAccounts();
-            XbodTransactionTest.amount("65", account.path("DepositAccount").path("interestBase"));
-            XbodTransactionTest.amount("0", account.path("DepositAccount").path("overdraftInterest"));
-            var original = demo.call("readCashDeposit", Map.of("CashDepositAgreement",
-                    Map.of("depositNumber", paid.path("CashDepositAgreement").path("depositNumber").asText())));
-            assertFalse(original.path("CashDepositAgreement").path("reversed").asBoolean());
+            XbodTransactionTest.amount("0", account.path("DepositAccount").path("interestBase"));
+            XbodTransactionTest.amount("-10", account.path("DepositAccount").path("overdraftInterest"));
         }
     }
     private void replayRecordedDebtCase(String state, boolean fractional) throws Exception {
         try (var demo = new XbodTestSupport()) {
             XbodTransactionTest.open(demo);
-            var debts = fractional
-                    ? Map.of("overdraftInterest", "0.005", "collectionInterest", "0.004", "overdraftPrincipal", "0.01", "overdraftExposure", "0.01")
-                    : Map.of("overdraftInterest", "30", "collectionInterest", "40", "overdraftPrincipal", "100", "overdraftExposure", "100");
-            var store = ledger();
-            for (var field : debts.entrySet()) {
-                String attribute = "DepositAccount." + field.getKey();
-                var value = store.findCurrentValues().stream().filter(v -> v.attributeId().equals(attribute)).findFirst().orElseThrow();
-                store.seedCurrentValue(value.groupId(), attribute, value.objectId(), new BigDecimal(field.getValue()));
-            }
+            String interest = fractional ? "0.005" : "30";
+            String collection = fractional ? "0.004" : "40";
+            String principal = fractional ? "0.01" : "100";
+            bookClaims(demo, interest, collection, principal);
             // Persist a pre-existing account fixture; this is not a maintenance implementation.
             try (var connection = java.sql.DriverManager.getConnection(System.getProperty("spp.xbod.datasource-url"));
                  var loan = connection.prepareStatement("update DEPOSIT_ACCOUNTS set loanState = ? where accountNumber = ?");
@@ -164,17 +171,24 @@ public class XbodRepaymentTest {
             var paid = demo.call("depositCash", input);
             assertEquals(paid.toString(), "SUCCEEDED", paid.path("CashDepositAgreement").path("resultInfo").path("status").asText());
             assertEquals(state, paid.path("DepositAccount").path("loanState").asText());
-            bankBalances(demo, fractional ? "0.005" : state.equals("NORMAL") ? "30" : "0",
-                    fractional ? "0.004" : state.equals("NORMAL") ? "20" : "0",
-                    fractional ? "0.001" : state.equals("NORMAL") ? "0" : "50");
+            bankBalances(demo, interest, collection, "0");
+            assertConserved();
+            var agreement = paid.path("CashDepositAgreement");
+            XbodTransactionTest.amount(fractional ? "0.005" : state.equals("NORMAL") ? "30" : "0", agreement.path("interestPaid"));
+            XbodTransactionTest.amount(fractional ? "0.004" : state.equals("NORMAL") ? "20" : "0", agreement.path("collectionPaid"));
+            XbodTransactionTest.amount(fractional ? "0.001" : state.equals("NORMAL") ? "0" : "50", agreement.path("principalPaid"));
             XbodTransactionTest.amount(fractional ? "-0.009" : "-120", paid.path("AccountEligibility").path("accountBalance"));
             var reverseInput = XbodTransactionTest.reversal(paid.path("CashDepositAgreement"), 20261007, false);
             reverseInput.put("DepositReversalCapacity", Map.of("overdraftPermitted", true, "overdraftLimit", 1000));
             var reversed = demo.call("reverseCash", reverseInput);
             assertEquals(reversed.toString(), "SUCCEEDED", reversed.path("CashReversalAgreement").path("resultInfo").path("status").asText());
-            bankBalances(demo, "0", "0", "0");
+            bankBalances(demo, interest, collection, "0");
+            assertConserved();
             var account = demo.readAccounts();
-            for (var field : debts.entrySet()) XbodTransactionTest.amount(field.getValue(), account.path("DepositAccount").path(field.getKey()));
+            XbodTransactionTest.amount("-" + interest, account.path("DepositAccount").path("overdraftInterest"));
+            XbodTransactionTest.amount("-" + collection, account.path("DepositAccount").path("collectionInterest"));
+            XbodTransactionTest.amount("-" + principal, account.path("DepositAccount").path("overdraftPrincipal"));
+            XbodTransactionTest.amount(principal, account.path("DepositAccount").path("overdraftExposure"));
             var facts = demo.readAccounts();
             assertEquals(12, facts.path("AccountEligibility").path("detailCount").asInt());
             assertEquals(20261006, facts.path("AccountEligibility").path("lastTransactionDate").asInt());
