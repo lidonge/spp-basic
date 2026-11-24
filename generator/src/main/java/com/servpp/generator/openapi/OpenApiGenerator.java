@@ -134,6 +134,7 @@ public class OpenApiGenerator extends BaseClassGenerator implements ILogable {
         setAdditionalPackage(basePackage, domainName, sppClassMap);
         genAppHeaders(sppDomain, openAPI);
         genSppClasses(domainPath, basePackage, sppClassMap, openAPI, domainName);
+        FormGenerator.generate(sppDomain, domainPath.toPath(), basePackage);
         services.addAll(scenarios);
 
         return openAPI;

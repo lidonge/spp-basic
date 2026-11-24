@@ -15,6 +15,11 @@ import java.util.Set;
  * @author lidong@date 2023-11-21@version 1.0
  */
 public class RuleBlock {
+    private final List<AppForm> forms = new ArrayList<>();
+    private final Map<String, List<AppForm.Item>> formHeaders = new java.util.LinkedHashMap<>();
+    public List<AppForm> getForms() { return forms; }
+    public Map<String, List<AppForm.Item>> getFormHeaders() { return formHeaders; }
+
     private final Map<String, BlankPolicy> blankPolicies = new java.util.LinkedHashMap<>();
     public Map<String, BlankPolicy> getBlankPolicies() { return blankPolicies; }
 

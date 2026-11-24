@@ -15,6 +15,8 @@ domainName
 ruleBlock
     : annotateDefine* annotatableRule
     | annotate
+    | legacyForm
+    | formHeader
     ;
 
 annotatableRule
@@ -39,6 +41,25 @@ annotatableRule
     | systemServices
     | technicalServices
     | serviceInterception
+    ;
+
+legacyForm
+    : {"form".equals(getCurrentToken().getText())}? Identifier name=Identifier ('for' role=Identifier)? 'as' code=StringLiteral
+      {"length".equals(getCurrentToken().getText())}? Identifier size=IntegerLiteral
+      '{' ('header' shared=Identifier ';')? formItem+ '}'
+    ;
+
+formHeader
+    : {"formHeader".equals(getCurrentToken().getText())}? Identifier name=Identifier '{' formItem+ '}'
+    ;
+
+formItem
+    : name=Identifier ('at' pos=IntegerLiteral)?
+      ({"occurs".equals(getCurrentToken().getText())}? Identifier count=IntegerLiteral)?
+      ({"width".equals(getCurrentToken().getText())}? Identifier size=IntegerLiteral
+       ('decimal' '(' decimalPrecision=IntegerLiteral ',' decimalScale=IntegerLiteral ')'
+        | {"date".equals(getCurrentToken().getText())}? date=Identifier)? ';'
+       | '{' formItem+ '}')
     ;
 
 technicalServices
