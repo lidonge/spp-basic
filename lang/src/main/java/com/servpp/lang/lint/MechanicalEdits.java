@@ -54,7 +54,9 @@ final class MechanicalEdits {
                     edits.add(edit(path, call, ""));
                     var brace = plan.destinationBody().getStart();
                     int offset = RepairDiagnostic.utf16Offset(brace) + 1;
-                    edits.add(new Edit(plan.destinationPath(), offset, offset, " " + plan.requirement() + " "));
+                    String next = brace.getInputStream().getText(Interval.of(brace.getStopIndex() + 1, brace.getStopIndex() + 1));
+                    String separator = next.isBlank() ? "" : " ";
+                    edits.add(new Edit(plan.destinationPath(), offset, offset, " " + plan.requirement() + separator));
                 } else {
                     // Leave the original branch, breakTransaction and semicolon at the call site.
                     Token last = call.parameters() == null ? call.Identifier().getSymbol()
@@ -68,7 +70,7 @@ final class MechanicalEdits {
                 var atomic = ancestor(anchor, AtomicserviceContext.class);
                 if (atomic == null || atomic.serviceDefinition().Identifier().getSymbol() != f.token()
                         || !ServiceRedundancy.isImplicitCrud(domain, atomic)
-                        || boundByPolicy(domain, atomic)) return List.of();
+                        || boundByPolicy(domain, atomic) || !preservesCrudRequest(domain, atomic)) return List.of();
                 edits.add(edit(source.path(), atomic, ""));
             }
             case "SPP_REDUNDANT_FIELD_COPY" -> {
@@ -100,6 +102,32 @@ final class MechanicalEdits {
         }
         // Comments in any replaced slice belong to the author. Withhold the entire group.
         return edits.contains(null) ? List.of() : List.copyOf(edits);
+    }
+
+    // Implicit services (and their generated Java request types) materialize on demand.
+    // Keep a declaration unless its callers recreate the same scalar request parameter.
+    private static boolean preservesCrudRequest(List<Source> domain, AtomicserviceContext atomic) {
+        var definition = atomic.serviceDefinition();
+        var formal = definition.parameterDeclarations().parameterDeclaration(0);
+        String type = formal.roletype().Identifier().getText();
+        if (formal.Identifier() != null || !formal.roletype().getText().equals(type)) return false;
+        var calls = new ArrayList<AtomiccallContext>();
+        for (var source : domain) if (source.tree() instanceof ProgramContext program)
+            collectCalls(program, definition.Identifier().getText(), calls);
+        if (calls.isEmpty()) return false;
+        for (var call : calls) {
+            var scene = ancestor(call, ScenarioContext.class);
+            if (scene == null || scene.serviceDefinition().parameterDeclarations() == null) return false;
+            var args = call.parameters();
+            if (args != null && args.parameter().size() != 1) return false;
+            String name = args == null ? null : args.parameter(0).getText();
+            long matches = scene.serviceDefinition().parameterDeclarations().parameterDeclaration().stream()
+                    .filter(p -> p.roletype() != null && p.roletype().getText().equals(type))
+                    .filter(p -> name == null || name.equals(p.Identifier() == null ? type : p.Identifier().getText()))
+                    .count();
+            if (matches != 1) return false;
+        }
+        return true;
     }
 
     private static boolean inheritsOtherFields(List<Source> domain, ActasContext take) {

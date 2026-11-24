@@ -47,6 +47,13 @@ public class MechanicalEditsTest {
                 "domain shop; scope { remote { findItem; } }"), "IMPLICIT_CRUD").isEmpty());
     }
 
+    @Test public void preservesCrudRequestClassesForExternalCallersAndNamedArguments() {
+        String header = "domain shop; Role Item { int id; } ";
+        assertTrue(plan(Map.of("s.spp", header + "atomic query findItem(Item);"), "IMPLICIT_CRUD").isEmpty());
+        assertTrue(plan(Map.of("s.spp", header + "atomic query findItem(Item row); "
+                + "Scenario serial lookup(Item i) { findItem(i); }"), "IMPLICIT_CRUD").isEmpty());
+    }
+
     @Test public void dropsVacuousEntriesAndRemovesAllNullClauseAsOneEdit() {
         String prefix = "domain d; Scenario serial step(R r) { change(r) ";
         for (String clause : List.of("bounds { r.x: [(null), null]; }", "bounds { r.x: [null,null]; r.y: [null,null]; }")) {

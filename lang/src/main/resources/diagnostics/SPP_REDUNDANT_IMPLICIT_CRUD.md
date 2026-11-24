@@ -6,7 +6,7 @@ An explicit `query`, `insert`, `update`, or `delete` service declares the standa
 
 ## Review rationale
 
-The standard CRUD operation is already available implicitly. Removing the empty duplicate declaration keeps the model concise and lets callers use the built-in name. A custom signature or a real body is not covered by this rule.
+The standard CRUD operation is already available implicitly. Removing the empty duplicate declaration keeps the model concise and lets callers use the built-in name. Safe deletion requires an SPP call that materializes the same scalar service and generated request parameter. Java integrations may import an explicit declaration’s request class even when there are no SPP callers.
 
 ## Examples
 
