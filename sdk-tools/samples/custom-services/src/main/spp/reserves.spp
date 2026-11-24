@@ -5,3 +5,11 @@ Entity Reserve {
     String denomination;
     quantum decimal available;
 }
+
+Role ReserveSlip {
+    String referenceCode;
+    decimal(15,2) amount;
+    String postingDate;
+    SlipEntry[] entries;
+}
+Contract SlipEntry { String label; decimal(2,0) units; }

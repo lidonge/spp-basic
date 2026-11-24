@@ -316,7 +316,9 @@ for a declaration without a mode. A decimal with no effective scale keeps
 the calculated quotient. Explicit functions such as `roundDown(value, places)` and
 `roundHalfUp(value, places)` remain available.
 
-## Blank String fields
+## Legacy system interop
+
+### Blank String fields
 
 Use `BLANK` when business logic asks whether a String field is empty. An ordinary
 String comparison still compares the original value, including leading and
@@ -350,6 +352,51 @@ cannot match a canonical null. The `spaces` read form matches
 one or more ASCII spaces (U+0020). Tabs, mixed text and other whitespace keep
 their original meaning. Assigning `BLANK` with `write: spaces` requires a
 declared width such as `String(30)` and writes exactly that many spaces.
+
+### Fixed-width forms
+
+An APP binding lets a legacy endpoint exchange a fixed-width record with a
+generated participant. The scenario continues to take the same business role
+when the endpoint retires. The custom-services sample declares this binding in
+[reserves.app](../samples/custom-services/src/main/spp/reserves.app).
+
+```app
+formHeader SlipHeader {
+    length width 2;
+    code width 8;
+}
+form ReserveSlip as "PZZZ7602" length 63 {
+    header SlipHeader;
+    referenceCode at 11 width 12;
+    amount width 17 decimal(15,2);
+    postingDate width 8 date;
+    entries occurs 2 { label width 5; units width 3 decimal(2,0); }
+}
+```
+
+Call `ReserveSlipForm.write(slip)` to send bytes or `ReserveSlipForm.read(bytes)`
+to construct the role. Bindings live in the domain’s generated `forms` package.
+Use `form BindingName for Participant as ...` to name a second representation.
+The header is optional. Within a shared header, `length` occupies two unsigned
+big-endian bytes and `code` contains the declared form code. Readers verify
+both when present. Ordinary header fields bind to participant properties.
+
+Widths and one-based positions count bytes. Each omitted position follows
+the highest occupied byte in its group. Gaps contain ASCII spaces. The last
+occupied byte must equal the declared length. Text uses strict UTF-8 with
+right-side ASCII space padding. Reads remove trailing padding. A field made
+entirely of padding decodes to the empty string by default. A BLANK policy
+accepting `spaces` decodes it to the canonical write value. Null and empty
+text encode as padding. Fixed-width text cannot distinguish trailing data
+spaces from padding.
+
+Decimals use right-aligned signed text with a decimal point when scale is
+positive. Width must accommodate the sign and all digits. Conversion rejects
+overflow and values requiring rounding. A date maps an ISO calendar date
+string (`2024-02-29`) to eight digits (`20240229`). A group’s positions are
+relative to its start. Use `labels occurs 3 width 8;` for a scalar array or a
+braced group for an array of participants. Both directions use the exact
+declared count.
 
 ## Scenario read bindings and transaction rejection
 

@@ -1,6 +1,7 @@
 package com.servpp.lang.general.app;
 
 import com.servpp.lang.antlr.AppParser;
+import com.servpp.lang.models.app.AppForm;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.TerminalNode;
@@ -12,6 +13,32 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 public abstract class BaseHandler implements IHeaderHandler, IPrimaryHandler,
         IMapperHandler, IScopeHandler, IServicesHandler, IAnnotateHandler, ITablesHandler, IPhyHandler,
         IQuantumStoreHandler {
+    @Override public void enterLegacyForm(AppParser.LegacyFormContext ctx) {
+        try {
+            getCurrentRuleBlock().getForms().add(new AppForm(ctx.name.getText(), ctx.role == null ? ctx.name.getText() : ctx.role.getText(), normalizeConfigValue(ctx.code.getText()),
+                    Integer.parseInt(ctx.size.getText()), ctx.shared == null ? null : ctx.shared.getText(),
+                    ctx.formItem().stream().map(BaseHandler::formItem).toList()));
+        } catch (NumberFormatException ex) { logSppError(ctx, "Form dimensions must be decimal integers in range."); }
+    }
+    private static AppForm.Item formItem(AppParser.FormItemContext ctx) {
+        return new AppForm.Item(ctx.name.getText(), integer(ctx.pos), integer(ctx.size), integer(ctx.count),
+                integer(ctx.decimalPrecision), integer(ctx.decimalScale), ctx.date != null,
+                ctx.formItem().stream().map(BaseHandler::formItem).toList());
+    }
+    private static Integer integer(org.antlr.v4.runtime.Token value) {
+        return value == null ? null : Integer.valueOf(value.getText());
+    }
+    @Override public void enterFormHeader(AppParser.FormHeaderContext ctx) {
+        try {
+            if (getCurrentRuleBlock().getFormHeaders().putIfAbsent(ctx.name.getText(),
+                    ctx.formItem().stream().map(BaseHandler::formItem).toList()) != null)
+                logSppError(ctx, "Duplicate form header " + ctx.name.getText());
+        } catch (NumberFormatException ex) { logSppError(ctx, "Header dimensions must be decimal integers in range."); }
+    }
+    @Override public void exitLegacyForm(AppParser.LegacyFormContext ctx) { }
+    @Override public void exitFormHeader(AppParser.FormHeaderContext ctx) { }
+    @Override public void enterFormItem(AppParser.FormItemContext ctx) { }
+    @Override public void exitFormItem(AppParser.FormItemContext ctx) { }
     @Override public void enterTechnicalServices(AppParser.TechnicalServicesContext ctx) {
         var names = getCurrentRuleBlock().getTechnicalServices().names();
         // The first Identifier is the contextual technical keyword.

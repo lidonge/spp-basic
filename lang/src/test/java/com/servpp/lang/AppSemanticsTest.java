@@ -37,6 +37,27 @@ import static org.junit.Assert.assertNotNull;
 
 public class AppSemanticsTest {
     @Test
+    public void legacyLayoutRejectsInvalidBindingsBeforeGeneration() throws Exception {
+        String spp = "domain forms; Role Slip { String(4) name; decimal(4,2) amount; String[] labels; }";
+        String app = "domain forms; form Slip as \"SLIP\" length 11 { name width 4; amount width 7 decimal(4,2); }";
+        var valid = compileDomain(spp, app).validateAppDeclarations();
+        assertTrue(valid.toString(), valid.isEmpty());
+        for (String[] change : new String[][] {
+                {"amount width", "amount at 4 width", "Overlapping fields"},
+                {"length 11", "length 12", "Total length mismatch"},
+                {"name width", "missing width", "Unknown field"},
+                {"width 4;", "width 3;", "Width too small"},
+                {"width 7", "width 5", "Width too small"},
+                {"(4,2);", "(3,2);", "Decimal representation too small"},
+                {"name width", "labels width", "Expected occurs"},
+                {"name width", "header Missing; name width", "Unknown header"}
+        }) {
+            var errors = compileDomain(spp, app.replace(change[0], change[1])).validateAppDeclarations();
+            assertTrue(errors.toString(), errors.stream().anyMatch(message -> message.contains(change[2])));
+        }
+    }
+
+    @Test
     public void textStorageRequiresAnExactPhysicalNumericBinding() throws Exception {
         String spp = """
                 domain creditcommerce;

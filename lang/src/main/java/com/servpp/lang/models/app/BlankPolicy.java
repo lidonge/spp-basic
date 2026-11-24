@@ -44,6 +44,18 @@ public record BlankPolicy(Set<String> reads, String write) {
         return render(domain, target, receiver, BlankPolicy::canonicalValue);
     }
 
+    /** Model value of an all-padding form field; resolve played fields like a BLANK expression. */
+    public static String formBlankJava(SppDomain domain, SppField target, String receiver, int width) {
+        return render(domain, target, receiver, (policy, field) -> {
+            if (!policy.reads().contains("spaces")) return EMPTY;
+            if ("spaces".equals(policy.write())) {
+                Integer declared = ((SppField) field).getDefaultStringLength();
+                return "\" \".repeat(" + (declared == null ? width : declared) + ")";
+            }
+            return policy.canonicalValue(field);
+        });
+    }
+
     /** A play projects the original provider value. Select its physical policy at the literal use site. */
     private static String render(SppDomain domain, SppLocalVar target, String receiver,
                                  BiFunction<BlankPolicy, SppLocalVar, String> render) {
