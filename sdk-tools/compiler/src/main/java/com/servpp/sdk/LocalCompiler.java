@@ -24,7 +24,13 @@ public final class LocalCompiler {
         String own;
         try{own=Path.of(workerClass.getProtectionDomain().getCodeSource().getLocation().toURI()).toString();}
         catch(java.net.URISyntaxException invalid){throw new IOException("Cannot locate the compiler worker.",invalid);}
-        return new ProcessBuilder(javaExecutable,"-cp",own+java.io.File.pathSeparator+System.getProperty("java.class.path"),workerClass.getName())
+        var command = new ArrayList<>(List.of(javaExecutable));
+        for (String key : List.of("spp.lint.maxParticipants", "spp.lint.maxCalculateStatements", "spp.lint.maxNesting")) {
+            String value = System.getProperty(key);
+            if (value != null) command.add("-D" + key + "=" + value);
+        }
+        command.addAll(List.of("-cp", own + java.io.File.pathSeparator + System.getProperty("java.class.path"), workerClass.getName()));
+        return new ProcessBuilder(command)
             .redirectOutput(staging.resolve(".worker-result.json").toFile()).redirectError(ProcessBuilder.Redirect.INHERIT).start();
     }
     public Map<String,Object> execute(String operation,Path source,Path output,String basePackage,String profile,
@@ -70,6 +76,14 @@ public final class LocalCompiler {
                 throw new CompilationException(code,report.path("message").asText());
             }
             if(!report.path("project").isObject())throw new IOException("Compiler worker did not report project inspection.");
+            if (operation.equals("check") && Boolean.TRUE.equals(workerOptions.get("diagnostics"))) {
+                Path diagnostics = staging.resolve(".diagnostics.json");
+                if (!Files.isRegularFile(diagnostics, LinkOption.NOFOLLOW_LINKS) || Files.size(diagnostics) > 64L * 1024 * 1024)
+                    throw new IOException("Missing or oversized compiler diagnostics.");
+                var structured = new ObjectMapper().readTree(diagnostics.toFile());
+                return Map.of("checked", !structured.path("failed").asBoolean(), "diagnostics", structured.path("diagnostics"),
+                        "hashes", structured.path("hashes"));
+            }
             if(operation.equals("check"))return Map.of("checked",true,"source",report.path("source").asText(),"releaseVersion",release,"environment",environment,"project",report.path("project"));
             // Serialize SDK publishers of the same destination. Only a completed tree is made visible.
             Path lock=destination.getParent().resolve(".spp-publish-"+fingerprint(destination.toString())+".lock");

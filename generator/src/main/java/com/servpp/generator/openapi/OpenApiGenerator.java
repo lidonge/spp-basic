@@ -100,6 +100,10 @@ public class OpenApiGenerator extends BaseClassGenerator implements ILogable {
         }
         for (String warning : optionalEnhancementWarnings(sppDomain)) {
             new org.apache.maven.plugin.logging.SystemStreamLog().warn(warning);
+            if (com.servpp.lang.lint.CompilerDiagnostics.observed())
+                com.servpp.lang.lint.CompilerDiagnostics.report(new com.servpp.lang.lint.RepairDiagnostic(
+                        "SPP_OPTIONAL_ENHANCEMENT_UNAVAILABLE", "warning", "", 0, 0, warning, warning,
+                        "Review the selected optional deployment features.", List.of(), List.of(), false));
         }
         roleStoragePlan = sppDomain.getRuleBlock().hasTransactionPolicy();
         exampleFaults = java.util.Map.copyOf(sppDomain.getRuleBlock().getExampleFaults());

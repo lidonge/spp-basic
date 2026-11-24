@@ -23,7 +23,7 @@ public class RedundancyCliTest {
         assertThrows(MojoExecutionException.class, () -> Main.run(new String[]{"generate", "--strict",
                 "--source", source.toString(), "--output", output.toString()}));
         assertFalse(Files.exists(output));
-        Files.writeString(source.resolve("shop.spp"), "domain shop; Role Input { String name; }");
+        Files.writeString(source.resolve("shop.spp"), "domain shop; Role Input { String name; } readonly Scenario preview(Input) {}");
         assertEquals(true, Main.run(new String[]{"check", "--strict", "--source", source.toString()}).get("checked"));
     }
 }

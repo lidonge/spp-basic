@@ -94,6 +94,66 @@ public class ServiceRedundancyTest {
                 && f.message().contains("findRecord(record) by input;")));
     }
 
+    @Test public void findsRepositorySelectorAtANonzeroPositionInASerialBranch() {
+        var body = """
+                domain ledger; Role Key { int id; } Role Row { int id; }
+                take Key as Row { mapsame; }
+                atomic calculate setup(Key k, Row r) { r.id = k.id; }
+                atomic query readRows(Row[] results, Row filter);
+                Scenario serial search(Key k, Row r, Row[] rows) {
+                    if (true) { setup(k,r); readRows(rows,r); }
+                }
+                """;
+        var schema = app("domain ledger; tables t { table R(Row) { primarykey(Row.id); } } "
+                + "scope { local { repository(argument(1, Row.id), results) readRows; } }");
+        assertTrue(analyze(spp(body), schema).stream().anyMatch(f -> f.code().endsWith("KEY_SETTER")
+                && f.message().contains("readRows(rows,r) by k")));
+        assertFalse(codes(analyze(spp(body.replace("if (true)", "parallel")), schema)).contains("SPP_REDUNDANT_KEY_SETTER"));
+        assertFalse(codes(analyze(spp(body), app("domain ledger; tables t { table R(Row) { primarykey(Row.id); } }")))
+                .contains("SPP_REDUNDANT_KEY_SETTER"));
+    }
+
+    @Test public void recognizesOnlyTheActualConstantRepositoryFilter() {
+        var source = spp("""
+                domain d; Role Item { int id; String kind; }
+                atomic calculate prepare(Item filter) { filter.kind = "C"; }
+                atomic query listItems(Item filter, Item[] results);
+                Scenario serial run(Item f, Item[] rows) { prepare(f); listItems(f, rows); }
+                """);
+        String config = "domain d; tables t { table I(Item) { primarykey(Item.id); } } "
+                + "scope { local { repository(argument(0, Item.kind), results) listItems; } }";
+        assertTrue(analyze(source, app(config)).stream().anyMatch(f -> f.code().endsWith("KEY_SETTER")
+                && f.message().contains("intercept key { kind = \"C\"; }")));
+        assertFalse(codes(analyze(source, app(config.replace("Item.kind", "Item.id")))).contains("SPP_REDUNDANT_KEY_SETTER"));
+    }
+
+    @Test public void followsAnExplicitByOperandOnlyForItsCompleteMappedKey() {
+        String text = """
+                domain d; Role Order { int sku; } Role Input { int requested; } Role Selector { int code; int branch; }
+                take Selector as Order { int sku = code; }
+                atomic calculate prepare(Input i, Selector s) { s.code = i.requested; }
+                Scenario serial lookup(Input i, Selector s, Order o) { prepare(i,s); findOrder(o) by s; }
+                """;
+        var table = app("domain d; tables roles { table ORDERS(Order){ primarykey(Order.sku); } }");
+        assertTrue(analyze(spp(text), table).stream().anyMatch(f -> f.code().endsWith("KEY_SETTER")
+                && f.message().contains("code=i.requested")));
+        assertFalse(codes(analyze(spp(text.replace("s.code =", "s.branch =")), table)).contains("SPP_REDUNDANT_KEY_SETTER"));
+    }
+
+    @Test public void matchesTheWholeSecondaryPredicateAndKeepsNonKeyWrites() {
+        String text = """
+                domain d; Role Request { int unit; } Role Row { int sku; int unit; int fee; }
+                atomic calculate choose(Request i, Row r) { r.unit = i.unit; }
+                atomic query listRows(Row sel, Row[] rows);
+                Scenario serial lookup(Request i, Row r, Row[] result) { choose(i,r); listRows(r,result); }
+                """;
+        var app = app("domain d; tables roles { table R(Row){ primarykey(Row.sku); } } "
+                + "scope { local { repository(argument(0, Row.unit), rows) listRows; } }");
+        assertTrue(analyze(spp(text), app).stream().anyMatch(f -> f.code().endsWith("KEY_SETTER")
+                && f.message().contains("unit=i.unit")));
+        assertFalse(codes(analyze(spp(text.replace("r.unit = i.unit;", "r.fee = i.unit;")), app)).contains("SPP_REDUNDANT_KEY_SETTER"));
+    }
+
     private static Set<String> codes(List<RedundancyLint.Finding> findings) {
         return findings.stream().map(RedundancyLint.Finding::code).collect(Collectors.toSet());
     }

@@ -32,6 +32,8 @@ public class GeneratorErrorListener implements ANTLRErrorListener, ILogable {
                     + " [data-access] A scenario cannot loop. Read the set with an array query in the scenario and loop in a calculate.";
             msg = ruleDiagnostic;
         }
+        com.servpp.lang.lint.CompilerDiagnostics.error("SPP_SYNTAX_ERROR", file, line, charPositionInLine + 1,
+                msg, "Correct the syntax at the reported token.");
         getLogger().error("{}:{}:{} {}",file , line , (charPositionInLine + 1), msg);
     }
 
