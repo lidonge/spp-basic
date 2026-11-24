@@ -549,7 +549,7 @@ public class JdbcObjectRepository implements ObjectRepository {
     private void finishRead(String type, JdbcAppDdlObjectTableReader.PhysicalRow row, Object target) {
         if (row.id() != null) RepositoryParticipantSnapshots.attachIdentity(target, type, row.id());
         var evidence = new ObjectSnapshot(type, row.id(), null, null, row.revision());
-        hydrateQuantum(evidence, target);
+        if (quantumFacts != null) quantumFacts.hydrate(type, row.id(), target, true);
         roleRelationships.loadMapped(type, row.columns(), target);
         com.servpp.service.runtime.ParticipantRelationshipQueries.complete(target,appDdlCatalog);
         com.servpp.service.runtime.PropertyChanges.clean(target);

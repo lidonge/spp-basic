@@ -29,6 +29,33 @@ public class QuantumParticipantSnapshotTest {
         public Account getCurrent() { return current; }
         public void setCurrent(Account v) { current=v; }
     }
+    @Test public void externalAccountReadDoesNotRequireOrCreateALedgerPosition() throws Exception {
+        var mapping = new Properties();
+        mapping.setProperty("tables", "ACCOUNTS");
+        mapping.setProperty("table.ACCOUNTS.businessType", "Account");
+        mapping.setProperty("table.ACCOUNTS.primaryKeys", "code");
+        mapping.setProperty("table.ACCOUNTS.columns", "code");
+        mapping.setProperty("table.ACCOUNTS.column.code.type", "VARCHAR");
+        var source = new DriverManagerJdbcDataSource("org.h2.Driver",
+                "jdbc:h2:mem:external_quantum_" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1", null, null);
+        var ledger = new JdbcQuantumJournalStore(source);
+        var store = new JdbcObjectSnapshotStore(source, ParticipantSnapshotJson::encode);
+        var repository = new JdbcObjectRepository(store, new ObjectMapper())
+                .useAppDdlCatalog(AppDdlCatalog.fromProperties(mapping));
+        repository.useQuantumFacts(ledger, List.of("Account.balance"));
+        try (var connection = source.getConnection(); var statement = connection.createStatement()) {
+            statement.execute("create table ACCOUNTS(code varchar primary key)");
+            statement.executeUpdate("insert into ACCOUNTS values ('A')");
+        }
+        var account = repository.require("Account", "A", Account.class);
+        assertEquals("A", account.getCode());
+        assertNull(account.getBalance());
+        assertFalse(ledger.findCurrentValue("Account.balance", "A").isPresent());
+        assertFalse(store.find("Account", "A").isPresent());
+        ledger.seedCurrentValue("funds", "Account.balance", "A", BigDecimal.TEN);
+        assertEquals(0, BigDecimal.TEN.compareTo(repository.require("Account", "A", Account.class).getBalance()));
+    }
+
     @Test public void quantumHydrationPreservesHistoricalSnapshotSubtrees() throws Exception {
         var p = new Properties(); p.setProperty("tables","HISTORY,ACCOUNTS");
         p.setProperty("table.HISTORY.businessType","History");p.setProperty("table.HISTORY.snapshotFacts","original,attempts");

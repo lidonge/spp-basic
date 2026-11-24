@@ -16,6 +16,9 @@ For a row with a snapshot, a difference between the physical ordinary columns
 and the stored image causes PERSISTENCE_VERSION_CONFLICT even if the revision
 token still matches. Reads continue to expose the SQL writer's values.
 Independent platform and quantum facts retain their own update protocols.
+A mapped ordinary row can exist before its separate ledger facts are
+provisioned. Reading it leaves an absent nullable quantum amount unset.
+The read neither opens a ledger position nor creates a zero balance.
 
 ## Regression
 

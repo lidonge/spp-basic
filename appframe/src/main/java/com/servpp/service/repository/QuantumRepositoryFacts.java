@@ -83,16 +83,20 @@ final class QuantumRepositoryFacts {
     void recoverOpenings() { if (openingTasks != null) openingTasks.recover(); }
 
     void hydrate(String type, String id, Object value) {
-        recoverOpenings();
-        hydrate(type, id, value, Collections.newSetFromMap(new IdentityHashMap<>()));
+        hydrate(type, id, value, false);
     }
 
-    private void hydrate(String type, String id, Object value, Set<Object> seen) {
+    void hydrate(String type, String id, Object value, boolean allowAbsentLedgerFact) {
+        recoverOpenings();
+        hydrate(type, id, value, Collections.newSetFromMap(new IdentityHashMap<>()), allowAbsentLedgerFact);
+    }
+
+    private void hydrate(String type, String id, Object value, Set<Object> seen, boolean allowAbsentLedgerFact) {
         if (value == null || simple(value) || !seen.add(value)) return;
         try {
-            if (value instanceof Iterable<?> values) { values.forEach(item -> hydrate(null, null, item, seen)); return; }
+            if (value instanceof Iterable<?> values) { values.forEach(item -> hydrate(null, null, item, seen, allowAbsentLedgerFact)); return; }
             if (value.getClass().isArray()) {
-                for (int i = 0; i < java.lang.reflect.Array.getLength(value); i++) hydrate(null, null, java.lang.reflect.Array.get(value, i), seen);
+                for (int i = 0; i < java.lang.reflect.Array.getLength(value); i++) hydrate(null, null, java.lang.reflect.Array.get(value, i), seen, allowAbsentLedgerFact);
                 return;
             }
             String actualType = type == null ? value.getClass().getSimpleName() : type;
@@ -107,13 +111,14 @@ final class QuantumRepositoryFacts {
                             .orElseGet(() -> {
                                 if (openingTasks != null && openingTasks.pending(actualType, identity,
                                         actualType + "." + property.getName())) return BigDecimal.ZERO;
+                                if (allowAbsentLedgerFact && !property.getPropertyType().isPrimitive()) return null;
                                 throw new IllegalStateException("QUANTUM_FACT_NOT_PROVISIONED");
                             });
                     Class<?> target = property.getPropertyType();
-                    Object converted = target == java.math.BigInteger.class ? number.toBigIntegerExact()
+                    Object converted = number == null ? null : target == java.math.BigInteger.class ? number.toBigIntegerExact()
                             : target == BigDecimal.class ? number : mapper.convertValue(number, target);
                     property.getWriteMethod().invoke(value, converted);
-                } else if (property.getReadMethod() != null) hydrate(null, null, property.getReadMethod().invoke(value), seen);
+                } else if (property.getReadMethod() != null) hydrate(null, null, property.getReadMethod().invoke(value), seen, allowAbsentLedgerFact);
             }
         } catch (ReflectiveOperationException | java.beans.IntrospectionException failure) {
             throw new IllegalStateException("QUANTUM_FACT_HYDRATION_FAILED", failure);
