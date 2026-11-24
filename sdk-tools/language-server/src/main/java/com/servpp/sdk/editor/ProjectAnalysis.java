@@ -3,6 +3,7 @@ package com.servpp.sdk.editor;
 import com.servpp.lang.antlr.AppParser;
 import com.servpp.lang.antlr.SppParser;
 import com.servpp.lang.lint.RedundancyLint;
+import com.servpp.lang.lint.RepairDiagnostic;
 import org.eclipse.lsp4j.Diagnostic;
 import org.eclipse.lsp4j.DiagnosticSeverity;
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -66,12 +67,38 @@ public final class ProjectAnalysis {
                             java.nio.file.Path.of(java.net.URI.create(d.uri())).getFileName().toString(), physicalProfile))
                     .map(d -> new RedundancyLint.Source(d.uri(), d.tree())).toList();
             lint = new LinkedHashMap<>();
-            for (var finding : RedundancyLint.analyze(sources)) {
+            for (var analysis : documents.values()) {
+                var doc = analysis.document();
+                for (var problem : doc.problems()) {
+                    var start = problem.range().getStart();
+                    var payload = RepairDiagnostic.error("SPP_SYNTAX_ERROR", doc.uri(),
+                            start.getLine() + 1, start.getCharacter() + 1, problem.message(), "Correct the syntax at the reported token.");
+                    var diagnostic = new Diagnostic(problem.range(), problem.message(), DiagnosticSeverity.Error, "spp");
+                    diagnostic.setCode(payload.code());
+                    diagnostic.setData(payload);
+                    lint.computeIfAbsent(doc.uri(), unused -> new ArrayList<>()).add(diagnostic);
+                }
+            }
+            RedundancyLint.analyze(sources, (domain, finding) -> {
+                var payload = RepairDiagnostic.warning(domain, finding, false);
                 var diagnostic = new Diagnostic(document(finding.path()).range(finding.token()),
                         finding.message(), DiagnosticSeverity.Warning, "spp");
-                diagnostic.setCode(finding.code());
+                diagnostic.setData(payload);
+                diagnostic.setRelatedInformation(payload.relatedLocations().stream().map(loc -> {
+                    var target = document(loc.file());
+                    int start = target.offset(new Position(loc.line() - 1, 0));
+                    var position = target.position(target.text().offsetByCodePoints(start, loc.column() - 1));
+                    return new org.eclipse.lsp4j.DiagnosticRelatedInformation(new org.eclipse.lsp4j.Location(
+                            loc.file(), new org.eclipse.lsp4j.Range(position, position)), "Related edit");
+                }).toList());
+                diagnostic.setCode(payload.code());
                 lint.computeIfAbsent(finding.path(), unused -> new ArrayList<>()).add(diagnostic);
-            }
+            });
+            for (var entries : lint.values()) entries.sort(Comparator
+                    .comparingInt((Diagnostic d) -> d.getSeverity().getValue())
+                    .thenComparing(d -> d.getCode().getLeft())
+                    .thenComparingInt(d -> d.getRange().getStart().getLine())
+                    .thenComparingInt(d -> d.getRange().getStart().getCharacter()));
         }
         return lint.getOrDefault(uri, List.of());
     }

@@ -34,12 +34,16 @@ public class RedundancyDiagnosticsTest {
             init.setWorkspaceFolders(List.of(new WorkspaceFolder(root.toUri().toString(), "shop")));
             server.initialize(init).get(10, TimeUnit.SECONDS);
             server.didOpen(new DidOpenTextDocumentParams(new TextDocumentItem(copy, "spp", 1,
-                    "domain shop;\nRole Copy { String name; }")));
+                    "domain shop;\nRole Copy { String name; } readonly Scenario preview(Copy) {}")));
             var published = notifications.poll(10, TimeUnit.SECONDS);
             assertNotNull(published);
             assertEquals(copy, published.getUri());
             var warning = published.getDiagnostics().get(0);
             assertTrue(warning.getCode().getLeft().startsWith("SPP_REDUNDANT_"));
+            var data = (com.servpp.lang.lint.RepairDiagnostic) warning.getData();
+            assertEquals(warning.getCode().getLeft(), data.code());
+            assertEquals(copy, data.file());
+            assertFalse(data.cause().isBlank());
             assertEquals(DiagnosticSeverity.Warning, warning.getSeverity());
             assertEquals(1, warning.getRange().getStart().getLine());
             Files.writeString(original, "domain shop; Role Input { int age; }");

@@ -49,6 +49,13 @@ public class GeneratorUtil {
     public static void execute(File sppSourceDirectory, File yamlOutputDirectory, File javaOutputDirectory,
                                String basePackage, String physicalProfile, java.util.function.Consumer<SppProject> inspection)
             throws MojoExecutionException, MojoFailureException {
+        execute(sppSourceDirectory, yamlOutputDirectory, javaOutputDirectory, basePackage, physicalProfile, inspection, null);
+    }
+
+    public static void execute(File sppSourceDirectory, File yamlOutputDirectory, File javaOutputDirectory,
+                               String basePackage, String physicalProfile, java.util.function.Consumer<SppProject> inspection,
+                               java.util.function.BiConsumer<List<RedundancyLint.Source>, RedundancyLint.Finding> diagnostics)
+            throws MojoExecutionException, MojoFailureException {
         SppProject project = new SppProject();
         List<RedundancyLint.Source> sources = new ArrayList<>();
         SppPlugin.IAntlrCompiler parse = (file, model) -> {
@@ -76,14 +83,22 @@ public class GeneratorUtil {
         appTreeListeners = compileAntlr(sppSourceDirectory, project, ".rdb", parse);
         //parse phy file
         appTreeListeners = compilePhysicalAntlr(sppSourceDirectory, project, physicalProfile, parse);
-        var findings = RedundancyLint.analyze(sources);
+        var findings = RedundancyLint.analyze(sources, diagnostics);
         var log = new org.apache.maven.plugin.logging.SystemStreamLog();
         boolean strict = Boolean.getBoolean("spp.lint.strict");
+        var counts = findings.stream().collect(java.util.stream.Collectors.groupingBy(
+                RedundancyLint.Finding::code, java.util.stream.Collectors.counting()));
+        String previousCode = "";
         for (var finding : findings) {
+            if (!finding.code().equals(previousCode)) {
+                previousCode = finding.code();
+                String heading = previousCode + " (" + counts.get(previousCode) + ")";
+                if (strict) log.error(heading); else log.warn(heading);
+            }
             if (strict) log.error(finding.format());
             else log.warn(finding.format());
         }
-        if (strict && !findings.isEmpty())
+        if (strict && diagnostics == null && !findings.isEmpty())
             throw new MojoFailureException("Strict redundancy checks reported " + findings.size() + " error(s).");
         List<String> physicalSourceFileNames = physicalSourceFileNames(sppSourceDirectory, physicalProfile);
         List<String> deploymentErrors = com.servpp.lang.models.DomainDeploymentValidator.validate(project);
@@ -116,14 +131,14 @@ public class GeneratorUtil {
             }
             for (String warning : sppDomain.unusedParticipantWarnings()) {
                 if (reportedParticipantWarnings.add(sppDomain.getName() + ":" + warning)) {
-                    new org.apache.maven.plugin.logging.SystemStreamLog().warn(sppDomain.getName() + ": " + warning);
+                    modelWarning(sources, sppDomain.getName(), warning, "SPP_MODEL_WARNING");
                 }
             }
             for (String warning : sppDomain.migrationWarnings()) {
-                new org.apache.maven.plugin.logging.SystemStreamLog().warn(warning);
+                modelWarning(sources, sppDomain.getName(), warning, "SPP_MIGRATION_WARNING");
             }
             for (String warning : sppDomain.numericRoundingWarnings()) {
-                new org.apache.maven.plugin.logging.SystemStreamLog().warn(sppDomain.getName() + ": " + warning);
+                modelWarning(sources, sppDomain.getName(), warning, "SPP_NUMERIC_ROUNDING");
             }
             List<String> physicalCatalogErrors = sppDomain.validatePhysicalRuntimeCatalogGeneration();
             if (!physicalCatalogErrors.isEmpty()) {
@@ -153,6 +168,53 @@ public class GeneratorUtil {
             }
 
         }
+    }
+
+    private static final java.util.regex.Pattern MODEL_CODE = java.util.regex.Pattern.compile("^\\[(SPP_[A-Z_]+)\\] (.*)$");
+
+    private static void modelWarning(List<RedundancyLint.Source> sources, String domain, String warning, String code) {
+        var matcher = MODEL_CODE.matcher(warning);
+        String detail = warning;
+        if (matcher.matches()) {
+            code = matcher.group(1);
+            detail = matcher.group(2);
+        }
+        String hint = switch (code) {
+            case "SPP_UNUSED_PARTICIPANT" -> "Review callers and remove the unused participant from the service signature.";
+            case "SPP_REDUNDANT_UNIQUE" -> "Remove unique from this primary-key lookup.";
+            default -> "Review the declaration and its deployment settings.";
+        };
+        new org.apache.maven.plugin.logging.SystemStreamLog().warn(domain + ": [" + code + "] " + detail);
+        if (!com.servpp.lang.lint.CompilerDiagnostics.observed()) return;
+        var location = java.util.regex.Pattern.compile("^(.+?):(\\d+):(\\d+)\\s+(.+)$").matcher(detail);
+        if (location.matches()) {
+            String message = location.group(4);
+            com.servpp.lang.lint.CompilerDiagnostics.report(new com.servpp.lang.lint.RepairDiagnostic(code, "warning",
+                    location.group(1), Integer.parseInt(location.group(2)), Integer.parseInt(location.group(3)),
+                    message, message, code.equals("SPP_NUMERIC_ROUNDING") ? "Declare a rounding mode." : hint,
+                    List.of(), List.of(), false));
+            return;
+        }
+        String file = "";
+        int line = 0, column = 0;
+        for (var source : sources) {
+            if (!(source.tree() instanceof com.servpp.lang.antlr.SppParser.ProgramContext spp)
+                    || !spp.servicedomain().domainname().getText().equals(domain)) continue;
+            for (var unit : spp.compilationUnits().compilationUnit()) {
+                var definition = unit.scenario() != null ? unit.scenario().serviceDefinition()
+                        : unit.atomicservice() != null ? unit.atomicservice().serviceDefinition() : null;
+                if (definition == null) continue;
+                var token = definition.Identifier().getSymbol();
+                String name = com.servpp.lang.general.NameUtil.firstToLowerCase(token.getText(), true);
+                if (detail.startsWith(name + ":") || detail.startsWith("Scenario " + name + " ")) {
+                    file = source.path(); line = token.getLine(); column = token.getCharPositionInLine() + 1;
+                    break;
+                }
+            }
+            if (!file.isEmpty()) break;
+        }
+        com.servpp.lang.lint.CompilerDiagnostics.report(new com.servpp.lang.lint.RepairDiagnostic(code, "warning",
+                file, line, column, detail, detail, hint, List.of(), List.of(), false));
     }
 
     private static void writeApplicationDeployments(SppProject project, File javaRoot) throws MojoExecutionException {

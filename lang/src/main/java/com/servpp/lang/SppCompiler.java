@@ -39,6 +39,8 @@ public class SppCompiler extends AntlrCompiler {
         lexer.addErrorListener(new BaseErrorListener() {
             @Override public void syntaxError(Recognizer<?, ?> recognizer, Object symbol, int line,
                                               int column, String message, RecognitionException failure) {
+                com.servpp.lang.lint.CompilerDiagnostics.error("SPP_SYNTAX_ERROR", antlrFile, line, column + 1,
+                        message, "Replace or remove the unrecognized input.");
                 lexicalErrors.append(System.lineSeparator()).append(antlrFile).append(':').append(line)
                         .append(':').append(column + 1).append(' ').append(message);
             }

@@ -102,28 +102,37 @@ public final class LocalRedundancy {
                                             Map<String, Map<String, String>> types,
                                             RedundancyLint.Reporter reporter) {
         walk(program, node -> {
-            if (!(node instanceof SppParser.ActasContext take) || take.mapBody() == null) return;
-            if (take.Identifier().size() != 2 || take.mapBody().mapDeclaration().stream()
-                    .anyMatch(declaration -> declaration.mapfield() == null
-                            || declaration.takeall() != null || declaration.mapsame() != null)) return;
-            List<SppParser.MapfieldContext> mappings = take.mapBody().mapDeclaration().stream()
-                    .map(SppParser.MapDeclarationContext::mapfield).filter(java.util.Objects::nonNull).toList();
-            String sourceName = take.Identifier(0).getText();
-            String targetName = take.Identifier(1).getText();
-            Map<String, String> sourceFields = types.get(sourceName);
-            Map<String, String> targetFields = types.get(targetName);
-            if (mappings.isEmpty() || sourceFields == null || targetFields == null
-                    || mappings.stream().anyMatch(mapping -> mapping.Identifier().size() < 2
-                    || !mapping.Identifier(0).getText().equals(mapping.Identifier(1).getText()))) return;
-            Set<String> sameFields = new HashSet<>();
-            for (Map.Entry<String, String> field : sourceFields.entrySet())
-                if (field.getValue().equals(targetFields.get(field.getKey()))) sameFields.add(field.getKey());
-            Set<String> listed = new HashSet<>();
-            mappings.forEach(mapping -> listed.add(mapping.Identifier(0).getText()));
-            if (!listed.equals(sameFields)) return;
-            reporter.warn(source, take.Identifier(take.Identifier().size() - 1).getSymbol(), "SPP_REDUNDANT_TAKE_MAP",
+            if (!(node instanceof SppParser.ActasContext take) || !sameNameTake(take, types)) return;
+            reporter.warn(source, take.Identifier(1).getSymbol(), "SPP_REDUNDANT_TAKE_MAP",
                     "Every mapped field has the same name; use mapsame in the take block.");
         });
+    }
+
+    static boolean sameNameTake(SppParser.ActasContext take, Map<String, Map<String, String>> types) {
+        if (take.mapBody() == null) return false;
+        if (take.Identifier().size() != 2 || take.mapBody().mapDeclaration().stream()
+                .anyMatch(declaration -> declaration.mapfield() == null
+                        || declaration.takeall() != null || declaration.mapsame() != null)) return false;
+        List<SppParser.MapfieldContext> mappings = take.mapBody().mapDeclaration().stream()
+                .map(SppParser.MapDeclarationContext::mapfield).filter(java.util.Objects::nonNull).toList();
+        String sourceName = take.Identifier(0).getText();
+        String targetName = take.Identifier(1).getText();
+        Map<String, String> sourceFields = types.get(sourceName);
+        Map<String, String> targetFields = types.get(targetName);
+        if (mappings.isEmpty() || sourceFields == null || targetFields == null
+                || mappings.stream().anyMatch(mapping -> mapping.Identifier().size() < 2
+                || mapping.primitiveType() == null && mapping.entitytype() == null
+                || !mapping.getChild(0).getText().equals(targetFields.getOrDefault(mapping.Identifier(0).getText(), "").split("\\(", 2)[0])
+                || !mapping.Identifier(0).getText().equals(mapping.Identifier(1).getText()))) return false;
+        Set<String> sameFields = new HashSet<>();
+        for (Map.Entry<String, String> field : sourceFields.entrySet())
+            if (targetFields.containsKey(field.getKey())) {
+                if (!field.getValue().equals(targetFields.get(field.getKey()))) return false;
+                sameFields.add(field.getKey());
+            }
+        Set<String> listed = new HashSet<>();
+        mappings.forEach(mapping -> listed.add(mapping.Identifier(0).getText()));
+        return listed.size() == mappings.size() && listed.equals(sameFields);
     }
 
     private static void checkBound(RedundancyLint.Source source, SppParser.QuantumBoundContext bound,
@@ -134,7 +143,7 @@ public final class LocalRedundancy {
                     "Both limits are null; remove this bounds entry because it imposes no constraint.");
     }
 
-    private static boolean isNull(ParseTree tree) {
+    static boolean isNull(ParseTree tree) {
         if (tree instanceof SppParser.ParenthesesExprContext parentheses) return isNull(parentheses.expression());
         return tree.getText().equals("null");
     }

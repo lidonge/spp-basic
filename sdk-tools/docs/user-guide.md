@@ -494,3 +494,13 @@ AtomicServiceTesting.invokeAtomic(runtime, "orders.calculateTotal", request);
 Production bridges invoke a scenario through `runtime.executeGeneratedService`.
 The scenario owns the business checks and transaction boundary. Use a scenario
 test to verify those guarantees across multiple atomic calls.
+
+## Batch review and repair
+
+Run `spp-basic check --source src/main/spp --format json` for JSON Lines on standard output. Each line contains one diagnostic. A successful check with no diagnostics produces an empty stream. Compiler logs go to standard error. Errors appear first, followed by warnings ordered by code, path and position. Each object's `count` is the number of diagnostics with its code.
+
+The fields `code`, `severity`, `file`, `line`, `column`, `message`, `cause`, `fixHint` and `relatedLocations` describe the finding. Paths are relative to the checked source directory. Source locations are one-based. Project-level errors use an empty file and zero positions. Each safe edit contains a path, inclusive start and exclusive end in UTF-16 offsets, and replacement text. Apply the edits for a diagnostic together.
+
+The [diagnostic reference](../../lang/src/main/resources/diagnostics) contains the rule, review rationale and examples for each code. Run `spp-basic explain CODE` to read the same page offline. Run `spp-basic fix --source src/main/spp --code CODE` to apply a single rule or `--all-safe` to apply all eligible edits. The command compares the source with the checked snapshot and recompiles after applying a batch. A warning may require human review even when other occurrences of the same code carry edits.
+
+Set Java system properties `spp.lint.maxParticipants` (8), `spp.lint.maxCalculateStatements` (40) and `spp.lint.maxNesting` (4) to positive integers to configure the complexity warnings.

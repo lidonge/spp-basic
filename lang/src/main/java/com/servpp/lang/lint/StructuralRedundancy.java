@@ -19,8 +19,16 @@ public final class StructuralRedundancy {
                            List<String> types, SppParser.AtomicserviceContext atomic) { }
 
     public static void check(List<RedundancyLint.Source> sources, RedundancyLint.Reporter reporter) {
-        List<Service> services = new ArrayList<>();
         Set<String> constants = new HashSet<>();
+        var services = services(sources, constants);
+        checkDuplicateServices(services, constants, reporter);
+        presenceChecks(services, sources, plan -> reporter.warn(plan.source(), plan.guard().serviceDefinition().Identifier().getSymbol(),
+                "SPP_REDUNDANT_PRESENCE_CHECK", plan.hint()));
+        checkPairedParticipants(services, reporter);
+    }
+
+    private static List<Service> services(List<RedundancyLint.Source> sources, Set<String> constants) {
+        List<Service> services = new ArrayList<>();
         for (var source : sources) {
             if (!(source.tree() instanceof SppParser.ProgramContext program)) continue;
             for (var unit : program.compilationUnits().compilationUnit()) {
@@ -49,9 +57,7 @@ public final class StructuralRedundancy {
                 }
             }
         }
-        checkDuplicateServices(services, constants, reporter);
-        checkPresenceChecks(services, sources, reporter);
-        checkPairedParticipants(services, reporter);
+        return services;
     }
 
     private static void checkDuplicateServices(List<Service> services, Set<String> constants,
@@ -101,73 +107,166 @@ public final class StructuralRedundancy {
                 || token.getType() == SppParser.NullLiteral || token.getType() == SppParser.BooleanLiteral;
     }
 
-    private static void checkPresenceChecks(List<Service> services, List<RedundancyLint.Source> sources,
-                                           RedundancyLint.Reporter reporter) {
+    record Presence(RedundancyLint.Source source, SppParser.AtomicserviceContext guard,
+                    SppParser.AtomiccallContext call, String replacement, Service destination,
+                    String requirement, String hint) {
+        SppParser.CalculationBodyContext destinationBody() { return destination == null ? null : destination.atomic().calculationBody(); }
+        String destinationPath() { return destination.source().path(); }
+    }
+
+    static Presence presence(List<RedundancyLint.Source> sources, Token token) {
+        var matches = new ArrayList<Presence>();
+        presenceChecks(services(sources, new HashSet<>()), sources, p -> {
+            if (p.guard().serviceDefinition().Identifier().getSymbol() == token) matches.add(p);
+        });
+        return matches.size() == 1 ? matches.get(0) : null;
+    }
+
+    private static void presenceChecks(List<Service> services, List<RedundancyLint.Source> sources,
+                                       java.util.function.Consumer<Presence> report) {
         Map<String, List<SppParser.AtomiccallContext>> calls = new HashMap<>();
         Set<String> bindings = new HashSet<>();
+        Set<String> enumCodes = new HashSet<>();
+        Set<String> builtinCodes = new HashSet<>(Set.of("\"PARTICIPANT_NOT_IDENTIFIED\""));
         for (var source : sources) {
             if (source.tree() instanceof SppParser.ProgramContext program) {
                 for (var call : descendants(program, SppParser.AtomiccallContext.class))
                     if (call.Identifier() != null) calls.computeIfAbsent(canonical(call.Identifier().getText()),
                             ignored -> new ArrayList<>()).add(call);
+                for (var enumeration : descendants(program, SppParser.EnumerationContext.class))
+                    for (var item : enumeration.enumBody().enumBodyIdentifier()) {
+                        String member = enumeration.Identifier().getText() + "." + item.Identifier().getText();
+                        enumCodes.add(member);
+                        if (!item.StringLiteral().isEmpty() && item.StringLiteral(0).getText().equals("\"PARTICIPANT_NOT_IDENTIFIED\""))
+                            builtinCodes.add(member);
+                    }
             } else if (source.tree() instanceof AppParser.ProgramContext app) {
-                for (var token : terminals(app))
-                    if (token.getType() == AppParser.Identifier) bindings.add(canonical(token.getText()));
+                for (var id : descendants(app, TerminalNode.class)) {
+                    if (id.getSymbol().getType() != AppParser.Identifier) continue;
+                    if (id.getParent() instanceof AppParser.ScopeItemIdentifierContext out
+                            && plainLocal((AppParser.ScopeItemContext) out.getParent())) continue;
+                    bindings.add(canonical(id.getText()));
+                }
             }
         }
-        for (Service service : services) {
-            var ctx = service.atomic();
-            if (ctx == null || !service.kind().equals("check") || ctx.calculationBody() == null
-                    || service.parameters().size() != 1 || ctx.serviceDefinition().parameterDeclarations()
-                    .parameterDeclaration(0).roletype() == null) continue;
+        for (var service : services) {
+            var code = presenceCode(service);
+            if (code == null) continue;
             String name = canonical(service.name());
             var uses = calls.getOrDefault(name, List.of());
             if (uses.size() != 1 || bindings.contains(name)) continue;
-            var statements = ctx.calculationBody().calculationStatement();
-            if (statements.size() != 1 || statements.get(0).rejectionCode() == null
-                    || !statements.get(0).expression().getText().equals(service.parameters().get(0))) continue;
             var call = uses.get(0);
-            SppParser.ScenarioContext scenario = null;
-            for (var ancestor = call.getParent(); ancestor != null; ancestor = ancestor.getParent())
-                if (ancestor instanceof SppParser.ScenarioContext found) { scenario = found; break; }
-            if (scenario == null) continue;
-            String actual;
-            if (call.parameters() == null) {
-                var params = scenario.serviceDefinition().parameterDeclarations();
-                if (params == null) continue;
-                var matches = params.parameterDeclaration().stream().filter(p -> p.roletype() != null
-                        && p.roletype().getText().equals(service.types().get(0))).toList();
-                if (matches.size() != 1) continue;
-                actual = matches.get(0).Identifier() == null ? matches.get(0).roletype().getText() : matches.get(0).Identifier().getText();
-            } else {
-                if (call.parameters().parameter().size() != 1) continue;
-                actual = call.parameters().parameter(0).getText();
+            var actuals = actuals(call, service);
+            if (actuals.size() != 1 || call.quantumBounds() != null || call.readBinding() != null
+                    || call.uniqueModifier() != null) continue;
+            String actual = actuals.get(0);
+            if (builtinCodes.contains(code)) {
+                String replacement = "identify(" + actual + ")";
+                report.accept(new Presence(service.source(), service.atomic(), call, replacement, null, null,
+                        "Inline " + replacement + " at the only call to " + name + "."));
+                continue;
             }
-            String code = statements.get(0).rejectionCode().getText();
-            String hint;
-            if (code.equals("\"PARTICIPANT_NOT_IDENTIFIED\"")) {
-                hint = "Inline identify(" + actual + ") in scenario " + scenario.serviceDefinition().Identifier().getText() + ".";
-            } else {
-                // Scenario syntax supports custom failure codes inside atomic bodies only.
-                // Fold the guard into the next single-use check on the same argument.
-                if (!call.getParent().getClass().equals(SppParser.SerialgroupContext.class)
-                        && !(call.getParent() instanceof SppParser.ExecutegroupContext && scenario.autosort() != null
-                        && scenario.autosort().getText().equals("serial"))) continue;
-                var next = nextCall(call);
-                if (next == null || next.Identifier() == null || next.parameters() == null
-                        || !next.parameters().getText().equals(actual) || call.scenarioBranch() != null
-                        || call.transactionBreak() != null || next.scenarioBranch() != null) continue;
+            if (!enumCodes.contains(code) && !literalRejection(service)) continue;
+            var next = nextCall(call);
+            if (ServiceRedundancy.inSerialGroup(call) && next != null && next.Identifier() != null
+                    && call.scenarioBranch() == null && call.transactionBreak() == null && next.scenarioBranch() == null
+                    && next.transactionBreak() == null && next.quantumBounds() == null) {
                 String nextName = canonical(next.Identifier().getText());
-                if (bindings.contains(nextName) || calls.getOrDefault(nextName, List.of()).size() != 1) continue;
-                var destination = services.stream().filter(s -> canonical(s.name()).equals(nextName)
-                        && s.kind().equals("check") && !s.body().isEmpty() && s.types().equals(service.types())).findFirst();
-                if (destination.isEmpty() || !(code.startsWith("\"") || code.matches("[\\p{L}_][\\p{L}\\p{N}_.]*"))) continue;
-                hint = "Inline require(" + destination.get().parameters().get(0) + ", " + code + ") at the start of "
-                        + destination.get().name() + ", the next check in " + scenario.serviceDefinition().Identifier().getText() + ".";
+                var dest = services.stream().filter(s -> canonical(s.name()).equals(nextName)).toList();
+                if (dest.size() == 1 && !bindings.contains(nextName) && calls.getOrDefault(nextName, List.of()).size() == 1) {
+                    Service target = dest.get(0);
+                    var args = actuals(next, target);
+                    int i = args.indexOf(actual);
+                    if (target.kind().equals("check") && !target.body().isEmpty() && i >= 0
+                            && target.types().get(i).equals(service.types().get(0))) {
+                        String requirement = "require(" + target.parameters().get(i) + ", " + code + ");";
+                        report.accept(new Presence(service.source(), service.atomic(), call, "", target, requirement,
+                                "Inline " + requirement + " at the start of " + target.name() + "."));
+                        continue;
+                    }
+                }
             }
-            reporter.warn(service.source(), service.nameToken(), "SPP_REDUNDANT_PRESENCE_CHECK",
-                    service.name() + " checks one participant at its only call. " + hint);
+            // A read between two single-use guards must still be skipped if the first one fails.
+            // Folding this pattern needs an extra parameter and an explicit scenario branch.
+            if (ServiceRedundancy.inSerialGroup(call) && next != null && next.Identifier() != null
+                    && next.scenarioBranch() == null && next.transactionBreak() == null && call.scenarioBranch() == null) {
+                var following = nextCall(next);
+                if (following != null && following.Identifier() != null && following.scenarioBranch() == null
+                        && (call.transactionBreak() == null) == (following.transactionBreak() == null)) {
+                    String followingName = canonical(following.Identifier().getText());
+                    var other = services.stream().filter(s -> canonical(s.name()).equals(followingName)).findFirst();
+                    if (other.isPresent() && presenceCode(other.get()) != null && !bindings.contains(followingName)
+                            && calls.get(followingName).size() == 1) {
+                        var args = actuals(following, other.get());
+                        boolean read = canonical(next.Identifier().getText()).equals("find" + other.get().types().get(0))
+                                && next.parameters() != null && args.size() == 1
+                                && next.parameters().getText().equals(args.get(0)) && !actual.equals(args.get(0))
+                                && services.stream().noneMatch(s -> canonical(s.name()).equals(canonical(next.Identifier().getText()))
+                                && !s.kind().equals("query"));
+                        if (read) {
+                            report.accept(new Presence(service.source(), service.atomic(), call, null, null, null,
+                                    "Guard the intervening read with if (" + actual + ") and combine the two presence checks at "
+                                            + followingName + ". Preserve rejection order (" + code + " then " + presenceCode(other.get())
+                                            + ") and the final call's transaction behavior."));
+                            continue;
+                        }
+                    }
+                }
+            }
+            // Prefer an already shared guard. A stable tie-breaker prevents mutually deleting aliases.
+            var equivalent = services.stream().filter(s -> s != service && s.types().equals(service.types())
+                    && code.equals(presenceCode(s)) && !bindings.contains(canonical(s.name())))
+                    .filter(s -> {
+                        int usesOfOther = calls.getOrDefault(canonical(s.name()), List.of()).size();
+                        return usesOfOther > 1 || usesOfOther == 1 && s.name().compareTo(service.name()) < 0;
+                    }).sorted(Comparator.comparing(Service::name)).findFirst();
+            if (equivalent.isPresent()) {
+                String replacement = equivalent.get().name() + "(" + actual + ")";
+                report.accept(new Presence(service.source(), service.atomic(), call, null, null, null,
+                        "Reuse " + replacement + " at this guard's only call to preserve " + code + "."));
+            }
         }
+    }
+
+    static boolean plainLocal(AppParser.ScopeItemContext item) {
+        return item.getChildCount() == 2 && item.getParent() instanceof AppParser.LocalBodyContext local
+                && local.scopeParameter() == null;
+    }
+
+    private static String presenceCode(Service s) {
+        if (!s.kind().equals("check") || s.atomic().calculationBody() == null || s.types().size() != 1
+                || s.atomic().serviceDefinition().parameterDeclarations().parameterDeclaration(0).roletype() == null
+                || s.types().get(0).contains("[")) return null;
+        var statements = s.atomic().calculationBody().calculationStatement();
+        if (statements.size() != 1 || statements.get(0).rejectionCode() == null) return null;
+        var expression = statements.get(0).expression();
+        while (expression instanceof SppParser.ParenthesesExprContext parens) expression = parens.expression();
+        return expression.getText().equals(s.parameters().get(0)) ? statements.get(0).rejectionCode().getText() : null;
+    }
+
+    private static boolean literalRejection(Service service) {
+        var expression = service.atomic().calculationBody().calculationStatement(0).rejectionCode().expression();
+        return expression.getStart() == expression.getStop() && expression.getStart().getType() == SppParser.StringLiteral;
+    }
+
+    private static List<String> actuals(SppParser.AtomiccallContext call, Service service) {
+        SppParser.ScenarioContext scenario = null;
+        for (var p = call.getParent(); p != null; p = p.getParent())
+            if (p instanceof SppParser.ScenarioContext s) { scenario = s; break; }
+        if (scenario == null || scenario.serviceDefinition().parameterDeclarations() == null) return List.of();
+        if (call.parameters() != null) {
+            var args = call.parameters().parameter();
+            return args.size() == service.parameters().size() ? args.stream().map(ParseTree::getText).toList() : List.of();
+        }
+        var args = new ArrayList<String>();
+        for (var type : service.types()) {
+            var matches = scenario.serviceDefinition().parameterDeclarations().parameterDeclaration().stream()
+                    .filter(p -> p.roletype() != null && p.roletype().getText().equals(type)).toList();
+            if (matches.size() != 1) return List.of();
+            var p = matches.get(0);
+            args.add(p.Identifier() == null ? type : p.Identifier().getText());
+        }
+        return args;
     }
 
     private static SppParser.AtomiccallContext nextCall(SppParser.AtomiccallContext call) {
@@ -204,30 +303,29 @@ public final class StructuralRedundancy {
 
     private static void checkScenarioPairedParticipants(Service service, RedundancyLint.Reporter reporter) {
         if (!(service.context() instanceof SppParser.ScenarioContext scenario)) return;
-        var group = scenario.scenarioDeclaration().executegroup();
-        var calls = group.atomiccall();
-        if (calls.size() != group.getChildCount() || calls.stream().anyMatch(call -> call.scenarioBranch() != null)) return;
+        var calls = descendants(scenario.scenarioDeclaration(), SppParser.AtomiccallContext.class);
         for (int i = 0; i < service.parameters().size(); i++) for (int j = i + 1; j < service.parameters().size(); j++) {
             String a = service.parameters().get(i), b = service.parameters().get(j);
-            if (a.isEmpty() || b.isEmpty() || !service.types().get(i).equals(service.types().get(j)) || !pairedNames(a, b)) continue;
-            List<List<String>> left = new ArrayList<>(), right = new ArrayList<>();
-            boolean mixed = false;
+            if (!service.types().get(i).equals(service.types().get(j)) || !pairedNames(a, b)) continue;
+            Map<ParserRuleContext, List<List<String>>> left = new HashMap<>(), right = new HashMap<>();
+            boolean unsupported = false;
+            boolean separateRead = false, joint = false;
             for (var call : calls) {
-                List<Token> tokens = terminals(call);
+                var tokens = terminals(call);
                 boolean hasA = hasIdentifier(tokens, a), hasB = hasIdentifier(tokens, b);
-                if (hasA && hasB) { mixed = true; break; }
-                if (hasA == hasB) continue;
+                if (!hasA && !hasB) continue;
+                if (call.scenarioBranch() != null) { unsupported = true; break; }
+                if (hasA && hasB) { joint = true; continue; }
                 String target = hasA ? a : b;
-                List<String> normalized = new ArrayList<>();
-                Token callName = call.Identifier() == null ? null : call.Identifier().getSymbol();
-                for (Token token : tokens) normalized.add(token.getType() == SppParser.Identifier && token.getText().equals(target)
-                        ? "<participant>" : token == callName ? token.getType() + ":" + token.getText().toLowerCase(Locale.ROOT)
-                        : token.getType() + ":" + token.getText());
-                (hasA ? left : right).add(normalized);
+                var normalized = canonicalTokens(tokens, List.of(target), List.of(service.types().get(i)));
+                (hasA ? left : right).computeIfAbsent(call.getParent(), ignored -> new ArrayList<>()).add(normalized);
+                separateRead |= call.Identifier() != null && canonical(call.Identifier().getText()).startsWith("find");
             }
-            if (!mixed && !left.isEmpty() && left.equals(right)) {
+            if (!unsupported && !left.isEmpty() && left.equals(right)
+                    && (separateRead || !joint)) {
                 reporter.warn(service.source(), service.nameToken(), "SPP_REDUNDANT_PAIRED_PARTICIPANTS",
-                        "Scenario participants '" + a + "' and '" + b + "' of the same type are processed alike; use an array participant.");
+                        "Scenario participants '" + a + "' and '" + b + "' have matching individual calls in the same blocks. "
+                                + "Use an ordered array for the repeated operations and preserve their positions at joint calls.");
                 return;
             }
         }
@@ -241,9 +339,19 @@ public final class StructuralRedundancy {
             if (hasA && hasB) return false;
             if (!hasA && !hasB) continue;
             String target = hasA ? a : b;
-            List<String> normalized = new ArrayList<>();
-            for (Token token : tokens) normalized.add(token.getText().equals(target) ? "<participant>"
-                    : token.getType() + ":" + token.getText());
+            var normalized = canonicalTokens(tokens, List.of(target), List.of("paired"));
+            // Mirror a named output slot (result.sourceFound/result.targetFound) or local
+            // (sourceLevel/targetLevel). All input fields, operators and constants stay literal.
+            Token output = null;
+            var assignment = statement.calculationAssignment();
+            if (assignment != null && assignment.qualifiedName() != null)
+                output = assignment.qualifiedName().getStop();
+            var local = statement.calculationLocal();
+            if (local != null && local.primitiveType() != null && local.Identifier().size() == 1)
+                output = local.Identifier(0).getSymbol();
+            if (output != null && output.getText().startsWith(target) && output.getText().length() > target.length()
+                    && Character.isUpperCase(output.getText().charAt(target.length())))
+                normalized.set(tokens.indexOf(output), "<output>" + output.getText().substring(target.length()));
             (hasA ? left : right).add(normalized);
         }
         return !left.isEmpty() && left.equals(right);
@@ -252,7 +360,7 @@ public final class StructuralRedundancy {
     private static boolean pairedNames(String a, String b) {
         String x = a.toLowerCase(Locale.ROOT), y = b.toLowerCase(Locale.ROOT);
         if (x.equals("a") && y.equals("b") || x.equals("b") && y.equals("a")) return true;
-        for (String[] pair : List.of(new String[]{"source", "target"}, new String[]{"first", "second"})) {
+        for (String[] pair : List.of(new String[]{"source", "target"}, new String[]{"first", "second"}, new String[]{"local", "internal"})) {
             if (x.startsWith(pair[0]) && y.startsWith(pair[1])
                     && x.substring(pair[0].length()).equals(y.substring(pair[1].length()))) return true;
             if (y.startsWith(pair[0]) && x.startsWith(pair[1])
@@ -278,11 +386,11 @@ public final class StructuralRedundancy {
         else for (int i = 0; i < tree.getChildCount(); i++) collectTokens(tree.getChild(i), out);
     }
 
-    private static <T extends ParserRuleContext> List<T> descendants(ParseTree tree, Class<T> kind) {
+    private static <T extends ParseTree> List<T> descendants(ParseTree tree, Class<T> kind) {
         List<T> found = new ArrayList<>(); collectDescendants(tree, kind, found); return found;
     }
 
-    private static <T extends ParserRuleContext> void collectDescendants(ParseTree tree, Class<T> kind, List<T> found) {
+    private static <T extends ParseTree> void collectDescendants(ParseTree tree, Class<T> kind, List<T> found) {
         if (kind.isInstance(tree)) found.add(kind.cast(tree));
         for (int i = 0; i < tree.getChildCount(); i++) collectDescendants(tree.getChild(i), kind, found);
     }

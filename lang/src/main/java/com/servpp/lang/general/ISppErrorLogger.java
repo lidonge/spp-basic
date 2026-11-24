@@ -12,6 +12,8 @@ public interface ISppErrorLogger extends ILogable{
     File getAntlrFile();
 
     default void logSppError(int line, int charPositionInLine, String msg) {
+        com.servpp.lang.lint.CompilerDiagnostics.error("SPP_SEMANTIC_ERROR", getAntlrFile(), line,
+                charPositionInLine + 1, msg, "Correct the declaration or reference identified in the message.");
         getLogger().error(getAntlrFile() + ":" + line + ":" + (charPositionInLine + 1));
         getLogger().error(msg);
     }

@@ -32,14 +32,22 @@ public final class BasicCompilerWorker {
             try(var files=Files.walk(snapshot)){if(files.noneMatch(path->path.toString().endsWith(".spp") && Files.isRegularFile(path)))throw new CompilationException("INVALID_SOURCE","Source contains no .spp files.");}
             var project=new java.util.LinkedHashMap<String,Object>();
             Path assets=staging.resolve(".spp-assets");
-            try(var resources=SourceSnapshot.resources(source,snapshot,assets)) {
+            boolean structured = request.path("diagnostics").asBoolean();
+            var diagnostics = new DiagnosticReport(snapshot);
+            try(var resources=SourceSnapshot.resources(source,snapshot,assets);
+                var errors=com.servpp.lang.lint.CompilerDiagnostics.observe(structured ? diagnostics::add : null)) {
                 GeneratorUtil.execute(snapshot.toFile(),staging.resolve("openapi").toFile(),staging.resolve("src/main/java").toFile(),basePackage,request.path("profile").isNull()?null:request.path("profile").asText(),parsed -> {
                     project.put("domainCount",parsed.getSppDomainMap().size());
                     long scenarios=parsed.getSppDomainMap().values().stream().flatMap(d -> d.getMapsOfClass().values().stream())
                         .filter(u -> u instanceof com.servpp.lang.models.SppScenario && u.isReal()).count();
                     project.put("scenarioCount",scenarios);
-                });
+                }, structured ? (domain, finding) -> diagnostics.add(com.servpp.lang.lint.RepairDiagnostic.warning(
+                        domain, finding, request.path("strict").asBoolean())) : null);
+            } catch (Exception failure) {
+                if (!structured) throw failure;
+                diagnostics.failed(failure);
             }
+            if (structured) diagnostics.write(staging.resolve(".diagnostics.json"));
             SourceSnapshot.remove(snapshot);if(Files.exists(assets))SourceSnapshot.remove(assets);
             if(operation.equals("generate")) {
                 new JavaProjectWriter().write(staging,basePackage);

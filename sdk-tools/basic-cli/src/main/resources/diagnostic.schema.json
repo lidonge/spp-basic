@@ -1,0 +1,20 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "S++ check diagnostic (one JSON Lines record)",
+  "type": "object",
+  "required": ["code", "severity", "file", "line", "column", "message", "cause", "fixHint", "relatedLocations"],
+  "properties": {
+    "code": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]+$"},
+    "severity": {"enum": ["error", "warning"]},
+    "file": {"type": "string"},
+    "line": {"type": "integer", "minimum": 0},
+    "column": {"type": "integer", "minimum": 0},
+    "message": {"type": "string"},
+    "cause": {"type": "string"},
+    "fixHint": {"type": "string"},
+    "relatedLocations": {"type": "array", "items": {"type": "object", "required": ["file", "line", "column"], "properties": {"file": {"type": "string"}, "line": {"type": "integer"}, "column": {"type": "integer"}}}},
+    "count": {"type": "integer", "minimum": 1},
+    "safe": {"type": "boolean"},
+    "edits": {"type": "array", "items": {"type": "object", "required": ["path", "start", "end", "replacement"], "properties": {"path": {"type": "string"}, "start": {"type": "integer", "minimum": 0}, "end": {"type": "integer", "minimum": 0}, "replacement": {"type": "string"}}}}
+  }
+}
