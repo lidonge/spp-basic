@@ -151,3 +151,15 @@ atomic calculate preserveDepositPostingEvidence(CashDepositAgreement, DepositPos
         CashDepositAgreement.postingEvidence = append(CashDepositAgreement.postingEvidence, evidence);
     }
 }
+
+readonly Scenario serial previewDepositAllocation(DepositRequest, DepositPlan, DepositAccounting) {
+    classifyDepositAccounting;
+    checkDepositAccounting;
+}
+
+readonly Scenario serial previewDepositPostings(DepositAccounting, DepositFeePlan, DepositPostingLine[], DepositPostingTotals) {
+    checkDepositAccounting;
+    checkPostingRules;
+    calculateDepositPostings;
+    checkDepositPostings;
+}

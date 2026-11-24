@@ -177,3 +177,20 @@ atomic check checkOriginalSettlementAccounts(
         RejectionCode.ORIGINAL_SETTLEMENT_ACCOUNTS_MISMATCH
     );
 }
+
+readonly Scenario serial assessCashReversalFunding(DepositAccount, CashDepositAgreement, DepositReversalCapacity) {
+    checkOriginalCashMovement;
+    checkCashReversalCapacity;
+}
+
+readonly Scenario serial previewCashReversalMetadata(
+    CashDepositAgreement, CashReversalAgreement, AccountEligibility, DepositAccrualState, CashReversalMetadataPlan
+) {
+    checkCashReversalFacts;
+    calculateXbodCashReversalMetadata;
+}
+
+readonly Scenario serial quoteCashReversal(CashDepositAgreement, CashReversalAgreement, CashReversalMetadataPlan) {
+    checkOriginalCashMovement;
+    prepareCashReversalAgreement;
+}

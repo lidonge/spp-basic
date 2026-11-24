@@ -91,3 +91,10 @@ atomic check checkAgreementProductInput(InterestPeriod normal, InterestPeriod ov
     }
     require(expectedSlot == 0, RejectionCode.INVALID_AGREEMENT_BANDS);
 }
+
+readonly Scenario serial previewAgreementWindow(
+    BankDate normalStart, BankDate normalEnd, AgreementTerm, BankDate clippedStart, BankDate clippedEnd,
+    InterestPeriod normal, InterestPeriod overlap, AgreementPolicy
+) {
+    prepareAgreementWindow(normalStart, normalEnd, AgreementTerm, clippedStart, clippedEnd, normal, overlap, AgreementPolicy);
+}

@@ -23,10 +23,10 @@ public final class XbodRestartProbe {
                 }
                 case "reverse": {
                     var saved = demo.mapper.readTree(state.toFile());
-                    var original = demo.call("findCashDepositAgreement",Map.of("CashDepositAgreement",Map.of("depositNumber",saved.path("depositNumber").asText())));
+                    var original = demo.call("readCashDeposit",Map.of("CashDepositAgreement",Map.of("depositNumber",saved.path("depositNumber").asText())));
                     assertFalse(original.path("CashDepositAgreement").path("reversed").asBoolean());
                     XbodTransactionTest.amount("100", original.path("CashDepositAgreement").path("amount"));
-                    var before = demo.call("findDepositAccount",Map.of("DepositAccount",Map.of("accountNumber","ACCOUNT-001")));
+                    var before = demo.readAccounts();
                     XbodTransactionTest.amount("100",before.path("DepositAccount").path("interestBase"));
                     var reversed = demo.call("reverseCash",XbodTransactionTest.reversal(original.path("CashDepositAgreement"),20261008,false));
                     assertEquals(reversed.toString(),"SUCCEEDED",reversed.path("CashReversalAgreement").path("resultInfo").path("status").asText());
@@ -35,13 +35,13 @@ public final class XbodRestartProbe {
                 }
                 case "verify": {
                     var saved = demo.mapper.readTree(state.toFile());
-                    var original = demo.call("findCashDepositAgreement",Map.of("CashDepositAgreement",Map.of("depositNumber",saved.path("depositNumber").asText())));
+                    var original = demo.call("readCashDeposit",Map.of("CashDepositAgreement",Map.of("depositNumber",saved.path("depositNumber").asText())));
                     assertTrue(original.path("CashDepositAgreement").path("reversed").asBoolean());
                     var reversed = demo.call("readCashReversal",Map.of("CashReversalAgreement",Map.of("reversalNumber",saved.path("reversalNumber").asText())));
                     assertEquals(8,reversed.path("CashReversalPostingLineArray").size());
-                    var account = demo.call("findDepositAccount",Map.of("DepositAccount",Map.of("accountNumber","ACCOUNT-001")));
+                    var account = demo.readAccounts();
                     XbodTransactionTest.amount("0",account.path("DepositAccount").path("interestBase"));
-                    var cash = demo.call("findCashSettlementAccount",Map.of("CashSettlementAccount",Map.of("accountNumber","CASH-001")));
+                    var cash = demo.readAccounts();
                     XbodTransactionTest.amount("0",cash.path("CashSettlementAccount").path("balance"));
                     break;
                 }

@@ -28,11 +28,9 @@ public class XbodConcurrencyTest {
             assertEquals(loser.toString(), "FAILED", failure.path("status").asText());
             assertTrue(failure.toString(), failure.path("handled").asBoolean());
             String committed = firstWon ? "100" : "200";
-            XbodTransactionTest.amount(committed, demo.call("findDepositAccount", Map.of("DepositAccount",
-                    Map.of("accountNumber", "ACCOUNT-001"))).path("DepositAccount").path("interestBase"));
-            XbodTransactionTest.amount("-" + committed, demo.call("findCashSettlementAccount", Map.of("CashSettlementAccount",
-                    Map.of("accountNumber", "CASH-001"))).path("CashSettlementAccount").path("balance"));
-            var facts = demo.call("findAccountEligibility", Map.of("AccountEligibility", Map.of("accountNumber", "ACCOUNT-001")));
+            XbodTransactionTest.amount(committed, demo.readAccounts().path("DepositAccount").path("interestBase"));
+            XbodTransactionTest.amount("-" + committed, demo.readAccounts().path("CashSettlementAccount").path("balance"));
+            var facts = demo.readAccounts();
             assertEquals(1, facts.path("AccountEligibility").path("detailCount").asInt());
             XbodTransactionTest.amount(committed, facts.path("AccountEligibility").path("accountBalance"));
             var retried = demo.call("depositCash", XbodTransactionTest.deposit(firstWon ? 200 : 100));
@@ -63,8 +61,8 @@ public class XbodConcurrencyTest {
                 var saved = demo.call("readCashReversal",Map.of("CashReversalAgreement",Map.of("reversalNumber",winner.path("CashReversalAgreement").path("reversalNumber").asText())));
                 assertEquals(8,saved.path("CashReversalPostingLineArray").size());
             } finally { executor.shutdownNow(); assertTrue(executor.awaitTermination(5,TimeUnit.SECONDS)); }
-            var account = demo.call("findDepositAccount",Map.of("DepositAccount",Map.of("accountNumber","ACCOUNT-001")));
-            var cash = demo.call("findCashSettlementAccount",Map.of("CashSettlementAccount",Map.of("accountNumber","CASH-001")));
+            var account = demo.readAccounts();
+            var cash = demo.readAccounts();
             XbodTransactionTest.amount("0",account.path("DepositAccount").path("interestBase"));
             XbodTransactionTest.amount("0",cash.path("CashSettlementAccount").path("balance"));
         }
@@ -92,16 +90,16 @@ public class XbodConcurrencyTest {
                 assertEquals("ACCOUNT-001",first.path("CashDepositAgreement").path("account").path("accountNumber").asText());
                 assertEquals("ACCOUNT-002",other.path("CashDepositAgreement").path("account").path("accountNumber").asText());
             } finally { executor.shutdownNow(); assertTrue(executor.awaitTermination(5,TimeUnit.SECONDS)); }
-            var one = demo.call("findDepositAccount",Map.of("DepositAccount",Map.of("accountNumber","ACCOUNT-001")));
-            var two = demo.call("findDepositAccount",Map.of("DepositAccount",Map.of("accountNumber","ACCOUNT-002")));
+            var one = demo.readAccounts();
+            var two = demo.readAccounts("ACCOUNT-002", "CASH-002");
             XbodTransactionTest.amount("100",one.path("DepositAccount").path("interestBase"));
             XbodTransactionTest.amount("200",two.path("DepositAccount").path("interestBase"));
-            var cashOne = demo.call("findCashSettlementAccount",Map.of("CashSettlementAccount",Map.of("accountNumber","CASH-001")));
-            var cashTwo = demo.call("findCashSettlementAccount",Map.of("CashSettlementAccount",Map.of("accountNumber","CASH-002")));
+            var cashOne = demo.readAccounts();
+            var cashTwo = demo.readAccounts("ACCOUNT-002", "CASH-002");
             XbodTransactionTest.amount("-100",cashOne.path("CashSettlementAccount").path("balance"));
             XbodTransactionTest.amount("-200",cashTwo.path("CashSettlementAccount").path("balance"));
             for (String account : new String[]{"ACCOUNT-001","ACCOUNT-002"}) {
-                var facts = demo.call("findAccountEligibility",Map.of("AccountEligibility",Map.of("accountNumber",account)));
+                var facts = demo.readAccounts(account, "CASH-001");
                 assertEquals(1,facts.path("AccountEligibility").path("detailCount").asInt());
             }
         }

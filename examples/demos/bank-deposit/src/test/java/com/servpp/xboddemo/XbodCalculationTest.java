@@ -58,10 +58,10 @@ public class XbodCalculationTest {
                     "DepositRequest", request,
                     "DepositAccount", Map.of("loanState", "NORMAL", "overdraftInterest", 10,
                             "collectionInterest", 5, "overdraftPrincipal", 20, "overdraftExposure", 20)));
-            var classified = demo.call("classifyDepositAccounting", Map.of("DepositRequest", request,
+            var classified = demo.call("previewDepositAllocation", Map.of("DepositRequest", request,
                     "DepositPlan", demo.mapper.convertValue(calculation.path("DepositPlan"), Map.class)));
             var accounting = demo.mapper.convertValue(classified.path("DepositAccounting"), Map.class);
-            demo.call("checkDepositAccounting", Map.of("DepositAccounting", accounting));
+
             var lines = List.of(
                     Map.of("slot", 1, "subject", "CASH_SETTLEMENT", "side", "Debit"),
                     Map.of("slot", 2, "subject", "DEPOSIT_DECREASE", "side", "Debit"),
@@ -71,8 +71,8 @@ public class XbodCalculationTest {
                     Map.of("slot", 6, "subject", "COLLECTION_INTEREST_INCOME", "side", "Credit"),
                     Map.of("slot", 7, "subject", "FEE_SETTLEMENT", "side", "Debit"),
                     Map.of("slot", 8, "subject", "FEE_INCOME", "side", "Credit"));
-            demo.call("checkPostingRules", Map.of("DepositPostingLineArray", lines));
-            var posted = demo.call("calculateDepositPostings", Map.of("DepositAccounting", accounting,
+
+            var posted = demo.call("previewDepositPostings", Map.of("DepositAccounting", accounting,
                     "DepositPostingLineArray", lines));
             var actual = posted.path("DepositPostingLineArray");
             int[] expected = {100, 0, 65, 20, 10, 5, 0, 0};
@@ -82,8 +82,7 @@ public class XbodCalculationTest {
             }
             assertEquals(0, new java.math.BigDecimal("100").compareTo(posted.path("DepositPostingTotals").path("debit").decimalValue()));
             assertEquals(0, new java.math.BigDecimal("100").compareTo(posted.path("DepositPostingTotals").path("credit").decimalValue()));
-            demo.call("checkDepositPostings", Map.of("DepositPostingTotals",
-                    demo.mapper.convertValue(posted.path("DepositPostingTotals"), Map.class)));
+
         }
     }
 }

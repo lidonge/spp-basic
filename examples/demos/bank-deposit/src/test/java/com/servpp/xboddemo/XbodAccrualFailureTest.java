@@ -25,9 +25,9 @@ public class XbodAccrualFailureTest {
             assertEquals("FAILED",info.path("status").asText());assertEquals(!split,info.path("handled").asBoolean());
             assertEquals(split ? "RECOVERY_REQUIRED" : "ROLLED_BACK",info.path("failure").path("recoveryStatus").asText());
             verifyStoredFailure(demo,failed,"CashDepositAgreement");
-            amount("100",demo.call("findDepositAccount",Map.of("DepositAccount",Map.of("accountNumber","ACCOUNT-001"))).path("DepositAccount").path("interestBase"));
-            amount("-100",demo.call("findCashSettlementAccount",Map.of("CashSettlementAccount",Map.of("accountNumber","CASH-001"))).path("CashSettlementAccount").path("balance"));
-            var accrual=demo.call("findDepositAccrualState",Map.of("DepositAccrualState",Map.of("accountNumber","ACCOUNT-001"))).path("DepositAccrualState");
+            amount("100",demo.readAccounts().path("DepositAccount").path("interestBase"));
+            amount("-100",demo.readAccounts().path("CashSettlementAccount").path("balance"));
+            var accrual=demo.readAccounts().path("DepositAccrualState");
             amount(split ? "100" : "0",accrual.path("normalProduct"));
             assertEquals(split ? 20261008 : 20261007,accrual.path("lastProductDate").asInt());
             try(var connection=DriverManager.getConnection(System.getProperty("spp.xbod.datasource-url"));var statement=connection.createStatement()) {
@@ -38,7 +38,7 @@ public class XbodAccrualFailureTest {
             if(!split) {
                 var retried=demo.call("depositCash",input);assertEquals("SUCCEEDED",retried.path("CashDepositAgreement").path("resultInfo").path("status").asText());
                 amount("150",retried.path("DepositAccount").path("interestBase"));
-                amount("100",demo.call("findDepositAccrualState",Map.of("DepositAccrualState",Map.of("accountNumber","ACCOUNT-001"))).path("DepositAccrualState").path("normalProduct"));
+                amount("100",demo.readAccounts().path("DepositAccrualState").path("normalProduct"));
             }
         }
     }

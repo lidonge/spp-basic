@@ -162,3 +162,13 @@ atomic calculate calculateDepositAccrual(
         DepositAccrualPlan.interestDays = DepositAccrualPlan.overdraftDays;
     }
 }
+
+readonly Scenario serial previewDepositAccrual(
+    DepositAccount, BusinessDay, DepositAccrualState, DepositInterestPolicy, InterestCalendar,
+    AgreementTerm, AgreementPolicy, AgreementBand[], DepositAccrualPlan
+) {
+    checkAccrualDates;
+    checkAccrualPolicy;
+    calculateDepositAccrual;
+    accumulateAccrual;
+}

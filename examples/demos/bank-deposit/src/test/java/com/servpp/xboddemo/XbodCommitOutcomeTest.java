@@ -29,8 +29,8 @@ public class XbodCommitOutcomeTest {
                 var info=demo.mapper.valueToTree(request).path(reversing ? "CashReversalAgreement" : "CashDepositAgreement").path("resultInfo");
                 assertEquals(points[i]+": "+info,outcomes[i],info.path("failure").path("transactionOutcome").asText());
                 assertEquals(i==0,info.path("handled").asBoolean());
-                amount(reversing ? (i<2 ? "100" : "0") : (i<2 ? "0" : "100"),demo.call("findDepositAccount",Map.of("DepositAccount",Map.of("accountNumber","ACCOUNT-001"))).path("DepositAccount").path("interestBase"));
-                amount(reversing ? (i<2 ? "-100" : "0") : (i<2 ? "0" : "-100"),demo.call("findCashSettlementAccount",Map.of("CashSettlementAccount",Map.of("accountNumber","CASH-001"))).path("CashSettlementAccount").path("balance"));
+                amount(reversing ? (i<2 ? "100" : "0") : (i<2 ? "0" : "100"),demo.readAccounts().path("DepositAccount").path("interestBase"));
+                amount(reversing ? (i<2 ? "-100" : "0") : (i<2 ? "0" : "-100"),demo.readAccounts().path("CashSettlementAccount").path("balance"));
                 try (var connection=DriverManager.getConnection(System.getProperty("spp.xbod.datasource-url"));var statement=connection.createStatement()) {
                     for (var table: (reversing ? new String[]{"CASH_REVERSALS","CASH_REVERSAL_POSTINGS"} : new String[]{"CASH_DEPOSITS","CASH_POSTINGS"})) {
                         try (var rows=statement.executeQuery("SELECT COUNT(*) FROM "+table)) {

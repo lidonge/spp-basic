@@ -52,12 +52,10 @@ public class XbodPartialPostingTest {
             assertEquals("FAILED", info.path("status").asText());
             assertEquals(split ? "RECOVERY_REQUIRED" : "ROLLED_BACK", info.path("failure").path("recoveryStatus").asText());
             assertEquals(0, count(table));
-            amount(reversing ? "100" : "0", demo.call("findDepositAccount",
-                    Map.of("DepositAccount", Map.of("accountNumber", "ACCOUNT-001"))).path("DepositAccount").path("interestBase"));
-            amount(reversing ? "-100" : "0", demo.call("findCashSettlementAccount",
-                    Map.of("CashSettlementAccount", Map.of("accountNumber", "CASH-001"))).path("CashSettlementAccount").path("balance"));
+            amount(reversing ? "100" : "0", demo.readAccounts().path("DepositAccount").path("interestBase"));
+            amount(reversing ? "-100" : "0", demo.readAccounts().path("CashSettlementAccount").path("balance"));
             if (reversing) {
-                var original = demo.call("findCashDepositAgreement", Map.of("CashDepositAgreement",
+                var original = demo.call("readCashDeposit", Map.of("CashDepositAgreement",
                         Map.of("depositNumber", paid.path("CashDepositAgreement").path("depositNumber").asText())));
                 assertEquals(split, original.path("CashDepositAgreement").path("reversed").asBoolean());
                 assertEquals(8, count("CASH_POSTINGS"));

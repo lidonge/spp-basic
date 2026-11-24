@@ -42,8 +42,8 @@ public class XbodFailureDispositionTest {
                     info.path("failure").path("recoveryStatus").asText());
             assertTrue(info.toString(),info.path("failure").path("code").asText().contains("EXAMPLE_SERVICE_FAULT"));
             assertTrue("Secondary disposition failure must remain visible: "+info,info.path("failure").path("suppressedCodes").size()>0);
-            amount(reversing ? "100" : "0",demo.call("findDepositAccount",Map.of("DepositAccount",Map.of("accountNumber","ACCOUNT-001"))).path("DepositAccount").path("interestBase"));
-            amount(reversing ? "-100" : "0",demo.call("findCashSettlementAccount",Map.of("CashSettlementAccount",Map.of("accountNumber","CASH-001"))).path("CashSettlementAccount").path("balance"));
+            amount(reversing ? "100" : "0",demo.readAccounts().path("DepositAccount").path("interestBase"));
+            amount(reversing ? "-100" : "0",demo.readAccounts().path("CashSettlementAccount").path("balance"));
             try (var connection=DriverManager.getConnection(url);var statement=connection.createStatement();var rows=statement.executeQuery("SELECT COUNT(*) FROM CASH_FAILURES")) {
                 assertTrue(rows.next());assertEquals(0,rows.getInt(1));
             }

@@ -21,10 +21,10 @@ public class XbodReversalPreviewTest {
             amount("105", preview.path("DepositAccount").path("interestBase"));
             assertFalse(preview.path("CashDepositAgreement").path("reversed").asBoolean());
             verifyNoReversal(demo, paid.path("CashDepositAgreement").path("depositNumber").asText());
-            amount("105", demo.call("findDepositAccount", Map.of("DepositAccount", Map.of("accountNumber", "ACCOUNT-001")))
+            amount("105", demo.readAccounts()
                     .path("DepositAccount").path("interestBase"));
             demo.call("reverseCash", input);
-            amount("5", demo.call("findDepositAccount", Map.of("DepositAccount", Map.of("accountNumber", "ACCOUNT-001")))
+            amount("5", demo.readAccounts()
                     .path("DepositAccount").path("interestBase"));
         }
     }
@@ -38,13 +38,13 @@ public class XbodReversalPreviewTest {
             assertEquals("PARTICIPANT_NOT_IDENTIFIED", assertThrows(IllegalStateException.class,
                     () -> demo.call("previewCashReversal", input)).getMessage());
             verifyNoReversal(demo, paid.path("CashDepositAgreement").path("depositNumber").asText());
-            amount("100", demo.call("findDepositAccount", Map.of("DepositAccount", Map.of("accountNumber", "ACCOUNT-001")))
+            amount("100", demo.readAccounts()
                     .path("DepositAccount").path("interestBase"));
         }
     }
 
     private void verifyNoReversal(XbodTestSupport demo, String depositNumber) throws Exception {
-        var original = demo.call("findCashDepositAgreement", Map.of("CashDepositAgreement", Map.of("depositNumber", depositNumber)));
+        var original = demo.call("readCashDeposit", Map.of("CashDepositAgreement", Map.of("depositNumber", depositNumber)));
         assertFalse(original.path("CashDepositAgreement").path("reversed").asBoolean());
         try (var connection = DriverManager.getConnection(System.getProperty("spp.xbod.datasource-url"));
              var statement = connection.createStatement()) {

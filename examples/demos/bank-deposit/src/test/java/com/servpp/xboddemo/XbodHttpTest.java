@@ -55,7 +55,7 @@ public class XbodHttpTest {
                         .header("X-SPP-Request-Serial","HTTP-CHANGED").POST(HttpRequest.BodyPublishers.ofString(demo.mapper.writeValueAsString(demo.request("depositCash",changed)))).build(),HttpResponse.BodyHandlers.ofString());
                 assertEquals(conflict.body(),coordinated ? 400 : 200,conflict.statusCode());
                 if (coordinated) assertEquals("REQUEST_ID_REUSED",demo.mapper.readTree(conflict.body()).path("error").asText());
-                var stored = demo.call("findDepositAccount",Map.of("DepositAccount",Map.of("accountNumber","ACCOUNT-001")));
+                var stored = demo.readAccounts();
                 XbodTransactionTest.amount(coordinated ? "100" : "300",stored.path("DepositAccount").path("interestBase"));
                 var readRequest = demo.request("readDepositAccount", XbodTransactionTest.reversal(a.path("participants").path("CashDepositAgreement"),20261007,false).entrySet().stream()
                         .filter(entry -> java.util.Set.of("DepositAccount","AccountEligibility","DepositAccrualState","CashSettlementAccount","InterestIncomeAccount","CollectionInterestIncomeAccount","PrincipalRecoveryAccount").contains(entry.getKey()))
@@ -74,7 +74,7 @@ public class XbodHttpTest {
                 assertEquals(reversedReplay.body(),coordinated ? 200 : 400,reversedReplay.statusCode());
                 if (coordinated) assertTrue(demo.mapper.readTree(reversedReplay.body()).path("replayed").asBoolean());
                 else assertEquals("DEPOSIT_ALREADY_REVERSED",demo.mapper.readTree(reversedReplay.body()).path("error").asText());
-                var after = demo.call("findDepositAccount",Map.of("DepositAccount",Map.of("accountNumber","ACCOUNT-001")));
+                var after = demo.readAccounts();
                 XbodTransactionTest.amount(coordinated ? "0" : "200",after.path("DepositAccount").path("interestBase"));
                 var hidden = client.send(HttpRequest.newBuilder(URI.create("http://127.0.0.1:"+server.port()+"/api/cboddeposit.findDepositAccount"))
                         .timeout(Duration.ofSeconds(5)).POST(HttpRequest.BodyPublishers.ofString("{}")).build(),HttpResponse.BodyHandlers.ofString());

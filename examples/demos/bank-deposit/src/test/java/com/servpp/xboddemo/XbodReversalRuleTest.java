@@ -10,9 +10,9 @@ public class XbodReversalRuleTest {
         var input = Map.of("AccountEligibility", Map.of("status", status),
                 "CashAccountControl", Map.of("cancelledOn", cancelled),
                 "DepositOperatorFacts", Map.of("transactionPrefix", prefix));
-        if (expected == null) demo.call("checkCoreDepositReversalEligibility", input);
+        if (expected == null) demo.call("assessReversalEligibility", input);
         else assertEquals(expected, assertThrows(IllegalStateException.class,
-                () -> demo.call("checkCoreDepositReversalEligibility", input)).getMessage());
+                () -> demo.call("assessReversalEligibility", input)).getMessage());
     }
     @Test public void coreReversalKeepsClosureCancellationAndFrozenExceptionPrecedence() throws Exception {
         try (var demo = new XbodTestSupport()) {
@@ -26,10 +26,10 @@ public class XbodReversalRuleTest {
     @Test public void coreReversalAndFrontControlRemainIndependentChecks() throws Exception {
         try (var demo = new XbodTestSupport()) {
             var control = Map.of("controllingInstitution", "001", "controlStatus", "Locked");
-            demo.call("checkCoreDepositReversalEligibility", Map.of("CashAccountControl", control,
+            demo.call("assessReversalEligibility", Map.of("CashAccountControl", control,
                     "AccountEligibility", Map.of("status", "ACTIVE"), "DepositOperatorFacts", Map.of("transactionPrefix", "SA01102")));
-            assertEquals("EN432", assertThrows(IllegalStateException.class, () -> demo.call("checkCashControl",
-                    Map.of("CashAccountControl", control, "AccountEligibility", Map.of("status", "ACTIVE")))).getMessage());
+            assertEquals("EN432", assertThrows(IllegalStateException.class, () -> demo.call("assessCashDeposit",
+                    Map.of("DepositRequest", Map.of("amount", 1), "CashAccountControl", control, "AccountEligibility", Map.of("status", "ACTIVE")))).getMessage());
         }
     }
     @Test public void reversalRangeAndDocumentNoticeRulesStayVisible() throws Exception {
@@ -37,10 +37,11 @@ public class XbodReversalRuleTest {
             var profile = Map.of("normalSavings", true, "openingBranch", "001", "depositRange", "SameBranch", "passbookLoss", "Written");
             var operator = Map.of("branch", "002", "transactionPrefix", "SA01116", "mode", "Online", "numericTeller", true);
             var input = Map.of("DepositBankProfile", profile, "DepositOperatorFacts", operator);
-            var result = demo.call("assessDepositDocumentNotices", input);
+            var result = demo.call("assessBankQualification", Map.of("DepositBankProfile", profile,
+                    "DepositOperatorFacts", Map.of("branch", "001", "transactionPrefix", "SA01116", "mode", "Online", "numericTeller", true)));
             assertEquals("WN201", result.path("DepositNotices").path("passbookWarning").asText());
             assertEquals("EN134", assertThrows(IllegalStateException.class,
-                    () -> demo.call("checkDepositBranchRange", input)).getMessage());
+                    () -> demo.call("assessBankQualification", input)).getMessage());
         }
     }
 }

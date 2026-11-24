@@ -24,13 +24,13 @@ public class XbodAccrualRuleTest {
                     "InterestCalendar",Map.of("convention",c[6]),"AgreementTerm",Map.of("effectiveDate",20261003,"cancelDate",20261007),
                     "AgreementPolicy",Map.of("enabled",c[9],"mode","2","currency","CNY"),
                     "AgreementBandArray",List.of(Map.of("slot",5,"threshold",500),Map.of("slot",4,"threshold",400),Map.of("slot",3,"threshold",300),Map.of("slot",2,"threshold",200),Map.of("slot",1,"threshold",100)));
-                var result = demo.call("calculateDepositAccrual",input);
+                var result = demo.call("previewDepositAccrual",input);
                 var plan = result.path("DepositAccrualPlan");
                 String[] increments = {"normalIncrement","agreementIncrement","overdraftIncrement","overdraftInterestIncrement"};
                 for (int i=0;i<increments.length;i++) amount((String)c[10+i],plan.path(increments[i]));
                 assertEquals(c[14],plan.path("normalDays").asInt());
                 assertEquals(c[15],plan.path("overdraftDays").asInt());
-                var accumulated = demo.call("accumulateAccrual",Map.of("DepositAccrualState",state,"DepositAccrualPlan",plan)).path("DepositAccrualState");
+                var accumulated = result.path("DepositAccrualState");
                 assertEquals(c[16],accumulated.path("overdraftDays").asInt());
                 assertEquals(c[17],accumulated.path("overdraftInterestDays").asInt());
                 assertEquals(c[5],accumulated.path("lastProductDate").asInt());

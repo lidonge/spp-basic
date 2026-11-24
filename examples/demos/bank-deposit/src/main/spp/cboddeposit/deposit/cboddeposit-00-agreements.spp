@@ -143,3 +143,8 @@ atomic calculate recordReversalFailure(CashReversalAgreement, CashFailureRecord)
 atomic calculate confirmNoCashMovement(CashFailureRecord) {
     CashFailureRecord.handlingState = CashHandlingState.NOT_COMPLETED;
 }
+
+readonly Scenario serial readCashFailure(CashFailureRecord) {
+    findCashFailureRecord;
+    identify(CashFailureRecord);
+}

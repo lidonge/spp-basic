@@ -45,16 +45,14 @@ public class XbodOriginalPostingIntegrityTest {
                 damaged++;
             }
             assertEquals(1, damaged);
-            var stored = demo.call("listDepositPostings", Map.of("CashDepositAgreement", Map.of("depositNumber", number)));
+            var stored = demo.call("readCashDeposit", Map.of("CashDepositAgreement", Map.of("depositNumber", number)));
             assertEquals(missing ? 7 : 8, stored.path("DepositPostingLineArray").size());
             var failure = assertThrows(IllegalStateException.class,
                     () -> demo.call("reverseCash", reversal(paid.path("CashDepositAgreement"), 20261007, false)));
             assertEquals(missing ? "INVALID_ORIGINAL_DEPOSIT_POSTINGS" : "ORIGINAL_DEPOSIT_LEDGER_EVIDENCE_MISMATCH", failure.getMessage());
-            amount("100", demo.call("findDepositAccount", Map.of("DepositAccount",
-                    Map.of("accountNumber", "ACCOUNT-001"))).path("DepositAccount").path("interestBase"));
-            amount("-100", demo.call("findCashSettlementAccount", Map.of("CashSettlementAccount",
-                    Map.of("accountNumber", "CASH-001"))).path("CashSettlementAccount").path("balance"));
-            assertFalse(demo.call("findCashDepositAgreement", Map.of("CashDepositAgreement",
+            amount("100", demo.readAccounts().path("DepositAccount").path("interestBase"));
+            amount("-100", demo.readAccounts().path("CashSettlementAccount").path("balance"));
+            assertFalse(demo.call("readCashDeposit", Map.of("CashDepositAgreement",
                     Map.of("depositNumber", number))).path("CashDepositAgreement").path("reversed").asBoolean());
             try (var connection = DriverManager.getConnection(url); var statement = connection.createStatement();
                  var rows = statement.executeQuery("SELECT COUNT(*) FROM CASH_REVERSAL_POSTINGS")) {
