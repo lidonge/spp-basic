@@ -37,9 +37,9 @@ Scenario serial readRegisteredSubject(RegisteredSubject) {
 }
 
 atomic check checkSubjectFacts(Person) {
-    require(Person.name != null && Person.name != "", RejectionCode.SUBJECT_NAME_REQUIRED);
-    require(Person.email != null && Person.email != "", RejectionCode.SUBJECT_EMAIL_REQUIRED);
-    require(Person.address != null && Person.address != "", RejectionCode.SUBJECT_ADDRESS_REQUIRED);
+    require(Person.name != BLANK, RejectionCode.SUBJECT_NAME_REQUIRED);
+    require(Person.email != BLANK, RejectionCode.SUBJECT_EMAIL_REQUIRED);
+    require(Person.address != BLANK, RejectionCode.SUBJECT_ADDRESS_REQUIRED);
 }
 
 atomic check checkSubjectAbsent(Person) {

@@ -40,7 +40,6 @@ Scenario serial bookOverdraftClaims(
             DepositAccount.overdraftPrincipal: [null, 0];
             InterestIncomeAccount.balance: [0, null];
             CollectionInterestIncomeAccount.balance: [0, null];
-            CashSettlementAccount.balance: [null, null];
         };
         deriveOverdraftExposure;
     }

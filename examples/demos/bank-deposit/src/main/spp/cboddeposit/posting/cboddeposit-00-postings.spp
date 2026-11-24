@@ -120,7 +120,7 @@ atomic check checkPostingRules(DepositPostingLine[], DepositFeePlan) {
     int expected = 1;
     for (DepositPostingLine line : DepositPostingLine[]) {
         require(
-            line.slot == expected && line.subject != null && line.subject != "",
+            line.slot == expected && line.subject != BLANK,
             RejectionCode.INVALID_DEPOSIT_POSTING_RULES
         );
         if (line.slot == 1 || line.slot == 2 || line.slot == 7) {

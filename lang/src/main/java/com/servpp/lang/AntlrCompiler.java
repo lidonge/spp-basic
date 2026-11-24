@@ -5,14 +5,15 @@ import com.servpp.lang.general.IAntlrParserExecutor;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.Parser;
+import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.atn.PredictionMode;
-import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.function.Consumer;
 
 /**
  * @author lidong@date 2023-11-22@version 1.0
@@ -25,6 +26,18 @@ public abstract class AntlrCompiler {
 
     public abstract ParseTreeListener compile() throws IOException;
 
+    private Consumer<ParserRuleContext> parsed;
+
+    public ParseTreeListener compile(Consumer<ParserRuleContext> observer)
+            throws IOException {
+        parsed = observer;
+        try {
+            return compile();
+        } finally {
+            parsed = null;
+        }
+    }
+
     protected abstract Parser getParser() throws IOException;
 
     protected void parseFile(Parser sppParser, IAntlrParserExecutor executor, ParseTreeListener listener)
@@ -34,7 +47,7 @@ public abstract class AntlrCompiler {
         var errors = new GeneratorErrorListener(antlrFile);
         sppParser.addErrorListener(errors);
 
-        ParseTree tree = null;
+        ParserRuleContext tree;
         try {
             tree = executor.execute(); // STAGE 1
 //            System.out.println(tree.toStringTree());
@@ -50,10 +63,8 @@ public abstract class AntlrCompiler {
             throw new IOException("Failed to parse " + antlrFile + ": parser returned no parse tree.");
         }
 
-        ParseTreeWalker walker = createWalker();
-
-
-        walker.walk(listener, tree);
+        createWalker().walk(listener, tree);
+        if (parsed != null) parsed.accept(tree);
     }
 
     protected ParseTreeWalker createWalker() { return new ParseTreeWalker(); }

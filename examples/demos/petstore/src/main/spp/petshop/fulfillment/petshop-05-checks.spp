@@ -1,7 +1,7 @@
 domain petshop;
 
 atomic check checkShipmentAgreementInput(ShipmentAgreement) {
-    require(ShipmentAgreement.tracking != null && ShipmentAgreement.tracking != "", RejectionCode.TRACKING_REQUIRED);
+    require(ShipmentAgreement.tracking != BLANK, RejectionCode.TRACKING_REQUIRED);
 }
 
 atomic check checkShipmentEligibility(ShopOrder) {

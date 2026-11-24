@@ -93,7 +93,6 @@ Scenario serial depositCash(
             DepositAccount.overdraftInterest: [null, 0];
             DepositAccount.collectionInterest: [null, 0];
             DepositAccount.overdraftPrincipal: [null, 0];
-            CashSettlementAccount.balance: [null, null];
         };
         deriveOverdraftExposure;
         accumulateAccrual;

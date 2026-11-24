@@ -107,8 +107,8 @@ atomic calculate assessCashAdmission(
     AuthorizationEvidence,
     AdmissionDecision
 ) {
-    AdmissionDecision.warningCode = "";
-    AdmissionDecision.authorizationCode = "";
+    AdmissionDecision.warningCode = BLANK;
+    AdmissionDecision.authorizationCode = BLANK;
     AdmissionDecision.requiredLevel = AuthorizationLevel.NONE;
     AdmissionDecision.dayCashTotal = DepositRequest.amount;
     if (AccountEligibility.lastTransactionDate == BusinessDay.date) {
@@ -162,7 +162,7 @@ atomic calculate assessCashAdmission(
     if (!AdmissionDecision.executable) {
         AdmissionDecision.status = AdmissionStatus.PENDING_AUTHORIZATION;
     } else {
-        if (AdmissionDecision.warningCode != "") {
+        if (AdmissionDecision.warningCode != BLANK) {
             AdmissionDecision.status = AdmissionStatus.WARNING;
         } else {
             AdmissionDecision.status = AdmissionStatus.READY;

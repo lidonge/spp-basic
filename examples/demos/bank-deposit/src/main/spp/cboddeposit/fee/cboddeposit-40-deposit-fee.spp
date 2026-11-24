@@ -40,7 +40,7 @@ atomic check checkFeeAccount(DepositFeeParty, DepositFeeContext) {
 
 atomic calculate classifyDepositFee(DepositFeeParty, DepositFeeContext, DepositFeePlan) {
     DepositFeePlan.range = 0;
-    DepositFeePlan.tariff = "";
+    DepositFeePlan.tariff = BLANK;
     DepositFeePlan.applicable = false;
     DepositFeePlan.variableAmount = 0;
     DepositFeePlan.fee = 0;

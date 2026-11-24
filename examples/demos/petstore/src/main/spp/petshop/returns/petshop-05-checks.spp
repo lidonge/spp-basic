@@ -28,5 +28,5 @@ atomic check checkSoldInventory(ShopOrder, StockLine[]) {
 }
 
 atomic check checkReturnRequestAgreementInput(ReturnRequestAgreement) {
-    require(ReturnRequestAgreement.reason != null && ReturnRequestAgreement.reason != "", RejectionCode.REASON_REQUIRED);
+    require(ReturnRequestAgreement.reason != BLANK, RejectionCode.REASON_REQUIRED);
 }

@@ -124,6 +124,10 @@ public final class WorkspaceIndex {
         if (Files.isRegularFile(file, LinkOption.NOFOLLOW_LINKS)) documents.put(file, read(file));
     }
 
+    List<String> openUris() {
+        return openVersions.keySet().stream().map(path -> path.toUri().toString()).toList();
+    }
+
     public ProjectAnalysis project(String uri) throws IOException {
         Path root = rootFor(checkedFile(uri));
         return projects.computeIfAbsent(root, this::analyze);

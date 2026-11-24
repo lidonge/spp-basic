@@ -39,7 +39,7 @@ Role DepositDetailPolicy {
 }
 
 atomic check checkCashControl(CashAccountControl, AccountEligibility) {
-    require(CashAccountControl.controllingInstitution == "", RejectionCode.EN432);
+    require(CashAccountControl.controllingInstitution == BLANK, RejectionCode.EN432);
     require(
         CashAccountControl.controlStatus != "PayNoReceive" && CashAccountControl.controlStatus != "Locked",
         RejectionCode.EN432

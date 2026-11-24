@@ -50,8 +50,8 @@ atomic calculate assessDepositDocumentNotices(
     CashChannel,
     DepositNotices
 ) {
-    DepositNotices.cardWarning = "";
-    DepositNotices.passbookWarning = "";
+    DepositNotices.cardWarning = BLANK;
+    DepositNotices.passbookWarning = BLANK;
     boolean applies = !DepositOperatorFacts.agencySigned
         && DepositOperatorFacts.numericTeller
         && (DepositOperatorFacts.mode == "Online"
@@ -149,30 +149,24 @@ atomic check checkDepositBranchRange(DepositBankProfile, DepositOperatorFacts, C
                 }
                 if (DepositBankProfile.depositRange == "Subbranch") {
                     require(
-                        DepositBankProfile.subbranch != null
-                            && DepositBankProfile.subbranch != ""
-                            && DepositOperatorFacts.subbranch != null
-                            && DepositOperatorFacts.subbranch != "",
+                        DepositBankProfile.subbranch != BLANK
+                            && DepositOperatorFacts.subbranch != BLANK,
                         RejectionCode.DEPOSIT_SUBBRANCH_RELATION_NOT_FOUND
                     );
                     require(DepositBankProfile.subbranch == DepositOperatorFacts.subbranch, RejectionCode.EN470);
                 }
                 if (DepositBankProfile.depositRange == "City") {
                     require(
-                        DepositBankProfile.area != null
-                            && DepositBankProfile.area != ""
-                            && DepositOperatorFacts.area != null
-                            && DepositOperatorFacts.area != "",
+                        DepositBankProfile.area != BLANK
+                            && DepositOperatorFacts.area != BLANK,
                         RejectionCode.DEPOSIT_AREA_NOT_FOUND
                     );
                     require(DepositBankProfile.area == DepositOperatorFacts.area, RejectionCode.EN470);
                 }
                 if (DepositBankProfile.depositRange == "Province") {
                     require(
-                        DepositBankProfile.areaProvince != null
-                            && DepositBankProfile.areaProvince != ""
-                            && DepositOperatorFacts.areaProvince != null
-                            && DepositOperatorFacts.areaProvince != "",
+                        DepositBankProfile.areaProvince != BLANK
+                            && DepositOperatorFacts.areaProvince != BLANK,
                         RejectionCode.DEPOSIT_AREA_NOT_FOUND
                     );
                     require(DepositBankProfile.areaProvince == DepositOperatorFacts.areaProvince, RejectionCode.EN470);
@@ -207,8 +201,8 @@ atomic check checkDepositBranchRange(DepositBankProfile, DepositOperatorFacts, C
 
 atomic calculate mergeDepositNotices(AdmissionDecision, DepositNotices) {
     if (AdmissionDecision.executable
-        && (DepositNotices.cardWarning != ""
-        || DepositNotices.passbookWarning != "")) {
+        && (DepositNotices.cardWarning != BLANK
+        || DepositNotices.passbookWarning != BLANK)) {
         AdmissionDecision.status = AdmissionStatus.WARNING;
     }
 }

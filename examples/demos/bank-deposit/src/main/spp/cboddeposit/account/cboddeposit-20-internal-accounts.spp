@@ -1,30 +1,24 @@
 domain cboddeposit;
 
-Role InterestIncomeAccount {
-    String accountNumber;
-    quantum BigDecimal(19, 2) balance;
-}
+Role InterestIncomeAccount;
 
-Role CollectionInterestIncomeAccount {
-    String accountNumber;
-    quantum BigDecimal(19, 2) balance;
-}
+Role CollectionInterestIncomeAccount;
 
-Role PrincipalRecoveryAccount {
-    String accountNumber;
-    quantum BigDecimal(19, 2) balance;
-}
+Role PrincipalRecoveryAccount;
 
 take BankAccount as InterestIncomeAccount {
-    mapsame;
+    takeall;
+    quantum BigDecimal(19, 2) balance;
 }
 
 take BankAccount as CollectionInterestIncomeAccount {
-    mapsame;
+    takeall;
+    quantum BigDecimal(19, 2) balance;
 }
 
 take BankAccount as PrincipalRecoveryAccount {
-    mapsame;
+    takeall;
+    quantum BigDecimal(19, 2) balance;
 }
 
 Contract InternalAccountOpeningAgreement {
@@ -39,12 +33,9 @@ atomic check checkInternalAccountNumbers(
     BankAccount principalSubject
 ) {
     require(
-        interestSubject.accountNumber != null
-            && interestSubject.accountNumber != ""
-            && collectionSubject.accountNumber != null
-            && collectionSubject.accountNumber != ""
-            && principalSubject.accountNumber != null
-            && principalSubject.accountNumber != "",
+        interestSubject.accountNumber != BLANK
+            && collectionSubject.accountNumber != BLANK
+            && principalSubject.accountNumber != BLANK,
         RejectionCode.INTERNAL_ACCOUNT_NUMBER_REQUIRED
     );
     require(

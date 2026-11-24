@@ -164,7 +164,11 @@ public final class EditorServer implements LanguageServer, LanguageClientAware, 
             index.open(params.getTextDocument().getUri(), params.getTextDocument().getVersion(), params.getContentChanges().get(0).getText());
         });
     }
-    @Override public void didClose(DidCloseTextDocumentParams params) { notification(() -> index.close(params.getTextDocument().getUri())); }
+    @Override public void didClose(DidCloseTextDocumentParams params) { notification(() -> {
+            String uri = index.canonicalUri(params.getTextDocument().getUri());
+            index.close(uri);
+            if (client != null) client.publishDiagnostics(new PublishDiagnosticsParams(uri, List.of()));
+        }); }
     @Override public void didSave(DidSaveTextDocumentParams params) { notification(() -> index.scan()); }
     @Override public void didChangeConfiguration(DidChangeConfigurationParams params) { }
     @Override public void didChangeWatchedFiles(DidChangeWatchedFilesParams params) { notification(() -> index.scan()); }
@@ -195,7 +199,17 @@ public final class EditorServer implements LanguageServer, LanguageClientAware, 
     }
 
     private void notification(Action action) {
-        task(true, () -> { action.run(); return null; }).exceptionally(failure -> {
+        task(true, () -> {
+            action.run();
+            if (client != null) {
+                for (String uri : index.openUris()) {
+                    var project = index.project(uri);
+                    client.publishDiagnostics(new PublishDiagnosticsParams(uri, project.diagnostics(uri),
+                            project.document(uri).version()));
+                }
+            }
+            return null;
+        }).exceptionally(failure -> {
             if (index != null) index.clear();
             if (client != null) client.logMessage(new MessageParams(MessageType.Warning,
                     "S++ language state could not be updated. Check source roots and file limits."));

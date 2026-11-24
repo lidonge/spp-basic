@@ -27,6 +27,7 @@ public final class BasicCompilerWorker {
             if(!request.path("environment").isTextual())throw new CompilationException("WORKER_PROTOCOL","Missing APP environment.");
             String environment=request.path("environment").asText();LocalCompiler.validateEnvironment(environment);
             System.setProperty("spp.environment",environment);
+            System.setProperty("spp.lint.strict", Boolean.toString(request.path("strict").asBoolean()));
             Path snapshot=SourceSnapshot.capture(source,staging.resolve(".spp-input"));
             try(var files=Files.walk(snapshot)){if(files.noneMatch(path->path.toString().endsWith(".spp") && Files.isRegularFile(path)))throw new CompilationException("INVALID_SOURCE","Source contains no .spp files.");}
             var project=new java.util.LinkedHashMap<String,Object>();

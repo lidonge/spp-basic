@@ -22,7 +22,7 @@ atomic calculate filterProducts(Goods, Goods[]) {
     Goods[] filtered = new Goods[] {
     };
     for (Goods product : Goods[]) {
-        if (Goods.category == null || Goods.category == "" || product.category == Goods.category) {
+        if (Goods.category == BLANK || product.category == Goods.category) {
             filtered = append(filtered, product);
         }
     }

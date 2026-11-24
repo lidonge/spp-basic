@@ -62,10 +62,10 @@ Scenario serial initializeStore(
 }
 
 atomic calculate configureStoreOpening(StoreOpeningAgreement) {
-    if (StoreOpeningAgreement.tradingName == null || StoreOpeningAgreement.tradingName == "") {
+    if (StoreOpeningAgreement.tradingName == BLANK) {
         StoreOpeningAgreement.tradingName = MERCHANT_NAME;
     }
-    if (StoreOpeningAgreement.shopName == null || StoreOpeningAgreement.shopName == "") {
+    if (StoreOpeningAgreement.shopName == BLANK) {
         StoreOpeningAgreement.shopName = SHOP_NAME;
     }
 }
