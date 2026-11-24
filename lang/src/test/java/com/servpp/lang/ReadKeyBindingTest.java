@@ -100,6 +100,47 @@ public class ReadKeyBindingTest {
         assertEquals("outer.getExternal()", call.getBoundReadKeys().get(1).value());
     }
 
+    @Test public void uniqueAcceptsPartialKeysAndMappedNonKeyFields() throws Exception {
+        var domain = compile("""
+                Enum Problems { DUPLICATE:"D02" }
+                Scenario serial read(Item item, Selection lookup) {
+                    unique findItem by lookup else Problems.DUPLICATE;
+                    unique findItem by Item.title = "sample";
+                }
+                """);
+        assertEquals(List.of(), domain.validateAppDeclarations());
+        var scene = (SppScenario) domain.getSppClass("Read");
+        var block = (ExecuteBlock) scene.getServiceBody().getSppServiceCallList().get(0);
+        var call = (SppServiceCall) block.getExecuteCallList().get(0);
+        assertEquals(List.of("item.code", "item.title"), call.getBoundReadKeys().stream()
+                .map(SppServiceCall.BoundReadKey::target).toList());
+        assertEquals("\"D02\"", call.getUniqueCodeJava());
+        assertFalse(call.isPrimaryKeyCovered());
+    }
+
+    @Test public void uniqueWarnsWhenAllPrimaryKeyFieldsAreBound() throws Exception {
+        var domain = compile("""
+                Scenario serial read(Item item, Selection source, Release release) {
+                    unique findItem by source, release;
+                }
+                """);
+        assertEquals(List.of(), domain.validateAppDeclarations());
+        assertTrue(domain.unusedParticipantWarnings().stream().anyMatch(w -> w.contains("SPP_REDUNDANT_UNIQUE")));
+    }
+
+    @Test public void uniqueRejectsCollection() throws Exception {
+        assertDiagnostic(compile("Scenario serial read(Item[] items) { unique findItem by Item.edition = 3; }"),
+                "scalar");
+    }
+
+    @Test public void elseRequiresUnique() throws Exception {
+        reject("Release source", "findItem by source else Problems.DUPLICATE;", "requires unique");
+    }
+
+    @Test public void uniqueElseRequiresEnumMember() throws Exception {
+        reject("Release source", "unique findItem by source else EDITION;", "scalar enum member");
+    }
+
     @Test public void rejectsMissingSource() throws Exception {
         reject("Selection source", "findItem by source;", "missing source for edition");
     }

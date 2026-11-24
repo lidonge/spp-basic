@@ -334,6 +334,20 @@ participant in the same way. The generated scenario sets the key fields
 immediately before the read. The target keeps the bound keys, and list
 queries fill the destination collection.
 
+Use `unique findBook by Selection else CatalogError.DUPLICATE;` when a lookup
+may match several books and the scenario expects at most one. The target must
+be a scalar participant. Supply one or more take-mapped participants or field
+constants, for example `unique findBook by Book.title = REQUESTED_TITLE;`.
+Zero matches leave the participant absent. Use `require(Book, CODE)` in a
+check if the scenario needs a book. One match identifies the participant.
+A second match rejects the scenario with the wire value of the enum member in
+`else`, or with `PERSISTENCE_NOT_UNIQUE` when the clause is omitted.
+
+A non-primary-key lookup uses mapped APP columns and bounds the JDBC result
+to two rows. Only the first row is hydrated. When the predicates cover the
+primary key, the compiler warns that `unique` is redundant and uses the
+single-row identity lookup.
+
 Use `,breakTransaction` on a bare check or `identify` inside a transaction
 to abort the transaction when the check fails.
 

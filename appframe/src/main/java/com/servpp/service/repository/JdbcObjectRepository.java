@@ -381,6 +381,15 @@ public class JdbcObjectRepository implements ObjectRepository {
     }
 
     @Override
+    public <T> Optional<T> findUniqueBy(String objectType, List<String> paths, List<?> values, Class<T> type,
+                                        String rejectionCode, boolean locked) {
+        if (appDdlObjectTableReader == null) throw new IllegalStateException("Unique reads require mapped APP columns");
+        if (locked) verifyWriteTransaction();
+        return appDdlObjectTableReader.findUnique(objectType, paths, values, type, rejectionCode, locked, id ->
+                (locked ? store.findForUpdate(objectType, id) : store.find(objectType, id)).map(row -> read(row, type)));
+    }
+
+    @Override
     public <T> List<T> findByForUpdate(String objectType, List<String> keyPaths, List<?> keyValues, Class<T> type) {
         verifyWriteTransaction();
         if (keyPaths.size() != keyValues.size()) throw new IllegalArgumentException("QUERY_KEY_ARITY");

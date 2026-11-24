@@ -634,6 +634,21 @@ public class SppService extends SppClass{
                     .append(keys.get(index).javaValue()).append("; ");
         }
         appendReadKeys(invocation, keys, false);
+        if (!call.getUniquePredicatePaths().isEmpty()) {
+            var target = call.getSppParameterList().get(0).getName();
+            var paths = new java.util.StringJoiner(", ");
+            var values = new java.util.StringJoiner(", ");
+            for (int index = 0; index < keys.size(); index++) {
+                String path = keys.get(index).target().substring(target.length() + 1);
+                if (call.getUniquePredicatePaths().contains(path)) {
+                    paths.add("\"" + path + "\"");
+                    values.add("$sppReadKey" + index);
+                }
+            }
+            value = "com.servpp.service.repository.UniqueRead.execute(" + NameUtil.getNameCall(target)
+                    + ", java.util.List.of(" + paths + "), java.util.Arrays.asList(" + values + "), "
+                    + call.isPrimaryKeyCovered() + ", " + call.getUniqueCodeJava() + ", () -> " + value + ")";
+        }
         invocation.append(value).append("; ");
         appendReadKeys(invocation, keys, true);
         return invocation.append("})").toString();

@@ -85,6 +85,24 @@ public class RepositoryScalarCriteriaTest {
         assertEquals("Existing",repository.require("Account",previous,Account.class).name);
     }
 
+    public static class CountedAccount extends Account {
+        static int hydrated;
+        public void setEmail(String value) { email = value; hydrated++; }
+    }
+
+    @Test public void duplicateUniqueLookupHydratesOnlyTheFirstNativeRow() throws Exception {
+        var repository = repository();
+        try (var connection = source.getConnection(); var statement = connection.createStatement()) {
+            statement.executeUpdate("INSERT INTO ACCOUNTS (accountRowId,email,name) VALUES "
+                    + "('A','shared','one'),('B','shared','two'),('C','shared','three')");
+        }
+        CountedAccount.hydrated = 0;
+        var rejection = assertThrows(BusinessTransactionRejection.class, () -> repository.findUniqueBy(
+                "Account", List.of("email"), List.of("shared"), CountedAccount.class, "D02", false));
+        assertEquals("D02", rejection.getMessage());
+        assertEquals(1, CountedAccount.hydrated);
+    }
+
     @Test public void duplicatePredicateStillFailsWhenOneResultHasTheSamePrimaryKeyAsTheCondition()throws Exception {
         var repository=repository();String collision=UUID.randomUUID().toString();insert(repository,collision,collision,"First");insert(repository,UUID.randomUUID().toString(),collision,"Second");
         var selection=new Account();selection.email=collision;

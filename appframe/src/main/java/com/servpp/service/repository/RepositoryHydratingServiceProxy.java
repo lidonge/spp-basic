@@ -428,7 +428,22 @@ public final class RepositoryHydratingServiceProxy {
                         !collection.isEmpty() && collection.stream().allMatch(com.servpp.service.runtime.ParticipantIdentity::isIdentified));
                 return;
             }
+            UniqueRead unique = UniqueRead.forTarget(target);
+            if (unique != null && !unique.primaryKeyCovered) {
+                var repository = repositorySupplier.get();
+                var found = repository.findUniqueBy(rule.objectType(), unique.paths, unique.values,
+                        target.getClass(), unique.rejectionCode, rule.readLocked());
+                com.servpp.service.runtime.ParticipantIdentity.confirm(target, found.isPresent());
+                unique.recordMatch(found.isPresent());
+                if (found.isEmpty()) repository.prepareUnidentifiedParticipant(rule.objectType(), target);
+                else {
+                    Object row = found.orElseThrow();
+                    applyParticipant(rule, target, row, RepositoryParticipantSnapshots.objectIdentity(row, rule.objectType()).orElseThrow());
+                }
+                return;
+            }
             if (missingDefaultKey(rule,args)) {
+                if (unique != null) unique.recordMatch(false);
                 com.servpp.service.runtime.ParticipantIdentity.confirm(target,false);
                 return;
             }
@@ -468,15 +483,21 @@ public final class RepositoryHydratingServiceProxy {
                 found=matches.isEmpty()?Optional.empty():Optional.of(matches.get(0));
             } else found=rule.readLocked() ? repositorySupplier.get().findForUpdate(rule.objectType(),id,target.getClass())
                     : repositorySupplier.get().find(rule.objectType(),id,target.getClass());
+            if (unique != null) {
+                found = found.filter(unique::matches);
+                unique.recordMatch(found.isPresent());
+            }
             com.servpp.service.runtime.ParticipantIdentity.confirm(target,found.isPresent());
             if(found.isEmpty() && predicate)repositorySupplier.get().prepareUnidentifiedParticipant(rule.objectType(),target);
-            if(found.isPresent()) {
-                com.servpp.service.runtime.ParticipantFacts.hydrate(target,found.get());
-                RepositoryParticipantSnapshots.transfer(found.get(), target);
-                com.servpp.service.runtime.ParticipantIdentity.confirmFacts(target);
-                String readId=RepositoryParticipantSnapshots.objectIdentity(found.get(),rule.objectType()).orElse(id);
-                RepositoryParticipantSnapshots.remember(target,repositorySupplier.get(),rule.objectType(),readId);
-            }
+            if (found.isPresent()) applyParticipant(rule, target, found.get(), id);
+        }
+
+        private void applyParticipant(HydrationRule rule, Object target, Object row, String id) {
+            com.servpp.service.runtime.ParticipantFacts.hydrate(target, row);
+            RepositoryParticipantSnapshots.transfer(row, target);
+            com.servpp.service.runtime.ParticipantIdentity.confirmFacts(target);
+            String readId = RepositoryParticipantSnapshots.objectIdentity(row, rule.objectType()).orElse(id);
+            RepositoryParticipantSnapshots.remember(target, repositorySupplier.get(), rule.objectType(), readId);
         }
 
         private Class<?> entranceCollectionElementType(HydrationRule rule, int index) {

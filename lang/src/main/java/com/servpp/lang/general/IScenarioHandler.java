@@ -173,6 +173,12 @@ public interface IScenarioHandler extends IServiceDefinitionHandler {
         SppDomain checker = checkClass(ctx,serviceClassName);
         SppService currentCLass = (SppService) checker.getCurrentClass();
         SppServiceCall sppServiceCall = new SppServiceCall();
+        sppServiceCall.setUniqueRead(ctx.uniqueModifier() != null);
+        if (ctx.rejection != null) sppServiceCall.setUniqueCodeName(ctx.rejection.getText());
+        if (sppServiceCall.isUniqueRead() && ctx.readBinding() == null)
+            checker.addAppParseError("unique requires a find by read binding");
+        if (!sppServiceCall.isUniqueRead() && ctx.rejection != null)
+            checker.addAppParseError("else on a keyed read requires unique");
         sppServiceCall.setInvocationOrdinal(currentCLass.allocateInvocationOrdinal());
         if (ctx.quantumBounds() != null) for (var interval : ctx.quantumBounds().quantumBound())
             sppServiceCall.getQuantumBounds().add(new QuantumCallBound(NameUtil.normalizeParticipantReference(interval.qualifiedName().getText()),
@@ -216,6 +222,8 @@ public interface IScenarioHandler extends IServiceDefinitionHandler {
     }
     @Override default void enterTransactionBreak(SppParser.TransactionBreakContext ctx) { }
     @Override default void exitTransactionBreak(SppParser.TransactionBreakContext ctx) { }
+    @Override default void enterUniqueModifier(SppParser.UniqueModifierContext ctx) { }
+    @Override default void exitUniqueModifier(SppParser.UniqueModifierContext ctx) { }
     @Override default void enterReadBinding(SppParser.ReadBindingContext ctx) { }
     @Override default void exitReadBinding(SppParser.ReadBindingContext ctx) { }
     @Override default void enterReadKey(SppParser.ReadKeyContext ctx) { }

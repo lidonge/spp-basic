@@ -32,6 +32,27 @@ public class ReadKeyBindingPersistenceTest {
                 Role Selection { String wanted; }
                 Role Release { int edition; }
                 take Selection, Release as Item { String code = wanted; mapsame; }
+                Entity Stock { String code; int edition; String title; }
+                Role Lookup { String wanted; }
+                take Stock as Lookup { String wanted = code; }
+                Enum ReadError { DUPLICATE:"D02", MISSING:"M00" }
+                Contract Marker { String receipt; }
+                atomic check checkItem(Stock item) { require(item, ReadError.MISSING); }
+                Scenario serial readUnique(Stock item, Lookup selection, Marker marker) {
+                    transaction {
+                        unique findStock by selection;
+                        checkItem,breakTransaction;
+                        insertMarker;
+                    }
+                }
+                atomic check checkRole(Item item) { require(item, ReadError.MISSING); }
+                Scenario serial readUniqueNamed(Item item, Selection selection, Marker marker) {
+                    transaction {
+                        unique findItem by selection else ReadError.DUPLICATE;
+                        checkRole,breakTransaction;
+                        insertMarker;
+                    }
+                }
                 const int CURRENT = 3;
                 atomic query listItems(key Item item, Item[] matches);
                 Scenario serial readSelected(Item, Selection, Release) {
@@ -47,6 +68,9 @@ public class ReadKeyBindingPersistenceTest {
         Files.writeString(source.resolve("reads.app"), """
                 domain reads;
                 application readBinding { deploy reads; }
+                transactions { default at resource records; }
+                tables entities { table STOCK(Stock) { primarykey(Stock.edition, Stock.code); } }
+                tables contracts { table MARKERS(Marker) { primarykey(Marker.receipt); } }
                 tables roles {
                     table ITEMS(Item) { primarykey(Item.edition, Item.code); }
                     table SELECTIONS(Selection) { primarykey(Selection.wanted); }
@@ -59,6 +83,7 @@ public class ReadKeyBindingPersistenceTest {
                     adapter jdbcObjectRepository;
                     config default = true;
                     config appDdlTables = true;
+                    config persistenceMode = LOCAL; config persistenceResource = records;
                     config datasourceUrl = "%s"; config driverClassName = "org.h2.Driver";
                 } }
                 """.formatted(JDBC_URL));
@@ -126,6 +151,30 @@ public class ReadKeyBindingPersistenceTest {
             assertEquals(3, list.get("Item").get("edition").asInt());
             assertEquals(1, list.get("matches").size());
             assertEquals(selected, list.get("matches").get(0));
+            try (var connection = dataSource.getConnection(); var statement = connection.createStatement()) {
+                statement.executeUpdate("INSERT INTO STOCK (code, edition, title) VALUES ('B',4,'original'),('C',1,'first'),('C',2,'second'),('C',3,'third')");
+                statement.executeUpdate("INSERT INTO ITEMS (code, edition, title) SELECT code,edition,title FROM STOCK WHERE code='C'");
+                for (String scenario : List.of("ReadUnique", "ReadUniqueNamed")) {
+                    for (String key : List.of("missing", "B", "C")) {
+                        String marker = scenario + key;
+                        var response = execute(runtime, mapper, scenario, Map.of("item", stale,
+                                "selection", Map.of("wanted", key), "marker", Map.of("receipt", marker)));
+                        var result = com.servpp.service.runtime.BusinessChecks.scenarioResult();
+                        if (key.equals("B")) {
+                            assertTrue(result.toString(), result.passed());
+                            assertEquals("original", response.get("item").get("title").asText());
+                        } else {
+                            assertFalse(result.toString(), result.passed());
+                            assertEquals(key.equals("missing") ? "M00" : scenario.equals("ReadUniqueNamed")
+                                    ? "D02" : "PERSISTENCE_NOT_UNIQUE", result.code());
+                        }
+                        try (var rows = statement.executeQuery("SELECT COUNT(*) FROM MARKERS WHERE receipt='" + marker + "'")) {
+                            assertTrue(rows.next());
+                            assertEquals(key.equals("B") ? 1 : 0, rows.getInt(1));
+                        }
+                    }
+                }
+            }
         }
 
         private static com.fasterxml.jackson.databind.JsonNode execute(LocalGeneratedServiceRuntime runtime,

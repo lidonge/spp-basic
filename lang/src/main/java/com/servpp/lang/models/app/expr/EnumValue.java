@@ -25,7 +25,7 @@ public final class EnumValue extends Expression {
                 + enumeration.getName();
     }
 
-    static String javaLiteral(String value) {
+    public static String javaLiteral(String value) {
         return "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"")
                 .replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t") + "\"";
     }

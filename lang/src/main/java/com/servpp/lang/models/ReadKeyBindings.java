@@ -24,6 +24,7 @@ final class ReadKeyBindings {
 
     static void bind(SppDomain domain, SppService owner, SppServiceCall call, List<String> errors) {
         call.getBoundReadKeys().clear();
+        call.getUniquePredicatePaths().clear();
         var service = call.getCallee();
         String label = "Scenario " + owner.getFuncName() + " by read binding";
         if (service == null || service instanceof SppScenario || service.getServiceType() != ServiceType.query) {
@@ -31,6 +32,20 @@ final class ReadKeyBindings {
             return;
         }
         label += " for " + service.getFuncName();
+        if (call.isUniqueRead()) {
+            if (service.getImplicitCrudTarget() == null) {
+                errors.add(label + ": unique requires a scalar find by read");
+                return;
+            }
+            if (call.getUniqueCodeName() != null) {
+                String[] code = call.getUniqueCodeName().split("\\.", 2);
+                var member = code.length == 2 && domain.getSppClass(code[0]) instanceof SppEnum enumeration
+                        ? enumeration.getItems().stream().filter(item -> item.getName().equals(code[1])).findFirst().orElse(null)
+                        : null;
+                if (member == null) errors.add(label + ": else requires a scalar enum member");
+                else call.setUniqueCodeJava(com.servpp.lang.models.app.expr.EnumValue.javaLiteral(member.getWireValue()));
+            }
+        }
         var formals = service.getServiceBody().getSppLocalVarList();
         if (formals.size() != call.getSppParameterList().size()) return;
         var conditions = formals.stream().filter(SppLocalVar::isQueryKey).toList();
@@ -54,11 +69,23 @@ final class ReadKeyBindings {
             return;
         }
         var actual = call.getSppParameterList().get(formals.indexOf(conditions.get(0)));
-        var keys = readKeys(domain, type, label, errors);
-        if (keys.isEmpty()) return;
+        var primary = readKeys(domain, type, label, errors);
+        if (primary.isEmpty()) return;
+        var keys = new LinkedHashSet<>(primary);
+        if (call.isUniqueRead() && !DeploymentEnvironmentPlanner.isAppPlayedRole(domain, type))
+            type.getSppFieldList().stream().filter(field -> field.getArrayDimension() == 0
+                    && (field.getType().getType() == null || field.getType() instanceof SppEnum)).map(SppField::getName).forEach(keys::add);
         Map<String, Source> sources = new HashMap<>();
         for (var key : call.getReadKeys()) {
-            collectSources(domain, owner, type, actual.getName(), keys, key, sources, label, errors);
+            collectSources(domain, owner, type, actual.getName(), List.copyOf(keys), call.isUniqueRead(), key, sources, label, errors);
+        }
+        if (call.isUniqueRead()) {
+            call.setPrimaryKeyCovered(sources.keySet().containsAll(primary));
+            if (DeploymentEnvironmentPlanner.isAppPlayedRole(domain, type) && !call.isPrimaryKeyCovered())
+                errors.add(label + ": APP play requires a complete primary key");
+            keys.retainAll(sources.keySet());
+            call.getUniquePredicatePaths().addAll(keys);
+            if (call.isPrimaryKeyCovered()) call.getUniquePredicatePaths().removeAll(primary);
         }
         for (String path : keys) {
             var field = scalarField(type, path);
@@ -114,7 +141,7 @@ final class ReadKeyBindings {
     }
 
     private static void collectSources(SppDomain domain, SppService owner, SppClass target, String targetName,
-                                       List<String> keys, SppServiceCall.ReadKey binding, Map<String, Source> sources,
+                                       List<String> keys, boolean unique, SppServiceCall.ReadKey binding, Map<String, Source> sources,
                                        String label, List<String> errors) {
         String[] parts = binding.path().split("\\.", 2);
         String qualifier = parts[0];
@@ -135,7 +162,7 @@ final class ReadKeyBindings {
         }
         if (constant && (qualifier.equals(targetName) || qualifier.equals(target.getName()))) {
             if (keys.contains(parts[1])) addSource(parts[1], value, sources, label, errors);
-            else errors.add(label + " constant does not bind a primary-key field: " + binding.path());
+            else errors.add(label + (unique ? " constant does not bind a scalar field: " : " constant does not bind a primary-key field: ") + binding.path());
             return;
         }
         SppClass performer = null;
@@ -149,7 +176,10 @@ final class ReadKeyBindings {
             return;
         }
         var chains = takeChains(domain, target, performer, new HashSet<>());
-        if (chains.isEmpty()) {
+        // A source role can also supply a declared take mapping back to its stored performer.
+        var reverse = unique && chains.isEmpty() ? takeChains(domain, performer, target, new HashSet<>())
+                : List.<List<TakeStep>>of();
+        if (chains.isEmpty() && reverse.isEmpty()) {
             errors.add(label + " participant " + qualifier + " has no take relation to " + target.getName());
             return;
         }
@@ -157,13 +187,16 @@ final class ReadKeyBindings {
         for (String key : keys) {
             Set<String> fields = new LinkedHashSet<>();
             for (var chain : chains) {
-                String field = key;
-                for (var step : chain) {
-                    field = step.performerPath(field);
-                    if (field == null) break;
-                }
+                String field = mappedPath(chain, key, unique);
                 if (field != null && scalarField(performer, field) != null
                         && (!constant || field.equals(parts[1]))) fields.add(field);
+            }
+            for (var chain : reverse) {
+                for (var roleField : performer.getSppFieldList()) {
+                    String field = roleField.getName();
+                    if (constant && !field.equals(parts[1])) continue;
+                    if (key.equals(mappedPath(chain, field, true))) fields.add(roleField.getName());
+                }
             }
             for (String field : fields) {
                 mapped = true;
@@ -181,7 +214,8 @@ final class ReadKeyBindings {
                 }
             }
         }
-        if (constant && !mapped) errors.add(label + " constant field does not map to a primary key: " + binding.path());
+        if (unique && !mapped) errors.add(label + " has no mapped field for " + binding.path());
+        else if (constant && !mapped) errors.add(label + " constant field does not map to a primary key: " + binding.path());
     }
 
     private static void addSource(String key, Source value, Map<String, Source> sources,
@@ -227,6 +261,17 @@ final class ReadKeyBindings {
         }
         visiting.remove(targetId);
         return chains;
+    }
+
+    private static String mappedPath(List<TakeStep> chain, String path, boolean declaredOnly) {
+        for (var step : chain) {
+            String root = path.split("\\.", 2)[0];
+            if (declaredOnly && !step.mapper().isMapSame() && !step.mapper().isTakeAll()
+                    && step.mapper().getField(root) == null) return null;
+            path = step.performerPath(path);
+            if (path == null) break;
+        }
+        return path;
     }
 
     private record TakeStep(SppRoleMapper mapper, SppClass performer) {

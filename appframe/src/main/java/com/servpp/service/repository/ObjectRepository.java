@@ -114,6 +114,11 @@ public interface ObjectRepository {
         return List.copyOf(filtered);
     }
 
+    default <T> Optional<T> findUniqueBy(String objectType, List<String> paths, List<?> values, Class<T> type,
+                                         String rejectionCode, boolean locked) {
+        throw new UnsupportedOperationException("Repository does not support bounded unique reads");
+    }
+
     default <T> List<T> findByForUpdate(String objectType, List<String> keyPaths, List<?> keyValues, Class<T> type) {
         throw new UnsupportedOperationException("Repository does not support transaction-protected filtered reads");
     }

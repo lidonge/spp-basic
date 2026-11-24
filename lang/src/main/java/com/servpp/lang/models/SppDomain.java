@@ -607,11 +607,22 @@ public class SppDomain {
                 .flatMap(validator -> validator.collectRoundingWarnings().stream()).sorted().toList();
     }
 
+    private void collectUniqueWarnings(List<IServiceBodyStatement> statements, String scenario, List<String> warnings) {
+        if (statements == null) return;
+        for (var statement : statements) {
+            if (statement instanceof SppServiceCall call && call.isUniqueRead() && call.isPrimaryKeyCovered())
+                warnings.add("[SPP_REDUNDANT_UNIQUE] " + scenario + ": unique " + call.getCallee().getFuncName()
+                        + " binds the complete primary key.");
+            for (var children : statementChildren(statement)) collectUniqueWarnings(children, scenario, warnings);
+        }
+    }
+
     public List<String> unusedParticipantWarnings() {
         List<String> warnings = new ArrayList<>();
         for (SppCompilationUnit unit : mapsOfClass.values()) {
             if (unit instanceof SppService service) {
                 warnings.addAll(UnusedParticipantWarnings.collect(service));
+                collectUniqueWarnings(service.getServiceBody().getSppServiceCallList(), service.getFuncName(), warnings);
                 if (ruleBlock.hasTransactionPolicy() && service instanceof SppScenario scene)
                     transactionPlanWarnings(scene,scene.getServiceBody().getSppServiceCallList(),warnings);
             }
