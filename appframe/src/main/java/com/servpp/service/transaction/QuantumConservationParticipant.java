@@ -114,6 +114,7 @@ public class QuantumConservationParticipant extends ObjectSnapshotTransactionPar
         bookedObjectIds.clear();
         Map<PerformerKey, Boolean> performers = new LinkedHashMap<>();
         playedAttributes.forEach((index, played) -> selectPerformer(index, played, performers));
+        QuantumTransferExecution.bind(this);
         syncCurrentValuesFromStore(context);
         super.beforeExecute(context);
         beforeValues = readValues();
@@ -178,6 +179,18 @@ public class QuantumConservationParticipant extends ObjectSnapshotTransactionPar
 
     private Object participant(QuantumAttribute attribute) {
         return attribute.collectionMember() != null ? attribute.collectionMember() : arguments[attribute.argumentIndex()];
+    }
+
+    boolean samePosition(Object source, String sourceField, Object destination, String destinationField) {
+        QuantumAttribute from = endpoint(source, sourceField);
+        QuantumAttribute to = endpoint(destination, destinationField);
+        return from.attributeId().equals(to.attributeId()) && objectId(from).equals(objectId(to));
+    }
+
+    private QuantumAttribute endpoint(Object instance, String property) {
+        return attributes.stream().filter(attribute -> attribute.isArgumentProperty()
+                && participant(attribute) == instance && attribute.propertyName().equals(property)).findFirst()
+                .orElseThrow(() -> new IllegalStateException("QUANTUM_TRANSFER_ENDPOINT_UNBOUND: " + property));
     }
 
     private List<QuantumValue> readValues() {
@@ -285,9 +298,16 @@ public class QuantumConservationParticipant extends ObjectSnapshotTransactionPar
         if (booked != null) return booked;
         String objectType = objectType(attribute.attributeId());
         Object[] identityArguments = arguments;
-        if (attribute.collectionMember() != null) {
+        if (attribute.isArgumentProperty()) {
+            // Keep positional rule indices and supporting facts, but isolate this endpoint from its peers.
             identityArguments = arguments.clone();
-            identityArguments[attribute.argumentIndex()] = attribute.collectionMember();
+            Object instance = participant(attribute);
+            identityArguments[attribute.argumentIndex()] = instance;
+            for (int i = 0; i < identityArguments.length; i++) {
+                Object peer = identityArguments[i];
+                if (i != attribute.argumentIndex() && peer != null && instance != null
+                        && instance.getClass().isInstance(peer)) identityArguments[i] = null;
+            }
         }
         Optional<String> objectIdentity = objectIdentityResolver.resolve(objectType, identityArguments)
                 .filter(value -> !value.isBlank());

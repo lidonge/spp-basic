@@ -60,8 +60,17 @@ public final class NumericJavaRenderer {
         return "{\njava.math.BigDecimal " + name + " = " + decimal(transfer.amount()) + ";\n"
                 + "com.servpp.service.transaction.QuantumConstraintProvider.check("
                 + name + " != null && " + name + ".signum() >= 0, \"QUANTUM_TRANSFER_INVALID_AMOUNT\");\n"
+                + "com.servpp.service.transaction.QuantumTransferExecution.requireDistinct("
+                + endpointArguments(transfer.source()) + ", " + endpointArguments(transfer.destination()) + ");\n"
                 + String.join("\n", transfer.movements(target).stream().map(this::statement).toList())
                 + "\ncom.servpp.service.transaction.QuantumTransferExecution.applied();\n}";
+    }
+
+    private String endpointArguments(Reference reference) {
+        String[] path = reference.getValue().split("\\.");
+        String participant = reference instanceof CalculationReference resolved && resolved.local
+                ? "$sppLocal_" + path[0] : path[0];
+        return participant + ", \"" + path[1] + "\"";
     }
 
     public String boundEndpoint(IExpression expression, SppLocalVar field) {

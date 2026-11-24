@@ -140,7 +140,6 @@ public final class DeploymentEnvironmentPlanner {
         String prefix = domain.getName() + "." + service.getFuncName() + ": ";
         Map<String, List<QuantumPosition>> positions = new LinkedHashMap<>();
         Set<QuantumStoreIdentity> stores = new HashSet<>();
-        Map<String, String> canonicalIds = new HashMap<>();
         for (String attribute : attributes) {
             String[] parts = attribute.split("\\.");
             var type = domain.getSppClass(parts[0]);
@@ -152,11 +151,6 @@ public final class DeploymentEnvironmentPlanner {
                 return;
             }
             for (var position : candidates) {
-                String previous = canonicalIds.putIfAbsent(position.attributeId(), attribute);
-                if (previous != null && !previous.equals(attribute)) {
-                    errors.add(prefix + "Multiple quantum transfer attributes resolve to " + position.attributeId());
-                    return;
-                }
                 String name = position.owner().quantumStoreNameForAttribute(position.attributeId());
                 var adapter = position.owner().quantumStoreAdapter(name);
                 if (adapter == null) {
@@ -167,7 +161,6 @@ public final class DeploymentEnvironmentPlanner {
             }
             positions.put(attribute, candidates);
         }
-        if (positions.size() < 2) return;
         var environments = quantumEnvironments(project, domain);
         if (stores.size() != 1 || !"LOCAL".equals(domain.getRuleBlock().getDeploymentTransactionMode())
                 || environments.isEmpty() || environments.stream().anyMatch(environment ->
@@ -208,7 +201,7 @@ public final class DeploymentEnvironmentPlanner {
         }
         Map<String, List<SppService.QuantumEndpoint>> bindings = new LinkedHashMap<>();
         positions.forEach((logical, candidates) -> {
-            if (candidates.get(0).owner() != domain)
+            if (!candidates.get(0).keys().isEmpty())
                 bindings.put(logical, candidates.stream().map(position ->
                         new SppService.QuantumEndpoint(position.attributeId(), position.keys(), position.codeTables(),
                                 position.owner().getName() + "." + position.attributeId().split("\\.", 2)[0])).toList());

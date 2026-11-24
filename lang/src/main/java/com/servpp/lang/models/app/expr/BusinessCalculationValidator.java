@@ -153,8 +153,8 @@ public final class BusinessCalculationValidator {
         }
         String source = transferAttribute(transfer.source());
         String destination = transferAttribute(transfer.destination());
-        if (source != null && source.equals(destination)) {
-            error("A quantum transfer requires two distinct quantum attributes.");
+        if (source != null && transfer.source().getValue().equals(transfer.destination().getValue())) {
+            error("Self-transfer: two distinct quantum attributes are required when using the same participant.");
         }
         var scope = service.getScopeItem();
         if (scope != null && ("$state".equals(scope.getResourceId())

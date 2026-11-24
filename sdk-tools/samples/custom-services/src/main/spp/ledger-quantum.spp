@@ -48,3 +48,25 @@ quantum update settleFunds(Funds consumerFunds, SettlementPosition position, Tra
 Scenario serial settlePosition(Funds consumerFunds, SettlementPosition position, TransferInput transfer) {
     transaction { settleFunds bounds { position.claim: [null, 0]; }; }
 }
+
+quantum update movePosition(ProviderPlayedRole origin, SettlementPosition destination, TransferInput transfer) {
+    origin.claim -> destination.claim : transfer.amount;
+}
+
+Scenario serial transferPosition(ProviderPlayedRole origin, SettlementPosition destination, TransferInput transfer) {
+    transaction { movePosition bounds { origin.claim: [0, null]; destination.claim: [null, 10]; }; }
+}
+
+Role LocalWallet;
+take Funds as LocalWallet {
+    takeall;
+    quantum decimal amount;
+}
+
+quantum update moveWallet(LocalWallet origin, LocalWallet destination, TransferInput transfer) {
+    origin.amount -> destination.amount : transfer.amount;
+}
+
+Scenario serial transferWallet(LocalWallet origin, LocalWallet destination, TransferInput transfer) {
+    transaction { moveWallet(origin, destination, transfer) bounds { origin.amount: [0, null]; destination.amount: [null, 10]; }; }
+}

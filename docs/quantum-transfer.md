@@ -1,6 +1,6 @@
 # Quantum transfer statements
 
-Requirement QT-1, revision 1. The statement belongs to a `quantum update`
+Requirement QT-1, revision 2. The statement belongs to a `quantum update`
 body under [CORE-1](../EXTENSION-CONTRACTS.md#core-1-business-behavior-and-persistence).
 
 ```spp
@@ -15,15 +15,29 @@ negative or null amount is rejected. Zero has zero effect. Endpoint conversions
 use the existing exact numeric rules. Bounds and runtime conservation checks
 apply to the resulting changes.
 
-The endpoints are two distinct scalar quantum attribute declarations on service
-parameters or on elements bound by a participant collection loop. An explicit APP conservation selection must include both endpoints.
+Each endpoint identifies a scalar quantum field on a participant instance. Two
+parameters of the same entity or take-mapped role can move the same field
+between different keys (for example, `sender.balance -> recipient.balance`).
+Two APP-played roles may also select the same provider field. The runtime uses
+the selected provider's full primary key, including mapped key codes. A
+successful movement records the debit and credit under their respective keys.
+Bounds apply to the participant named by each interval.
+
+Writing the same endpoint on both sides is a compile error. If two distinct
+endpoints resolve to the same stored attribute and key at execution time, the
+runtime rejects the statement with `QUANTUM_SELF_TRANSFER` and rolls back the
+transaction, including for a zero amount. Different fields on the same object
+remain distinct positions. Endpoints can also be elements bound by a participant
+collection loop. An explicit APP conservation selection must include the field
+of each endpoint. A shared field is listed once.
+
 Multiple statements express multiple transfers, each with its own amount.
 APP chooses the conservation resource and the deployment transaction. Grouping
 the calls in a scenario transaction makes the transfers commit together.
 
 Acceptance covers the two generated movement directions, one evaluation of
 the amount expression, and rejection of ordinary services, ordinary fields,
-identical attribute declarations and a standalone state binding. The
+identical endpoints and a standalone state binding. The
 cash-deposit application tests the generated services against a JDBC store.
 
 The compiler change was developed from Basic `15a6db2`. The language

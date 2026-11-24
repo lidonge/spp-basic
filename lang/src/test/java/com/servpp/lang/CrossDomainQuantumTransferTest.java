@@ -18,6 +18,11 @@ public class CrossDomainQuantumTransferTest {
             "play ConsumerRole by alternate.Reserve { accountCode = account; currency = currency; claim = outstanding; }";
 
     private SppProject project(String plays, String providerType, String providerTable, String mode) throws Exception {
+        return project(plays, providerType, providerTable, mode, "", "");
+    }
+
+    private SppProject project(String plays, String providerType, String providerTable, String mode,
+                               String extraService, String extraScope) throws Exception {
         var project = new SppProject();
         for (String domain : new String[]{"provider", "alternate"}) {
             String type = domain.equals("provider") ? "Position" : "Reserve";
@@ -38,7 +43,7 @@ public class CrossDomainQuantumTransferTest {
                 quantum update moveFunds(Funds consumerFunds, ConsumerRole played) {
                     consumerFunds.amount -> played.claim : 1.125;
                 }
-                """);
+                """ + extraService);
         parse(project, ".app", """
                 domain consumer;
                 application transfer { environment develop {
@@ -46,9 +51,9 @@ public class CrossDomainQuantumTransferTest {
                     transactions { mode: %s; resource: records; }
                 } }
                 tables roles { table FUNDS(Funds) { primarykey(Funds.wallet); } }
-                scope { local { moveFunds; } }
+                scope { local { moveFunds; %s } }
                 %s
-                """.formatted(mode, plays));
+                """.formatted(mode, extraScope, plays));
         parse(project, ".phy", physical("consumer", "unifiedStore", "positions_value"));
         parse(project, ".phy", physical("provider", "unifiedStore", providerTable));
         parse(project, ".phy", physical("alternate", "unifiedStore", "positions_value"));
@@ -154,6 +159,20 @@ public class CrossDomainQuantumTransferTest {
                 "PlayEndpoint(\"Position.outstanding\", java.util.Map.ofEntries(), \"accountCode\", \"currency\")"));
         assertTrue(service.getQuantumConservationParticipantMethod().contains(
                 "PlayEndpoint(\"Reserve.outstanding\", java.util.Map.ofEntries(), \"currency\", \"accountCode\")"));
+    }
+
+    @Test public void bindsBothInstancesWhenOnePlayedAttributeIsTheWholeConservationGroup() throws Exception {
+        var project = project(PLAY, "quantum decimal", "positions_value", "LOCAL", """
+                quantum update redistribute(ConsumerRole origin, ConsumerRole destination) {
+                    origin.claim -> destination.claim : 1;
+                }
+                """, "redistribute;");
+        compile(project);
+        var service = (SppService) project.getDomain("consumer").getSppClass("Redistribute");
+        String participant = service.getQuantumConservationParticipantMethod();
+        assertTrue(participant, participant.contains(".conservePlayedArgument(0,"));
+        assertTrue(participant, participant.contains(".conservePlayedArgument(1,"));
+        assertTrue(service.getQuantumServiceMetadataMethod().contains("List.of(\"Position.outstanding\")"));
     }
 
     @Test public void changesProviderThroughAppAlone() throws Exception {

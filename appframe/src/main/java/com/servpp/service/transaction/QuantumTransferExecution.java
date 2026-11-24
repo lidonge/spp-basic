@@ -8,9 +8,22 @@ public final class QuantumTransferExecution {
     private static final ThreadLocal<Invocation> CURRENT = new ThreadLocal<>();
     private static final class Invocation {
         boolean applied;
+        QuantumConservationParticipant conservation;
     }
 
     private QuantumTransferExecution() { }
+
+    static void bind(QuantumConservationParticipant conservation) {
+        Invocation invocation = CURRENT.get();
+        if (invocation != null) invocation.conservation = conservation;
+    }
+
+    public static void requireDistinct(Object source, String sourceField, Object destination, String destinationField) {
+        Invocation invocation = CURRENT.get();
+        if (invocation == null || invocation.conservation == null) throw rejection("QUANTUM_TRANSFER_SETTLEMENT_REQUIRED");
+        if (invocation.conservation.samePosition(source, sourceField, destination, destinationField))
+            throw rejection("QUANTUM_SELF_TRANSFER: both endpoints resolve to the same quantum position");
+    }
 
     public static void applied() {
         Invocation invocation = CURRENT.get();

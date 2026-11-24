@@ -1,6 +1,9 @@
 domain ledger;
 
 tables roles {
+    table LOCAL_WALLETS(LocalWallet) {
+        primarykey(LocalWallet.wallet);
+    }
     table FUNDS(Funds) {
         primarykey(Funds.wallet);
     }

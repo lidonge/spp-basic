@@ -200,12 +200,6 @@ public interface IScopeHandler extends IApplicationHandler {
                 scopeItem.addResourceServiceName(value);
             }
         }
-        if (scopeItem.getTransactionType() == IConstance.TransactionType.quantum
-                && !scopeItem.getQuantumConservationAttributeIds().isEmpty()
-                && scopeItem.getQuantumConservationAttributeIds().size() < 2) {
-            logSppError(ctx, "Quantum resource " + scopeItem.getResourceId()
-                    + " must declare at least two conserved quantum attributes.");
-        }
         if (scopeItem.getTransactionType() == IConstance.TransactionType.tcc
                 && !scopeItem.getResourceServiceNames().isEmpty()
                 && scopeItem.getResourceServiceNames().size() != 2) {

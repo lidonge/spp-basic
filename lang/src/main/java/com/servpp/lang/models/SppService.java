@@ -13,6 +13,7 @@ import com.servpp.lang.models.app.expr.Literal;
 import com.servpp.lang.models.app.expr.Reference;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -2272,7 +2273,7 @@ public class SppService extends SppClass{
 
     public List<String> getAssignedQuantumAttributeIds() {
         return collectAssignedQuantumServiceAttributes().stream()
-                .map(QuantumServiceAttribute::getAttributeId)
+                .map(QuantumServiceAttribute::getAttributeId).distinct()
                 .toList();
     }
 
@@ -2358,8 +2359,9 @@ public class SppService extends SppClass{
             return;
         }
 
-        Set<String> written = assignedAttributes.stream().map(QuantumServiceAttribute::getAttributeId)
-                .collect(Collectors.toSet());
+        Map<String, Set<Integer>> writers = assignedAttributes.stream().collect(Collectors.groupingBy(
+                QuantumServiceAttribute::getAttributeId,
+                Collectors.mapping(QuantumServiceAttribute::getArgumentIndex, Collectors.toSet())));
         List<SppLocalVar> localVars = serviceBody.getSppLocalVarList();
         for (int i = 0; i < localVars.size(); i++) {
             SppLocalVar localVar = localVars.get(i);
@@ -2368,7 +2370,9 @@ public class SppService extends SppClass{
                     if (field.isQuantum()) {
                         String attributeId = sppClass.getName() + "." + field.getName();
                         boolean conserved = isExplicitQuantumConservationAttribute(attributeId);
-                        if (!conserved && !written.contains(attributeId)) continue;
+                        var argumentIndices = writers.get(attributeId);
+                        if (argumentIndices == null && !conserved) continue;
+                        if (!transferPaths.isEmpty() && argumentIndices != null && !argumentIndices.contains(i)) continue;
                         // APP conservation selection must never omit an actual quantum write.
                         addQuantumServiceAttribute(new QuantumServiceAttribute(i,
                                 conserved ? getQuantumConservationGroupId() : "$state",
@@ -2379,11 +2383,13 @@ public class SppService extends SppClass{
         }
     }
 
+    private record ArgumentAttribute(int index, String attributeId) { }
+
     private List<QuantumServiceAttribute> collectAssignedQuantumServiceAttributes() {
         if (expressions == null || expressions.isEmpty()) {
             return List.of();
         }
-        Map<String, QuantumServiceAttribute> attributes = new LinkedHashMap<>();
+        Map<ArgumentAttribute, QuantumServiceAttribute> attributes = new LinkedHashMap<>();
         for (IOperationExpression expression : expressions) {
             if (!(expression.getOperation() instanceof IAssignOperation)) {
                 continue;
@@ -2392,11 +2398,11 @@ public class SppService extends SppClass{
             if (left instanceof Reference reference) {
                 QuantumServiceAttribute attribute = toQuantumServiceAttribute(reference);
                 if (attribute != null) {
-                    attributes.put(attribute.getAttributeId(), attribute);
+                    attributes.put(new ArgumentAttribute(attribute.getArgumentIndex(), attribute.getAttributeId()), attribute);
                 }
             }
         }
-        String groupId = getQuantumConservationGroupId(attributes);
+        String groupId = getQuantumConservationGroupId(attributes.values());
         return attributes.values().stream()
                 .map(attribute -> new QuantumServiceAttribute(attribute.getArgumentIndex(), groupId,
                         attribute.getAttributeId(), attribute.getPropertyName()))
@@ -2488,17 +2494,17 @@ public class SppService extends SppClass{
         return null;
     }
 
-    private String toConservationGroupId(Map<String, QuantumServiceAttribute> attributes) {
+    private String toConservationGroupId(Collection<QuantumServiceAttribute> attributes) {
         if (attributes.size() < 2) {
             return getFuncName();
         }
-        return attributes.values().stream()
+        return attributes.stream()
                 .map(QuantumServiceAttribute::getAttributeId)
                 .sorted(Comparator.naturalOrder())
                 .collect(Collectors.joining("+"));
     }
 
-    private String getQuantumConservationGroupId(Map<String, QuantumServiceAttribute> attributes) {
+    private String getQuantumConservationGroupId(Collection<QuantumServiceAttribute> attributes) {
         if (scopeItem != null && scopeItem.hasQuantumConservationAttributes()
                 && !scopeItem.isQuantumResourceInferred()
                 && scopeItem.getResourceId() != null && !scopeItem.getResourceId().isBlank()) {

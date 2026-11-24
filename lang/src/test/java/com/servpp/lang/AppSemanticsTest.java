@@ -14218,6 +14218,40 @@ public class AppSemanticsTest {
     }
 
     @Test
+    public void sameFieldTransferRetainsEachArgumentForEntitiesAndTakenRoles() throws Exception {
+        var domain = compileDomain("""
+                domain payments;
+                Entity Wallet { String id; quantum decimal balance; }
+                Role CashDrawer;
+                take Wallet as CashDrawer { takeall; quantum decimal balance; }
+                quantum update send(Wallet sender, Wallet recipient, Wallet observer) {
+                    sender.balance -> recipient.balance : 1;
+                }
+                quantum update pay(CashDrawer sender, CashDrawer recipient) {
+                    sender.balance -> recipient.balance : 1;
+                }
+                quantum update invalid(Wallet sender, Wallet recipient) {
+                    sender.balance -> sender.balance : 1;
+                }
+                """, """
+                domain payments;
+                quantumStore ledger { attribute Wallet.balance; attribute CashDrawer.balance; }
+                scope { local { quantum resource(funds, Wallet.balance) send;
+                                quantum resource(drawers, CashDrawer.balance) pay; } }
+                """);
+        var errors = domain.validateBusinessCalculations();
+        assertEquals(errors.toString(), 1, errors.size());
+        assertTrue(errors.toString(), errors.get(0).contains("Self-transfer"));
+        assertTrue(domain.validateQuantumConservationDeclarations().toString(),
+                domain.validateQuantumConservationDeclarations().isEmpty());
+        for (String serviceName : java.util.List.of("Send", "Pay")) {
+            var service = (SppService) domain.getSppClass(serviceName);
+            assertEquals(java.util.List.of(0, 1), service.getQuantumServiceAttributes().stream()
+                    .map(attribute -> attribute.getArgumentIndex()).toList());
+        }
+    }
+
+    @Test
     public void quantumTransferRejectsOrdinaryEndpointsUnconservedScopeAndIdenticalAttributes() throws Exception {
         var domain = compileDomain("""
                 domain cashflow;

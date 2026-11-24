@@ -7633,7 +7633,7 @@ public class SppDomain {
                         + " must bind a local atomic update service.");
                 continue;
             }
-            if (new LinkedHashSet<>(declaredAttributes).size() < 2) {
+            if (new LinkedHashSet<>(declaredAttributes).size() < 2 && service.getTransferPaths().size() < 2) {
                 errors.add("Quantum resource " + service.getTransactionResourceIdLiteral()
                         + " must declare at least two distinct quantum attributes");
             }
