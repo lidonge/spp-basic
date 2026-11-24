@@ -26,3 +26,31 @@ Reference Admission from positions.Admission {
     String(5) returnCode;
 }
 Role StoredResult { String receipt; String accountNumber; ProviderOutcome code; }
+
+Role AdmissionText { String accountNumber; String text; }
+atomic check checkAdmissionText(AdmissionText result) {
+    require(result.text == BLANK, "TEXT_PRESENT");
+    require(result.text == "   ", "ORIGINAL_TEXT_CHANGED");
+}
+Scenario serial verifyAdmissionText(AdmissionText result) {
+    findAdmissionText;
+    identify(result);
+    checkAdmissionText(result);
+}
+
+Scenario serial verifyBlankAccount(AdmissionText result) {
+    findAdmissionText by AdmissionText.accountNumber = BLANK;
+    identify(result);
+    checkAdmissionText(result);
+}
+
+Role CodedAdmission { String accountNumber; ProviderOutcome code; }
+atomic check checkBlankAdmission(CodedAdmission result) {
+    require(result.accountNumber == BLANK, "ACCOUNT_PRESENT");
+    require(result.code == ProviderOutcome.NOT_FOUND, "WRONG_CODE");
+}
+Scenario serial readBlankAdmission(CodedAdmission result) {
+    findCodedAdmission by CodedAdmission.accountNumber = BLANK;
+    identify(result);
+    checkBlankAdmission(result);
+}

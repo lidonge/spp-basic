@@ -309,6 +309,41 @@ for a declaration without a mode. A decimal with no effective scale keeps
 the calculated quotient. Explicit functions such as `roundDown(value, places)` and
 `roundHalfUp(value, places)` remain available.
 
+## Blank String fields
+
+Use `BLANK` when business logic asks whether a String field is empty. An ordinary
+String comparison still compares the original value, including leading and
+trailing spaces. A scenario can also supply the canonical blank as a read key.
+
+```spp
+if (voucher.reference != BLANK) { voucher.previous = voucher.reference; }
+voucher.reference = BLANK;
+// In a scenario with Voucher as a participant and reference as its key
+findVoucher by Voucher.reference = BLANK;
+```
+
+Without a declaration, `field == BLANK` accepts null and the empty string, and
+`field = BLANK` writes the empty string. Declare the deployment default once in
+APP or PHY. For example, a fixed-width deployment can accept three incoming
+forms and always write one form.
+
+```app
+blank { read: null, "", spaces; write: spaces; }
+blank RECEIPTS { read: null; write: null; }
+blank RECEIPTS.reference { read: null, ""; write: ""; }
+```
+
+A field declaration overrides a table declaration, which overrides the
+deployment default. Use the APP table name and SPP field name. A participant
+field such as `blank Voucher.reference` can also be configured directly,
+including for wire messages and provider roles. An APP `play` field with no
+consumer override uses the mapped provider field’s representation. An explicit
+`find … by` constant supplies the canonical form for the key. A SQL primary key
+cannot match a canonical null. The `spaces` read form matches
+one or more ASCII spaces (U+0020). Tabs, mixed text and other whitespace keep
+their original meaning. Assigning `BLANK` with `write: spaces` requires a
+declared width such as `String(30)` and writes exactly that many spaces.
+
 ## Scenario read bindings and transaction rejection
 
 Use `readonly Scenario serial preview(Entry, Facts)` for a front-end inquiry.

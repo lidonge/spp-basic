@@ -81,8 +81,13 @@ final class ReadKeyBindings {
                 target += "." + parts[member];
                 parents.add(new SppServiceCall.ReadKeyParent(target, current.getName()));
             }
+            String javaValue = source.java();
+            if ("BLANK".equals(javaValue)) {
+                try { javaValue = com.servpp.lang.models.app.BlankPolicy.writeJava(domain, field, null); }
+                catch (IllegalArgumentException invalid) { errors.add(label + " " + invalid.getMessage()); continue; }
+            }
             call.getBoundReadKeys().add(new SppServiceCall.BoundReadKey(actual.getName() + "." + path,
-                    field, source.field(), source.java(), source.path(), List.copyOf(parents)));
+                    field, source.field(), javaValue, source.path(), List.copyOf(parents), "BLANK".equals(source.java())));
         }
     }
 
@@ -288,6 +293,7 @@ final class ReadKeyBindings {
 
     private static Source constantSource(SppDomain domain, SppServiceCall.ReadKey key) {
         String text = key.constant();
+        if ("BLANK".equals(text)) return new Source("String", text, null, null, null);
         if (key.literal()) return new Source(key.literalType(), text, null, text, null);
         var constant = domain.getConstants().get(text);
         return constant == null ? null : new Source(constant.getType().getName(), text, constant, constant.getLiteral(), null);

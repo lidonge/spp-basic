@@ -17,8 +17,8 @@ public final class CompositeObjectId {
         }
         List<String> encodedValues = new ArrayList<>();
         for (Object value : values) {
-            if (value == null || value.toString().isBlank()) {
-                throw new IllegalArgumentException("Composite object id values must be non-empty.");
+            if (value == null) {
+                throw new IllegalArgumentException("Composite object id values must be non-null.");
             }
             encodedValues.add(Base64.getUrlEncoder().withoutPadding()
                     .encodeToString(value.toString().getBytes(StandardCharsets.UTF_8)));
@@ -31,18 +31,12 @@ public final class CompositeObjectId {
             return List.of();
         }
         String payload = objectId.substring(PREFIX.length());
-        if (payload.isBlank()) {
-            return List.of();
-        }
         String[] parts = payload.split("\\.", -1);
         if (parts.length != expectedParts) {
             return List.of();
         }
         List<String> values = new ArrayList<>();
         for (String part : parts) {
-            if (part.isBlank()) {
-                return List.of();
-            }
             try {
                 values.add(new String(Base64.getUrlDecoder().decode(part), StandardCharsets.UTF_8));
             } catch (IllegalArgumentException e) {

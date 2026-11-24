@@ -18,7 +18,7 @@ public class SppServiceCall extends ServiceBaseBody implements IServiceBodyState
     }
     public record ReadKeyParent(String path, String type) { }
     public record BoundReadKey(String target, SppField field, SppLocalVar source, String value, String sourcePath,
-                               List<ReadKeyParent> parents) {
+                               List<ReadKeyParent> parents, boolean blank) {
         public String javaValue() {
             String expression = source instanceof SppConstant constant ? constant.getJavaValue() : value;
             String type = field.getType().getName();

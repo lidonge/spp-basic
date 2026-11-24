@@ -11,8 +11,11 @@ import com.servpp.service.transaction.TransactionMode;
 import example.generated.ledger.model.MapperAdmissionToStoredResult;
 import example.generated.ledger.model.ProviderOutcome;
 import example.generated.ledger.model.ReadAdmissionRequest;
+import example.generated.ledger.model.ReadBlankAdmissionRequest;
 import example.generated.ledger.model.StoredResult;
 import example.generated.ledger.model.VerifyAdmissionRequest;
+import example.generated.ledger.model.VerifyAdmissionTextRequest;
+import example.generated.ledger.model.VerifyBlankAccountRequest;
 import example.generated.positions.model.Admission;
 import java.util.Map;
 import java.util.UUID;
@@ -53,6 +56,36 @@ public class AdmissionPlayTest {
         }
     }
 
+    @Test public void paddedAccountKeyAndBlankProviderCodeCompose() throws Exception {
+        String property = "spp.basic-ledger.datasource-url";
+        String url = "jdbc:h2:mem:combined_" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1";
+        var source = new DriverManagerJdbcDataSource("org.h2.Driver", url, null, null);
+        var mapper = new ObjectMapper().findAndRegisterModules();
+        var runtime = LocalGeneratedServiceRuntime.jsonSnapshots(source, mapper, ignored -> null);
+        var container = DefaultServiceContainer.getInstance();
+        String previous = System.setProperty(property, url);
+        container.clear();
+        try {
+            GeneratedApplicationDeployment.install(runtime, "basicLedger");
+            var account = " ".repeat(28);
+            try (var connection = source.getConnection();
+                 var seed = connection.prepareStatement("INSERT INTO ADMISSIONS (account, returnCode) VALUES (?, ?)")) {
+                seed.setString(1, account);
+                seed.setString(2, "   ");
+                assertEquals(1, seed.executeUpdate());
+            }
+            var request = mapper.convertValue(Map.of("result", Map.of("accountNumber", "stale")), ReadBlankAdmissionRequest.class);
+            runtime.executeGeneratedService("ledger.readBlankAdmission", request);
+            assertTrue(BusinessChecks.scenarioResult().toString(), BusinessChecks.scenarioResult().passed());
+            assertEquals(account, request.getResult().getAccountNumber());
+            assertSame(ProviderOutcome.NOT_FOUND, request.getResult().getCode());
+        } finally {
+            container.clear();
+            if (previous == null) System.clearProperty(property);
+            else System.setProperty(property, previous);
+        }
+    }
+
     @Test public void providerCodesReachTheCallerThroughGeneratedPlayAndCheck() throws Exception {
         String property = "spp.basic-ledger.datasource-url";
         String url = "jdbc:h2:mem:admission_" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1";
@@ -80,6 +113,23 @@ public class AdmissionPlayTest {
                 if (alternate && i == 6)
                     assertTrue(ProviderOutcome.sameMember(ProviderOutcome.UNRECOGNIZED, request.getResult().getCode()));
             }
+            var padded = new Admission().account("Pad").returnCode("   ");
+            DeclaredTransactionContext.execute(TransactionMode.LOCAL, () -> repository.executeInTransaction(() ->
+                    repository.insert("Admission", "Pad", padded)));
+            var text = mapper.convertValue(Map.of("result", Map.of("accountNumber", "Pad")), VerifyAdmissionTextRequest.class);
+            runtime.executeGeneratedService("ledger.verifyAdmissionText", text);
+            assertTrue(BusinessChecks.scenarioResult().toString(), BusinessChecks.scenarioResult().passed());
+            assertEquals("   ", text.getResult().getText());
+            try (var connection = source.getConnection();
+                 var insert = connection.prepareStatement("INSERT INTO ADMISSIONS (account, returnCode) VALUES (?, ?)")) {
+                insert.setString(1, " ".repeat(28));
+                insert.setString(2, "   ");
+                assertEquals(1, insert.executeUpdate());
+            }
+            var blankKey = mapper.convertValue(Map.of("result", Map.of("accountNumber", "stale")), VerifyBlankAccountRequest.class);
+            runtime.executeGeneratedService("ledger.verifyBlankAccount", blankKey);
+            assertTrue(BusinessChecks.scenarioResult().toString(), BusinessChecks.scenarioResult().passed());
+            assertEquals("   ", blankKey.getResult().getText());
             var lookup = mapper.convertValue(Map.of("lookup", Map.of("keyCode", "A1")), ReadAdmissionRequest.class);
             runtime.executeGeneratedService("ledger.readAdmission", lookup);
             assertEquals("E1214", lookup.getLookup().getCode().getValue());

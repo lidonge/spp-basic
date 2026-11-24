@@ -56,8 +56,11 @@ public final class GeneratedWebServer implements AutoCloseable {
             byte[] body=exchange.getRequestBody().readNBytes(1024*1024+1);
             if (body.length>1024*1024) { json(exchange,413,Map.of("error","REQUEST_TOO_LARGE")); return; }
             var call=mapper.readValue(body,DomainServiceProtocol.Call.class);
+            String blankKeys = exchange.getRequestHeaders().getFirst("X-SPP-Blank-Keys");
             var result=DomainServiceProtocol.execute(call,exchange.getRequestHeaders().getFirst("X-SPP-Caller"),
-                    exchange.getRequestHeaders().getFirst("X-SPP-Request-Serial"));
+                    exchange.getRequestHeaders().getFirst("X-SPP-Request-Serial"), blankKeys == null ? null
+                            : mapper.readValue(java.util.Base64.getUrlDecoder().decode(blankKeys),
+                                    com.servpp.service.repository.BlankReadKeys.Intent.class));
             json(exchange,200,result);
         } catch (Exception failure) {
             json(exchange,400,Map.of("error",failure.getMessage()==null?failure.getClass().getSimpleName():failure.getMessage(),

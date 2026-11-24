@@ -117,6 +117,20 @@ public abstract class BaseHandler implements IHeaderHandler, IPrimaryHandler,
         return result.append('"').toString();
     }
 
+    @Override public void enterBlankPolicy(AppParser.BlankPolicyContext ctx) {
+        String target = ctx.qualifiedName() == null ? "" : ctx.qualifiedName().getText();
+        try {
+            var policy = new com.servpp.lang.models.app.BlankPolicy(
+                    ctx.reads.stream().map(form -> form.getText()).collect(java.util.stream.Collectors.toSet()),
+                    ctx.written.getText());
+            if (getCurrentRuleBlock().getBlankPolicies().putIfAbsent(target, policy) != null)
+                logSppError(ctx, "Duplicate blank policy for " + (target.isEmpty() ? "deployment" : target));
+        } catch (IllegalArgumentException invalid) { logSppError(ctx, invalid.getMessage()); }
+    }
+    @Override public void exitBlankPolicy(AppParser.BlankPolicyContext ctx) { }
+    @Override public void enterBlankForm(AppParser.BlankFormContext ctx) { }
+    @Override public void exitBlankForm(AppParser.BlankFormContext ctx) { }
+
     @Override public void enterPropertyTrackingPolicy(AppParser.PropertyTrackingPolicyContext ctx) {
         try { getCurrentRuleBlock().setPropertyTracking(Boolean.parseBoolean(ctx.BooleanLiteral().getText())); }
         catch (IllegalArgumentException failure) { logSppError(ctx, failure.getMessage()); }

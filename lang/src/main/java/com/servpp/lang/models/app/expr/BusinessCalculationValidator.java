@@ -81,7 +81,8 @@ public final class BusinessCalculationValidator {
                 }
                 boolean local = assignment.getLeft() instanceof CalculationReference ref && lookupLocal(ref.getValue()) != null && !ref.getValue().contains(".");
                 if (service.getServiceType() == IConstance.ServiceType.check && !local) { error("Check services cannot assign business attributes."); }
-                Kind left = type(assignment.getLeft()), right = type(assignment.getRight());
+                Kind left = type(assignment.getLeft());
+                Kind right = assignmentType(assignment.getRight(), assignment.getLeft() instanceof CalculationReference ref ? ref.field : null);
                 validateEnumLiteral(assignment.getLeft(), assignment.getRight());
                 boolean entranceCollection = assignment.getLeft() instanceof Reference ref
                         && service.getServiceBody().getSppLocalVarList().stream().anyMatch(parameter ->
@@ -228,7 +229,7 @@ public final class BusinessCalculationValidator {
             case BLOCK -> scoped(control.body);
             case LOCAL -> {
                 if (control.condition != null) {
-                    Kind actual = type(control.condition);
+                    Kind actual = assignmentType(control.condition, control.local);
                     CalculationReference target = new CalculationReference(); target.setReturnType(control.local.getType());
                     validateEnumLiteral(target, control.condition);
                     String name = control.local.getType().getName();
@@ -328,7 +329,24 @@ public final class BusinessCalculationValidator {
         return a == b || a == Kind.UNKNOWN || b == Kind.UNKNOWN || a == Kind.ENUM && b == Kind.STRING
                 || b == Kind.NULL && (a == Kind.OBJECT || a == Kind.STRING || a == Kind.ENUM);
     }
+    private Kind assignmentType(IExpression value, SppLocalVar target) {
+        if (BlankLiteral.unwrap(value) instanceof BlankLiteral blank) {
+            if (target == null || target.getArrayDimension() != 0 || !"String".equals(target.getType().getName()))
+                error("BLANK requires a scalar String target.");
+            else {
+                try { blank.write(target, "participant"); }
+                catch (IllegalArgumentException invalid) { error(invalid.getMessage()); }
+            }
+            return Kind.STRING;
+        }
+        return type(value);
+    }
+
     private Kind type(IExpression value) {
+        if (value instanceof BlankLiteral) {
+            error("BLANK requires assignment to or equality with a scalar String.");
+            return Kind.UNKNOWN;
+        }
         if (value instanceof EnumValue) return Kind.ENUM;
         if (value instanceof EnumConstruction construction) {
             Kind code = type(construction.getCode());
@@ -466,6 +484,15 @@ public final class BusinessCalculationValidator {
             ((Expression)value).setReturnType(operation.getRight().getReturnType()); return kind;
         }
         if (operator.equals("!")) { bool(operation.getRight()); return Kind.BOOLEAN; }
+        if (Set.of("==", "!=").contains(operator)) {
+            var left = BlankLiteral.unwrap(operation.getLeft());
+            var right = BlankLiteral.unwrap(operation.getRight());
+            if (left instanceof BlankLiteral || right instanceof BlankLiteral) {
+                if (type(left instanceof BlankLiteral ? right : left) != Kind.STRING)
+                    error("BLANK comparison requires a scalar String.");
+                return Kind.BOOLEAN;
+            }
+        }
         Kind right = type(operation.getRight());
         Kind left = operation.getLeft() == null ? right : type(operation.getLeft());
         if (operator.equals("&&") || operator.equals("||")) {

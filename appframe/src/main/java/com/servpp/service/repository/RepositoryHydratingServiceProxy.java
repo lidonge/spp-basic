@@ -541,7 +541,8 @@ public final class RepositoryHydratingServiceProxy {
                 Object value = "@storageIdentity".equals(key.objectIdPath())
                         ? RepositoryParticipantSnapshots.objectIdentity(argument(args,key.argumentIndex()),key.objectType()).orElse(null)
                         : readPath(argument(args,key.argumentIndex()),key.objectIdPath());
-                if (value == null || value.toString().isBlank()) return true;
+                if (value == null || (value.toString().isBlank()
+                        && !BlankReadKeys.contains(argument(args, key.argumentIndex()), key.objectIdPath()))) return true;
             }
             return false;
         }
@@ -607,7 +608,7 @@ public final class RepositoryHydratingServiceProxy {
         private static Object readRequiredValue(Object value, String path) {
             if ("@singleton".equals(path)) return "singleton";
             Object resolved = readPath(value, path);
-            if (resolved == null || resolved.toString().isBlank()) {
+            if (resolved == null || (resolved.toString().isBlank() && !BlankReadKeys.contains(value, path))) {
                 throw new IllegalStateException(path + " is required for repository query");
             }
             return resolved;

@@ -18,3 +18,13 @@ play StoredResult by positions.Admission {
     accountNumber = account;
     code = returnCode { SUCCESS: "OK", "200"; };
 }
+
+play AdmissionText by positions.Admission {
+    accountNumber = account;
+    text = returnCode;
+}
+
+play CodedAdmission by positions.Admission {
+    accountNumber = account;
+    code = returnCode { NOT_FOUND: "   "; };
+}

@@ -2,6 +2,7 @@ package com.servpp.service.runtime;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.servpp.service.Service;
+import com.servpp.service.repository.BlankReadKeys;
 import com.servpp.service.scenario.IExecutor;
 import com.servpp.service.server.DefaultServiceContainer;
 import com.servpp.service.transaction.DefaultTransactionManager;
@@ -64,9 +65,17 @@ public final class LocalDomainServices {
         }
     }
     static Object queryPlay(Object participant, ParticipantRoleQueries.Play play) {
+        var blankPaths = new java.util.HashSet<String>();
         for (String path : play.keyPaths()) {
-            Object value = PlayCodeTable.encodeField(play.codeTables(), path, com.servpp.service.repository.ObjectPropertyAccess.read(participant, path));
-            if (value == null || value.toString().isBlank()) return null;
+            Object roleValue = com.servpp.service.repository.ObjectPropertyAccess.read(participant, path);
+            Object value = PlayCodeTable.encodeField(play.codeTables(), path, roleValue);
+            if (value == null) return null;
+            if (value.toString().isBlank()) {
+                if (!(roleValue instanceof WireMappedEnum) && !BlankReadKeys.contains(participant, path)) return null;
+                int dot = path.indexOf('.');
+                String root = dot < 0 ? path : path.substring(0, dot);
+                blankPaths.add(play.fields().get(root) + (dot < 0 ? "" : path.substring(dot)));
+            }
         }
         var values = new LinkedHashMap<String, Object>();
         play.fields().forEach((roleField, providerField) -> {
@@ -75,10 +84,17 @@ public final class LocalDomainServices {
         });
         Object performer = MAPPER.convertValue(values, play.performer());
         String[] fields = play.fields().values().toArray(String[]::new);
-        com.servpp.service.repository.TransactionQueryReads.project(new Object[]{participant}, new Object[]{performer},
+        Runnable query = () -> com.servpp.service.repository.TransactionQueryReads.project(new Object[]{participant}, new Object[]{performer},
                 () -> invoke(play.provider(), new Object[]{performer}, new Class<?>[]{play.performer()},
                         new String[][]{fields}, new String[][]{new String[0]}, new boolean[]{false}, true));
+        if (blankPaths.isEmpty()) query.run();
+        else BlankReadKeys.execute(performer, blankPaths, query);
         return ParticipantIdentity.isIdentified(performer) ? performer : null;
+    }
+
+    public static boolean playedBy(Object participant, String provider) {
+        var views = PROJECTIONS.get().get(participant);
+        return views != null && provider.equals(views.get("playProvider"));
     }
 
     static void copyPlayResult(Object participant, ParticipantRoleQueries.Play play, Object performer) {
@@ -89,10 +105,14 @@ public final class LocalDomainServices {
             values.put(roleField, decoder == null ? value : decoder.decode((String) value));
         });
         copyPlayValues(participant, values);
+        PROJECTIONS.get().computeIfAbsent(participant, ignored -> new java.util.concurrent.ConcurrentHashMap<>())
+                .put("playProvider", play.provider());
     }
 
     static void clearAbsentPlay(Object participant, String[] fields) {
         var values = new LinkedHashMap<String, Object>();
+        var views = PROJECTIONS.get().get(participant);
+        if (views != null) views.remove("playProvider");
         for (String field : fields) values.put(field, java.math.BigDecimal.ZERO);
         copyPlayValues(participant, values);
     }
@@ -136,7 +156,8 @@ public final class LocalDomainServices {
             ParticipantIdentity.confirm(fresh,ParticipantIdentity.isIdentified(participants[index]));
             projected[index] = fresh;
         }
-        Runnable action = () -> {
+        var blankKeys = BlankReadKeys.capture(participants);
+        Runnable action = () -> BlankReadKeys.project(blankKeys, projected, () -> {
             try { method.invoke(service, projected); }
             catch (InvocationTargetException failure) {
                 Throwable cause = failure.getCause();
@@ -144,11 +165,11 @@ public final class LocalDomainServices {
                 if (cause instanceof Error error) throw error;
                 throw new IllegalStateException("LOCAL_PROVIDER_FAILED", cause);
             } catch (ReflectiveOperationException failure) { throw new IllegalStateException("LOCAL_PROVIDER_INVOCATION_FAILED", failure); }
-        };
+        });
         var bounds = com.servpp.service.transaction.QuantumInvocationBounds.project(participants, projected);
         var manager = DefaultTransactionManager.getInstance();
         if (remote) {
-            Object[] returned = DomainServiceRouter.invoke(qualifiedService,service,projected,types);
+            Object[] returned = DomainServiceRouter.invoke(qualifiedService,service,projected,types,blankKeys);
             for (int index = 0; index < projected.length; index++) {
                 projected[index] = returned[index];
                 PROJECTIONS.get().get(participants[index]).put(types[index].getTypeName(),returned[index]);
