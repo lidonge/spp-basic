@@ -96,6 +96,12 @@ public final class NumericJavaRenderer {
     private String referenceName(Reference reference) {
         return reference instanceof CalculationReference ref && ref.local ? "$sppLocal_" + reference.getValue() : reference.getValue();
     }
+    private String receiver(Reference ref) {
+        if (ref == null) return null;
+        String path = referenceName(ref);
+        int dot = path.lastIndexOf('.');
+        return dot < 0 ? null : NameUtil.getNameCall(path.substring(0, dot));
+    }
     private String localType(SppLocalVar local) {
         if ("char".equals(local.getType().getName())) { return "String" + local.getArrayString(); }
         if ("boolean".equals(local.getType().getName()) || "String".equals(local.getType().getName())) {
@@ -298,6 +304,17 @@ public final class NumericJavaRenderer {
         if (expression instanceof IOperationExpression operation) {
             String operator = operation.getOperation().getOperator();
             IExpression left = operation.getLeft(), right = operation.getRight();
+            if ("==".equals(operator) || "!=".equals(operator)) {
+                var lhs = BlankLiteral.unwrap(left);
+                var rhs = BlankLiteral.unwrap(right);
+                if (lhs instanceof BlankLiteral || rhs instanceof BlankLiteral) {
+                    BlankLiteral blank = (BlankLiteral) (lhs instanceof BlankLiteral ? lhs : rhs);
+                    var operand = lhs instanceof BlankLiteral ? rhs : lhs;
+                    var ref = operand instanceof CalculationReference reference ? reference : null;
+                    return ("!=".equals(operator) ? "!" : "") + blank.matches(expression(operand),
+                            ref == null ? null : ref.field, receiver(ref));
+                }
+            }
             if (operation.getOperation() instanceof IAssignOperation assignment && numeric(left)) {
                 if (!(left instanceof Reference reference)) {
                     throw new IllegalArgumentException("PHY numeric assignment requires a field or parameter target.");
@@ -325,7 +342,8 @@ public final class NumericJavaRenderer {
                 if (entranceCollection(reference))
                     return "com.servpp.service.runtime.ParticipantFacts.hydrateCollection(" + expression(left)
                             + ", com.servpp.service.runtime.ParticipantCollections.list(" + expression(right) + "))";
-                String value = right instanceof Literal && left.getReturnType() instanceof com.servpp.lang.models.SppEnum
+                String value = BlankLiteral.unwrap(right) instanceof BlankLiteral blank ? blank.write(resolve(reference), receiver(reference))
+                        : right instanceof Literal && left.getReturnType() instanceof com.servpp.lang.models.SppEnum
                         ? new AssignOperation().getRightExpr(left, right) : expression(right);
                 if (resolve(reference) != null && resolve(reference).getArrayDimension() == 1
                         && reference.getValue().contains(".") && rootArray(right)) {

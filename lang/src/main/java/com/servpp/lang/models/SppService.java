@@ -625,6 +625,15 @@ public class SppService extends SppClass{
             value += ".get" + NameUtil.firstToLowerCase(result.getName(),false) + "()";
             value = NameUtil.getNameCall(call.getResultTarget(),true) + "(" + value + ")";
         }
+        var blankKeys = call.getBoundReadKeys().stream().filter(SppServiceCall.BoundReadKey::blank).toList();
+        if (!blankKeys.isEmpty()) {
+            String first = blankKeys.get(0).target();
+            String participant = first.substring(0, first.indexOf('.'));
+            String paths = blankKeys.stream().map(key -> "\"" + key.target().substring(participant.length() + 1) + "\"")
+                    .collect(Collectors.joining(", "));
+            value = "com.servpp.service.repository.BlankReadKeys.execute(" + participant + ", java.util.Set.of("
+                    + paths + "), () -> " + value + ")";
+        }
         String site=getDomainName()+"."+getFuncName()+":"+call.getInvocationOrdinal();
         var keys = call.getBoundReadKeys();
         var invocation = new StringBuilder("com.servpp.service.runtime.DomainServiceRouter.atCallSite(\"")

@@ -106,7 +106,8 @@ public final class DomainServiceRouter {
         } catch (InterruptedException failure) { Thread.currentThread().interrupt(); throw new IllegalStateException("DOMAIN_DEPLOYMENT_CHECK_INTERRUPTED",failure); }
         catch (java.io.IOException failure) { throw new IllegalStateException("REMOTE_DOMAIN_CONTRACT_UNAVAILABLE",failure); }
     }
-    static Object[] invoke(String name,Service prototype,Object[] participants,java.lang.reflect.Type[] types) {
+    static Object[] invoke(String name,Service prototype,Object[] participants,java.lang.reflect.Type[] types,
+                           com.servpp.service.repository.BlankReadKeys.Intent blankKeys) {
 
         if (prototype instanceof QuantumServiceMetadataProvider quantum && !quantum.getQuantumAttributeIds().isEmpty())
             throw new IllegalStateException("REMOTE_DOMAIN_QUANTUM_RECEIPT_PROTOCOL_REQUIRED");
@@ -123,11 +124,13 @@ public final class DomainServiceRouter {
         for (Object participant : participants) { facts.add(MAPPER.valueToTree(participant)); state.add(ParticipantWireState.capture(participant,manifest.domains().get(0))); }
         var call=new DomainServiceProtocol.Call(name,DomainServiceProtocol.signature(prototype),facts,state,trace,transaction);
         try {
-            HttpRequest request=HttpRequest.newBuilder(uri(route,"/spp/atomic"))
+            var builder=HttpRequest.newBuilder(uri(route,"/spp/atomic"))
                     .timeout(Duration.ofMillis(route.timeoutMillis())).header("Content-Type","application/json")
                     .header("X-SPP-Domain-Token",rpcToken)
-                    .header("X-SPP-Caller",callerIdentity).header("X-SPP-Request-Serial",serial)
-                    .POST(HttpRequest.BodyPublishers.ofByteArray(MAPPER.writeValueAsBytes(call))).build();
+                    .header("X-SPP-Caller",callerIdentity).header("X-SPP-Request-Serial",serial);
+            if (blankKeys != null) builder.header("X-SPP-Blank-Keys",
+                    Base64.getUrlEncoder().withoutPadding().encodeToString(MAPPER.writeValueAsBytes(blankKeys)));
+            HttpRequest request = builder.POST(HttpRequest.BodyPublishers.ofByteArray(MAPPER.writeValueAsBytes(call))).build();
             HttpResponse<String> response=CLIENT.send(request,HttpResponse.BodyHandlers.ofString());
             if (response.statusCode()!=200) {
                 var body=MAPPER.readTree(response.body());

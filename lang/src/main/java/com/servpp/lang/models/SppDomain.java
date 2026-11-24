@@ -236,6 +236,7 @@ public class SppDomain {
         errors.addAll(validateScenarioResults());
         errors.addAll(validateScenarioFailures());
         errors.addAll(validatePhysicalRuntimeDeclarations());
+        BlankPolicy.validate(this, errors);
         errors.addAll(validateAppTableDeclarations());
         errors.addAll(validateAppMapperDeclarations());
         errors.addAll(validateHeaderDeclarations());

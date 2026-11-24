@@ -168,6 +168,7 @@ public final class BusinessCalculationCompiler {
         if (ctx instanceof SppParser.PrimExprContext primary) {
             var p = primary.primaryExpr();
             if (p.primaryExprQualified() != null) {
+                if (p.getText().equals("BLANK")) return new BlankLiteral(domain);
                 return enumOrReference(p.getText(), domain);
             }
             if (p.primaryExprLiteral() != null) {

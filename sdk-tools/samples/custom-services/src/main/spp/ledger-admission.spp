@@ -26,3 +26,20 @@ Reference Admission from positions.Admission {
     String(5) returnCode;
 }
 Role StoredResult { String receipt; String accountNumber; ProviderOutcome code; }
+
+Role AdmissionText { String accountNumber; String text; }
+atomic check checkAdmissionText(AdmissionText result) {
+    require(result.text == BLANK, "TEXT_PRESENT");
+    require(result.text == "   ", "ORIGINAL_TEXT_CHANGED");
+}
+Scenario serial verifyAdmissionText(AdmissionText result) {
+    findAdmissionText;
+    identify(result);
+    checkAdmissionText(result);
+}
+
+Scenario serial verifyBlankAccount(AdmissionText result) {
+    findAdmissionText by AdmissionText.accountNumber = BLANK;
+    identify(result);
+    checkAdmissionText(result);
+}

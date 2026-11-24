@@ -34,6 +34,7 @@ annotatableRule
     | internationalization
     | requestPolicy
     | transactionPolicy
+    | blankPolicy
     | propertyTrackingPolicy
     | systemServices
     | technicalServices
@@ -74,6 +75,14 @@ transactionPolicy
       | 'mode' ':' transactionMode ';' 'resource' ':' Identifier ';') ordinaryUpdateScheduling? '}'
     | 'transactions' '{' ordinaryUpdateScheduling '}'
     ;
+
+blankPolicy
+    : {"blank".equals(getCurrentToken().getText())}? Identifier qualifiedName? '{'
+      {"read".equals(getCurrentToken().getText())}? Identifier ':' reads+=blankForm (',' reads+=blankForm)* ';'
+      {"write".equals(getCurrentToken().getText())}? Identifier ':' written=blankForm ';' '}'
+    ;
+
+blankForm : NullLiteral | StringLiteral | Identifier;
 
 propertyTrackingPolicy
     : {getCurrentToken().getText().equals("propertyTracking")}? Identifier ':' BooleanLiteral ';'
@@ -330,6 +339,7 @@ phyItem
     | phyRepositoryAdapter
     | phyQuantumStoreAdapter
     | phyGlobalConfig
+    | blankPolicy
     | phyNumericBinding
     | phyTranslations
     | phyNumericRules

@@ -13,6 +13,8 @@ import example.generated.ledger.model.ProviderOutcome;
 import example.generated.ledger.model.ReadAdmissionRequest;
 import example.generated.ledger.model.StoredResult;
 import example.generated.ledger.model.VerifyAdmissionRequest;
+import example.generated.ledger.model.VerifyAdmissionTextRequest;
+import example.generated.ledger.model.VerifyBlankAccountRequest;
 import example.generated.positions.model.Admission;
 import java.util.Map;
 import java.util.UUID;
@@ -61,6 +63,23 @@ public class AdmissionPlayTest {
                 assertEquals(new BusinessChecks.Result(i == 0, expected[i]), BusinessChecks.scenarioResult());
                 assertEquals(expected[i], request.getResult().getCode().getValue());
             }
+            var padded = new Admission().account("Pad").returnCode("   ");
+            DeclaredTransactionContext.execute(TransactionMode.LOCAL, () -> repository.executeInTransaction(() ->
+                    repository.insert("Admission", "Pad", padded)));
+            var text = mapper.convertValue(Map.of("result", Map.of("accountNumber", "Pad")), VerifyAdmissionTextRequest.class);
+            runtime.executeGeneratedService("ledger.verifyAdmissionText", text);
+            assertTrue(BusinessChecks.scenarioResult().toString(), BusinessChecks.scenarioResult().passed());
+            assertEquals("   ", text.getResult().getText());
+            try (var connection = source.getConnection();
+                 var insert = connection.prepareStatement("INSERT INTO ADMISSIONS (account, returnCode) VALUES (?, ?)")) {
+                insert.setString(1, " ".repeat(28));
+                insert.setString(2, "   ");
+                assertEquals(1, insert.executeUpdate());
+            }
+            var blankKey = mapper.convertValue(Map.of("result", Map.of("accountNumber", "stale")), VerifyBlankAccountRequest.class);
+            runtime.executeGeneratedService("ledger.verifyBlankAccount", blankKey);
+            assertTrue(BusinessChecks.scenarioResult().toString(), BusinessChecks.scenarioResult().passed());
+            assertEquals("   ", blankKey.getResult().getText());
             var lookup = mapper.convertValue(Map.of("lookup", Map.of("keyCode", "A1")), ReadAdmissionRequest.class);
             runtime.executeGeneratedService("ledger.readAdmission", lookup);
             assertEquals("E1214", lookup.getLookup().getCode().getValue());

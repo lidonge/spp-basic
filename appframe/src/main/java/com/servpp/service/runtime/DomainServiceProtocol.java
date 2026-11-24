@@ -3,6 +3,7 @@ package com.servpp.service.runtime;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.servpp.service.Service;
+import com.servpp.service.repository.BlankReadKeys;
 import com.servpp.service.scenario.IExecutor;
 import com.servpp.service.server.DefaultServiceContainer;
 import com.servpp.service.transaction.*;
@@ -37,6 +38,9 @@ public final class DomainServiceProtocol {
                     && service instanceof TransactionalService transaction ? "|"+transaction.getTransactionMode()+"|"+transaction.getTransactionResourceId() : "");
     }
     public static Result execute(Call call, String caller, String serial) {
+        return execute(call, caller, serial, null);
+    }
+    static Result execute(Call call, String caller, String serial, BlankReadKeys.Intent blankKeys) {
         if (call.service() == null || !call.service().matches("[A-Za-z_$][\\w$]*\\.[A-Za-z_$][\\w$]*"))
             throw new IllegalArgumentException("DOMAIN_SERVICE_NAME_REQUIRED");
         Service service = DefaultServiceContainer.getInstance().getService(call.service());
@@ -54,7 +58,7 @@ public final class DomainServiceProtocol {
         };
         java.util.function.Supplier<Result> invoke = () -> {
             Result[] result = {null};
-            ParticipantIdentity.execute(() -> result[0] = executeOnce(call,service,update));
+            ParticipantIdentity.execute(() -> result[0] = executeOnce(call,service,update,blankKeys));
             return result[0];
         };
         if (update && call.transaction() != null && !call.transaction().isEmpty()) {
@@ -72,7 +76,7 @@ public final class DomainServiceProtocol {
                     : ServiceInvocationScope.execute(action)));
 
     }
-    private static Result executeOnce(Call call, Service service, boolean update) {
+    private static Result executeOnce(Call call, Service service, boolean update, BlankReadKeys.Intent blankKeys) {
         for (DomainTransactionCarrier carrier : ServiceLoader.load(DomainTransactionCarrier.class))
             if (!carrier.permitsExecution()) throw new IllegalStateException("DOMAIN_TRANSACTION_CLOSED_REPLAY_REQUIRED");
         ScopeMetadataProvider metadata = (ScopeMetadataProvider) service;
@@ -110,7 +114,7 @@ public final class DomainServiceProtocol {
                         com.servpp.service.repository.RepositoryWriteRuleProvider.executeInRepositoryScope(service, transaction);
                     else DefaultTransactionManager.getInstance().getQuantumAccessAdapter().executeInAccessScope(transaction);
                 });
-            } else invocation.run();
+            } else BlankReadKeys.project(blankKeys, arguments, invocation);
             List<JsonNode> facts = new ArrayList<>(); List<ParticipantWireState.State> state = new ArrayList<>();
             for (Object argument : arguments) {
                 facts.add(MAPPER.valueToTree(argument)); state.add(ParticipantWireState.capture(argument,domain));

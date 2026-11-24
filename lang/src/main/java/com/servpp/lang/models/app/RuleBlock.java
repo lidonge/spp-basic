@@ -15,6 +15,9 @@ import java.util.Set;
  * @author lidong@date 2023-11-21@version 1.0
  */
 public class RuleBlock {
+    private final Map<String, BlankPolicy> blankPolicies = new java.util.LinkedHashMap<>();
+    public Map<String, BlankPolicy> getBlankPolicies() { return blankPolicies; }
+
     private final Map<String, Boolean> systemServiceSwitches = new java.util.LinkedHashMap<>();
     public boolean isSystemServiceEnabled(String name) { return systemServiceSwitches.getOrDefault(name, true); }
     public void setSystemServiceEnabled(String name, boolean enabled) {

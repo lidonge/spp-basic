@@ -18,3 +18,8 @@ play StoredResult by positions.Admission {
     accountNumber = account;
     code = returnCode;
 }
+
+play AdmissionText by positions.Admission {
+    accountNumber = account;
+    text = returnCode;
+}
