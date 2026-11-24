@@ -90,7 +90,7 @@ public final class GeneratedWebServer implements AutoCloseable {
             String requestedLocale = exchange.getRequestHeaders().getFirst("Accept-Language");
             if (requestedLocale != null) requestedLocale = requestedLocale.split("[,;]", 2)[0].trim();
             Object result = InternationalizedConstants.withLocale(requestedLocale,
-                    () -> InvocationContext.with(invocation, () -> service.execute(request)));
+                    () -> InvocationContext.with(invocation, () -> GeneratedServiceEntry.dispatch(service, () -> service.execute(request))));
             Map<String, Object> response = new LinkedHashMap<>();
             response.put("participants", request); response.put("result", result);
             response.put("replayed", com.servpp.service.idempotency.BusinessIdempotencyManager.wasReplay());
@@ -197,7 +197,7 @@ public final class GeneratedWebServer implements AutoCloseable {
                         ? new java.util.ArrayList<>() : setter.getParameterTypes()[0].getConstructor().newInstance());
             }
             String name = catalog.getProperty(prefix + "service"); host.attachHeader(name, request);
-            DatabaseInitializationContext.execute(() -> DefaultServiceContainer.getInstance().getService(name).execute(request));
+            DatabaseInitializationContext.execute(() -> runtime.executeGeneratedService(name, request));
         }
         Runtime.getRuntime().addShutdownHook(new Thread(host::close));
         DomainServiceRouter.markReady();

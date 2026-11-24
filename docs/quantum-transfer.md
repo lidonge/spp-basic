@@ -16,7 +16,7 @@ use the existing exact numeric rules. Bounds and runtime conservation checks
 apply to the resulting changes.
 
 The endpoints are two distinct scalar quantum attribute declarations on service
-parameters. An explicit APP conservation selection must include both endpoints.
+parameters or on elements bound by a participant collection loop. An explicit APP conservation selection must include both endpoints.
 Multiple statements express multiple transfers, each with its own amount.
 APP chooses the conservation resource and the deployment transaction. Grouping
 the calls in a scenario transaction makes the transfers commit together.
@@ -31,3 +31,21 @@ reactor passed 396 tests using
 `mvn -o -B -f basic/pom.xml -pl lang -am test`. A freshly packaged
 Basic CLI generated the cash repayment application, whose 41 tests
 passed. These checks cover the Basic H2 profile.
+
+
+## Compiler enforcement
+
+P0-a rejects direct assignments and increments to quantum fields in SPP and
+APP. Move the update into a quantum transfer. A scenario may call atomic
+services. Calculate services may compose other calculate services. Read
+collections in the scenario before iterating over them in a calculation.
+Supply a scalar enum value as the rejection code of an SPP `require`.
+
+P0-b exposes scenarios as front-end operations. Use
+`LocalGeneratedServiceRuntime.executeGeneratedService` or the transport entry
+to invoke a scenario. Each invocation may enter one scenario.
+
+For a staged migration, start the compiler JVM with
+`-Dspp.rule.P0-a=warning` to report direct writes or
+`-Dspp.rule.require-enum=warning` to report legacy string literals.
+Each flag applies independently. Omit the flags to enforce both rules.

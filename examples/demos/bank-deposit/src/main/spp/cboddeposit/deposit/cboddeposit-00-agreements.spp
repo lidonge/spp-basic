@@ -89,7 +89,7 @@ atomic calculate prepareDepositAgreement(
 }
 
 atomic check checkDetailPolicy(DepositDetailPolicy) {
-    require(DepositDetailPolicy.itemCount > 0, "INVALID_DETAIL_COUNT");
+    require(DepositDetailPolicy.itemCount > 0, RejectionCode.INVALID_DETAIL_COUNT);
 }
 
 atomic calculate completeDepositMetadata(
@@ -116,15 +116,18 @@ quantum update settleCashDeposit(
     PrincipalRecoveryAccount,
     CashDepositAgreement
 ) {
-    DepositAccount.interestBase += CashDepositAgreement.interestBaseDelta;
+    if (CashDepositAgreement.interestBaseDelta >= 0) {
+        CashSettlementAccount.balance -> DepositAccount.interestBase : CashDepositAgreement.interestBaseDelta;
+    } else {
+        DepositAccount.interestBase -> CashSettlementAccount.balance : -CashDepositAgreement.interestBaseDelta;
+    }
+    CashSettlementAccount.balance -> InterestIncomeAccount.balance : CashDepositAgreement.interestPaid;
+    CashSettlementAccount.balance -> CollectionInterestIncomeAccount.balance : CashDepositAgreement.collectionPaid;
+    CashSettlementAccount.balance -> PrincipalRecoveryAccount.balance : CashDepositAgreement.principalPaid;
     DepositAccount.overdraftInterest -= CashDepositAgreement.interestPaid;
     DepositAccount.collectionInterest -= CashDepositAgreement.collectionPaid;
     DepositAccount.overdraftPrincipal -= CashDepositAgreement.principalPaid;
     DepositAccount.overdraftExposure += CashDepositAgreement.exposureDelta;
-    CashSettlementAccount.balance -= CashDepositAgreement.amount;
-    InterestIncomeAccount.balance += CashDepositAgreement.interestPaid;
-    CollectionInterestIncomeAccount.balance += CashDepositAgreement.collectionPaid;
-    PrincipalRecoveryAccount.balance += CashDepositAgreement.principalPaid;
 }
 
 atomic calculate recordDepositFailure(CashDepositAgreement, CashFailureRecord) {

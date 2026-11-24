@@ -49,8 +49,8 @@ public class NumericPhysicalGenerationTest {
         assertTrue(domain.validateAppDeclarations().toString(), domain.validateAppDeclarations().isEmpty());
         assertEquals(new BigDecimal("0.50"), execute(service(domain).getJavaStatements().get(0).getJavaStatement(),
                 "java.math.BigDecimal", "java.math.BigDecimal", new BigDecimal("2.25"), 2));
-        SppDomain comparison = compile(BUSINESS.replace("atomic calculate", "atomic check"),
-                "require(amount.b == 2.250, \"different numeric value\");", "numeric double as BigDecimal;");
+        SppDomain comparison = compile(BUSINESS.replace("atomic calculate", "Enum Fault { DIFFERENT } atomic check"),
+                "require(amount.b == 2.250, Fault.DIFFERENT);", "numeric double as BigDecimal;");
         assertTrue(comparison.validateAppDeclarations().toString(), comparison.validateAppDeclarations().isEmpty());
         String statement = service(comparison).getJavaStatements().get(0).getJavaStatement();
         assertTrue(statement, statement.contains("compareTo"));
@@ -144,8 +144,8 @@ public class NumericPhysicalGenerationTest {
     @Test
     public void openApiAndPhysicalCatalogAgreeWithGeneratedServiceRepresentation() throws Exception {
         Path source = Files.createTempDirectory("spp-numeric-generator");
-        Files.writeString(source.resolve("commerce.spp"), BUSINESS);
-        Files.writeString(source.resolve("commerce.app"), app("amount.a = amount.b * amount.c + 5;"));
+        Files.writeString(source.resolve("commerce.spp"), BUSINESS + " Scenario serial exercise(Amount amount) { calculateAmount(amount); }");
+        Files.writeString(source.resolve("commerce.app"), app("amount.a = amount.b * amount.c + 5;").replace("local {", "local { exercise;"));
         Files.writeString(source.resolve("commerce.phy"), "domain commerce; phy { numeric double as BigDecimal; }");
         Path root = Files.createTempDirectory("spp-numeric-artifacts");
         GeneratorUtil.execute(source.toFile(), root.resolve("yaml").toFile(), root.resolve("java").toFile(), "example");
@@ -190,6 +190,8 @@ public class NumericPhysicalGenerationTest {
                 package example.commerce.model;
                 public class CalculateAmountResponse { }
                 """);
+        Files.writeString(modelRoot.resolve("ExerciseRequest.java"), "package example.commerce.model; public record ExerciseRequest(Amount amount) { public Amount getAmount() { return amount; } }");
+        Files.writeString(modelRoot.resolve("ExerciseResponse.java"), "package example.commerce.model; public class ExerciseResponse { }");
         List<String> compilerArguments = new java.util.ArrayList<>(List.of("-classpath", System.getProperty("java.class.path"),
                 "-d", root.resolve("classes").toString()));
         try (var paths = Files.walk(root.resolve("java"))) {
@@ -202,7 +204,13 @@ public class NumericPhysicalGenerationTest {
             amountClass.getMethod("setB", BigDecimal.class).invoke(amount, new BigDecimal("0.1"));
             amountClass.getMethod("setC", Integer.class).invoke(amount, 3);
             Class<?> implementationClass = loader.loadClass("example.commerce.service.SimpleCalculateAmount");
-            implementationClass.getMethod("calculateAmount", amountClass).invoke(implementationClass.getConstructor().newInstance(), amount);
+            var container = com.servpp.service.server.DefaultServiceContainer.getInstance();
+            var previous = container.registerService("calculateAmount", (com.servpp.service.Service) implementationClass.getConstructor().newInstance());
+            try {
+                var scenario = (com.servpp.service.Service) loader.loadClass("example.commerce.service.SimpleExercise").getConstructor().newInstance();
+                var request = loader.loadClass("example.commerce.model.ExerciseRequest").getConstructor(amountClass).newInstance(amount);
+                com.servpp.service.runtime.RemoteServiceIngress.execute(scenario, request, "fixture", "exercise");
+            } finally { ServiceRegistryFixture.restore("calculateAmount", previous); }
             assertEquals(new BigDecimal("5.3"), amountClass.getMethod("getA").invoke(amount));
         }
     }

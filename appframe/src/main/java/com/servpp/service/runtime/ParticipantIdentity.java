@@ -38,7 +38,8 @@ public final class ParticipantIdentity {
     /** Parallel tasks share confirmation facts and query baselines, not a physical transaction context. */
     public static Runnable bind(Runnable action) {
         var shared = CURRENT.get();
-        return com.servpp.service.transaction.BusinessTraceContext.bind(com.servpp.service.transaction.ScenarioCommitEvidence.bind(LocalDomainServices.bindScope(com.servpp.service.repository.RepositoryParticipantSnapshots.bind(() -> { var previous=CURRENT.get(); CURRENT.set(shared); try { action.run(); } finally { CURRENT.set(previous); } }))));
+        Runnable boundAction = GeneratedServiceEntry.bind(action);
+        return com.servpp.service.transaction.BusinessTraceContext.bind(com.servpp.service.transaction.ScenarioCommitEvidence.bind(LocalDomainServices.bindScope(com.servpp.service.repository.RepositoryParticipantSnapshots.bind(() -> { var previous=CURRENT.get(); CURRENT.set(shared); try { boundAction.run(); } finally { CURRENT.set(previous); } }))));
     }
     public static void execute(Runnable action) {
         var previous = CURRENT.get(); CURRENT.set(newScope());

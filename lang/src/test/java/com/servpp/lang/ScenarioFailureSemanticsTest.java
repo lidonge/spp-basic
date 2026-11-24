@@ -10,8 +10,8 @@ public class ScenarioFailureSemanticsTest {
     private SppDomain compile(String code) throws Exception {
         Path file = Files.createTempFile("scenario-failure", ".spp");
         try {
-            Files.writeString(file, "domain rules; Contract Work { boolean allowed; int value; } "
-                    + "atomic check eligible(Work work) { require(work.allowed, \"INELIGIBLE\"); } "
+            Files.writeString(file, "domain rules; Enum Fault { INELIGIBLE } Contract Work { boolean allowed; int value; } "
+                    + "atomic check eligible(Work work) { require(work.allowed, Fault.INELIGIBLE); } "
                     + "atomic calculate step(Work work) { work.value += 1; } "
                     + "Scenario serial run(Work work) { " + code + " }");
             var project = new SppProject(); new SppCompiler(file.toFile(), project).compile();

@@ -27,9 +27,9 @@ Role DepositProduct {
 }
 
 atomic check checkCashInput(DepositRequest, BusinessDay) {
-    require(DepositRequest.amount > 0, "E1155");
-    require(DepositRequest.valueDate <= BusinessDay.date, "E1044");
-    require(DepositRequest.valueDate >= BusinessDay.date, "E1043");
+    require(DepositRequest.amount > 0, RejectionCode.E1155);
+    require(DepositRequest.valueDate <= BusinessDay.date, RejectionCode.E1044);
+    require(DepositRequest.valueDate >= BusinessDay.date, RejectionCode.E1043);
 }
 
 atomic check checkDepositEligibility(DepositRequest, AccountEligibility, DepositProduct, BusinessDay) {
@@ -37,9 +37,9 @@ atomic check checkDepositEligibility(DepositRequest, AccountEligibility, Deposit
         !AccountEligibility.temporary
             || AccountEligibility.expiresOn >= BusinessDay.date
             || AccountEligibility.temporaryOpen,
-        "EDF19"
+        RejectionCode.EDF19
     );
-    require(AccountEligibility.status != AccountStatus.CLOSED, "EO082");
+    require(AccountEligibility.status != AccountStatus.CLOSED, RejectionCode.EO082);
     boolean opening = AccountEligibility.detailCount == 0
         || (AccountEligibility.detailCount > 0
         && AccountEligibility.detailCount < 10
@@ -51,19 +51,19 @@ atomic check checkDepositEligibility(DepositRequest, AccountEligibility, Deposit
         require(
             DepositProduct.minimumOpeningAmount <= 0
                 || DepositRequest.amount >= DepositProduct.minimumOpeningAmount,
-            "EN173"
+            RejectionCode.EN173
         );
         require(
             DepositProduct.maximumOpeningAmount <= 0
                 || DepositRequest.amount <= DepositProduct.maximumOpeningAmount,
-            "EN174"
+            RejectionCode.EN174
         );
     }
     require(
         DepositProduct.maximumBalance <= 0
             || DepositRequest.amount
             + AccountEligibility.accountBalance <= DepositProduct.maximumBalance,
-        "EN175"
+        RejectionCode.EN175
     );
 }
 
@@ -171,5 +171,5 @@ atomic calculate assessCashAdmission(
 }
 
 atomic check checkCashAuthorization(AdmissionDecision) {
-    require(AdmissionDecision.executable, "PENDING_AUTHORIZATION");
+    require(AdmissionDecision.executable, RejectionCode.PENDING_AUTHORIZATION);
 }

@@ -16,23 +16,23 @@ Role InterestProduct {
 atomic check checkInterestPeriod(InterestPeriod) {
     require(
         InterestPeriod.amount >= 0 && InterestPeriod.unit > 0 && InterestPeriod.days >= 0,
-        "INVALID_INTEREST_PERIOD"
+        RejectionCode.INVALID_INTEREST_PERIOD
     );
 }
 
 atomic check checkBankDate(BankDate) {
-    require(BankDate.encoded != null && BankDate.encoded != 0, "EEC28");
-    require(BankDate.encoded >= 10000101 && BankDate.encoded <= 99991231, "EE374");
-    require(isGregorianDate(BankDate.encoded), "EE374");
+    require(BankDate.encoded != null && BankDate.encoded != 0, RejectionCode.EEC28);
+    require(BankDate.encoded >= 10000101 && BankDate.encoded <= 99991231, RejectionCode.EE374);
+    require(isGregorianDate(BankDate.encoded), RejectionCode.EE374);
 }
 
 atomic check checkBankDays(BankDate start, BankDate end, InterestCalendar) {
-    require(start.epochDay <= end.epochDay, "E1175");
+    require(start.epochDay <= end.epochDay, RejectionCode.E1175);
     require(
         InterestCalendar.convention == "ACT"
             || InterestCalendar.convention == "360365"
             || InterestCalendar.convention == "360360",
-        "EEC28"
+        RejectionCode.EEC28
     );
 }
 

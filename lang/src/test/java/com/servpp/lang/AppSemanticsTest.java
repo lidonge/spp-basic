@@ -6408,7 +6408,7 @@ public class AppSemanticsTest {
                 domain commerce;
                 Entity CreditAccount{ String accountNo; quantum double availableCredit; }
                 Contract SalesOrder{ String orderNo; quantum double occupiedAmount; double payableAmount; }
-                quantum update reserveCredit(CreditAccount account, SalesOrder order);
+                quantum update reserveCredit(CreditAccount account, SalesOrder order) { account.availableCredit -> order.occupiedAmount : order.payableAmount; }
                 """, """
                 domain commerce;
                 header baseIn{ unique String globalSerialNumber; }
@@ -6421,12 +6421,6 @@ public class AppSemanticsTest {
                     local(in baseIn, out baseOut){
                         quantum resource(creditAccounting, CreditAccount.availableCredit, SalesOrder.occupiedAmount)
                             reserveCredit;
-                    }
-                }
-                services{
-                    reserveCredit{
-                        account.availableCredit -= order.payableAmount;
-                        order.occupiedAmount += order.payableAmount;
                     }
                 }
                 """, """
@@ -7514,8 +7508,8 @@ public class AppSemanticsTest {
                 domain commerce;
                 Entity CreditAccount{ quantum double availableCredit; }
                 Role OrderAmount{ quantum double occupiedAmount; double payableAmount; }
-                quantum update reserveCredit(CreditAccount account, OrderAmount amount);
-                quantum update releaseCredit(CreditAccount account, OrderAmount amount);
+                quantum update reserveCredit(CreditAccount account, OrderAmount amount) { account.availableCredit -> amount.occupiedAmount : amount.payableAmount; }
+                quantum update releaseCredit(CreditAccount account, OrderAmount amount) { amount.occupiedAmount -> account.availableCredit : amount.payableAmount; }
                 """, """
                 domain commerce;
                 header baseIn{ unique String globalSerialNumber; }
@@ -7533,16 +7527,6 @@ public class AppSemanticsTest {
                         quantum resource(creditAccounting,
                             CreditAccount.availableCredit, OrderAmount.occupiedAmount)
                             snapshot(argument(0, CreditAccount.availableCredit)) releaseCredit;
-                    }
-                }
-                services{
-                    reserveCredit{
-                        account.availableCredit -= amount.payableAmount;
-                        amount.occupiedAmount += amount.payableAmount;
-                    }
-                    releaseCredit{
-                        account.availableCredit += amount.payableAmount;
-                        amount.occupiedAmount -= amount.payableAmount;
                     }
                 }
                 """, """
@@ -7561,8 +7545,8 @@ public class AppSemanticsTest {
                 domain commerce;
                 Entity CreditAccount{ quantum double availableCredit; }
                 Role OrderAmount{ quantum double occupiedAmount; double payableAmount; }
-                quantum update reserveCredit(CreditAccount account, OrderAmount amount);
-                quantum update releaseCredit(CreditAccount account, OrderAmount amount);
+                quantum update reserveCredit(CreditAccount account, OrderAmount amount) { account.availableCredit -> amount.occupiedAmount : amount.payableAmount; }
+                quantum update releaseCredit(CreditAccount account, OrderAmount amount) { amount.occupiedAmount -> account.availableCredit : amount.payableAmount; }
                 """, """
                 domain commerce;
                 header baseIn{ unique String globalSerialNumber; }
@@ -7580,16 +7564,6 @@ public class AppSemanticsTest {
                         quantum resource(creditAccounting,
                             CreditAccount.availableCredit, OrderAmount.occupiedAmount)
                             snapshot(argument(0, CreditAccount.availableCredit)) releaseCredit;
-                    }
-                }
-                services{
-                    reserveCredit{
-                        account.availableCredit -= amount.payableAmount;
-                        amount.occupiedAmount += amount.payableAmount;
-                    }
-                    releaseCredit{
-                        account.availableCredit += amount.payableAmount;
-                        amount.occupiedAmount -= amount.payableAmount;
                     }
                 }
                 """, """
@@ -7859,7 +7833,7 @@ public class AppSemanticsTest {
                 domain commerce;
                 Entity CreditAccount{ quantum double availableCredit; }
                 Role OrderAmount{ quantum double occupiedAmount; double payableAmount; }
-                quantum update reserveCredit(CreditAccount account, OrderAmount amount);
+                quantum update reserveCredit(CreditAccount account, OrderAmount amount) { account.availableCredit -> amount.occupiedAmount : amount.payableAmount; }
                 """, """
                 domain commerce;
                 header baseIn{ unique String globalSerialNumber; }
@@ -7872,12 +7846,6 @@ public class AppSemanticsTest {
                     local(in baseIn, out baseOut){
                         quantum resource(creditAccounting,
                             CreditAccount.availableCredit, OrderAmount.occupiedAmount) reserveCredit;
-                    }
-                }
-                services{
-                    reserveCredit{
-                        account.availableCredit -= amount.payableAmount;
-                        amount.occupiedAmount += amount.payableAmount;
                     }
                 }
                 phy{
@@ -7906,7 +7874,7 @@ public class AppSemanticsTest {
                 domain commerce;
                 Entity CreditAccount{ quantum double availableCredit; }
                 Role OrderAmount{ quantum double occupiedAmount; double payableAmount; }
-                quantum update reserveCredit(CreditAccount account, OrderAmount amount);
+                quantum update reserveCredit(CreditAccount account, OrderAmount amount) { account.availableCredit -> amount.occupiedAmount : amount.payableAmount; }
                 """, """
                 domain commerce;
                 header baseIn{ unique String globalSerialNumber; }
@@ -7919,12 +7887,6 @@ public class AppSemanticsTest {
                     local(in baseIn, out baseOut){
                         quantum resource(creditAccounting,
                             CreditAccount.availableCredit, OrderAmount.occupiedAmount) reserveCredit;
-                    }
-                }
-                services{
-                    reserveCredit{
-                        account.availableCredit -= amount.payableAmount;
-                        amount.occupiedAmount += amount.payableAmount;
                     }
                 }
                 phy{
@@ -7951,7 +7913,7 @@ public class AppSemanticsTest {
                 domain commerce;
                 Entity CreditAccount{ quantum double availableCredit; }
                 Role OrderAmount{ quantum double occupiedAmount; double payableAmount; }
-                quantum update reserveCredit(CreditAccount account, OrderAmount amount);
+                quantum update reserveCredit(CreditAccount account, OrderAmount amount) { account.availableCredit -> amount.occupiedAmount : amount.payableAmount; }
                 """, """
                 domain commerce;
                 header baseIn{ unique String globalSerialNumber; }
@@ -7964,12 +7926,6 @@ public class AppSemanticsTest {
                     local(in baseIn, out baseOut){
                         quantum resource(creditAccounting,
                             CreditAccount.availableCredit, OrderAmount.occupiedAmount) reserveCredit;
-                    }
-                }
-                services{
-                    reserveCredit{
-                        account.availableCredit -= amount.payableAmount;
-                        amount.occupiedAmount += amount.payableAmount;
                     }
                 }
                 phy{
@@ -7993,7 +7949,7 @@ public class AppSemanticsTest {
                 domain commerce;
                 Entity CreditAccount{ quantum double availableCredit; }
                 Role OrderAmount{ quantum double occupiedAmount; double payableAmount; }
-                quantum update reserveCredit(CreditAccount account, OrderAmount amount);
+                quantum update reserveCredit(CreditAccount account, OrderAmount amount) { account.availableCredit -> amount.occupiedAmount : amount.payableAmount; }
                 """, """
                 domain commerce;
                 header baseIn{ unique String globalSerialNumber; }
@@ -8006,12 +7962,6 @@ public class AppSemanticsTest {
                     local(in baseIn, out baseOut){
                         quantum resource(creditAccounting,
                             CreditAccount.availableCredit, OrderAmount.occupiedAmount) reserveCredit;
-                    }
-                }
-                services{
-                    reserveCredit{
-                        account.availableCredit -= amount.payableAmount;
-                        amount.occupiedAmount += amount.payableAmount;
                     }
                 }
                 phy{
@@ -8039,7 +7989,7 @@ public class AppSemanticsTest {
                     domain commerce;
                     Entity CreditAccount{ quantum double availableCredit; }
                     Role OrderAmount{ quantum double occupiedAmount; double payableAmount; }
-                    quantum update reserveCredit(CreditAccount account, OrderAmount amount);
+                    quantum update reserveCredit(CreditAccount account, OrderAmount amount) { account.availableCredit -> amount.occupiedAmount : amount.payableAmount; }
                     """, """
                     domain commerce;
                     header baseIn{ unique String globalSerialNumber; }
@@ -8055,11 +8005,7 @@ public class AppSemanticsTest {
                         }
                     }
                     services{
-                        reserveCredit{
-                            account.availableCredit -= amount.payableAmount;
-                            amount.occupiedAmount += amount.payableAmount;
                         }
-                    }
                     phy{
                         config strictQuantumServiceExternalImplementation = true;
                         quantumStore serviceQuantum{
@@ -8083,7 +8029,7 @@ public class AppSemanticsTest {
                 domain commerce;
                 Entity CreditAccount{ quantum double availableCredit; }
                 Role OrderAmount{ quantum double occupiedAmount; double payableAmount; }
-                quantum update reserveCredit(CreditAccount account, OrderAmount amount);
+                quantum update reserveCredit(CreditAccount account, OrderAmount amount) { account.availableCredit -> amount.occupiedAmount : amount.payableAmount; }
                 """, """
                 domain commerce;
                 header baseIn{ unique String globalSerialNumber; }
@@ -8096,12 +8042,6 @@ public class AppSemanticsTest {
                     local(in baseIn, out baseOut){
                         quantum resource(creditAccounting,
                             CreditAccount.availableCredit, OrderAmount.occupiedAmount) reserveCredit;
-                    }
-                }
-                services{
-                    reserveCredit{
-                        account.availableCredit -= amount.payableAmount;
-                        amount.occupiedAmount += amount.payableAmount;
                     }
                 }
                 phy{

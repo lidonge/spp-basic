@@ -35,7 +35,6 @@ public class BasicCompilerTest {
                 atomic check checkAccount(Input) {
                     require(Input.valid, AccountError.NUMBER_REQUIRED);
                     require(Input.valid, AccountError.NOT_FOUND);
-                    require(Input.valid, "LITERAL");
                     require(Input.rejection == null, Input.rejection);
                 }
                 """);
@@ -44,12 +43,11 @@ public class BasicCompilerTest {
         String java = Files.readString(output.resolve("src/main/java/com/servpp/generated/checks/service/SimpleCheckAccount.java"));
         assertTrue(java.contains("BusinessChecks.fail(\"E01\")"));
         assertTrue(java.contains("BusinessChecks.fail(\"NOT_FOUND\")"));
-        assertTrue(java.contains("BusinessChecks.fail(\"LITERAL\")"));
         assertTrue(java.contains("BusinessChecks.fail(java.util.Objects.requireNonNull(Input.getRejection(), "
                 + "\"REJECTION_CODE_REQUIRED\").getValue())"));
         assertFalse(java.contains("BusinessChecks.fail(\"legacy\")"));
 
-        for (String code : List.of("UnknownError.NUMBER_REQUIRED", "AccountError.UNKNOWN", "Input.valid")) {
+        for (String code : List.of("\"LITERAL\"", "UnknownError.NUMBER_REQUIRED", "AccountError.UNKNOWN", "Input.valid")) {
             Files.writeString(check, declarations + """
                     atomic check checkAccount(Input) { require(Input.valid, %s); }
                     """.formatted(code));
@@ -86,8 +84,11 @@ public class BasicCompilerTest {
                     }
                 }
                 readonly Scenario serial readProvider(ProviderResult result) {
+                    classify(result);
                     checkProvider(result);
                 }
+                readonly Scenario serial readStrict(ProviderResult result) { checkStrict(result); }
+                readonly Scenario serial readLegacy(ProviderResult result) { checkLegacy(result); }
                 """);
         Path output = temporary.getRoot().toPath().resolve("provider-probe");
         Main.run(new String[]{"generate", "--source", source.toString(), "--output", output.toString()});
@@ -104,12 +105,12 @@ public class BasicCompilerTest {
             Object result = role.getDeclaredConstructor().newInstance();
             var setCode = role.getMethod("setCode", String.class);
             var classify = loader.loadClass(prefix + "service.SimpleClassify");
-            Object calculation = classify.getDeclaredConstructor().newInstance();
-            var classifyProvider = classify.getMethod("classify", role);
+            var calculation = (com.servpp.service.Service) classify.getDeclaredConstructor().newInstance();
             var check = (com.servpp.service.Service) loader.loadClass(prefix + "service.SimpleCheckProvider")
                     .getDeclaredConstructor().newInstance();
             var services = com.servpp.service.server.DefaultServiceContainer.getInstance();
             services.registerService(check.getName(), check);
+            services.registerService(calculation.getName(), calculation);
             var scene = loader.loadClass(prefix + "service.SimpleReadProvider");
             var scenario = (com.servpp.service.Service) scene.getDeclaredConstructor().newInstance();
             var requestType = loader.loadClass(prefix + "model.ReadProviderRequest");
@@ -121,7 +122,7 @@ public class BasicCompilerTest {
             for (String[] entry : new String[][]{{"UN001", "UN001"}, {" UN2 ", " UN2 "}, {"LIMIT", "EC012"},
                     {"EC031", "EC031"}, {null, "MISSING"}}) {
                 setCode.invoke(result, (Object) entry[0]);
-                classifyProvider.invoke(calculation, result);
+                com.servpp.service.runtime.RemoteServiceIngress.execute(scenario, request, "fixture", "classify");
                 Object reason = role.getMethod("getReason").invoke(result);
                 assertEquals(mapper.writeValueAsString(entry[1]), mapper.writeValueAsString(reason));
                 assertEquals(reason, mapper.readValue(mapper.writeValueAsString(reason), reason.getClass()));
@@ -130,24 +131,25 @@ public class BasicCompilerTest {
                 if (previous != null) assertEquals("\"UN001\"", mapper.writeValueAsString(previous));
                 if ("UN001".equals(entry[0])) previous = reason;
 
-                scenario.execute(request);
                 assertEquals(new com.servpp.service.runtime.BusinessChecks.Result(false, entry[1]),
                         com.servpp.service.runtime.BusinessChecks.scenarioResult());
             }
             setCode.invoke(result, "");
-            scenario.execute(request);
+            com.servpp.service.runtime.RemoteServiceIngress.execute(scenario, request, "fixture", "empty");
             assertTrue(com.servpp.service.runtime.BusinessChecks.scenarioResult().passed());
 
             setCode.invoke(result, "UN001");
             for (String name : List.of("Strict", "Legacy")) {
                 var type = loader.loadClass(prefix + "service.SimpleCheck" + name);
-                var method = type.getMethod("check" + name, role);
-                Object instance = type.getDeclaredConstructor().newInstance();
-                var exception = assertThrows(java.lang.reflect.InvocationTargetException.class,
-                        () -> method.invoke(instance, result));
-                assertTrue(exception.getCause() instanceof IllegalArgumentException);
-                assertTrue(exception.getCause().getMessage().contains(name + "Rejection"));
-                assertTrue(exception.getCause().getMessage().contains("UN001"));
+                var atomic = (com.servpp.service.Service) type.getConstructor().newInstance();
+                services.registerService(atomic.getName(), atomic);
+                var entry = (com.servpp.service.Service) loader.loadClass(prefix + "service.SimpleRead" + name).getConstructor().newInstance();
+                var input = loader.loadClass(prefix + "model.Read" + name + "Request").getConstructor().newInstance();
+                input.getClass().getMethod("setResult", role).invoke(input, result);
+                var exception = assertThrows(IllegalArgumentException.class,
+                        () -> com.servpp.service.runtime.RemoteServiceIngress.execute(entry, input, "fixture", name));
+                assertTrue(exception.getMessage().contains(name + "Rejection"));
+                assertTrue(exception.getMessage().contains("UN001"));
             }
         } finally {
             com.servpp.service.runtime.BusinessChecks.restoreScenarioResult(null);

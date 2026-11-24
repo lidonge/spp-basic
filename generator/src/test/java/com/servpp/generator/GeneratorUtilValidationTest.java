@@ -253,7 +253,9 @@ public class GeneratorUtilValidationTest {
                 }
 
                 atomic query queryCreditAccount(CreditAccount account);
-                quantum update reserveCredit(CreditAccount account, OrderAmount amount);
+                quantum update reserveCredit(CreditAccount account, OrderAmount amount) {
+                    account.availableCredit -> amount.occupiedAmount : amount.payableAmount;
+                }
                 atomic update openSalesOrder(SalesOrder order);
                 """);
         Files.writeString(sourceDir.resolve("commerce.app"), """
@@ -281,11 +283,6 @@ public class GeneratorUtilValidationTest {
                 }
 
                 services{
-                    reserveCredit{
-                        account.availableCredit -= amount.payableAmount;
-                        account.usedCredit += amount.payableAmount;
-                        amount.occupiedAmount += amount.payableAmount;
-                    }
                     openSalesOrder{
                         order.orderNo = order.orderNo;
                     }

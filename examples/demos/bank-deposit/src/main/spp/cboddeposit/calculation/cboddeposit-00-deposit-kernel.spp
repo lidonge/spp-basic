@@ -34,7 +34,7 @@ Role DepositPlan {
 }
 
 atomic check checkKernelInput(DepositRequest) {
-    require(DepositRequest.amount >= 0, "E1095");
+    require(DepositRequest.amount >= 0, RejectionCode.E1095);
 }
 
 atomic calculate calculateDepositPlan(DepositRequest, DepositAccount, DepositPlan) {
@@ -103,7 +103,7 @@ atomic check checkPlan(DepositRequest, DepositAccount, DepositPlan) {
             - DepositAccount.collectionInterest
             - DepositAccount.overdraftPrincipal
             + DepositRequest.amount,
-        "net balance invariant"
+        RejectionCode.NET_BALANCE_INVARIANT
     );
 }
 

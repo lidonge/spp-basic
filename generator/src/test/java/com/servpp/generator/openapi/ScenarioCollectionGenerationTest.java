@@ -49,12 +49,14 @@ public class ScenarioCollectionGenerationTest {
             Service nested=(Service)loader.loadClass("example.rules.service.SimpleNested").getConstructor().newInstance();
             Class<?> holderClass=loader.loadClass("example.rules.model.Holder"), requestClass=loader.loadClass("example.rules.model.NestedRequest");
             Object holder=holderClass.getConstructor().newInstance(), request=requestClass.getConstructor().newInstance();requestClass.getMethod("setHolder",holderClass).invoke(request,holder);
-            Object first=nested.execute(request);assertNotNull(first);assertNull(holderClass.getMethod("getItems").invoke(holder));
+            assertThrows(IllegalStateException.class, () -> nested.execute(request));
+            Object first=com.servpp.service.runtime.RemoteServiceIngress.execute(nested, request, "test", "first");assertNotNull(first);assertNull(holderClass.getMethod("getItems").invoke(holder));
             Object item=loader.loadClass("example.rules.model.Item").getConstructor().newInstance();item.getClass().getMethod("setValue",Integer.class).invoke(item,7);
             holderClass.getMethod("setItems",List.class).invoke(holder,List.of(item));
-            Object second=nested.execute(request);assertNotSame(first,second);
+            Object second=com.servpp.service.runtime.RemoteServiceIngress.execute(nested, request, "test", "second");assertNotSame(first,second);
             List<?> copied=(List<?>)holderClass.getMethod("getItems").invoke(holder);assertEquals(1,copied.size());assertNotSame(item,copied.get(0));assertEquals(7,copied.get(0).getClass().getMethod("getValue").invoke(copied.get(0)));
-            Object typed=nested.getClass().getMethod("nested",holderClass).invoke(nested,holder);assertNull("Typed scenarios have no business return value",typed);
+            assertThrows(NoSuchMethodException.class, () -> nested.getClass().getMethod("nested", holderClass));
+            com.servpp.service.runtime.RemoteServiceIngress.execute(nested, request, "test", "third");
             List<?> copiedAgain=(List<?>)holderClass.getMethod("getItems").invoke(holder);
             assertNotSame(copied,copiedAgain);assertNotSame(copied.get(0),copiedAgain.get(0));
             assertEquals(7,copiedAgain.get(0).getClass().getMethod("getValue").invoke(copiedAgain.get(0)));
@@ -72,7 +74,7 @@ public class ScenarioCollectionGenerationTest {
                 container.registerService("count",(Service)failingCount);
                 container.registerService("relay",(Service)loader.loadClass("example.rules.service.SimpleRelay").getConstructor().newInstance());
                 Service failingNested=(Service)loader.loadClass("example.rules.service.SimpleNested").getConstructor().newInstance();
-                RuntimeException actual=assertThrows(RuntimeException.class,()->failingNested.execute(request));
+                RuntimeException actual=assertThrows(RuntimeException.class,()->com.servpp.service.runtime.RemoteServiceIngress.execute(failingNested, request, "test", "failing"));
                 assertSame(original,actual);assertEquals(1,actual.getSuppressed().length);assertSame(logFailure,actual.getSuppressed()[0]);
             } finally { com.servpp.service.transaction.SagaLogManager.setStore(previousLog); }
 

@@ -47,7 +47,7 @@ atomic calculate reserveOrder(Cart, ShopOrder) {
 }
 
 atomic check checkOrderOwner(Buyer, ShopOrder) {
-    require(ShopOrder.buyer == Buyer, "ORDER_NOT_FOUND");
+    require(ShopOrder.buyer == Buyer, RejectionCode.ORDER_NOT_FOUND);
 }
 
 atomic calculate prepareUnpaidCancellation(ShopOrder, UnpaidCancellationAgreement) {

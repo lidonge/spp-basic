@@ -58,7 +58,7 @@ public final class DomainServiceProtocol {
         };
         java.util.function.Supplier<Result> invoke = () -> {
             Result[] result = {null};
-            ParticipantIdentity.execute(() -> result[0] = executeOnce(call,service,update,blankKeys));
+            ParticipantIdentity.execute(() -> result[0] = GeneratedServiceEntry.inService(() -> executeOnce(call,service,update,blankKeys)));
             return result[0];
         };
         if (update && call.transaction() != null && !call.transaction().isEmpty()) {

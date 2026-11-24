@@ -31,7 +31,7 @@ public class CrossDomainStorageGenerationTest {
         Files.writeString(source.resolve("accounts/model.spp"),"""
                 domain accounts;
                 Role Account { String email; }
-                atomic check checkActive(Account) { require(Account.email != null, "EMAIL_REQUIRED"); }
+                Enum Fault { EMAIL_REQUIRED } atomic check checkActive(Account) { require(Account.email != null, Fault.EMAIL_REQUIRED); }
                 """);
         Files.writeString(source.resolve("membership/model.spp"),"""
                 domain membership;

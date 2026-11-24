@@ -28006,9 +28006,9 @@ public class LocalGeneratedServiceRuntime {
             RemoteServiceAdapter adapter = remoteServiceAdapterFor(serviceName)
                     .orElseThrow(() -> new IllegalStateException("Remote service " + serviceName
                             + " has no registered adapter."));
-            return CurrentObjectContext.withObjects(new Object[] { request }, () -> adapter.execute(serviceName, request));
+            return GeneratedServiceEntry.dispatch(originalService(service), () -> CurrentObjectContext.withObjects(new Object[] { request }, () -> adapter.execute(serviceName, request)));
         }
-        return CurrentObjectContext.withObjects(new Object[] { request }, () -> service.execute(request));
+        return GeneratedServiceEntry.dispatch(originalService(service), () -> CurrentObjectContext.withObjects(new Object[] { request }, () -> service.execute(request)));
     }
 
     public Optional<String> idempotencyKey(String serviceName, Object request) {

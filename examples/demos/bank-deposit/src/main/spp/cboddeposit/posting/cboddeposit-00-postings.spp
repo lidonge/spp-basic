@@ -35,7 +35,7 @@ atomic check checkDepositAccounting(DepositAccounting) {
             && DepositAccounting.principalPaid >= 0
             && DepositAccounting.interestPaid >= 0
             && DepositAccounting.collectionPaid >= 0,
-        "NEGATIVE_DEPOSIT_ACCOUNTING_AMOUNT"
+        RejectionCode.NEGATIVE_DEPOSIT_ACCOUNTING_AMOUNT
     );
     require(
         DepositAccounting.fundingTotal == DepositAccounting.transactionAmount
@@ -44,11 +44,11 @@ atomic check checkDepositAccounting(DepositAccounting) {
             + DepositAccounting.principalPaid
             + DepositAccounting.interestPaid
             + DepositAccounting.collectionPaid,
-        "DEPOSIT_ACCOUNTING_TOTAL_MISMATCH"
+        RejectionCode.DEPOSIT_ACCOUNTING_TOTAL_MISMATCH
     );
     require(
         DepositAccounting.fundingTotal == DepositAccounting.allocationTotal,
-        "DEPOSIT_ACCOUNTING_NOT_BALANCED"
+        RejectionCode.DEPOSIT_ACCOUNTING_NOT_BALANCED
     );
 }
 
@@ -113,7 +113,7 @@ atomic calculate calculateDepositPostings(
 }
 
 atomic check checkDepositPostings(DepositPostingTotals) {
-    require(DepositPostingTotals.debit == DepositPostingTotals.credit, "DEPOSIT_POSTINGS_NOT_BALANCED");
+    require(DepositPostingTotals.debit == DepositPostingTotals.credit, RejectionCode.DEPOSIT_POSTINGS_NOT_BALANCED);
 }
 
 atomic check checkPostingRules(DepositPostingLine[], DepositFeePlan) {
@@ -121,16 +121,16 @@ atomic check checkPostingRules(DepositPostingLine[], DepositFeePlan) {
     for (DepositPostingLine line : DepositPostingLine[]) {
         require(
             line.slot == expected && line.subject != null && line.subject != "",
-            "INVALID_DEPOSIT_POSTING_RULES"
+            RejectionCode.INVALID_DEPOSIT_POSTING_RULES
         );
         if (line.slot == 1 || line.slot == 2 || line.slot == 7) {
-            require(line.side == "Debit", "INVALID_DEPOSIT_POSTING_SIDE");
+            require(line.side == "Debit", RejectionCode.INVALID_DEPOSIT_POSTING_SIDE);
         } else {
-            require(line.side == "Credit", "INVALID_DEPOSIT_POSTING_SIDE");
+            require(line.side == "Credit", RejectionCode.INVALID_DEPOSIT_POSTING_SIDE);
         }
         expected++;
     }
-    require(expected == 9 && DepositFeePlan.fee >= 0, "INVALID_DEPOSIT_POSTING_RULES");
+    require(expected == 9 && DepositFeePlan.fee >= 0, RejectionCode.INVALID_DEPOSIT_POSTING_RULES);
 }
 
 atomic calculate attachDepositPostings(CashDepositAgreement, DepositPostingLine[]) {

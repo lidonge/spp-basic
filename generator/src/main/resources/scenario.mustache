@@ -18,7 +18,7 @@ public abstract class {{name}} extends SourceScenarioService implements Scenario
     protected {{type.name}} {{name}};
     {{/type.name}}
     {{/sppFieldList}}
-    public void {{funcName}}({{#serviceBody.sppLocalVarList}}{{^-first}},{{/-first}}{{serviceJavaType}} {{name}}{{/serviceBody.sppLocalVarList}}){
+    protected void {{funcName}}({{#serviceBody.sppLocalVarList}}{{^-first}},{{/-first}}{{serviceJavaType}} {{name}}{{/serviceBody.sppLocalVarList}}){
 {{scenarioBodyJava}}
     }
 }

@@ -28,9 +28,9 @@ atomic calculate initializeCatalog(
     initializeInventory;
     Merchant.tradingName = StoreOpeningAgreement.tradingName;
     Merchant.shopName = StoreOpeningAgreement.shopName;
-    Merchant.cash = 0;
+
     SettlementAccount.accountNumber = "EXTERNAL-SETTLEMENT";
-    SettlementAccount.balance = 0;
+
 }
 
 Scenario serial initializeStore(

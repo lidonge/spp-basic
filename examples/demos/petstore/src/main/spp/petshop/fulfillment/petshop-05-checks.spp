@@ -1,15 +1,15 @@
 domain petshop;
 
 atomic check checkShipmentAgreementInput(ShipmentAgreement) {
-    require(ShipmentAgreement.tracking != null && ShipmentAgreement.tracking != "", "TRACKING_REQUIRED");
+    require(ShipmentAgreement.tracking != null && ShipmentAgreement.tracking != "", RejectionCode.TRACKING_REQUIRED);
 }
 
 atomic check checkShipmentEligibility(ShopOrder) {
-    require(ShopOrder.status == OrderStatus.PAID, "ORDER_NOT_SHIPPABLE");
+    require(ShopOrder.status == OrderStatus.PAID, RejectionCode.ORDER_NOT_SHIPPABLE);
 }
 
 atomic check checkDeliveryEligibility(ShopOrder) {
-    require(ShopOrder.status == OrderStatus.SHIPPED, "ORDER_NOT_DELIVERABLE");
+    require(ShopOrder.status == OrderStatus.SHIPPED, RejectionCode.ORDER_NOT_DELIVERABLE);
 }
 
 atomic check checkReservedInventory(ShopOrder, StockLine[]) {
@@ -23,10 +23,10 @@ atomic check checkReservedInventory(ShopOrder, StockLine[]) {
                         needed += ordered.quantity;
                     }
                 }
-                require(stock.reserved >= needed, "RESERVATION_MISSING");
+                require(stock.reserved >= needed, RejectionCode.RESERVATION_MISSING);
                 found = true;
             }
         }
-        require(found, "INVENTORY_ITEM_NOT_FOUND");
+        require(found, RejectionCode.INVENTORY_ITEM_NOT_FOUND);
     }
 }

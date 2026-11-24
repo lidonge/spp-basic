@@ -54,6 +54,7 @@ public class Simple{{name}} extends {{name}}{{scenarioServiceInterfaces}}{
 {{scopeMetadataMethods}}
     @Override
     public Object execute(Object... params) {
+        com.servpp.service.runtime.GeneratedServiceEntry.enterScenario(this);
         return executeWithTechnicalInterceptors(params, () -> {
         {{#requestSuffix}}{{name}}{{requestSuffix}} arg = ({{name}}{{requestSuffix}}) params[params.length -1];
         GeneratedRoleIdentityContextBinder.attach(arg);

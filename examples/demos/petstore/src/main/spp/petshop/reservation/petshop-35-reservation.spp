@@ -10,7 +10,7 @@ Contract PetReservationAgreement {
 }
 
 atomic check checkReservationQuantity(PetReservationAgreement) {
-    require(PetReservationAgreement.quantity > 0, "INVALID_QUANTITY");
+    require(PetReservationAgreement.quantity > 0, RejectionCode.INVALID_QUANTITY);
 }
 
 atomic calculate preparePetReservation(Buyer, Goods, PetReservationAgreement) {

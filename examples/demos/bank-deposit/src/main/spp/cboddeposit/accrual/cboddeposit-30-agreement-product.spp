@@ -76,18 +76,18 @@ atomic calculate calculateAgreementProduct(
 }
 
 atomic check checkAgreementProductInput(InterestPeriod normal, InterestPeriod overlap, AgreementBand[]) {
-    require(normal.amount >= 0 && normal.unit > 0 && normal.days >= 0, "INVALID_INTEREST_PERIOD");
+    require(normal.amount >= 0 && normal.unit > 0 && normal.days >= 0, RejectionCode.INVALID_INTEREST_PERIOD);
     require(
         overlap.amount == normal.amount
             && overlap.unit == normal.unit
             && overlap.days >= 0
             && overlap.days <= normal.days,
-        "INVALID_AGREEMENT_PERIOD"
+        RejectionCode.INVALID_AGREEMENT_PERIOD
     );
     int expectedSlot = 5;
     for (AgreementBand band : AgreementBand[]) {
-        require(band.slot == expectedSlot && band.threshold >= 0, "INVALID_AGREEMENT_BANDS");
+        require(band.slot == expectedSlot && band.threshold >= 0, RejectionCode.INVALID_AGREEMENT_BANDS);
         expectedSlot--;
     }
-    require(expectedSlot == 0, "INVALID_AGREEMENT_BANDS");
+    require(expectedSlot == 0, RejectionCode.INVALID_AGREEMENT_BANDS);
 }

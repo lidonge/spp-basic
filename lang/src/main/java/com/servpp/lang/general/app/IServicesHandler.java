@@ -73,7 +73,31 @@ public interface IServicesHandler extends IApplicationHandler, IJavaExprHandler 
 
     @Override
     default void enterRequireStatement(AppParser.RequireStatementContext ctx) {
-        RequireStatement requireStatement = new RequireStatement(ctx.StringLiteral().getText());
+        RequireStatement requireStatement = new RequireStatement((String) null);
+        var token = ctx.qualifiedName() == null ? ctx.StringLiteral().getSymbol() : ctx.qualifiedName().getStart();
+        String path = ctx.qualifiedName() == null ? "" : ctx.qualifiedName().getText();
+        var field = getQualifieField(path, getLocalVarMap());
+        if (field != null && field.getArrayDimension() == 0 && field.getType() instanceof com.servpp.lang.models.SppEnum) {
+            var reference = new com.servpp.lang.models.app.expr.Reference();
+            reference.setValue(path);
+            reference.setReturnType(field.getType());
+            requireStatement = new RequireStatement(null, reference);
+        } else {
+            String[] parts = path.split("\\.");
+            var member = parts.length == 2 && getSppDomian().getSppClass(parts[0]) instanceof com.servpp.lang.models.SppEnum enumeration
+                    ? enumeration.getItems().stream().filter(item -> item.getName().equals(parts[1]))
+                            .map(item -> new com.servpp.lang.models.app.expr.EnumValue(enumeration, item)).findFirst().orElse(null)
+                    : null;
+            if (member == null) {
+                String diagnostic = getAntlrFile() + ":" + token.getLine() + ":" + (token.getCharPositionInLine() + 1)
+                        + " [require-enum] Declare an enum member for the rejection code.";
+                if (ctx.StringLiteral() != null) {
+                    requireStatement.setMessage(ctx.StringLiteral().getText());
+                    getSppDomian().addMigrationDiagnostic("require-enum", diagnostic);
+                } else getSppDomian().addAppParseError(diagnostic);
+            }
+            else requireStatement = new RequireStatement(null, member);
+        }
         requireStatement.setParent(getTheAppService());
         setCurrentContainer(requireStatement);
     }
@@ -88,6 +112,7 @@ public interface IServicesHandler extends IApplicationHandler, IJavaExprHandler 
 
     @Override
     default void enterAssignExpr(AppParser.AssignExprContext ctx) {
+        validateWrite(ctx, ctx.expression(0).getText());
         _enterAssignExpr(ctx);
     }
     @Override
@@ -117,6 +142,7 @@ public interface IServicesHandler extends IApplicationHandler, IJavaExprHandler 
 
     @Override
     default void enterRightIncDecExpr(AppParser.RightIncDecExprContext ctx){
+        validateWrite(ctx, ctx.expression().getText());
         _enterRightIncDecExpr(ctx);
     }
 
@@ -127,6 +153,7 @@ public interface IServicesHandler extends IApplicationHandler, IJavaExprHandler 
 
     @Override
     default void enterLeftIncDecAndSignExpr(AppParser.LeftIncDecAndSignExprContext ctx){
+        if (java.util.Set.of("++", "--").contains(ctx.getChild(0).getText())) validateWrite(ctx, ctx.expression().getText());
         _enterLeftIncDecAndSignExpr(ctx);
     }
 
@@ -273,6 +300,14 @@ public interface IServicesHandler extends IApplicationHandler, IJavaExprHandler 
     @Override
     default void exitArrayExpr(AppParser.ArrayExprContext ctx) {
         _exitArrayExpr(ctx);
+    }
+
+    private void validateWrite(org.antlr.v4.runtime.ParserRuleContext ctx, String path) {
+        if (getQualifieField(path, getLocalVarMap()) instanceof com.servpp.lang.models.SppField field && field.isQuantum()) {
+            var token = ctx.getStart();
+            getSppDomian().addMigrationDiagnostic("P0-a", getAntlrFile() + ":" + token.getLine() + ":" + (token.getCharPositionInLine() + 1)
+                    + " [P0-a] Move the quantum update into SPP and use a -> b : x.");
+        }
     }
 
     private AppService getTheAppService() {

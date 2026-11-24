@@ -15,13 +15,16 @@ public class PersistenceGenerationTest {
         Path source=Files.createTempDirectory("spp-write-source"), root=Files.createTempDirectory("spp-write-generated");
         Files.writeString(source.resolve("rules.spp"),"""
                 domain rules;
-                Role Stored { String code; long value; }
+                Contract Stored { String code; long value; }
+                atomic query loadStored(Stored stored);
                 atomic update store(Stored stored);
                 atomic update erase(Stored key);
+                Scenario serial saveRecord(Stored stored) { loadStored(stored); store(stored); store(stored); }
+                Scenario serial eraseRecord(Stored key) { erase(key); }
                 """);
         Files.writeString(source.resolve("rules.app"),"""
                 domain rules;
-                scope { local { at resource(records)
+                scope { local { loadStored; saveRecord; eraseRecord; at resource(records)
                     persist(update, argument(0, Stored.code)) store;
                     at resource(records) persist(delete, argument(0, Stored.code)) erase;
                 } }
@@ -55,6 +58,10 @@ public class PersistenceGenerationTest {
                 }
                 """);
         Files.writeString(models.resolve("EraseResponse.java"),"package example.rules.model; public class EraseResponse { }");
+        for (String[] pair : List.of(new String[]{"LoadStored","Store"}, new String[]{"SaveRecord","Store"}, new String[]{"EraseRecord","Erase"})) {
+            Files.writeString(models.resolve(pair[0]+"Request.java"), "package example.rules.model; public class "+pair[0]+"Request extends "+pair[1]+"Request { public "+pair[0]+"Request(Stored value) { super(value); } }");
+            Files.writeString(models.resolve(pair[0]+"Response.java"), "package example.rules.model; public class "+pair[0]+"Response { }");
+        }
         Path classes=Files.createDirectory(root.resolve("classes"));
         List<String> args=new ArrayList<>(List.of("-classpath",System.getProperty("java.class.path"),"-d",classes.toString()));
         try(var paths=Files.walk(root.resolve("java"))) { paths.filter(p -> p.toString().endsWith(".java")).forEach(p -> args.add(p.toString())); }
@@ -87,20 +94,31 @@ public class PersistenceGenerationTest {
             new GeneratedServiceRuntime(null,repository,null).decorate((Service)service);
             Object erase=loader.loadClass("example.rules.service.SimpleErase").getConstructor().newInstance();
             new GeneratedServiceRuntime(null,repository,null).decorate((Service)erase);
+            var container = com.servpp.service.server.DefaultServiceContainer.getInstance();
+            var queryType = loader.loadClass("example.rules.handler.LoadStored");
+            Service load = (Service) java.lang.reflect.Proxy.newProxyInstance(loader, new Class<?>[]{queryType},
+                    (proxy, method, arguments) -> {
+                        if (method.getName().equals("getName")) return "loadStored";
+                        if (method.getName().equals("loadStored")) RepositoryParticipantSnapshots.loaded(arguments[0], repository,
+                                new ObjectSnapshot("Stored","a","{}",null,"r0"));
+                        return null;
+                    });
+            Service previousLoad = container.registerService("loadStored", load);
+            Service previousStore = container.registerService("store", (Service)service);
+            Service previousErase = container.registerService("erase", (Service)erase);
+            Service saveRecord = (Service)loader.loadClass("example.rules.service.SimpleSaveRecord").getConstructor().newInstance();
+            Service eraseRecord = (Service)loader.loadClass("example.rules.service.SimpleEraseRecord").getConstructor().newInstance();
             var previousSnapshots=RepositoryParticipantSnapshots.checkpoint();
-            RepositoryParticipantSnapshots.loaded(participant,repository,
-                    new ObjectSnapshot("Stored","a","{}",null,"r0"));
             try {
-                Object request=loader.loadClass("example.rules.model.StoreRequest").getConstructor(model).newInstance(participant);
-                ((Service)service).execute(request);
-                ((Service)service).execute(request);
-                Object eraseRequest=loader.loadClass("example.rules.model.EraseRequest").getConstructor(model).newInstance(participant);
-                ((Service)erase).execute(eraseRequest);
-                ((Service)erase).execute(eraseRequest);
+                Object request=loader.loadClass("example.rules.model.SaveRecordRequest").getConstructor(model).newInstance(participant);
+                com.servpp.service.runtime.RemoteServiceIngress.execute(saveRecord, request, "fixture", "save");
+                Object eraseRequest=loader.loadClass("example.rules.model.EraseRecordRequest").getConstructor(model).newInstance(participant);
+                com.servpp.service.runtime.RemoteServiceIngress.execute(eraseRecord, eraseRequest, "fixture", "erase");
+                com.servpp.service.runtime.RemoteServiceIngress.execute(eraseRecord, eraseRequest, "fixture", "erase");
                 assertEquals("Local calls are not deduplicated",List.of(List.of("Stored","a"),List.of("Stored","a")),deletes);
                 assertEquals(List.of(List.of("Stored","a","r0",20L,30L),List.of("Stored","a","r1",30L,40L)),writes);
                 assertEquals(40L,model.getMethod("getValue").invoke(participant));
-            } finally { RepositoryParticipantSnapshots.restore(previousSnapshots); }
+            } finally { RepositoryParticipantSnapshots.restore(previousSnapshots); ServiceRegistryFixture.restore("loadStored", previousLoad); ServiceRegistryFixture.restore("store", previousStore); ServiceRegistryFixture.restore("erase", previousErase); }
 
         }
     }

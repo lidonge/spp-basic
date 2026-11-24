@@ -139,13 +139,13 @@ atomic check checkDepositBranchRange(DepositBankProfile, DepositOperatorFacts, C
                     || DepositBankProfile.depositRange == "City"
                     || DepositBankProfile.depositRange == "Province"
                     || DepositBankProfile.depositRange == "All",
-                "INVALID_DEPOSIT_RANGE"
+                RejectionCode.INVALID_DEPOSIT_RANGE
             );
             if (checksRange) {
                 if (DepositBankProfile.depositRange == "SameBranch"
                     && DepositBankProfile.openingBranch != DepositOperatorFacts.branch
                     && !commonException) {
-                    require(false, "EN134");
+                    require(false, RejectionCode.EN134);
                 }
                 if (DepositBankProfile.depositRange == "Subbranch") {
                     require(
@@ -153,9 +153,9 @@ atomic check checkDepositBranchRange(DepositBankProfile, DepositOperatorFacts, C
                             && DepositBankProfile.subbranch != ""
                             && DepositOperatorFacts.subbranch != null
                             && DepositOperatorFacts.subbranch != "",
-                        "DEPOSIT_SUBBRANCH_RELATION_NOT_FOUND"
+                        RejectionCode.DEPOSIT_SUBBRANCH_RELATION_NOT_FOUND
                     );
-                    require(DepositBankProfile.subbranch == DepositOperatorFacts.subbranch, "EN470");
+                    require(DepositBankProfile.subbranch == DepositOperatorFacts.subbranch, RejectionCode.EN470);
                 }
                 if (DepositBankProfile.depositRange == "City") {
                     require(
@@ -163,9 +163,9 @@ atomic check checkDepositBranchRange(DepositBankProfile, DepositOperatorFacts, C
                             && DepositBankProfile.area != ""
                             && DepositOperatorFacts.area != null
                             && DepositOperatorFacts.area != "",
-                        "DEPOSIT_AREA_NOT_FOUND"
+                        RejectionCode.DEPOSIT_AREA_NOT_FOUND
                     );
-                    require(DepositBankProfile.area == DepositOperatorFacts.area, "EN470");
+                    require(DepositBankProfile.area == DepositOperatorFacts.area, RejectionCode.EN470);
                 }
                 if (DepositBankProfile.depositRange == "Province") {
                     require(
@@ -173,9 +173,9 @@ atomic check checkDepositBranchRange(DepositBankProfile, DepositOperatorFacts, C
                             && DepositBankProfile.areaProvince != ""
                             && DepositOperatorFacts.areaProvince != null
                             && DepositOperatorFacts.areaProvince != "",
-                        "DEPOSIT_AREA_NOT_FOUND"
+                        RejectionCode.DEPOSIT_AREA_NOT_FOUND
                     );
-                    require(DepositBankProfile.areaProvince == DepositOperatorFacts.areaProvince, "EN470");
+                    require(DepositBankProfile.areaProvince == DepositOperatorFacts.areaProvince, RejectionCode.EN470);
                 }
             }
         } else {
@@ -187,7 +187,7 @@ atomic check checkDepositBranchRange(DepositBankProfile, DepositOperatorFacts, C
                 && !commonException
                 && !(DepositBankProfile.restrictedSubtype
                 && agencyException)) {
-                require(false, "EN134");
+                require(false, RejectionCode.EN134);
             }
         }
     }
@@ -201,7 +201,7 @@ atomic check checkDepositBranchRange(DepositBankProfile, DepositOperatorFacts, C
         && DepositOperatorFacts.transactionPrefix != "RE04066"
         && DepositOperatorFacts.transactionPrefix != "RE04035"
         && !specificPermission) {
-        require(false, "EN134");
+        require(false, RejectionCode.EN134);
     }
 }
 
@@ -220,12 +220,12 @@ atomic check checkCoreDepositReversalEligibility(
     AccountEligibility,
     DepositOperatorFacts
 ) {
-    require(AccountEligibility.status != AccountStatus.CLOSED, "EO082");
-    require(CashAccountControl.cancelledOn == 0, "EN113");
+    require(AccountEligibility.status != AccountStatus.CLOSED, RejectionCode.EO082);
+    require(CashAccountControl.cancelledOn == 0, RejectionCode.EN113);
     require(
         AccountEligibility.status != AccountStatus.FROZEN
             || DepositOperatorFacts.transactionPrefix == "SA01116",
-        "EN111"
+        RejectionCode.EN111
     );
 }
 
@@ -233,10 +233,10 @@ atomic check checkDepositOperatorBinding(DepositOperatorFacts, DepositFeeContext
     require(
         DepositOperatorFacts.branch == DepositFeeContext.branchNumber
             && DepositOperatorFacts.area == DepositFeeContext.regionCode,
-        "DEPOSIT_OPERATOR_CONTEXT_MISMATCH"
+        RejectionCode.DEPOSIT_OPERATOR_CONTEXT_MISMATCH
     );
     require(
         DepositOperatorFacts.operationCode == "1102" && DepositOperatorFacts.transactionPrefix == "SA01102",
-        "UNSUPPORTED_DEPOSIT_OPERATOR_PATH"
+        RejectionCode.UNSUPPORTED_DEPOSIT_OPERATOR_PATH
     );
 }

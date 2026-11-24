@@ -173,6 +173,7 @@ public interface IScenarioHandler extends IServiceDefinitionHandler {
         SppDomain checker = checkClass(ctx,serviceClassName);
         SppService currentCLass = (SppService) checker.getCurrentClass();
         SppServiceCall sppServiceCall = new SppServiceCall();
+        sppServiceCall.sourceLocation = com.servpp.lang.general.expr.BusinessCalculationCompiler.sourceLocation(ctx.getStart());
         sppServiceCall.setUniqueRead(ctx.uniqueModifier() != null);
         if (ctx.rejection != null) sppServiceCall.setUniqueCodeName(ctx.rejection.getText());
         if (sppServiceCall.isUniqueRead() && ctx.readBinding() == null)
@@ -210,7 +211,7 @@ public interface IScenarioHandler extends IServiceDefinitionHandler {
             sppServiceCall.setCallee(service);
             logSppError(ctx, generateField(serviceClassName, 0, serviceName));
         } else {
-            checker.addAppParseError("Scenario " + currentCLass.getFuncName() + " calls '" + serviceName
+            checker.addAppParseError(sppServiceCall.sourceLocation + " [service-call] Compose shared atomic services instead. Scenario " + currentCLass.getFuncName() + " calls '" + serviceName
                     + "', which is not an atomic service, at line " + ctx.getStart().getLine() + ".");
         }
         if (ctx.scenarioBranch() != null) push(sppServiceCall);
