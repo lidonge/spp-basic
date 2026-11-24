@@ -5,7 +5,7 @@ atomic query importCatalogue(Goods, Goods[]);
 atomic query listProducts(Goods, Goods[]);
 
 atomic check checkGoodsCredential(Goods) {
-    require(Goods.sku != null && Goods.sku != "", "ITEM_REQUIRED");
+    require(Goods.sku != BLANK, "ITEM_REQUIRED");
 }
 
 atomic check checkGoodsSale(Goods) {

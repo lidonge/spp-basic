@@ -27,7 +27,6 @@ Scenario serial fundShopWallet(Buyer, SettlementAccount, WalletFundingAgreement)
     identify(SettlementAccount);
     transaction {
         transferWalletFunds bounds {
-            SettlementAccount.balance: [null, null];
             Buyer.wallet: [0, null];
         };
     }

@@ -80,6 +80,20 @@ public class ServiceRedundancyTest {
                 && f.message().contains("findRecord(record) by input, record.branch = 7;")));
     }
 
+    @Test public void suggestsTheMissingTakeForARenamedKey() {
+        var source = spp("""
+                domain ledger;
+                Role Input { String code; }
+                Role Record { String id; }
+                atomic calculate prepare(Input i, Record r) { r.id = i.code; }
+                Scenario serial fetch(Input input, Record record) { prepare(input, record); findRecord(record); }
+                """);
+        var schema = app("domain ledger; tables roles { table RECORDS(Record) { primarykey(Record.id); } }");
+        assertTrue(analyze(source, schema).stream().anyMatch(f -> f.code().equals("SPP_REDUNDANT_KEY_SETTER")
+                && f.message().contains("take Input as Record { String id = code; }")
+                && f.message().contains("findRecord(record) by input;")));
+    }
+
     private static Set<String> codes(List<RedundancyLint.Finding> findings) {
         return findings.stream().map(RedundancyLint.Finding::code).collect(Collectors.toSet());
     }

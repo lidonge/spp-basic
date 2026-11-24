@@ -203,6 +203,7 @@ final class ServiceRedundancy {
         Set<String> assigned = new HashSet<>();
         List<String> parts = new ArrayList<>();
         Set<String> participants = new LinkedHashSet<>();
+        Map<String, Map<String, String>> proposedTakes = new LinkedHashMap<>();
         for (var a : assignments) {
             if (!a.target.participant.equals(target) || !assigned.add(a.target.name)) return;
             Field rhs = field(a.value);
@@ -212,8 +213,17 @@ final class ServiceRedundancy {
                 if (provider == null || providerActual == null) return;
                 var bindings = takes.stream().filter(t -> t.Identifier().size()==2 && t.Identifier(0).getText().equals(provider)
                         && t.Identifier(1).getText().equals(type)).toList();
-                if (bindings.size()!=1) return;
-                var mapped = mappedFields(bindings.get(0), provider, type);
+                if (bindings.size() > 1) return;
+                Map<String, String> mapped;
+                if (bindings.isEmpty()) {
+                    if (!roles.contains(type) || provider.equals(type)) return;
+                    mapped = proposedTakes.computeIfAbsent(provider, unused -> new LinkedHashMap<>());
+                    String t = types.getOrDefault(type, Map.of()).get(a.target.name);
+                    if (t == null || !scalar(t) || !t.equals(types.getOrDefault(provider, Map.of()).get(rhs.name))) return;
+                    mapped.put(a.target.name, rhs.name);
+                } else {
+                    mapped = mappedFields(bindings.get(0), provider, type);
+                }
                 if (!rhs.name.equals(mapped.get(a.target.name))) return;
                 // A selector supplies every mapped key, including any others from this source.
                 for (String key : keys.get(type)) if (mapped.containsKey(key) && assignments.stream().noneMatch(other ->
@@ -229,7 +239,14 @@ final class ServiceRedundancy {
         if (!assigned.equals(keys.get(type))) return;
         parts.addAll(0, participants);
         String args = read.parameters() == null ? "" : "(" + read.parameters().getText() + ")";
-        reporter.warn(source, call.Identifier().getSymbol(), "SPP_REDUNDANT_KEY_SETTER", "Replace " + service.name()
+        StringBuilder prefix = new StringBuilder();
+        for (var take : proposedTakes.entrySet()) {
+            prefix.append("Declare take ").append(take.getKey()).append(" as ").append(type).append(" { ");
+            take.getValue().forEach((targetField, sourceField) -> prefix.append(base(types.get(type).get(targetField)))
+                    .append(' ').append(targetField).append(" = ").append(sourceField).append("; "));
+            prefix.append("} first. ");
+        }
+        reporter.warn(source, call.Identifier().getSymbol(), "SPP_REDUNDANT_KEY_SETTER", prefix + "Replace " + service.name()
                 + " and the following read with " + find + args + " by " + String.join(", ", parts) + ";");
     }
 

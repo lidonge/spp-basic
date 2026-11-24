@@ -45,7 +45,7 @@ public final class LocalRedundancy {
             walk(program, node -> {
                 if (node instanceof SppParser.EntityContext entity && entity.Identifier() != null)
                     declarations.add(new DeclaredType(source, entity.Identifier().getSymbol(), fields(entity.entityBody())));
-                else if (node instanceof SppParser.RoleContext role && role.Identifier() != null)
+                else if (node instanceof SppParser.RoleContext role && role.getStart().getText().equals("Role"))
                     declarations.add(new DeclaredType(source, role.Identifier().getSymbol(), fields(role.roleBody())));
             });
         }
@@ -62,6 +62,7 @@ public final class LocalRedundancy {
     private static Map<String, String> fields(ParserRuleContext body) {
         Map<String, String> result = new LinkedHashMap<>();
         if (body == null) return result;
+        boolean role = body instanceof SppParser.RoleBodyContext || body.getParent() instanceof SppParser.RoleBodyContext;
         walk(body, node -> {
             if (!(node instanceof SppParser.FieldDeclarationContext field)) return;
             String name;
@@ -71,8 +72,9 @@ public final class LocalRedundancy {
                 type = field.type() == null ? (field.entitytype() == null ? "" : field.entitytype().getText()) : field.type().getText();
                 type += field.variableDeclaratorId().getText().substring(name.length());
             } else if (field.entitytype() != null && field.entitytype().Identifier() != null) {
-                name = field.entitytype().Identifier().getText();
                 type = field.entitytype().getText();
+                name = com.servpp.lang.general.NameUtil.normalizeParticipantReference(type);
+                if (role) name = com.servpp.lang.general.NameUtil.firstToLowerCase(name, true);
             } else if (field.IntegerLiteral() != null && field.Identifier() != null) {
                 name = field.Identifier().getText();
                 type = "String(" + field.IntegerLiteral().getText() + ")";

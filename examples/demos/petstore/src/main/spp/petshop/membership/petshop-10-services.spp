@@ -1,9 +1,9 @@
 domain petshop;
 
 atomic check checkCustomerProfile(Buyer) {
-    require(Buyer.name != null && Buyer.name != "", "NAME_REQUIRED");
-    require(Buyer.email != null && Buyer.email != "", "EMAIL_REQUIRED");
-    require(Buyer.address != null && Buyer.address != "", "ADDRESS_REQUIRED");
+    require(Buyer.name != BLANK, "NAME_REQUIRED");
+    require(Buyer.email != BLANK, "EMAIL_REQUIRED");
+    require(Buyer.address != BLANK, "ADDRESS_REQUIRED");
     require(Buyer.tier == MemberTier.NORMAL || Buyer.tier == MemberTier.VIP, "INVALID_MEMBER_TIER");
 }
 
@@ -26,7 +26,7 @@ atomic check checkNewCustomer(Buyer) {
 }
 
 atomic check checkBuyerCredential(Buyer) {
-    require(Buyer.membershipNumber != null && Buyer.membershipNumber != "", "MEMBERSHIP_NUMBER_REQUIRED");
+    require(Buyer.membershipNumber != BLANK, "MEMBERSHIP_NUMBER_REQUIRED");
 }
 
 atomic calculate locateBuyerCart(Buyer, Cart) {

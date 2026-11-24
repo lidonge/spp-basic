@@ -39,12 +39,9 @@ atomic check checkInternalAccountNumbers(
     BankAccount principalSubject
 ) {
     require(
-        interestSubject.accountNumber != null
-            && interestSubject.accountNumber != ""
-            && collectionSubject.accountNumber != null
-            && collectionSubject.accountNumber != ""
-            && principalSubject.accountNumber != null
-            && principalSubject.accountNumber != "",
+        interestSubject.accountNumber != BLANK
+            && collectionSubject.accountNumber != BLANK
+            && principalSubject.accountNumber != BLANK,
         "INTERNAL_ACCOUNT_NUMBER_REQUIRED"
     );
     require(

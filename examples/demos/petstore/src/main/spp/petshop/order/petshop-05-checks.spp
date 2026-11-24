@@ -19,7 +19,7 @@ atomic check checkQuotationInput(Cart, Goods[]) {
 
 atomic check checkUnpaidCancellationAgreementInput(UnpaidCancellationAgreement) {
     require(
-        UnpaidCancellationAgreement.reason != null && UnpaidCancellationAgreement.reason != "",
+        UnpaidCancellationAgreement.reason != BLANK,
         "REASON_REQUIRED"
     );
 }
@@ -30,7 +30,7 @@ atomic check checkUnpaidCancellation(ShopOrder) {
 
 atomic check checkPaidCancellationAgreementInput(PaidCancellationAgreement) {
     require(
-        PaidCancellationAgreement.reason != null && PaidCancellationAgreement.reason != "",
+        PaidCancellationAgreement.reason != BLANK,
         "REASON_REQUIRED"
     );
 }

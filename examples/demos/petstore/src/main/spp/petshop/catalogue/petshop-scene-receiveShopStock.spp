@@ -28,7 +28,6 @@ Scenario serial receiveShopStock(Goods, StockLine, StockSupply, StockReceiptAgre
     identify(StockSupply);
     transaction {
         receiveInventory bounds {
-            StockSupply.balance: [null, null];
             StockLine.available: [0, null];
         };
     }

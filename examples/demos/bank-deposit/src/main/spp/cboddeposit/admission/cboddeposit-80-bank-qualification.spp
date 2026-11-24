@@ -149,30 +149,24 @@ atomic check checkDepositBranchRange(DepositBankProfile, DepositOperatorFacts, C
                 }
                 if (DepositBankProfile.depositRange == "Subbranch") {
                     require(
-                        DepositBankProfile.subbranch != null
-                            && DepositBankProfile.subbranch != ""
-                            && DepositOperatorFacts.subbranch != null
-                            && DepositOperatorFacts.subbranch != "",
+                        DepositBankProfile.subbranch != BLANK
+                            && DepositOperatorFacts.subbranch != BLANK,
                         "DEPOSIT_SUBBRANCH_RELATION_NOT_FOUND"
                     );
                     require(DepositBankProfile.subbranch == DepositOperatorFacts.subbranch, "EN470");
                 }
                 if (DepositBankProfile.depositRange == "City") {
                     require(
-                        DepositBankProfile.area != null
-                            && DepositBankProfile.area != ""
-                            && DepositOperatorFacts.area != null
-                            && DepositOperatorFacts.area != "",
+                        DepositBankProfile.area != BLANK
+                            && DepositOperatorFacts.area != BLANK,
                         "DEPOSIT_AREA_NOT_FOUND"
                     );
                     require(DepositBankProfile.area == DepositOperatorFacts.area, "EN470");
                 }
                 if (DepositBankProfile.depositRange == "Province") {
                     require(
-                        DepositBankProfile.areaProvince != null
-                            && DepositBankProfile.areaProvince != ""
-                            && DepositOperatorFacts.areaProvince != null
-                            && DepositOperatorFacts.areaProvince != "",
+                        DepositBankProfile.areaProvince != BLANK
+                            && DepositOperatorFacts.areaProvince != BLANK,
                         "DEPOSIT_AREA_NOT_FOUND"
                     );
                     require(DepositBankProfile.areaProvince == DepositOperatorFacts.areaProvince, "EN470");

@@ -178,7 +178,7 @@ atomic calculate applyProductRevision(Product, ProductRevisionAgreement) {
 
 atomic check checkProductFacts(Product) {
     require(Product.cost >= 0, "INVALID_PRODUCT_COST");
-    require(Product.name != null && Product.name != "", "PRODUCT_NAME_REQUIRED");
+    require(Product.name != BLANK, "PRODUCT_NAME_REQUIRED");
 }
 
 Scenario serial reviseProduct(Product, ProductRevisionAgreement) {
