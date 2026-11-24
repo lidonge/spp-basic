@@ -1,6 +1,6 @@
 package com.servpp.service.transaction;
 
-import com.servpp.service.runtime.WireMappedEnum;
+import com.servpp.service.runtime.PlayCodeTable;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -22,7 +22,7 @@ public class QuantumConservationParticipant extends ObjectSnapshotTransactionPar
 
     private final List<QuantumAttribute> attributes = new ArrayList<>();
     private final List<CollectionAttribute> collectionAttributes = new ArrayList<>();
-    public record PlayEndpoint(String attributeId, String... keyPaths) { }
+    public record PlayEndpoint(String attributeId, Map<String, PlayCodeTable<?>> codeTables, String... keyPaths) { }
     private record PerformerKey(String objectType, String objectId) { }
     private record PlayedAttribute(QuantumAttribute logical, List<PlayEndpoint> endpoints) { }
     private final Map<Integer, PlayedAttribute> playedAttributes = new LinkedHashMap<>();
@@ -252,7 +252,7 @@ public class QuantumConservationParticipant extends ObjectSnapshotTransactionPar
         QuantumAttribute selected = null;
         String selectedId = null;
         for (var endpoint : played.endpoints()) {
-            String id = mappedObjectId(participant(logical), endpoint.keyPaths());
+            String id = mappedObjectId(participant(logical), endpoint);
             if (id == null) continue;
             var key = new PerformerKey(objectType(endpoint.attributeId()), id);
             if (!performers.computeIfAbsent(key, candidate ->
@@ -269,10 +269,11 @@ public class QuantumConservationParticipant extends ObjectSnapshotTransactionPar
         bookedObjectIds.put(selected, selectedId);
     }
 
-    private String mappedObjectId(Object participant, String[] paths) {
+    private String mappedObjectId(Object participant, PlayEndpoint endpoint) {
         List<String> keys = new ArrayList<>();
-        for (String path : paths) {
-            Object value = WireMappedEnum.wireValue(com.servpp.service.repository.ObjectPropertyAccess.read(participant, path));
+        for (String path : endpoint.keyPaths()) {
+            Object value = PlayCodeTable.encodeField(endpoint.codeTables(), path,
+                    com.servpp.service.repository.ObjectPropertyAccess.read(participant, path));
             if (value == null || value.toString().isBlank()) return null;
             keys.add(value.toString());
         }

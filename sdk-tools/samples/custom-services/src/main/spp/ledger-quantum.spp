@@ -33,3 +33,18 @@ Scenario serial readClaimBy(ProviderPlayedRole played) {
     findProviderPlayedRole by ProviderPlayedRole.accountCode = "P-1",
         ProviderPlayedRole.currency = "UNIT";
 }
+
+Enum SettlementUnit { LOCAL_UNIT, UNLISTED }
+Role SettlementPosition {
+    String accountCode;
+    SettlementUnit unit;
+    quantum decimal claim;
+}
+
+quantum update settleFunds(Funds consumerFunds, SettlementPosition position, TransferInput transfer) {
+    consumerFunds.amount -> position.claim : transfer.amount;
+}
+
+Scenario serial settlePosition(Funds consumerFunds, SettlementPosition position, TransferInput transfer) {
+    transaction { settleFunds bounds { position.claim: [null, 0]; }; }
+}

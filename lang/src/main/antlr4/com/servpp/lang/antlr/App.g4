@@ -102,7 +102,11 @@ rolePlay
     ;
 
 rolePlayField
-    : consumer=Identifier '=' provider=Identifier ';'
+    : consumer=Identifier '=' provider=Identifier ('{' playCodeEntry+ '}')? ';'
+    ;
+
+playCodeEntry
+    : member=Identifier ':' StringLiteral (',' StringLiteral)* ';'
     ;
 
 localServiceBinding

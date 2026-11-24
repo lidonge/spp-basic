@@ -1,6 +1,7 @@
 package com.servpp.lang.models;
 
 import com.servpp.lang.general.IConstance;
+import com.servpp.lang.models.app.RolePlay;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,10 +19,23 @@ public class SppRoleMapper extends SppService{
     public void setAlternatives(List<List<SppClass>> value) { alternatives = value; }
     boolean isMapSame;
     boolean isTakeAll;
-    private boolean appPlay;
+    private RolePlay appPlay;
 
-    boolean isAppPlay() { return appPlay; }
-    void setAppPlay() { appPlay = true; }
+    boolean isAppPlay() { return appPlay != null; }
+    void setAppPlay(RolePlay play) { appPlay = play; }
+
+    public String getPlayCodeTables() {
+        if (appPlay == null) return "";
+        var declarations = new StringBuilder();
+        appPlay.fields().forEach((field, source) -> {
+            var target = role.getField(field);
+            if (SppEnum.bindsProviderString(target, entities.get(0).getField(source))) {
+                var binding = new PlayCodeBinding((SppEnum) target.getType(), appPlay.codeTables().get(field));
+                declarations.append(binding.declaration("$codes_" + field));
+            }
+        });
+        return declarations.toString();
+    }
 
     public SppRoleMapper(String name) {
         super(name, IConstance.CompilationUnitType.rolemapper);
@@ -96,7 +110,7 @@ public class SppRoleMapper extends SppService{
     }
 
     public boolean getHasPhysicalNumericMappings() {
-        return appPlay || role.getSppFieldList().stream().anyMatch(SppField::isSnapshotStorageFact) || getSppFieldList().stream().anyMatch(f -> f instanceof SppRoleField m
+        return isAppPlay() || role.getSppFieldList().stream().anyMatch(SppField::isSnapshotStorageFact) || getSppFieldList().stream().anyMatch(f -> f instanceof SppRoleField m
                 && entities != null && entities.stream().anyMatch(e -> e.getName().equals(m.getType().getName())
                     && e.getName().equals(m.getEntityName())))
                 || entities != null && entities.stream().anyMatch(entity -> entity.getSppFieldList().stream()
@@ -141,10 +155,8 @@ public class SppRoleMapper extends SppService{
                 String value = toRole ? object + ".get" + source.getUpperName() + "()" : "role.get" + target.getUpperName() + "()";
                 SppField destination = toRole ? target : source;
                 SppField origin = toRole ? source : target;
-                if (appPlay && SppEnum.bindsProviderString(target, source)) {
-                    var enumeration = (SppEnum) target.getType();
-                    value = toRole ? enumeration.getName() + "." + enumeration.codeFactory() + "(" + value + ")"
-                            : value + " == null ? null : " + value + ".getValue()";
+                if (isAppPlay() && SppEnum.bindsProviderString(target, source)) {
+                    value = "$codes_" + target.getName() + (toRole ? ".decode(" : ".encode(") + value + ")";
                 } else if (!source.getJavaType().equals(target.getJavaType())
                         || !java.util.Objects.equals(source.getNumericAdapter(), target.getNumericAdapter())) {
                     value = com.servpp.lang.models.app.expr.NumericJavaRenderer.convertNumber(value, origin, destination);

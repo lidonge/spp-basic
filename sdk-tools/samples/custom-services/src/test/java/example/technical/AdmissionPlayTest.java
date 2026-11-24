@@ -20,6 +20,8 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class AdmissionPlayTest {
+    private final boolean alternate = Boolean.getBoolean("sample.alternate.admission");
+
     @Test public void storedPlayMapperRoundTripsTheUnknownProviderCode() {
         var mapper = new MapperAdmissionToStoredResult();
         var provider = new example.generated.ledger.model.Admission().returnCode("E9999");
@@ -35,6 +37,20 @@ public class AdmissionPlayTest {
         mapper.entityToRole(performers, role);
         mapper.roleToEntity(role, performers);
         assertEquals("E1214", provider.getReturnCode());
+
+        provider.setReturnCode(alternate ? "200" : "");
+        mapper.entityToRole(performers, role);
+        assertSame(ProviderOutcome.SUCCESS, role.getCode());
+        mapper.roleToEntity(role, performers);
+        assertEquals(alternate ? "OK" : "", provider.getReturnCode());
+
+        if (alternate) {
+            provider.setReturnCode("");
+            mapper.entityToRole(performers, role);
+            assertTrue(ProviderOutcome.sameMember(ProviderOutcome.UNRECOGNIZED, role.getCode()));
+            mapper.roleToEntity(role, performers);
+            assertEquals("", provider.getReturnCode());
+        }
     }
 
     @Test public void providerCodesReachTheCallerThroughGeneratedPlayAndCheck() throws Exception {
@@ -49,17 +65,20 @@ public class AdmissionPlayTest {
             var runtime = LocalGeneratedServiceRuntime.jsonSnapshots(source, mapper, ignored -> null);
             GeneratedApplicationDeployment.install(runtime, "basicLedger");
             var repository = runtime.getRepository();
-            String[] codes = {"", "E1214", "OLD", "E9999", null};
-            String[] expected = {"", "E1214", "E1214", "E9999", "UNRECOGNIZED"};
+            String[] codes = alternate ? new String[]{"OK", "404", "MISS", "E9999", null, "200", "OLD"}
+                    : new String[]{"", "E1214", "OLD", "E9999", null, "", "OLD"};
+            String[] expected = {"", "E1214", "E1214", "E9999", "UNRECOGNIZED", "", alternate ? "OLD" : "E1214"};
             for (int i = 0; i < codes.length; i++) {
-                String account = "A" + i;
+                String account = alternate && i == 1 ? "K1" : "A" + i;
                 var admission = new Admission().account(account).returnCode(codes[i]);
                 DeclaredTransactionContext.execute(TransactionMode.LOCAL, () -> repository.executeInTransaction(() ->
                         repository.insert("Admission", account, admission)));
                 var request = mapper.convertValue(Map.of("result", Map.of("accountNumber", account)), VerifyAdmissionRequest.class);
                 runtime.executeGeneratedService("ledger.verifyAdmission", request);
-                assertEquals(new BusinessChecks.Result(i == 0, expected[i]), BusinessChecks.scenarioResult());
+                assertEquals(new BusinessChecks.Result(i == 0 || i == 5, expected[i]), BusinessChecks.scenarioResult());
                 assertEquals(expected[i], request.getResult().getCode().getValue());
+                if (alternate && i == 6)
+                    assertTrue(ProviderOutcome.sameMember(ProviderOutcome.UNRECOGNIZED, request.getResult().getCode()));
             }
             var lookup = mapper.convertValue(Map.of("lookup", Map.of("keyCode", "A1")), ReadAdmissionRequest.class);
             runtime.executeGeneratedService("ledger.readAdmission", lookup);

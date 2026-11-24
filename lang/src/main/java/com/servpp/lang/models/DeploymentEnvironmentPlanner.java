@@ -95,7 +95,7 @@ public final class DeploymentEnvironmentPlanner {
     private static final String TCC_PENDING =
             "distributed cross-domain quantum transfer not yet supported (APP TCC pending)";
 
-    private record QuantumPosition(SppDomain owner, String attributeId, List<String> keys) { }
+    private record QuantumPosition(SppDomain owner, String attributeId, List<String> keys, Map<String, PlayCodeBinding> codeTables) { }
 
     private record QuantumStoreIdentity(String adapter, String jdbc, String valueTable,
                                         String journalTable, String decimalStorage) {
@@ -210,7 +210,7 @@ public final class DeploymentEnvironmentPlanner {
         positions.forEach((logical, candidates) -> {
             if (candidates.get(0).owner() != domain)
                 bindings.put(logical, candidates.stream().map(position ->
-                        new SppService.QuantumEndpoint(position.attributeId(), position.keys(),
+                        new SppService.QuantumEndpoint(position.attributeId(), position.keys(), position.codeTables(),
                                 position.owner().getName() + "." + position.attributeId().split("\\.", 2)[0])).toList());
         });
         service.setQuantumEndpoints(bindings);
@@ -289,7 +289,7 @@ public final class DeploymentEnvironmentPlanner {
                     continue;
                 }
                 var mapper = new SppRoleMapper(name);
-                mapper.setAppPlay();
+                mapper.setAppPlay(play);
                 mapper.setRole(role);
                 mapper.setDomainName(domain.getName());
                 mapper.setReal(true);
@@ -345,6 +345,11 @@ public final class DeploymentEnvironmentPlanner {
                         var left = role.getField(mapping.getKey());
                         var right = performer.getField(mapping.getValue());
                         if (left == null || right == null) errors.add(prefix + "unknown field " + mapping);
+                        else if (play.codeTables().containsKey(mapping.getKey()) && !SppEnum.bindsProviderString(left, right))
+                            errors.add(prefix + "code table requires a scalar consumer enum and scalar provider String: " + mapping);
+                        else if (left.getType() instanceof SppEnum enumeration && !play.codeTables().containsKey(mapping.getKey())
+                                && enumeration.needsPlayCodeTable())
+                            errors.add(prefix + "code table required for uncoded enum member: " + mapping);
                         else if (left.isQuantum() != right.isQuantum())
                             errors.add(prefix + "quantum/non-quantum field mismatch " + mapping);
                         else if ((!left.getType().getName().equals(right.getType().getName())
@@ -354,6 +359,8 @@ public final class DeploymentEnvironmentPlanner {
                         else if (left.isQuantum() && !Objects.equals(
                                 scale(domain, role, left), scale(owner, performer, right)))
                             errors.add(prefix + "scale mismatch " + mapping);
+                        if (left != null && left.getType() instanceof SppEnum enumeration && play.codeTables().containsKey(mapping.getKey()))
+                            new PlayCodeBinding(enumeration, play.codeTables().get(mapping.getKey())).validate(prefix + mapping + ": ", errors);
                     }
                     for (var field : role.getSppFieldList()) if (!isStoredRolePlay(domain, role, play) && field.isQuantum()
                             && !play.fields().containsKey(field.getName()))
@@ -416,13 +423,19 @@ public final class DeploymentEnvironmentPlanner {
         if (type.getField(field) == null || !type.getField(field).isQuantum() || type.getReferenceSource() != null)
             return List.of();
         var plays = plays(domain, type);
-        if (plays.isEmpty()) return List.of(new QuantumPosition(domain, type.getName() + "." + field, List.of()));
+        if (plays.isEmpty()) return List.of(new QuantumPosition(domain, type.getName() + "." + field, List.of(), Map.of()));
         List<QuantumPosition> positions = new ArrayList<>();
         for (var play : plays) {
             var owner = project.getDomain(play.providerDomain());
             var performer = (SppClass) owner.getSppClass(play.providerType());
+            var keys = playKeys(owner, performer, play);
+            var codeTables = new LinkedHashMap<String, PlayCodeBinding>();
+            for (String key : keys) {
+                if (play.codeTables().containsKey(key))
+                    codeTables.put(key, new PlayCodeBinding((SppEnum) type.getField(key).getType(), play.codeTables().get(key)));
+            }
             positions.add(new QuantumPosition(owner, performer.getName() + "." + play.fields().get(field),
-                    playKeys(owner, performer, play)));
+                    keys, codeTables));
         }
         return positions;
     }

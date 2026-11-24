@@ -193,15 +193,29 @@ public abstract class BaseHandler implements IHeaderHandler, IPrimaryHandler,
     @Override public void enterRolePlay(AppParser.RolePlayContext ctx) {
         var fields = new java.util.LinkedHashMap<String, String>();
         var targets = new java.util.HashSet<String>();
+        var tables = new java.util.LinkedHashMap<String, java.util.Map<String, java.util.List<String>>>();
         for (var field : ctx.rolePlayField()) {
             String source = field.consumer.getText();
             String target = field.provider.getText();
+            if (!field.playCodeEntry().isEmpty()) {
+                var table = new java.util.LinkedHashMap<String, java.util.List<String>>();
+                for (var entry : field.playCodeEntry()) {
+                    String member = entry.member.getText();
+                    var codes = entry.StringLiteral().stream()
+                            .map(token -> org.apache.commons.lang3.StringEscapeUtils.unescapeJava(normalizeConfigValue(token.getText()))).toList();
+                    table.computeIfAbsent(member, ignored -> new java.util.ArrayList<>()).addAll(codes);
+                }
+                table.replaceAll((member, codes) -> java.util.List.copyOf(codes));
+                tables.put(source, java.util.Map.copyOf(table));
+            }
             if (fields.putIfAbsent(source, target) != null || !targets.add(target))
                 logSppError(field, "Duplicate APP play field mapping " + source + " = " + target);
         }
         getCurrentRuleBlock().getRolePlays().add(new com.servpp.lang.models.app.RolePlay(
-                ctx.role.getText(), ctx.providerDomain.getText(), ctx.providerType.getText(), fields));
+                ctx.role.getText(), ctx.providerDomain.getText(), ctx.providerType.getText(), fields, tables));
     }
+    @Override public void enterPlayCodeEntry(AppParser.PlayCodeEntryContext ctx) { }
+    @Override public void exitPlayCodeEntry(AppParser.PlayCodeEntryContext ctx) { }
     @Override public void exitRolePlay(AppParser.RolePlayContext ctx) { }
     @Override public void enterRolePlayField(AppParser.RolePlayFieldContext ctx) { }
     @Override public void exitRolePlayField(AppParser.RolePlayFieldContext ctx) { }

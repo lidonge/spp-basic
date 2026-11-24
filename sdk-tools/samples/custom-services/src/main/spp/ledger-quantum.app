@@ -17,3 +17,9 @@ play ProviderPlayedRole by reserves.Reserve {
     currency = denomination;
     claim = available;
 }
+
+play SettlementPosition by positions.Position {
+    accountCode = account;
+    unit = currency { LOCAL_UNIT: "UNIT"; };
+    claim = outstanding;
+}

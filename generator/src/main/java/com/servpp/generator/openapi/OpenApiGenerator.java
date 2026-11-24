@@ -292,6 +292,11 @@ public class OpenApiGenerator extends BaseClassGenerator implements ILogable {
                         return $decode(value, false);
                       }
 
+                      public static __ENUM_TYPE__ fromUnmappedCode(String value) {
+                        if (value == null) return fromCode(null);
+                        throw new IllegalArgumentException("Unexpected value '" + value + "' for enum " + __ENUM_TYPE__.class.getSimpleName());
+                      }
+
                       private static __ENUM_TYPE__ $decode(String value, boolean allowOther) {
                     """ + endMapped + "    ";
             String declaration = "public enum " + enumType;

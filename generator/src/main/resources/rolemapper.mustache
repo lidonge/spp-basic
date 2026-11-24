@@ -1,6 +1,7 @@
 package {{packageName}};
 import java.util.Map;
 public class {{name}} {
+{{playCodeTables}}
 	public void roleToEntity({{role.name}} role, Map<String, Object> entities) {
     {{#hasPhysicalNumericMappings}}{{physicalRoleToEntity}}{{/hasPhysicalNumericMappings}}
     {{^hasPhysicalNumericMappings}}

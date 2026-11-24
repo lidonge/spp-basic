@@ -14,7 +14,7 @@ Scenario serial verifyAdmission(ProviderResult result) {
 }
 
 Enum AccountCode { FIRST:"A1", UNLISTED:other }
-Enum StrictOutcome { NOT_FOUND:"E1214", OTHER }
+Enum StrictOutcome { NOT_FOUND:"E1214", OTHER:"OTHER" }
 Role AdmissionLookup { AccountCode keyCode; StrictOutcome code; }
 Scenario serial readAdmission(AdmissionLookup lookup) {
     findAdmissionLookup;

@@ -26,6 +26,7 @@ scope {
     local {
         repository(argument(0, Entry.code), Entry) using records findEntry;
         moveFunds;
+        settleFunds;
     }
 }
 

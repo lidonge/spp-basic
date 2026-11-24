@@ -113,7 +113,32 @@ public class CrossDomainQuantumTransferTest {
                     """);
             var errors = DomainDeploymentValidator.validate(project);
             if (type.equals("Mapped")) assertTrue(errors.toString(), errors.isEmpty());
-            else assertTrue(errors.toString(), errors.stream().anyMatch(e -> e.contains("type mismatch code=currency")));
+            else assertTrue(errors.toString(), errors.stream().anyMatch(e -> e.contains(type.equals("Plain")
+                    ? "code table required" : "type mismatch code=currency")));
+        }
+    }
+
+    @Test public void validatesTheEffectiveCodeTableForEachPlay() throws Exception {
+        String valid = "code = currency { SUCCESS: \"OK\", \"200\"; };";
+        for (String[] example : new String[][]{
+                {"Outcome", valid, ""},
+                {"Outcome", "code = currency { SUCCESS: \"OK\"; SUCCESS: \"200\"; };", ""},
+                {"Outcome", "code = currency;", "code table required"},
+                {"Outcome", valid + " } play Result by alternate.Reserve { account = account; code = currency;", "code table required"},
+                {"Outcome", "code = currency { UNKNOWN_NAME: \"x\"; };", "unknown code table member"},
+                {"Outcome", "code = currency { FAILURE: \"x\"; SUCCESS: \"x\"; };", "maps to both"},
+                {"Outcome", "code = currency { SUCCESS: \"ERR\"; };", "maps to both"},
+                {"String", valid, "scalar consumer enum"},
+                {"Outcome[]", valid, "scalar consumer enum"},
+                {"Outcome", "code = outstanding { SUCCESS: \"OK\"; };", "scalar provider String"}
+        }) {
+            var project = project("", "quantum decimal");
+            parse(project, ".spp", "domain consumer; Enum Outcome { SUCCESS, FAILURE:\"ERR\", UNKNOWN:other } "
+                    + "Role Result { String account; " + example[0] + " code; }");
+            parse(project, ".app", "domain consumer; play Result by provider.Position { account = account; " + example[1] + " }");
+            var errors = DomainDeploymentValidator.validate(project);
+            if (example[2].isEmpty()) assertTrue(errors.toString(), errors.isEmpty());
+            else assertTrue(errors.toString(), errors.stream().anyMatch(error -> error.contains(example[2])));
         }
     }
 
@@ -126,9 +151,9 @@ public class CrossDomainQuantumTransferTest {
         assertTrue(service.getQuantumServiceMetadataMethod().contains("\"Position.outstanding\""));
         assertTrue(service.getQuantumServiceMetadataMethod().contains("\"Reserve.outstanding\""));
         assertTrue(service.getQuantumConservationParticipantMethod().contains(
-                "PlayEndpoint(\"Position.outstanding\", \"accountCode\", \"currency\")"));
+                "PlayEndpoint(\"Position.outstanding\", java.util.Map.ofEntries(), \"accountCode\", \"currency\")"));
         assertTrue(service.getQuantumConservationParticipantMethod().contains(
-                "PlayEndpoint(\"Reserve.outstanding\", \"currency\", \"accountCode\")"));
+                "PlayEndpoint(\"Reserve.outstanding\", java.util.Map.ofEntries(), \"currency\", \"accountCode\")"));
     }
 
     @Test public void changesProviderThroughAppAlone() throws Exception {

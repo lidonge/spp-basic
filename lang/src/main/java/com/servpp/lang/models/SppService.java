@@ -132,9 +132,26 @@ public class SppService extends SppClass{
                 + ")").collect(Collectors.joining(",")) + ")";
     }
     record PlayQuery(String service, String providerClass, Map<String, String> fields, List<String> keyPaths,
-                     Map<String, SppEnum> decoders) { }
+                     Map<String, PlayCodeBinding> codeTables) { }
     private final Map<Integer, List<PlayQuery>> playQueries = new LinkedHashMap<>();
     Map<Integer, List<PlayQuery>> getPlayQueries() { return playQueries; }
+
+    private static String codeTableName(int parameter, int alternative, String field) {
+        return "$codes$" + parameter + "$" + alternative + "$" + field;
+    }
+
+    public String getPlayCodeTables() {
+        var declarations = new StringBuilder();
+        playQueries.forEach((parameter, steps) -> {
+            for (int index = 0; index < steps.size(); index++) {
+                for (var mapping : steps.get(index).codeTables().entrySet()) {
+                    String name = codeTableName(parameter, index, mapping.getKey());
+                    declarations.append(mapping.getValue().declaration(name));
+                }
+            }
+        });
+        return declarations.toString();
+    }
 
     private String playQueryStatements() {
         return playQueries.entrySet().stream().map(entry -> {
@@ -142,18 +159,18 @@ public class SppService extends SppClass{
             var role = (SppClass) parameter.getType();
             String quantumFields = role.getSppFieldList().stream().filter(SppField::isQuantum)
                     .map(field -> "\"" + field.getName() + "\"").collect(Collectors.joining(", "));
-            String alternatives = entry.getValue().stream().map(step -> {
+            String alternatives = java.util.stream.IntStream.range(0, entry.getValue().size()).mapToObj(index -> {
+                var step = entry.getValue().get(index);
                 String mappings = step.fields().entrySet().stream().map(mapping ->
                         "java.util.Map.entry(\"" + mapping.getKey() + "\", \"" + mapping.getValue() + "\")")
                         .collect(Collectors.joining(", "));
-                String decoders = step.decoders().entrySet().stream().map(mapping ->
-                        "java.util.Map.entry(\"" + mapping.getKey() + "\", " + mapping.getValue().getPackageName()
-                                + "." + mapping.getValue().getName() + "::" + mapping.getValue().codeFactory() + ")")
+                String codeTables = step.codeTables().entrySet().stream().map(mapping ->
+                        "java.util.Map.entry(\"" + mapping.getKey() + "\", " + codeTableName(entry.getKey(), index, mapping.getKey()) + ")")
                         .collect(Collectors.joining(", "));
                 String keys = step.keyPaths().stream().map(path -> "\"" + path + "\"").collect(Collectors.joining(", "));
                 return "new com.servpp.service.runtime.ParticipantRoleQueries.Play(\"" + step.service()
                         + "\", " + getBasePackage() + "." + step.providerClass() + ".class, java.util.Map.ofEntries("
-                        + mappings + "), java.util.List.of(" + keys + "), java.util.Map.ofEntries(" + decoders + "))";
+                        + mappings + "), java.util.List.of(" + keys + "), java.util.Map.ofEntries(" + codeTables + "))";
             }).collect(Collectors.joining(", "));
             return "        com.servpp.service.runtime.ParticipantRoleQueries.play(" + parameter.getName()
                     + ", new String[]{" + quantumFields + "}, " + alternatives + ");\n";
@@ -208,7 +225,7 @@ public class SppService extends SppClass{
     private final Set<String> transferPaths = new LinkedHashSet<>();
     Set<String> getTransferPaths() { return transferPaths; }
 
-    record QuantumEndpoint(String attributeId, List<String> keyPaths, String storageType) { }
+    record QuantumEndpoint(String attributeId, List<String> keyPaths, Map<String, PlayCodeBinding> codeTables, String storageType) { }
     private Map<String, List<QuantumEndpoint>> quantumEndpoints = Map.of();
 
     void setQuantumEndpoints(Map<String, List<QuantumEndpoint>> endpoints) {
@@ -453,6 +470,9 @@ public class SppService extends SppClass{
                 for (var endpoint : endpoints) {
                     method.append(", new QuantumConservationParticipant.PlayEndpoint(\"")
                             .append(endpoint.attributeId()).append("\"");
+                    String tables = endpoint.codeTables().entrySet().stream().map(entry -> "java.util.Map.entry(\""
+                            + entry.getKey() + "\", " + entry.getValue().expression() + ")").collect(Collectors.joining(", "));
+                    method.append(", java.util.Map.ofEntries(").append(tables).append(")");
                     for (String path : endpoint.keyPaths()) method.append(", \"").append(path).append("\"");
                     method.append(")");
                 }

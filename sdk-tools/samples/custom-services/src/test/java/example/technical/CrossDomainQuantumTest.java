@@ -146,6 +146,18 @@ public class CrossDomainQuantumTest {
             assertEquals(6, observer.findAll().size());
             assertTrue(observer.findAll().stream().anyMatch(row ->
                     "Reserve.available".equals(row.getAttributeId()) && reserveKey.equals(row.getObjectId())));
+
+            // The consumer's code-free unit becomes the provider's composite key on booking.
+            var settlement = mapper.convertValue(Map.of("consumerFunds", Map.of("wallet", "F-1"),
+                    "position", Map.of("accountCode", "BOTH", "unit", "UNLISTED"),
+                    "transfer", Map.of("amount", BigDecimal.ONE)), example.generated.ledger.model.SettlePositionRequest.class);
+            var unmapped = assertThrows(IllegalArgumentException.class,
+                    () -> runtime.executeGeneratedService("ledger.settlePosition", settlement));
+            assertTrue(unmapped.getMessage(), unmapped.getMessage().contains("No provider code for UNLISTED"));
+            settlement.getPosition().setUnit(example.generated.ledger.model.SettlementUnit.LOCAL_UNIT);
+            runtime.executeGeneratedService("ledger.settlePosition", settlement);
+            assertEquals(0, new BigDecimal("-2.000").compareTo(observer.findCurrentValue(CLAIM,
+                    CompositeObjectId.encode(List.of("BOTH", "UNIT"))).orElseThrow()));
         } finally {
             container.clear();
             if (previous == null) System.clearProperty(property);

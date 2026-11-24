@@ -12,6 +12,7 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /** APP-bound local delegation to an actual generated provider, with explicit fact projection. */
 public final class LocalDomainServices {
@@ -64,13 +65,13 @@ public final class LocalDomainServices {
     }
     static Object queryPlay(Object participant, ParticipantRoleQueries.Play play) {
         for (String path : play.keyPaths()) {
-            Object value = WireMappedEnum.wireValue(com.servpp.service.repository.ObjectPropertyAccess.read(participant, path));
+            Object value = PlayCodeTable.encodeField(play.codeTables(), path, com.servpp.service.repository.ObjectPropertyAccess.read(participant, path));
             if (value == null || value.toString().isBlank()) return null;
         }
         var values = new LinkedHashMap<String, Object>();
         play.fields().forEach((roleField, providerField) -> {
             Object value = com.servpp.service.repository.ObjectPropertyAccess.read(participant, roleField);
-            values.put(providerField, WireMappedEnum.wireValue(value));
+            values.put(providerField, PlayCodeTable.encodeField(play.codeTables(), roleField, value));
         });
         Object performer = MAPPER.convertValue(values, play.performer());
         String[] fields = play.fields().values().toArray(String[]::new);
@@ -84,8 +85,8 @@ public final class LocalDomainServices {
         var values = new LinkedHashMap<String, Object>();
         play.fields().forEach((roleField, providerField) -> {
             Object value = com.servpp.service.repository.ObjectPropertyAccess.read(performer, providerField);
-            var decoder = play.decoders().get(roleField);
-            values.put(roleField, decoder == null ? value : decoder.apply((String) value));
+            var decoder = play.codeTables().get(roleField);
+            values.put(roleField, decoder == null ? value : decoder.decode((String) value));
         });
         copyPlayValues(participant, values);
     }
@@ -97,8 +98,7 @@ public final class LocalDomainServices {
     }
 
     private static void copyPlayValues(Object participant, java.util.Map<String, Object> values) {
-        Object result = MAPPER.convertValue(values, participant.getClass());
-        copyFacts(participant, result, participant.getClass(), values.keySet().toArray(String[]::new),
+        copyFacts(participant, values, participant.getClass(), values.keySet().toArray(String[]::new),
                 new String[0], false, false);
         PropertyChanges.clean(participant);
     }
@@ -222,7 +222,8 @@ public final class LocalDomainServices {
                 Object incoming = read(source, property.getName());
                 var propertyType = MAPPER.getTypeFactory().constructType(
                         property.getWriteMethod().getGenericParameterTypes()[0]);
-                Object converted = MAPPER.convertValue(incoming, propertyType);
+                Object converted = incoming instanceof WireMappedEnum && propertyType.getRawClass().isInstance(incoming)
+                        ? incoming : MAPPER.convertValue(incoming, propertyType);
                 projectMetadata(incoming, converted);
                 Object current = property.getReadMethod() == null ? null : property.getReadMethod().invoke(target);
                 if (current != null && converted != null && current.getClass().equals(converted.getClass())
@@ -289,6 +290,7 @@ public final class LocalDomainServices {
                 RoleIdentityContext.attachPerformers(target, role, actors.toArray()));
     }
     private static Object read(Object bean, String propertyName) {
+        if (bean instanceof Map<?, ?> facts) return facts.get(propertyName);
         try {
             for (var property : Introspector.getBeanInfo(bean.getClass(), Object.class).getPropertyDescriptors())
                 if (property.getName().equals(propertyName) && property.getReadMethod() != null)

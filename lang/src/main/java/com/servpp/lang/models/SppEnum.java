@@ -26,9 +26,13 @@ public class SppEnum extends SppCompilationUnit{
 
     static boolean bindsProviderString(SppField consumer, SppField provider) {
         return consumer.getArrayDimension() == 0 && provider.getArrayDimension() == 0
-                && consumer.getType() instanceof SppEnum enumeration
-                && "String".equals(provider.getType().getName())
-                && enumeration.items.stream().anyMatch(item -> !item.getAliases().isEmpty());
+                && consumer.getType() instanceof SppEnum
+                && "String".equals(provider.getType().getName());
+    }
+
+    boolean needsPlayCodeTable() {
+        return items.stream().noneMatch(item -> !item.getAliases().isEmpty())
+                || items.stream().anyMatch(item -> item.getFallback() == null && item.getAliases().isEmpty());
     }
 
     public String codeFactory() {

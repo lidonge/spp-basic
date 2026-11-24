@@ -364,6 +364,33 @@ error. Here a null provider code selects `UNRECOGNIZED`. A declared `null`
 fallback takes precedence for null input. Writes and lookup
 keys use the member's `getValue()`, so an alias writes the canonical code.
 
+When another provider uses different codes, add a table to the affected field
+in its APP binding. The SPP role and its business check stay the same.
+
+```app
+play ProviderResult by othercore.AdmissionResult {
+    accountNumber = account;
+    code = status { NOT_FOUND: "404"; SUCCESS: "OK", "200"; };
+}
+```
+
+Both `OK` and `200` select `SUCCESS`. A write or provider lookup key uses
+`OK`. A rejected `404` selects `NOT_FOUND`, whose business rejection code
+is still `E1214`. An unmatched provider code selects the explicit `other`
+member and keeps its original value, even if it matches a replaced SPP code.
+Without `other`, an unmatched code raises a runtime error.
+
+Each listed member replaces its entire alias list for this binding. An
+omitted member keeps its declared SPP aliases, so a provider that changes
+only success needs just `SUCCESS: "OK", "200";`. Each effective code must
+belong to exactly one member, including inherited aliases.
+
+You can also declare `Enum Outcome { NOT_FOUND, SUCCESS, UNRECOGNIZED:other }`.
+When an ordinary member lacks declared codes, every play binding of that enum
+field requires a table. An omitted ordinary member without aliases has no
+provider representation. It cannot be read as that member, and writing it
+raises an error. The `other` and `null` markers need no table entries.
+
 For provider-owned quantum storage, each `play` maps all quantum fields and all parts of the
 provider's primary key. The compiler uses the provider's APP primary-key order
 and checks field types, quantum modifiers and numeric scale. Each mapped

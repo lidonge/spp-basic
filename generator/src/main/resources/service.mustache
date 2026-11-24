@@ -24,6 +24,7 @@ import {{basePackage}}.{{domainName}}.model.{{type.name}};{{/type.type}}
 {{#defaultPersistenceClass}}import org.springframework.beans.factory.annotation.Autowired;{{/defaultPersistenceClass}}
 
 public class Simple{{name}} implements {{name}}, ScopeMetadataProvider, GeneratedServiceKindProvider{{quantumServiceMetadataInterface}}{{objectSnapshotInterface}}{{calculationMetadataInterface}}{{tccLifecycleInterface}}{{compensationInterface}}{{persistenceInterface}}{{localDelegateMetadataInterface}} {
+{{playCodeTables}}
     {{#requestSuffix}}//private {{name}}{{requestSuffix}} arg;{{/requestSuffix}}
     {{^requestSuffix}}{{#serviceBody.sppLocalVarList}}private {{javaType}}{{toArrayString}} arg;{{/serviceBody.sppLocalVarList}}{{/requestSuffix}}
     {{#responseSuffix}}//private {{name}}{{responseSuffix}} ret;{{/responseSuffix}}

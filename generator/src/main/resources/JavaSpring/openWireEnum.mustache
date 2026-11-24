@@ -68,6 +68,11 @@ public final class __ENUM_TYPE__ implements com.servpp.service.runtime.WireMappe
     {{#vendorExtensions.x-spp-enum-input-aliases}}
     if ("{{{literal}}}".equals(value)) return $MEMBERS[{{index}}];
     {{/vendorExtensions.x-spp-enum-input-aliases}}
+    return fromUnmappedCode(value);
+  }
+
+  public static __ENUM_TYPE__ fromUnmappedCode(String value) {
+    if (value == null) return fromValue(null);
     __ENUM_TYPE__ fallback = $MEMBERS[{{vendorExtensions.x-spp-enum-other-index}}];
     return new __ENUM_TYPE__(fallback.kind, fallback.memberValue, value);
   }
