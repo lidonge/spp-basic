@@ -4,6 +4,7 @@ import com.servpp.generator.db.DDLGenerator;
 import com.servpp.generator.openapi.MustacheClassWriter;
 import com.servpp.generator.openapi.OpenApiGenerator;
 import com.servpp.lang.AppCompiler;
+import com.servpp.lang.lint.RedundancyLint;
 import com.servpp.lang.SppCompiler;
 import com.servpp.lang.general.SppGeneralHandler;
 import com.servpp.lang.models.SppDomain;
@@ -49,15 +50,20 @@ public class GeneratorUtil {
                                String basePackage, String physicalProfile, java.util.function.Consumer<SppProject> inspection)
             throws MojoExecutionException, MojoFailureException {
         SppProject project = new SppProject();
+        List<RedundancyLint.Source> sources = new ArrayList<>();
+        SppPlugin.IAntlrCompiler parse = (file, model) -> {
+            String name = file.getName();
+            com.servpp.lang.AntlrCompiler compiler = name.endsWith(".spp") || name.endsWith(".enum")
+                    ? new SppCompiler(file, model) : new AppCompiler(file, model);
+            String path = sppSourceDirectory.toPath().relativize(file.toPath()).toString();
+            return compiler.compile(tree -> sources.add(new RedundancyLint.Source(path, tree)));
+        };
         //parse enum file first
-        List<ParseTreeListener> sppTreeListeners = compileAntlr(sppSourceDirectory, project, ".enum", (sppFile, sppProject) -> {
-            SppGeneralHandler sppGeneralHandler = (SppGeneralHandler) new SppCompiler(sppFile, sppProject).compile();
-            return sppGeneralHandler;
-        });
+        List<ParseTreeListener> sppTreeListeners = compileAntlr(sppSourceDirectory, project, ".enum", parse);
 
         //parse spp file
         sppTreeListeners = compileAntlr(sppSourceDirectory, project, ".spp", (sppFile, sppProject) -> {
-            SppGeneralHandler sppGeneralHandler = (SppGeneralHandler) new SppCompiler(sppFile, sppProject).compile();
+            SppGeneralHandler sppGeneralHandler = (SppGeneralHandler) parse.parse(sppFile, sppProject);
             sppGeneralHandler.getSppDomain().dealEntityToRoleMaps();
             sppGeneralHandler.getSppDomain().generateDefaultServices(sppGeneralHandler);
             return sppGeneralHandler;
@@ -65,17 +71,20 @@ public class GeneratorUtil {
         // Built-in participant CRUD names must be known before APP resolves service references.
         for (var domain : project.getSppDomainMap().values()) domain.prepareImplicitParticipantServices();
         //parse app file
-        List<ParseTreeListener> appTreeListeners = compileAntlr(sppSourceDirectory, project, ".app", (sppFile, sppProject) -> {
-            return new AppCompiler(sppFile, sppProject).compile();
-        });
+        List<ParseTreeListener> appTreeListeners = compileAntlr(sppSourceDirectory, project, ".app", parse);
         //parse rdb file
-        appTreeListeners = compileAntlr(sppSourceDirectory, project, ".rdb", (sppFile, sppProject) -> {
-            return new AppCompiler(sppFile, sppProject).compile();
-        });
+        appTreeListeners = compileAntlr(sppSourceDirectory, project, ".rdb", parse);
         //parse phy file
-        appTreeListeners = compilePhysicalAntlr(sppSourceDirectory, project, physicalProfile, (sppFile, sppProject) -> {
-            return new AppCompiler(sppFile, sppProject).compile();
-        });
+        appTreeListeners = compilePhysicalAntlr(sppSourceDirectory, project, physicalProfile, parse);
+        var findings = RedundancyLint.analyze(sources);
+        var log = new org.apache.maven.plugin.logging.SystemStreamLog();
+        boolean strict = Boolean.getBoolean("spp.lint.strict");
+        for (var finding : findings) {
+            if (strict) log.error(finding.format());
+            else log.warn(finding.format());
+        }
+        if (strict && !findings.isEmpty())
+            throw new MojoFailureException("Strict redundancy checks reported " + findings.size() + " error(s).");
         List<String> physicalSourceFileNames = physicalSourceFileNames(sppSourceDirectory, physicalProfile);
         List<String> deploymentErrors = com.servpp.lang.models.DomainDeploymentValidator.validate(project);
         if (!deploymentErrors.isEmpty()) throw new MojoFailureException("S++ domain deployment validation failed:\n"

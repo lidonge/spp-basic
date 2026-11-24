@@ -97,6 +97,7 @@ For `check` and `generate`:
 | `--package NAME` | Java base package, such as `example.generated` | `com.servpp.generated` |
 | `--environment NAME` | APP/PHY environment selection | `develop`, unless set by `spp.environment` |
 | `--profile NAME` | Physical source profile selection | No explicit selection |
+| `--strict` (basic CLI) | Treat conciseness warnings as compilation errors | Off |
 | `--timeout-seconds N` | Local execution deadline, 1–120 seconds | `120` |
 
 An environment and a physical source profile are separate selectors. Make them
@@ -132,6 +133,12 @@ java -jar sdk-tools/basic-cli/target/spp-basic-cli-1.0-SNAPSHOT.jar check \
 Both CLIs return zero on success and nonzero on failure. Their detailed exit-code
 mappings differ: use the JSON error code for classification rather than assuming
 a member authorization exit code also applies to the basic CLI.
+
+The basic compiler reports redundancy on stderr with a source-relative path,
+one-based line and column, a stable `SPP_REDUNDANT_*` code and a suggested S++
+construct. The language server publishes the same warnings for open documents,
+including unsaved changes. Use `spp-basic check --strict` to enforce them in CI
+or add `--strict` to `generate` to reject a redundant source before publication.
 
 ### Member sign-in and credentials
 

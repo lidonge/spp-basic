@@ -20,7 +20,7 @@ public final class Main {
     static Map<String,Object> run(String[] arguments)throws Exception {
         if(arguments.length==0 || Arrays.equals(arguments,new String[]{"--help"})) {
             var info=new LinkedHashMap<>(version());
-            info.put("usage","spp-basic <status|check|generate> [--source DIR] [--output DIR] [--package NAME] [--profile NAME] [--environment NAME] [--timeout-seconds 1..120]");return info;
+            info.put("usage","spp-basic <status|check|generate> [--strict] [--source DIR] [--output DIR] [--package NAME] [--profile NAME] [--environment NAME] [--timeout-seconds 1..120]");return info;
         }
         if(Arrays.equals(arguments,new String[]{"--version"}))return version();
         if(arguments[0].equals("status") && arguments.length==1)return version();
@@ -28,6 +28,7 @@ public final class Main {
         var options=new LinkedHashMap<String,String>();
         for(int i=1;i<arguments.length;i++) {
             String option=arguments[i];
+            if (option.equals("--strict") && options.put(option, "true") == null) continue;
             if(!Set.of("--source","--output","--package","--profile","--environment","--timeout-seconds").contains(option)
                     || options.containsKey(option) || i+1==arguments.length || arguments[i+1].startsWith("--"))
                 throw invalid("Unknown, duplicate option or missing value.");
@@ -41,7 +42,7 @@ public final class Main {
         var report=new LinkedHashMap<>(compiler.execute(arguments[0],Path.of(options.getOrDefault("--source","src/main/spp")),
                 Path.of(options.getOrDefault("--output","target/spp-basic")),options.getOrDefault("--package","com.servpp.generated"),
                 options.get("--profile"),options.getOrDefault("--environment",System.getProperty("spp.environment","develop")),
-                Map.of("releaseVersion","1.0-SNAPSHOT")));
+                Map.of("releaseVersion","1.0-SNAPSHOT","strict",options.containsKey("--strict"))));
         report.put("edition","basic");return report;
     }
     private static Map<String,Object> version(){return Map.of("version","1.0-SNAPSHOT","edition","basic","authorizationRequired",false);}

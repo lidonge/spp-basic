@@ -2,6 +2,9 @@ package com.servpp.sdk.editor;
 
 import com.servpp.lang.antlr.AppParser;
 import com.servpp.lang.antlr.SppParser;
+import com.servpp.lang.lint.RedundancyLint;
+import org.eclipse.lsp4j.Diagnostic;
+import org.eclipse.lsp4j.DiagnosticSeverity;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.ParseTree;
@@ -51,6 +54,26 @@ public final class ProjectAnalysis {
         }
         allSymbols = List.copyOf(normalized);
         effectiveSymbols = allSymbols.stream().filter(this::active).toList();
+    }
+
+    private Map<String, List<Diagnostic>> lint;
+
+    List<Diagnostic> diagnostics(String uri) {
+        if (lint == null) {
+            var sources = documents.values().stream().map(DocumentAnalysis::document)
+                    .filter(d -> d.problems().isEmpty())
+                    .filter(d -> !d.uri().endsWith(".phy") || com.servpp.lang.general.PhysicalProfiles.matches(
+                            java.nio.file.Path.of(java.net.URI.create(d.uri())).getFileName().toString(), physicalProfile))
+                    .map(d -> new RedundancyLint.Source(d.uri(), d.tree())).toList();
+            lint = new LinkedHashMap<>();
+            for (var finding : RedundancyLint.analyze(sources)) {
+                var diagnostic = new Diagnostic(document(finding.path()).range(finding.token()),
+                        finding.message(), DiagnosticSeverity.Warning, "spp");
+                diagnostic.setCode(finding.code());
+                lint.computeIfAbsent(finding.path(), unused -> new ArrayList<>()).add(diagnostic);
+            }
+        }
+        return lint.getOrDefault(uri, List.of());
     }
 
     public List<SourceSymbol> symbols() {
