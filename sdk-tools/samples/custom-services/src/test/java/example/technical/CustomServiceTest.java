@@ -17,7 +17,9 @@ public class CustomServiceTest {
             catch(ClassNotFoundException expected){}
             container.registerService("ledger.twice",ServiceInterceptors.decorate(new SimpleTwice()));
             var facts=new Facts().amount(7);
-            ((SimplePreview)ServiceInterceptors.decorate(new SimplePreview())).preview(facts);
+            var scenario = ServiceInterceptors.decorate(new SimplePreview());
+            var request = new example.generated.ledger.model.PreviewRequest().facts(facts);
+            com.servpp.service.runtime.RemoteServiceIngress.execute(scenario, request, "fixture", "preview");
             assertEquals(Integer.valueOf(14),facts.getAmount());
             assertEquals(1,CallCounter.count("ledger.preview",Phase.BEFORE));
             assertEquals(1,CallCounter.count("ledger.preview",Phase.AFTER));

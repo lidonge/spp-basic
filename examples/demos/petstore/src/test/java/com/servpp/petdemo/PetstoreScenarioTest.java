@@ -127,16 +127,15 @@ public class PetstoreScenarioTest {
                 "Product", Map.of("productCode", "FOOD-001"),
                 "ProductRevisionAgreement", Map.of("name", "Renamed food", "category", "Food",
                         "description", "Revised catalogue", "cost", 15)));
-        shop.call("reviseShopGoodsPrice", Map.of("Goods", Map.of("sku", "FOOD-001"),
-                "GoodsPriceRevisionAgreement", Map.of("unitPrice", "39.90")));
-        JsonNode current = shop.call("findGoods", Map.of("Goods", Map.of("sku", "FOOD-001"))).path("Goods");
+        JsonNode current = shop.call("reviseShopGoodsPrice", Map.of("Goods", Map.of("sku", "FOOD-001"),
+                "GoodsPriceRevisionAgreement", Map.of("unitPrice", "39.90"))).path("Goods");
         assertEquals("Renamed food", current.path("name").asText());
         amount(current.path("price"), "39.90");
         JsonNode after = storedOrder(session).path("lines").get(0);
         assertEquals(originalName, after.path("name").asText());
         amount(after.path("unitPrice"), "29.90");
         amount(after.path("amount"), "59.80");
-        JsonNode detail = shop.call("findOrderLine", Map.of("OrderLine",
+        JsonNode detail = shop.call("readShopOrderLine", Map.of("OrderLine",
                 Map.of("lineNumber", before.path("lineNumber").asText()))).path("OrderLine");
         assertEquals(originalName, detail.path("name").asText());
         amount(detail.path("unitPrice"), "29.90");
@@ -464,19 +463,24 @@ public class PetstoreScenarioTest {
     }
 
     @Test public void pricingBoundaryExample() {
-        quoteBoundary("100", "NORMAL", "100", "0");
-        quoteBoundary("99.99", "NORMAL", "107.99", "8");
-        quoteBoundary("111.11", "VIP", "100", "0");
-        quoteBoundary("12.35", "VIP", "19.11", "8");
-        quoteBoundary("12.345", "VIP", "19.11", "8");
+        Session regular = shop.openStore("PRICE", false);
+        Session vip = new Session("PRICE-VIP", "PRICE-VIP-CUSTOMER");
+        var registration = vip.command("Register", "REGISTER-VIP");
+        registration.put("tier", "VIP");
+        shop.command("registerShopCustomer", registration);
+        shop.setQuantity(regular, "FOOD", "1", "CART-REGULAR");
+        shop.setQuantity(vip, "FOOD", "1", "CART-VIP");
+        quoteBoundary("100", regular, "100", "0");
+        quoteBoundary("99.99", regular, "107.99", "8");
+        quoteBoundary("111.11", vip, "100", "0");
+        quoteBoundary("12.35", vip, "19.11", "8");
+        quoteBoundary("12.345", vip, "19.11", "8");
     }
 
-    private void quoteBoundary(String price, String tier, String total, String shipping) {
-        JsonNode quote = shop.call("quoteOrder", Map.of(
-                "customer", Map.of("membershipNumber", "PRICE-CUSTOMER", "tier", tier, "address", "Test address"),
-                "cart", Map.of("lines", List.of(Map.of("goods", Map.of("sku", "PRICE-ITEM"), "quantity", "1"))),
-                "products", List.of(Map.of("sku", "PRICE-ITEM", "name", "Price boundary input", "price", price, "active", true)),
-                "order", Map.of()));
+    private void quoteBoundary(String price, Session buyer, String total, String shipping) {
+        shop.call("reviseShopGoodsPrice", Map.of("Goods", Map.of("sku", "FOOD-001"),
+                "GoodsPriceRevisionAgreement", Map.of("unitPrice", price)));
+        JsonNode quote = shop.act(buyer, "previewShopOrder", "Quote", "QUOTE-" + price);
         amount(quote.path("order").path("total"), total); amount(quote.path("order").path("shipping"), shipping);
     }
 

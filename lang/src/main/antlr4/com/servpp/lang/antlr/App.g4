@@ -687,7 +687,7 @@ serviceStatement
     ;
 
 requireStatement
-    : 'require' '(' expression ',' StringLiteral ')' ';'
+    : 'require' '(' expression ',' (StringLiteral | qualifiedName) ')' ';'
     ;
 
 expressionStatement

@@ -51,10 +51,10 @@ public class XbodStaleReversalTest {
                 assertEquals(failed.toString(),"FAILED",failed.path("status").asText());
                 assertEquals(failed.toString(),!partial,failed.path("handled").asBoolean());
                 if (partial) assertEquals("RECOVERY_REQUIRED",failed.path("failure").path("recoveryStatus").asText());
-                amount(changedReceipt ? "100" : "105",demo.call("findDepositAccount",Map.of("DepositAccount",Map.of("accountNumber","ACCOUNT-001"))).path("DepositAccount").path("interestBase"));
-                assertFalse(demo.call("findCashDepositAgreement",Map.of("CashDepositAgreement",Map.of("depositNumber",paid.path("CashDepositAgreement").path("depositNumber").asText()))).path("CashDepositAgreement").path("reversed").asBoolean());
+                amount(changedReceipt ? "100" : "105",demo.readAccounts().path("DepositAccount").path("interestBase"));
+                assertFalse(demo.call("readCashDeposit",Map.of("CashDepositAgreement",Map.of("depositNumber",paid.path("CashDepositAgreement").path("depositNumber").asText()))).path("CashDepositAgreement").path("reversed").asBoolean());
                 if (changedReceipt) {
-                    var original=demo.call("findCashDepositAgreement",Map.of("CashDepositAgreement",Map.of("depositNumber",paid.path("CashDepositAgreement").path("depositNumber").asText())));
+                    var original=demo.call("readCashDeposit",Map.of("CashDepositAgreement",Map.of("depositNumber",paid.path("CashDepositAgreement").path("depositNumber").asText())));
                     amount("1",original.path("CashDepositAgreement").path("fee"));
                     if (partial) {
                         assertEquals("RECONCILIATION_REQUIRED",response.path("CashFailureRecord").path("handlingState").asText());
@@ -66,7 +66,7 @@ public class XbodStaleReversalTest {
                 assertEquals("SUCCEEDED",retried.path("CashReversalAgreement").path("resultInfo").path("status").asText());
                 amount(changedReceipt ? "0" : "5",retried.path("DepositAccount").path("interestBase"));
                 if (!changedReceipt) {
-                var remaining=demo.call("listDepositPostings",Map.of("CashDepositAgreement",Map.of("depositNumber",later.path("CashDepositAgreement").path("depositNumber").asText())));
+                var remaining=demo.call("readCashDeposit",Map.of("CashDepositAgreement",Map.of("depositNumber",later.path("CashDepositAgreement").path("depositNumber").asText())));
                 assertEquals(8,remaining.path("DepositPostingLineArray").size());
                 }
             } finally { resume.countDown();worker.shutdownNow();assertTrue(worker.awaitTermination(5,TimeUnit.SECONDS)); }

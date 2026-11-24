@@ -17,9 +17,9 @@ public class ReadonlyScenarioTest {
         var source = temporary.newFile();
         Files.writeString(source.toPath(), """
                 domain ledger;
-                Entity Entry { int amount; }
+                Enum Fault { EMPTY } Entity Entry { int amount; }
                 atomic query read(Entry entry);
-                atomic check enough(Entry entry) { require(entry.amount > 0, "EMPTY"); }
+                atomic check enough(Entry entry) { require(entry.amount > 0, Fault.EMPTY); }
                 atomic calculate project(Entry entry) { entry.amount += 1; }
                 atomic insert create(Entry entry);
                 atomic update save(Entry entry);

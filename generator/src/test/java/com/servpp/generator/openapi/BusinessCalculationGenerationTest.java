@@ -286,8 +286,8 @@ public class BusinessCalculationGenerationTest {
                 v.a = v.b / v.c; v.allowed = v.a * v.c == v.b;
                 if (v.allowed) { v.total = v.a; } else { v.total = 0; }
                 v.label = v.allowed ? "yes" : "no";
-                """).replace("double total;", "BigDecimal(15,2,HALF_UP) total;"));
-        Files.writeString(source.resolve("rules.app"), "domain rules; scope { local { decide; } }");
+                """).replace("double total;", "BigDecimal(15,2,HALF_UP) total;") + " Scenario serial exercise(Values v) { decide(v); }");
+        Files.writeString(source.resolve("rules.app"), "domain rules; scope { local { decide; exercise; } }");
         Files.writeString(source.resolve("rules.phy"), "domain rules; phy { " + customBinding()
                 + " numeric Values.total as " + FRACTION + " using " + ADAPTER + "; }");
         Path root = Files.createTempDirectory("spp-business-generated");
@@ -304,6 +304,8 @@ public class BusinessCalculationGenerationTest {
         Files.writeString(models.resolve("Values.java"), "package example.rules.model; " + modelSource(FRACTION, FRACTION));
         Files.writeString(models.resolve("DecideRequest.java"), "package example.rules.model; public class DecideRequest { public Values getV() { return null; } }");
         Files.writeString(models.resolve("DecideResponse.java"), "package example.rules.model; public class DecideResponse { }");
+        Files.writeString(models.resolve("ExerciseRequest.java"), "package example.rules.model; public record ExerciseRequest(Values v) { public Values getV() { return v; } }");
+        Files.writeString(models.resolve("ExerciseResponse.java"), "package example.rules.model; public class ExerciseResponse { }");
         List<String> args = new ArrayList<>();
         try (var paths = Files.walk(root.resolve("java"))) { paths.filter(path -> path.toString().endsWith(".java")).forEach(path -> args.add(path.toString())); }
         compileJava(root, args);
@@ -312,7 +314,13 @@ public class BusinessCalculationGenerationTest {
             valuesClass.getMethod("setB", Fraction.class).invoke(v, new Fraction(BigInteger.ONE, BigInteger.ONE));
             valuesClass.getMethod("setC", Fraction.class).invoke(v, new Fraction(BigInteger.valueOf(3), BigInteger.ONE));
             Class<?> service = loader.loadClass("example.rules.service.SimpleDecide");
-            service.getMethod("decide", valuesClass).invoke(service.getConstructor().newInstance(), v);
+            var container = com.servpp.service.server.DefaultServiceContainer.getInstance();
+            var previous = container.registerService("decide", (com.servpp.service.Service) service.getConstructor().newInstance());
+            try {
+                var scenario = (com.servpp.service.Service) loader.loadClass("example.rules.service.SimpleExercise").getConstructor().newInstance();
+                var request = loader.loadClass("example.rules.model.ExerciseRequest").getConstructor(valuesClass).newInstance(v);
+                com.servpp.service.runtime.RemoteServiceIngress.execute(scenario, request, "fixture", "exercise");
+            } finally { ServiceRegistryFixture.restore("decide", previous); }
             assertEquals(new Fraction(BigInteger.ONE, BigInteger.valueOf(3)), valuesClass.getMethod("getA").invoke(v));
             assertEquals(true, valuesClass.getMethod("getAllowed").invoke(v));
             assertEquals(new Fraction(BigInteger.valueOf(33), BigInteger.valueOf(100)), valuesClass.getMethod("getTotal").invoke(v));

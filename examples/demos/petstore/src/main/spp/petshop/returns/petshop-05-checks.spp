@@ -1,11 +1,11 @@
 domain petshop;
 
 atomic check checkReturnRequest(ShopOrder) {
-    require(ShopOrder.status == OrderStatus.DELIVERED, "ORDER_NOT_RETURNABLE");
+    require(ShopOrder.status == OrderStatus.DELIVERED, RejectionCode.ORDER_NOT_RETURNABLE);
 }
 
 atomic check checkReturnApproval(ShopOrder) {
-    require(ShopOrder.status == OrderStatus.RETURN_REQUESTED, "RETURN_NOT_REQUESTED");
+    require(ShopOrder.status == OrderStatus.RETURN_REQUESTED, RejectionCode.RETURN_NOT_REQUESTED);
 }
 
 atomic check checkSoldInventory(ShopOrder, StockLine[]) {
@@ -19,14 +19,14 @@ atomic check checkSoldInventory(ShopOrder, StockLine[]) {
                         needed += ordered.quantity;
                     }
                 }
-                require(stock.sold >= needed, "SOLD_STOCK_MISSING");
+                require(stock.sold >= needed, RejectionCode.SOLD_STOCK_MISSING);
                 found = true;
             }
         }
-        require(found, "INVENTORY_ITEM_NOT_FOUND");
+        require(found, RejectionCode.INVENTORY_ITEM_NOT_FOUND);
     }
 }
 
 atomic check checkReturnRequestAgreementInput(ReturnRequestAgreement) {
-    require(ReturnRequestAgreement.reason != BLANK, "REASON_REQUIRED");
+    require(ReturnRequestAgreement.reason != BLANK, RejectionCode.REASON_REQUIRED);
 }

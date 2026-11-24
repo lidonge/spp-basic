@@ -8,6 +8,7 @@ Scenario serial openDepositAccount(
     DepositAccrualState,
     AccountOpeningAgreement
 ) {
+    checkOpeningClaims;
     prepareAccountOpening;
     transaction {
         insertBankAccount;

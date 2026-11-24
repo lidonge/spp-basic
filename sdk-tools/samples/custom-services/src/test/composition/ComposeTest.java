@@ -8,15 +8,13 @@ import com.example.cv1.client.model.Receipt;
 import com.example.cv1.client.model.Till;
 import com.example.cv1.provider.model.CustodyTill;
 import com.example.cv1.provider.model.OpenTillRequest;
+import com.example.cv1.provider.model.TillOpening;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.servpp.service.jdbc.DriverManagerJdbcDataSource;
-import com.servpp.service.repository.RepositoryWriteRuleProvider;
 import com.servpp.service.runtime.BusinessChecks;
 import com.servpp.service.runtime.GeneratedApplicationDeployment;
 import com.servpp.service.runtime.LocalGeneratedServiceRuntime;
 import com.servpp.service.server.DefaultServiceContainer;
-import com.servpp.service.transaction.DeclaredTransactionContext;
-import com.servpp.service.transaction.TransactionMode;
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -32,10 +30,9 @@ public class ComposeTest {
             var runtime = LocalGeneratedServiceRuntime.jsonSnapshots(source,
                     new ObjectMapper().findAndRegisterModules(), ignored -> null);
             GeneratedApplicationDeployment.install(runtime, "compose");
-            var seed = (RepositoryWriteRuleProvider) services.getService("provider.openTill");
-            DeclaredTransactionContext.execute(TransactionMode.LOCAL, () -> seed.executeInRepositoryScope(() ->
-                    runtime.executeGeneratedService("provider.openTill", new OpenTillRequest()
-                            .custodyTill(new CustodyTill().receiptNumber("R").cash(new BigDecimal("20"))))));
+            runtime.executeGeneratedService("provider.openTill", new OpenTillRequest()
+                    .tillOpening(new TillOpening().receiptNumber("R"))
+                    .custodyTill(new CustodyTill().cash(new BigDecimal("20"))));
 
             try (var sql = db.createStatement()) {
                 sql.execute("ALTER TABLE ACCEPTED ADD CONSTRAINT REJECT_R CHECK (receiptNumber <> 'R')");
@@ -81,7 +78,8 @@ public class ComposeTest {
     private static ConfirmRequest request(String amount, String funding) {
         return new ConfirmRequest()
                 .receipt(new Receipt().receiptNumber("R").amount(new BigDecimal(amount)).funding(new BigDecimal(funding)))
-                .handover(new Handover()).till(new Till()).intake(new Intake()).accepted(new Accepted());
+                .handover(new Handover().cash(new BigDecimal(amount))).till(new Till())
+                .intake(new Intake().cash(new BigDecimal(funding))).accepted(new Accepted());
     }
 
     private static void verifyMissingPerformer(LocalGeneratedServiceRuntime runtime, Connection db) throws Exception {

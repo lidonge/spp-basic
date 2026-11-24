@@ -62,6 +62,7 @@ public class Simple{{name}} implements {{name}}, ScopeMetadataProvider, Generate
 {{localDelegateMetadataMethod}}
     @Override
 	public void {{funcName}}({{#serviceBody.sppLocalVarList}}{{^-first}},{{/-first}}{{serviceJavaType}} {{name}}{{/serviceBody.sppLocalVarList}}){
+        com.servpp.service.runtime.GeneratedServiceEntry.requireAtomicCaller();
 {{quantumExecutionRequirementStatement}}
 {{businessNumberAssignmentStatement}}
 {{persistencePreparationStatement}}
@@ -77,6 +78,7 @@ public class Simple{{name}} implements {{name}}, ScopeMetadataProvider, Generate
 
     @Override
     public Object execute(Object... params) {
+        com.servpp.service.runtime.GeneratedServiceEntry.requireAtomicCaller();
         {{#requestSuffix}}{{name}}{{requestSuffix}} arg = ({{name}}{{requestSuffix}}) params[params.length - 1];
         GeneratedRoleIdentityContextBinder.attach(arg);
 {{#entryExecution}}

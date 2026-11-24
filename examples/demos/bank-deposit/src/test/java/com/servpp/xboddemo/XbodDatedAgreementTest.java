@@ -24,7 +24,7 @@ public class XbodDatedAgreementTest {
             for (var row : cases) {
                 var term = Map.of("effectiveDate",row[0],"cancelDate",row[1]);
                 var policy = Map.of("enabled",true,"mode","2","currency","CNY");
-                var window = demo.call("prepareAgreementWindow",Map.of("normalStart",Map.of("encoded",20261001),
+                var window = demo.call("previewAgreementWindow",Map.of("normalStart",Map.of("encoded",20261001),
                         "normalEnd",Map.of("encoded",20261011),"AgreementTerm",term,"AgreementPolicy",policy,
                         "normal",Map.of("amount",650,"unit",1,"days",10)));
                 assertEquals(row[5],window.path("clippedStart").path("encoded").asInt());
@@ -33,7 +33,7 @@ public class XbodDatedAgreementTest {
                         "end",Map.of("encoded",row[6]),"InterestCalendar",Map.of("convention","ACT"),
                         "InterestPeriod",Map.of("amount",650,"unit",1)));
                 assertEquals(row[2],period.path("InterestPeriod").path("days").asInt());
-                var result = demo.call("calculateDepositAccrual",Map.of("DepositAccount",Map.of("interestBase",650),
+                var result = demo.call("previewDepositAccrual",Map.of("DepositAccount",Map.of("interestBase",650),
                         "BusinessDay",Map.of("date",20261011),"DepositAccrualState",Map.of("lastProductDate",20261001),
                         "DepositInterestPolicy",Map.of("normalEnabled",true,"normalUnit",1,"overdraftUnit",1),
                         "InterestCalendar",Map.of("convention","ACT"),"AgreementTerm",term,"AgreementPolicy",policy,
@@ -46,11 +46,11 @@ public class XbodDatedAgreementTest {
     }
     @Test public void invalidEffectiveDateIsRejectedByExplicitCheck() throws Exception {
         try (var demo = new XbodTestSupport()) {
-            var request = demo.request("checkAccrualDates",Map.of("DepositAccrualState",Map.of("lastProductDate",20260201),
+            var request = demo.request("previewDepositAccrual",Map.of("DepositAccrualState",Map.of("lastProductDate",20260201),
                     "BusinessDay",Map.of("date",20260310),"InterestCalendar",Map.of("convention","ACT"),
                     "AgreementTerm",Map.of("effectiveDate",20260230),"AgreementBandArray",bands()));
             var before = demo.mapper.valueToTree(request);
-            assertEquals("EE374",assertThrows(IllegalStateException.class,() -> demo.execute("checkAccrualDates",request)).getMessage());
+            assertEquals("EE374",assertThrows(IllegalStateException.class,() -> demo.execute("previewDepositAccrual",request)).getMessage());
             assertEquals(before,demo.mapper.valueToTree(request));
         }
     }

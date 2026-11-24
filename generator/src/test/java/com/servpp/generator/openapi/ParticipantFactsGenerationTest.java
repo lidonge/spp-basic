@@ -20,7 +20,7 @@ public class ParticipantFactsGenerationTest {
         Files.writeString(spp, """
                 domain sample;
                 Role Evidence { String code; double value; Evidence[] children; }
-                atomic check compare(Evidence expected, Evidence actual) { require(sameFacts(expected, actual), "CHANGED"); }
+                Enum Fault { CHANGED } atomic check compare(Evidence expected, Evidence actual) { require(sameFacts(expected, actual), Fault.CHANGED); }
                 """);
         Files.writeString(phy, "domain sample; phy { numeric double as " + (custom
                 ? "fixtures.FactHarness.Wrapped using fixtures.FactHarness.Adapter" : "BigDecimal") + "; }");

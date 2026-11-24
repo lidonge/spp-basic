@@ -16,7 +16,7 @@ atomic check checkOriginalDepositPostings(CashDepositAgreement, DepositPostingLi
         count++;
         require(
             line.deposit.depositNumber == CashDepositAgreement.depositNumber,
-            "ORIGINAL_DEPOSIT_POSTING_OWNER_MISMATCH"
+            RejectionCode.ORIGINAL_DEPOSIT_POSTING_OWNER_MISMATCH
         );
         require(
             line.slot >= 1
@@ -24,7 +24,7 @@ atomic check checkOriginalDepositPostings(CashDepositAgreement, DepositPostingLi
                 && line.subject != null
                 && line.subject != ""
                 && line.amount >= 0,
-            "INVALID_ORIGINAL_DEPOSIT_POSTINGS"
+            RejectionCode.INVALID_ORIGINAL_DEPOSIT_POSTINGS
         );
         int matching = 0;
         for (DepositPostingLine candidate : DepositPostingLine[]) {
@@ -32,11 +32,11 @@ atomic check checkOriginalDepositPostings(CashDepositAgreement, DepositPostingLi
                 matching++;
             }
         }
-        require(matching == 1, "INVALID_ORIGINAL_DEPOSIT_POSTINGS");
+        require(matching == 1, RejectionCode.INVALID_ORIGINAL_DEPOSIT_POSTINGS);
         if (line.slot == 1 || line.slot == 2 || line.slot == 7) {
-            require(line.side == "Debit", "INVALID_ORIGINAL_DEPOSIT_POSTINGS");
+            require(line.side == "Debit", RejectionCode.INVALID_ORIGINAL_DEPOSIT_POSTINGS);
         } else {
-            require(line.side == "Credit", "INVALID_ORIGINAL_DEPOSIT_POSTINGS");
+            require(line.side == "Credit", RejectionCode.INVALID_ORIGINAL_DEPOSIT_POSTINGS);
         }
         int evidenceMatches = 0;
         for (DepositPostingLine evidence : CashDepositAgreement.postingEvidence) {
@@ -45,58 +45,58 @@ atomic check checkOriginalDepositPostings(CashDepositAgreement, DepositPostingLi
                     evidence.subject == line.subject
                         && evidence.side == line.side
                         && evidence.amount == line.amount,
-                    "ORIGINAL_DEPOSIT_LEDGER_EVIDENCE_MISMATCH"
+                    RejectionCode.ORIGINAL_DEPOSIT_LEDGER_EVIDENCE_MISMATCH
                 );
                 evidenceMatches++;
             }
         }
-        require(evidenceMatches == 1, "ORIGINAL_DEPOSIT_LEDGER_EVIDENCE_MISMATCH");
+        require(evidenceMatches == 1, RejectionCode.ORIGINAL_DEPOSIT_LEDGER_EVIDENCE_MISMATCH);
         switch (line.slot) {
             case 1:
                 require(
                     line.amount == CashDepositAgreement.amount,
-                    "ORIGINAL_DEPOSIT_POSTING_AMOUNT_MISMATCH"
+                    RejectionCode.ORIGINAL_DEPOSIT_POSTING_AMOUNT_MISMATCH
                 );
                 break;
             case 2:
                 require(
                     line.amount == max(0, -CashDepositAgreement.interestBaseDelta),
-                    "ORIGINAL_DEPOSIT_POSTING_AMOUNT_MISMATCH"
+                    RejectionCode.ORIGINAL_DEPOSIT_POSTING_AMOUNT_MISMATCH
                 );
                 break;
             case 3:
                 require(
                     line.amount == max(0, CashDepositAgreement.interestBaseDelta),
-                    "ORIGINAL_DEPOSIT_POSTING_AMOUNT_MISMATCH"
+                    RejectionCode.ORIGINAL_DEPOSIT_POSTING_AMOUNT_MISMATCH
                 );
                 break;
             case 4:
                 require(
                     line.amount == CashDepositAgreement.principalPaid,
-                    "ORIGINAL_DEPOSIT_POSTING_AMOUNT_MISMATCH"
+                    RejectionCode.ORIGINAL_DEPOSIT_POSTING_AMOUNT_MISMATCH
                 );
                 break;
             case 5:
                 require(
                     line.amount == CashDepositAgreement.interestPaid,
-                    "ORIGINAL_DEPOSIT_POSTING_AMOUNT_MISMATCH"
+                    RejectionCode.ORIGINAL_DEPOSIT_POSTING_AMOUNT_MISMATCH
                 );
                 break;
             case 6:
                 require(
                     line.amount == CashDepositAgreement.collectionPaid,
-                    "ORIGINAL_DEPOSIT_POSTING_AMOUNT_MISMATCH"
+                    RejectionCode.ORIGINAL_DEPOSIT_POSTING_AMOUNT_MISMATCH
                 );
                 break;
             case 7:
-                require(line.amount == CashDepositAgreement.fee, "ORIGINAL_DEPOSIT_POSTING_AMOUNT_MISMATCH");
+                require(line.amount == CashDepositAgreement.fee, RejectionCode.ORIGINAL_DEPOSIT_POSTING_AMOUNT_MISMATCH);
                 break;
             case 8:
-                require(line.amount == CashDepositAgreement.fee, "ORIGINAL_DEPOSIT_POSTING_AMOUNT_MISMATCH");
+                require(line.amount == CashDepositAgreement.fee, RejectionCode.ORIGINAL_DEPOSIT_POSTING_AMOUNT_MISMATCH);
                 break;
         }
     }
-    require(count == 8, "INVALID_ORIGINAL_DEPOSIT_POSTINGS");
+    require(count == 8, RejectionCode.INVALID_ORIGINAL_DEPOSIT_POSTINGS);
 }
 
 atomic calculate prepareCashReversalPostings(

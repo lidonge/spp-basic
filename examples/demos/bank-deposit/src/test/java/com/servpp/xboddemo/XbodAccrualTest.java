@@ -16,7 +16,7 @@ public class XbodAccrualTest {
             assertEquals(second.toString(),"SUCCEEDED",second.path("CashDepositAgreement").path("resultInfo").path("status").asText());
             assertEquals(1,second.path("DepositAccrualPlan").path("normalDays").asInt());
             XbodTransactionTest.amount("100",second.path("DepositAccrualPlan").path("normalIncrement"));
-            var stored = demo.call("findDepositAccrualState",Map.of("DepositAccrualState",Map.of("accountNumber","ACCOUNT-001")));
+            var stored = demo.readAccounts();
             XbodTransactionTest.amount("100",stored.path("DepositAccrualState").path("normalProduct"));
             assertEquals(20261008,stored.path("DepositAccrualState").path("lastProductDate").asInt());
             var reversed = demo.call("reverseCash",XbodTransactionTest.reversal(first.path("CashDepositAgreement"),20261008,false));
@@ -39,7 +39,7 @@ public class XbodAccrualTest {
             assertEquals(10,paid.path("DepositAccrualPlan").path("normalDays").asInt());
             XbodTransactionTest.amount("4300",paid.path("DepositAccrualPlan").path("normalIncrement"));
             XbodTransactionTest.amount("2200",paid.path("DepositAccrualPlan").path("agreementIncrement"));
-            var stored = demo.call("findDepositAccrualState",Map.of("DepositAccrualState",Map.of("accountNumber","ACCOUNT-001")));
+            var stored = demo.readAccounts();
             XbodTransactionTest.amount("4300",stored.path("DepositAccrualState").path("normalProduct"));
             XbodTransactionTest.amount("2200",stored.path("DepositAccrualState").path("agreementProduct"));
             XbodTransactionTest.amount("700",paid.path("DepositAccount").path("interestBase"));

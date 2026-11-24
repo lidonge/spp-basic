@@ -5,11 +5,11 @@ atomic query importCatalogue(Goods, Goods[]);
 atomic query listProducts(Goods, Goods[]);
 
 atomic check checkGoodsCredential(Goods) {
-    require(Goods.sku != BLANK, "ITEM_REQUIRED");
+    require(Goods.sku != BLANK, RejectionCode.ITEM_REQUIRED);
 }
 
 atomic check checkGoodsSale(Goods) {
-    require(Goods.active, "PRODUCT_UNAVAILABLE");
+    require(Goods.active, RejectionCode.PRODUCT_UNAVAILABLE);
 }
 
 atomic calculate prepareInventorySelection(Goods[], StockLine[]) {

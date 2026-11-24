@@ -62,7 +62,7 @@ public class ReadKeyBindingGenerationTest {
         var output = temporary.newFolder("played-output").toPath();
         var javaOutput = output.resolve("java");
         GeneratorUtil.execute(source.toFile(), output.resolve("resources").toFile(), javaOutput.toFile(), "example");
-        String scenario = Files.readString(javaOutput.resolve("example/consumer/handler/ReadPlayed.java"));
+        String scenario = Files.readString(javaOutput.resolve("example/consumer/service/SimpleReadPlayed.java"));
         int find = scenario.indexOf(".findPlayed(played)");
         assertTrue(scenario, find >= 0);
         String beforeFind = scenario.substring(0, find);

@@ -117,7 +117,7 @@ public class ParticipantQueryBindingTest {
 
     @Test public void explicitCheckBindingReusesTheDeclaredProvider() throws Exception {
         var project=new SppProject();
-        parse(project,"domain accounts; Role Account { boolean active; } atomic check checkActive(Account) { require(Account.active, \"INACTIVE\"); }", ".spp");
+        parse(project,"domain accounts; Enum Fault { INACTIVE } Role Account { boolean active; } atomic check checkActive(Account) { require(Account.active, Fault.INACTIVE); }", ".spp");
         parse(project,"domain teams; Reference Account from accounts.Account { boolean active; } atomic check checkActive(Account); "
                 + "Scenario serial verify(Account) { checkActive; }", ".spp");
         parse(project,"domain accounts; scope { local {} }", ".app");

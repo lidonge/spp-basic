@@ -6,7 +6,7 @@ Contract GoodsPriceRevisionAgreement {
 }
 
 atomic check checkGoodsPriceRevision(GoodsPriceRevisionAgreement) {
-    require(GoodsPriceRevisionAgreement.unitPrice >= 0, "INVALID_GOODS_PRICE");
+    require(GoodsPriceRevisionAgreement.unitPrice >= 0, RejectionCode.INVALID_GOODS_PRICE);
 }
 
 atomic calculate applyGoodsPriceRevision(Goods, GoodsPriceRevisionAgreement) {

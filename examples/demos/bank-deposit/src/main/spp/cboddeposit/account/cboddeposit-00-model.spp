@@ -39,27 +39,31 @@ Role DepositDetailPolicy {
 }
 
 atomic check checkCashControl(CashAccountControl, AccountEligibility) {
-    require(CashAccountControl.controllingInstitution == "", "EN432");
+    require(CashAccountControl.controllingInstitution == BLANK, RejectionCode.EN432);
     require(
         CashAccountControl.controlStatus != "PayNoReceive" && CashAccountControl.controlStatus != "Locked",
-        "EN432"
+        RejectionCode.EN432
     );
-    require(AccountEligibility.status != AccountStatus.FROZEN, "EG877");
-    require(CashAccountControl.cancelledOn == 0, "EN113");
-    require(CashAccountControl.productKind != "RealEstate", "EI090");
+    require(AccountEligibility.status != AccountStatus.FROZEN, RejectionCode.EG877);
+    require(CashAccountControl.cancelledOn == 0, RejectionCode.EN113);
+    require(CashAccountControl.productKind != "RealEstate", RejectionCode.EI090);
 }
 
 atomic calculate describeAccountBalance(DepositAccount, AccountEligibility) {
     AccountEligibility.accountBalance = DepositAccount.interestBase
-        - DepositAccount.overdraftInterest
-        - DepositAccount.collectionInterest
-        - DepositAccount.overdraftPrincipal;
+        + DepositAccount.overdraftInterest
+        + DepositAccount.collectionInterest
+        + DepositAccount.overdraftPrincipal;
 }
 
 atomic check checkAccountParticipants(DepositAccount, AccountEligibility, DepositAccrualState) {
     require(
         DepositAccount.accountNumber == AccountEligibility.accountNumber
             && DepositAccount.accountNumber == DepositAccrualState.accountNumber,
-        "ACCOUNT_PARTICIPANTS_MISMATCH"
+        RejectionCode.ACCOUNT_PARTICIPANTS_MISMATCH
     );
+}
+
+atomic calculate deriveOverdraftExposure(DepositAccount) {
+    DepositAccount.overdraftExposure = -DepositAccount.overdraftPrincipal;
 }

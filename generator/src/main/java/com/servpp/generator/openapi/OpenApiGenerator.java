@@ -166,7 +166,10 @@ public class OpenApiGenerator extends BaseClassGenerator implements ILogable {
                 SppService sppService = (SppService) sppClass;
                 boolean deploymentService = isDeploymentService(sppService);
                 if (deploymentService && sppService.isLocalService()) {
-                    createAPath(domainName, (SppClass) sppClass, openAPI);
+                    // Internal RPC still uses the request and response schemas.
+                    Operation internal = new Operation();
+                    addARequestBody(internal, sppService, openAPI);
+                    addResponsesBody(openAPI, sppService, internal);
                 }
                 if (deploymentService) {
                     services.add((SppService) sppClass);

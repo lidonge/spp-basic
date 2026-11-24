@@ -67,6 +67,23 @@ final class XbodTestSupport implements AutoCloseable {
         return mapper.valueToTree(request);
     }
     JsonNode call(String service, Map<String, ?> input) throws Exception { return execute(service, request(service, input)); }
+    JsonNode readAccounts() throws Exception {
+        return readAccounts("ACCOUNT-001", "CASH-001");
+    }
+    JsonNode readAccounts(String account, String settlement) throws Exception {
+        return readAccounts(account, settlement, Map.of());
+    }
+    JsonNode readAccounts(String account, String settlement, Map<String, ?> overrides) throws Exception {
+        Map<String, Object> participants = new LinkedHashMap<>();
+        for (String role : List.of("DepositAccount", "AccountEligibility", "DepositAccrualState"))
+            participants.put(role, Map.of("accountNumber", account));
+        participants.put("CashSettlementAccount", Map.of("accountNumber", settlement));
+        participants.put("InterestIncomeAccount", Map.of("accountNumber", "BANK-INTEREST"));
+        participants.put("CollectionInterestIncomeAccount", Map.of("accountNumber", "BANK-COLLECTION"));
+        participants.put("PrincipalRecoveryAccount", Map.of("accountNumber", "BANK-PRINCIPAL"));
+        participants.putAll(overrides);
+        return call("readDepositAccount", participants);
+    }
     @Override public void close() {
         DefaultServiceContainer.getInstance().clear();
         if (previousUrl == null) System.clearProperty("spp.xbod.datasource-url"); else System.setProperty("spp.xbod.datasource-url", previousUrl);

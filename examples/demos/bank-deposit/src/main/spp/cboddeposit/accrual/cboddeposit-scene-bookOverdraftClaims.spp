@@ -1,0 +1,46 @@
+domain cboddeposit;
+
+Contract OverdraftCharge {
+    BigDecimal(19, 2) interest;
+    BigDecimal(19, 2) collection;
+    BigDecimal(19, 2) principal;
+}
+
+atomic check checkOverdraftCharge(OverdraftCharge) {
+    require(OverdraftCharge.interest >= 0 && OverdraftCharge.collection >= 0
+        && OverdraftCharge.principal >= 0, RejectionCode.E1155);
+}
+
+quantum update originateClaims(
+    OverdraftCharge, DepositAccount, InterestIncomeAccount, CollectionInterestIncomeAccount, CashSettlementAccount
+) {
+    DepositAccount.overdraftInterest -> InterestIncomeAccount.balance : OverdraftCharge.interest;
+    DepositAccount.collectionInterest -> CollectionInterestIncomeAccount.balance : OverdraftCharge.collection;
+    DepositAccount.overdraftPrincipal -> CashSettlementAccount.balance : OverdraftCharge.principal;
+}
+
+Scenario serial bookOverdraftClaims(
+    OverdraftCharge, DepositAccount, InterestIncomeAccount, CollectionInterestIncomeAccount, CashSettlementAccount
+) {
+    parallel {
+        findDepositAccount;
+        findInterestIncomeAccount;
+        findCollectionInterestIncomeAccount;
+        findCashSettlementAccount;
+    }
+    identify(DepositAccount);
+    identify(InterestIncomeAccount);
+    identify(CollectionInterestIncomeAccount);
+    identify(CashSettlementAccount);
+    checkOverdraftCharge;
+    transaction {
+        originateClaims bounds {
+            DepositAccount.overdraftInterest: [null, 0];
+            DepositAccount.collectionInterest: [null, 0];
+            DepositAccount.overdraftPrincipal: [null, 0];
+            InterestIncomeAccount.balance: [0, null];
+            CollectionInterestIncomeAccount.balance: [0, null];
+        };
+        deriveOverdraftExposure;
+    }
+}

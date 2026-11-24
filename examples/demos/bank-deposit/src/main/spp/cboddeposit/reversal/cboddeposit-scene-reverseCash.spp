@@ -55,14 +55,11 @@ Scenario serial reverseCash(
     transaction {
         reverseCashDeposit bounds {
             DepositAccount.interestBase: [0, null];
-            DepositAccount.overdraftInterest: [0, null];
-            DepositAccount.collectionInterest: [0, null];
-            DepositAccount.overdraftPrincipal: [0, null];
-            DepositAccount.overdraftExposure: [0, null];
-            InterestIncomeAccount.balance: [0, null];
-            CollectionInterestIncomeAccount.balance: [0, null];
-            PrincipalRecoveryAccount.balance: [0, null];
+            DepositAccount.overdraftInterest: [null, 0];
+            DepositAccount.collectionInterest: [null, 0];
+            DepositAccount.overdraftPrincipal: [null, 0];
         };
+        deriveOverdraftExposure;
         completeCashReversal;
         updateDepositAccrualState;
         updateAccountEligibility;

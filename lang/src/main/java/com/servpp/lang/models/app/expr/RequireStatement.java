@@ -5,6 +5,7 @@ import com.servpp.lang.models.IComponent;
 import java.util.function.Function;
 
 public class RequireStatement implements IJavaStatement, IContainer {
+    public String sourceLocation;
     private boolean quantumConstraint;
     public boolean isQuantumConstraint() { return quantumConstraint; }
     public RequireStatement quantumConstraint(boolean value) { quantumConstraint = value; return this; }
@@ -45,6 +46,7 @@ public class RequireStatement implements IJavaStatement, IContainer {
 
     String renderMessage(Function<IExpression, String> renderExpression) {
         if (rejectionCode == null) return message;
+        if (rejectionCode instanceof Literal literal) return literal.getExpr();
         if (rejectionCode instanceof EnumValue member) return EnumValue.javaLiteral(member.getValue());
         return "java.util.Objects.requireNonNull(" + renderExpression.apply(rejectionCode)
                 + ", \"REJECTION_CODE_REQUIRED\").getValue()";

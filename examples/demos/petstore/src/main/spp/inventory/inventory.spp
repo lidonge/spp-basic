@@ -121,13 +121,13 @@ atomic calculate initializeInventory(Goods[], StockLine[], StockSupply[]) {
     for (Goods product : Goods[]) {
         StockLine stock = new StockLine();
         stock.goods = product;
-        stock.available = 0;
-        stock.reserved = 0;
-        stock.sold = 0;
+
+
+
         StockLine[] = append(StockLine[], stock);
         StockSupply source = new StockSupply();
         source.goods = product;
-        source.balance = 0;
+
         StockSupply[] = append(StockSupply[], source);
     }
 }
@@ -136,8 +136,7 @@ quantum update reserveInventory(StockLine[], ShopOrder) {
     for (StockLine stock : StockLine[]) {
         for (OrderLine line : ShopOrder.lines) {
             if (stock.goods.sku == line.goods.sku) {
-                stock.available -= line.quantity;
-                stock.reserved += line.quantity;
+                stock.available -> stock.reserved : line.quantity;
             }
         }
     }
@@ -147,8 +146,7 @@ quantum update shipInventory(StockLine[], ShipmentAgreement) {
     for (StockLine stock : StockLine[]) {
         for (OrderLine line : ShipmentAgreement.order.lines) {
             if (stock.goods.sku == line.goods.sku) {
-                stock.reserved -= line.quantity;
-                stock.sold += line.quantity;
+                stock.reserved -> stock.sold : line.quantity;
             }
         }
     }
@@ -158,8 +156,7 @@ quantum update releaseUnpaidInventory(StockLine[], UnpaidCancellationAgreement) 
     for (StockLine stock : StockLine[]) {
         for (OrderLine line : UnpaidCancellationAgreement.order.lines) {
             if (stock.goods.sku == line.goods.sku) {
-                stock.reserved -= line.quantity;
-                stock.available += line.quantity;
+                stock.reserved -> stock.available : line.quantity;
             }
         }
     }
@@ -169,8 +166,7 @@ quantum update releasePaidInventory(StockLine[], PaidCancellationAgreement) {
     for (StockLine stock : StockLine[]) {
         for (OrderLine line : PaidCancellationAgreement.order.lines) {
             if (stock.goods.sku == line.goods.sku) {
-                stock.reserved -= line.quantity;
-                stock.available += line.quantity;
+                stock.reserved -> stock.available : line.quantity;
             }
         }
     }
@@ -180,8 +176,7 @@ quantum update returnInventory(StockLine[], ReturnRefundAgreement) {
     for (StockLine stock : StockLine[]) {
         for (OrderLine line : ReturnRefundAgreement.order.lines) {
             if (stock.goods.sku == line.goods.sku) {
-                stock.sold -= line.quantity;
-                stock.available += line.quantity;
+                stock.sold -> stock.available : line.quantity;
             }
         }
     }
@@ -209,8 +204,7 @@ Reference PetReservationAgreement from petshop.PetReservationAgreement {
 quantum update reserveRequestedInventory(StockLine[], PetReservationAgreement) {
     for (StockLine item : StockLine[]) {
         if (item.goods.sku == PetReservationAgreement.goods.sku) {
-            item.available -= PetReservationAgreement.quantity;
-            item.reserved += PetReservationAgreement.quantity;
+            item.available -> item.reserved : PetReservationAgreement.quantity;
         }
     }
 }
@@ -223,6 +217,5 @@ Reference StockReceiptAgreement from petshop.StockReceiptAgreement {
 }
 
 quantum update receiveInventory(StockLine, StockSupply, StockReceiptAgreement) {
-    StockSupply.balance -= StockReceiptAgreement.quantity;
-    StockLine.available += StockReceiptAgreement.quantity;
+    StockSupply.balance -> StockLine.available : StockReceiptAgreement.quantity;
 }

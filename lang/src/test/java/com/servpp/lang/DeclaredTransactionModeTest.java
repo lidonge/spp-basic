@@ -46,7 +46,7 @@ public class DeclaredTransactionModeTest {
     }
 
     @Test public void joinedReadOnlyBoundaryInheritsOuterStrategy() throws Exception {
-        SppDomain domain = compile("atomic update write(Values v); atomic check valid(Values v) { require(v.amount > 0, \"INVALID\"); } Scenario serial save(Values v) { transaction { write(v); transaction { valid(v); } } }");
+        SppDomain domain = compile("Enum Fault { INVALID } atomic update write(Values v); atomic check valid(Values v) { require(v.amount > 0, Fault.INVALID); } Scenario serial save(Values v) { transaction { write(v); transaction { valid(v); } } }");
         bind(domain, "domain rules; scope { local { quantum resource(store) write; valid; save; } }");
         assertTrue(domain.validateDeclaredTransactionGroups().toString(), domain.validateDeclaredTransactionGroups().isEmpty());
         assertFalse(((SppService) domain.getSppClass("Save")).getScenarioBodyJava().contains("TransactionMode.AT"));

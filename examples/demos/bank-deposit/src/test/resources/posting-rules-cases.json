@@ -32,9 +32,9 @@
     },
     "account": {
       "interestBase": 0,
-      "overdraftInterest": 30,
-      "collectionInterest": 40,
-      "overdraftPrincipal": 100,
+      "overdraftInterest": -30,
+      "collectionInterest": -40,
+      "overdraftPrincipal": -100,
       "overdraftExposure": 100,
       "loanState": "NORMAL"
     },
@@ -58,9 +58,9 @@
     },
     "account": {
       "interestBase": 0,
-      "overdraftInterest": 30,
-      "collectionInterest": 40,
-      "overdraftPrincipal": 100,
+      "overdraftInterest": -30,
+      "collectionInterest": -40,
+      "overdraftPrincipal": -100,
       "overdraftExposure": 100,
       "loanState": "BAD_DEBT"
     },
@@ -84,9 +84,9 @@
     },
     "account": {
       "interestBase": 100,
-      "overdraftInterest": 10,
-      "collectionInterest": 20,
-      "overdraftPrincipal": 30,
+      "overdraftInterest": -10,
+      "collectionInterest": -20,
+      "overdraftPrincipal": -30,
       "overdraftExposure": 30,
       "loanState": "NORMAL"
     },
@@ -110,9 +110,9 @@
     },
     "account": {
       "interestBase": 100,
-      "overdraftInterest": 10,
-      "collectionInterest": 20,
-      "overdraftPrincipal": 30,
+      "overdraftInterest": -10,
+      "collectionInterest": -20,
+      "overdraftPrincipal": -30,
       "overdraftExposure": 30,
       "loanState": "NORMAL"
     },
@@ -136,9 +136,9 @@
     },
     "account": {
       "interestBase": 0,
-      "overdraftInterest": "0.005",
-      "collectionInterest": "0.004",
-      "overdraftPrincipal": "0.01",
+      "overdraftInterest": "-0.005",
+      "collectionInterest": "-0.004",
+      "overdraftPrincipal": "-0.01",
       "overdraftExposure": "0.01",
       "loanState": "NORMAL"
     },

@@ -30,7 +30,7 @@ public class XbodIdempotencyTest {
                 remote(demo,"depositCash",XbodTransactionTest.deposit(200),"BANK-CLIENT","REUSED-SERIAL");
                 assertFalse(com.servpp.service.idempotency.BusinessIdempotencyManager.wasReplay());
             }
-            var account = demo.call("findDepositAccount",Map.of("DepositAccount",Map.of("accountNumber","ACCOUNT-001")));
+            var account = demo.readAccounts();
             XbodTransactionTest.amount(coordinated() ? "100" : "300",account.path("DepositAccount").path("interestBase"));
         }
     }
@@ -81,7 +81,7 @@ public class XbodIdempotencyTest {
                     assertTrue(failed.toString(), failed.path("handled").asBoolean());
                 }
                 assertEquals("SUCCEEDED",first.path(agreement).path("resultInfo").path("status").asText());
-                var stored = demo.call("findDepositAccount",Map.of("DepositAccount",Map.of("accountNumber","ACCOUNT-001")));
+                var stored = demo.readAccounts();
                 XbodTransactionTest.amount(reversing ? "0" : "100",stored.path("DepositAccount").path("interestBase"));
                 if (reversing) {
                     var receipt=demo.call("readCashReversal",Map.of("CashReversalAgreement",Map.of("reversalNumber",first.path(agreement).path(number).asText())));
@@ -101,7 +101,7 @@ public class XbodIdempotencyTest {
             var first = demo.call("depositCash",input); var second = demo.call("depositCash",input);
             assertFalse(com.servpp.service.idempotency.BusinessIdempotencyManager.wasReplay());
             assertNotEquals(first.path("CashDepositAgreement").path("depositNumber"),second.path("CashDepositAgreement").path("depositNumber"));
-            var account = demo.call("findDepositAccount",Map.of("DepositAccount",Map.of("accountNumber","ACCOUNT-001")));
+            var account = demo.readAccounts();
             XbodTransactionTest.amount("200",account.path("DepositAccount").path("interestBase"));
         }
     }
@@ -113,7 +113,7 @@ public class XbodIdempotencyTest {
             assertEquals(coordinated(), com.servpp.service.idempotency.BusinessIdempotencyManager.wasReplay());
             assertEquals(coordinated(), first.path("CashDepositAgreement").path("depositNumber")
                     .equals(replay.path("CashDepositAgreement").path("depositNumber")));
-            var current = demo.call("findDepositAccount",Map.of("DepositAccount",Map.of("accountNumber","ACCOUNT-001")));
+            var current = demo.readAccounts();
             XbodTransactionTest.amount(coordinated() ? "100" : "200",current.path("DepositAccount").path("interestBase"));
         }
     }
@@ -133,7 +133,7 @@ public class XbodIdempotencyTest {
             }
             var saved = demo.call("readCashReversal",Map.of("CashReversalAgreement",Map.of("reversalNumber",first.path("CashReversalAgreement").path("reversalNumber").asText())));
             assertEquals(8,saved.path("CashReversalPostingLineArray").size());
-            var account = demo.call("findDepositAccount",Map.of("DepositAccount",Map.of("accountNumber","ACCOUNT-001")));
+            var account = demo.readAccounts();
             XbodTransactionTest.amount("0",account.path("DepositAccount").path("interestBase"));
         }
     }
@@ -144,7 +144,7 @@ public class XbodIdempotencyTest {
             var second = remote(demo,"depositCash",XbodTransactionTest.deposit(100),"BANK-B","SAME-SERIAL");
             assertFalse(com.servpp.service.idempotency.BusinessIdempotencyManager.wasReplay());
             assertNotEquals(first.path("CashDepositAgreement").path("depositNumber"),second.path("CashDepositAgreement").path("depositNumber"));
-            var account = demo.call("findDepositAccount",Map.of("DepositAccount",Map.of("accountNumber","ACCOUNT-001")));
+            var account = demo.readAccounts();
             XbodTransactionTest.amount("200",account.path("DepositAccount").path("interestBase"));
         }
     }
