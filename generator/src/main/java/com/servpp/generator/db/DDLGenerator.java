@@ -1243,7 +1243,7 @@ public class DDLGenerator implements ISppErrorLogger {
         Set<String> nonObjectBackedColumns = nonObjectBackedAppColumnNames(appTable);
         ArrayList<SppLocalVar> refs = new ArrayList<>();
         for (SppLocalVar sppLocalVar : sppClass.getSppFieldList()) {
-            if (((SppField)sppLocalVar).isSnapshotStorageFact() && !isPersistedScalarDbField(sppLocalVar)) {
+            if (((SppField)sppLocalVar).isStoredArray() || ((SppField)sppLocalVar).isSnapshotStorageFact() && !isPersistedScalarDbField(sppLocalVar)) {
                 dbTable.addComponent(new DbColumn().setName(sppLocalVar.getName())
                         .setJdbcType(java.sql.JDBCType.CLOB).setField(sppLocalVar));
                 continue;

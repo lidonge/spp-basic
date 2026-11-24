@@ -90,7 +90,7 @@ public class RepositoryScalarCriteriaTest {
         public void setEmail(String value) { email = value; hydrated++; }
     }
 
-    @Test public void duplicateUniqueLookupHydratesOnlyTheFirstNativeRow() throws Exception {
+    @Test public void duplicateUniqueLookupRejectsBeforeHydratingBusinessObjects() throws Exception {
         var repository = repository();
         try (var connection = source.getConnection(); var statement = connection.createStatement()) {
             statement.executeUpdate("INSERT INTO ACCOUNTS (accountRowId,email,name) VALUES "
@@ -100,7 +100,7 @@ public class RepositoryScalarCriteriaTest {
         var rejection = assertThrows(BusinessTransactionRejection.class, () -> repository.findUniqueBy(
                 "Account", List.of("email"), List.of("shared"), CountedAccount.class, "D02", false));
         assertEquals("D02", rejection.getMessage());
-        assertEquals(1, CountedAccount.hydrated);
+        assertEquals(0, CountedAccount.hydrated);
     }
 
     @Test public void duplicatePredicateStillFailsWhenOneResultHasTheSamePrimaryKeyAsTheCondition()throws Exception {

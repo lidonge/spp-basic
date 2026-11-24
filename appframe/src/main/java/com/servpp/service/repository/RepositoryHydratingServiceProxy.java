@@ -458,12 +458,13 @@ public final class RepositoryHydratingServiceProxy {
                 return;
             }
             if(writer!=null && isCollectionWriter(writer)) {
-                                var values=queryCollectionValues(rule,keyValues(rule,args).get(0),args,collectionElementType(writer));
                 if(List.class.isAssignableFrom(writer.getParameterTypes()[0])) {
+                    var values = queryCollectionValues(rule, keyValues(rule,args).get(0), args, collectionElementType(writer));
                     if(target==null) { target=new java.util.ArrayList<>(); writeResponse(owner,writer,target); }
                     com.servpp.service.runtime.ParticipantFacts.hydrateCollection((List<?>)target,values);
                 } else {
-                    writeResponse(owner,writer,queryCollection(rule,keyValues(rule,args).get(0),writer,args));
+                    target = queryCollection(rule,keyValues(rule,args).get(0),writer,args);
+                    writeResponse(owner,writer,target);
                 }
                 com.servpp.service.runtime.ParticipantIdentity.confirm(owner,true);
                 com.servpp.service.runtime.ParticipantIdentity.confirmFacts(target);
@@ -497,7 +498,10 @@ public final class RepositoryHydratingServiceProxy {
             RepositoryParticipantSnapshots.transfer(row, target);
             com.servpp.service.runtime.ParticipantIdentity.confirmFacts(target);
             String readId = RepositoryParticipantSnapshots.objectIdentity(row, rule.objectType()).orElse(id);
-            RepositoryParticipantSnapshots.remember(target, repositorySupplier.get(), rule.objectType(), readId);
+            var repository = repositorySupplier.get();
+            if (repository instanceof JdbcObjectRepository jdbc && jdbc.mapped(rule.objectType()))
+                RepositoryParticipantSnapshots.remember(target);
+            else RepositoryParticipantSnapshots.remember(target, repository, rule.objectType(), readId);
         }
 
         private Class<?> entranceCollectionElementType(HydrationRule rule, int index) {

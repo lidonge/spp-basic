@@ -193,20 +193,23 @@ public class JdbcAppDdlObjectTableReader {
         String sql = "select " + safeIdentifier(columnName, "APP DDL platform column")
                 + " from " + safeIdentifier(table.name(), "APP DDL table")
                 + " where " + whereSql(keyPredicate.columns(), "APP DDL primary key");
-        try (Connection connection = dataSource.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
-            bind(statement, keyPredicate.values());
-            try (ResultSet resultSet = statement.executeQuery()) {
-                if (!resultSet.next()) {
-                    return Optional.empty();
+        try {
+            return com.servpp.service.jdbc.JdbcTransactionScope.execute(dataSource, connection -> {
+                try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                    bind(statement, keyPredicate.values());
+                    try (ResultSet resultSet = statement.executeQuery()) {
+                        if (!resultSet.next()) {
+                            return Optional.empty();
+                        }
+                        Object result = resultSet.getObject(1);
+                        if (resultSet.next()) {
+                            throw new IllegalStateException("APP DDL table " + table.name()
+                                    + " has multiple rows for " + keyPredicate.columns() + ".");
+                        }
+                        return Optional.ofNullable(result);
+                    }
                 }
-                Object result = resultSet.getObject(1);
-                if (resultSet.next()) {
-                    throw new IllegalStateException("APP DDL table " + table.name()
-                            + " has multiple rows for " + keyPredicate.columns() + ".");
-                }
-                return Optional.ofNullable(result);
-            }
+            });
         } catch (SQLException e) {
             throw new IllegalStateException("Cannot read APP DDL platform column "
                     + table.name() + "." + columnName, e);
@@ -237,45 +240,72 @@ public class JdbcAppDdlObjectTableReader {
         return query(table, type, sql, queryValues);
     }
 
-    <T> Optional<T> findUnique(String objectType, List<String> paths, List<?> values, Class<T> type,
-                               String rejectionCode, boolean locked,
-                               java.util.function.Function<String, Optional<T>> snapshot) {
-        var table = catalog.tableForBusinessType(objectType).orElseThrow();
-        if (paths.isEmpty() || paths.size() != values.size()) throw new IllegalArgumentException("QUERY_KEY_ARITY");
+    record PhysicalRow(String id, String revision, java.util.Map<String,Object> columns) { }
+
+    List<PhysicalRow> rows(AppDdlCatalog.Table table, String snapshotTable, List<String> paths,
+                           List<?> values, boolean locked, String uniqueRejection) {
         var predicates = new ArrayList<String>();
         var parameters = new ArrayList<Object>();
+        var role = catalog.roleStorage().get(table.businessType());
+        var projections = new ArrayList<String>();
+        if (role != null && !role.performerTable().isBlank()) {
+            for (var performer : role.performers()) {
+                projections.add("(select link.performer_key from " + safeIdentifier(role.performerTable(), "performer table")
+                        + " link where link.role_type=? and link.performer_type=? and link.role_id=p."
+                        + safeIdentifier(role.primaryKey(), "role key") + ") as "
+                        + safeIdentifier("link_" + performer.slot(), "performer column"));
+                parameters.add(role.type());
+                parameters.add(performer.slot());
+            }
+        }
+        parameters.add(table.businessType());
         for (int i = 0; i < paths.size(); i++) {
-            String path = paths.get(i);
-            String column = safeIdentifier(columnForPath(table, path).orElseThrow(() ->
-                    new IllegalArgumentException("No mapped column for " + objectType + "." + path)), "APP DDL column");
-            if (values.get(i) == ObjectRepository.NullPredicate.IS_NULL) {
-                predicates.add(column + " is null");
-            } else {
-                predicates.add(column + " = ?");
+            String column = columnForPath(table, paths.get(i)).orElseThrow();
+            String name = "p." + safeIdentifier(column, "APP DDL column");
+            if (values.get(i) == ObjectRepository.NullPredicate.IS_NULL) predicates.add(name + " is null");
+            else {
+                predicates.add(name + " = ?");
                 parameters.add(queryValue(values.get(i)));
             }
         }
-        String sql = selectColumnsSql(table) + " where " + String.join(" and ", predicates)
-                + (locked ? " for update" : "");
+        var keys = table.primaryKeys().stream().map(key -> "cast(p." + safeIdentifier(key, "primary key")
+                + " as varchar)").toList();
+        String match = keys.isEmpty() ? "1 = 0" : keys.size() == 1 ? "s.object_id = " + keys.get(0)
+                : "s.composite_key = " + keys.stream().map(key -> "replace(replace(" + key
+                + ",'%','%25'),'|','%7C')").collect(java.util.stream.Collectors.joining(" || '|' || "));
+        // The scalar projection cannot add, remove or lock a physical candidate.
+        String sql = "select p.*, " + (projections.isEmpty() ? "" : String.join(", ", projections) + ", ")
+                + "(select s.revision_token from " + snapshotTable
+                + " s where s.object_type = ? and " + match + ") from "
+                + safeIdentifier(table.name(), "APP DDL table") + " p"
+                + (predicates.isEmpty() ? "" : " where " + String.join(" and ", predicates))
+                + orderBySql(table) + (locked ? " for update" : "");
         try {
             return com.servpp.service.jdbc.JdbcTransactionScope.execute(dataSource, connection -> {
                 try (var statement = connection.prepareStatement(sql)) {
-                    statement.setMaxRows(2);
+                    if (uniqueRejection != null) statement.setMaxRows(2);
                     bind(statement, parameters);
+                    var result = new ArrayList<PhysicalRow>();
                     try (var rows = statement.executeQuery()) {
-                        if (!rows.next()) return Optional.empty();
-                        var identity = new ArrayList<Object>();
-                        for (String key : table.primaryKeys()) identity.add(rows.getObject(key));
-                        String id = objectId(identity);
-                        var result = snapshot.apply(id);
-                        if (result.isEmpty()) {
-                            T value = readRow(table, type, rows);
-                            RepositoryParticipantSnapshots.attachIdentity(value, objectType, id);
-                            result = Optional.of(value);
+                        while (rows.next()) {
+                            if (uniqueRejection != null && !result.isEmpty())
+                                throw new NonUniqueReadRejection(uniqueRejection);
+                            var identity = new ArrayList<Object>();
+                            for (String key : table.primaryKeys()) identity.add(rows.getObject(key));
+                            var columns = new java.util.LinkedHashMap<String,Object>();
+                            for (var column : table.columns())
+                                columns.put(column.name(), "CLOB".equalsIgnoreCase(column.type())
+                                        ? rows.getString(column.name()) : rows.getObject(column.name()));
+                            if (role != null) for (var performer : role.performers()) {
+                                String column = JdbcRoleRelationshipStore.column(performer.slot());
+                                columns.put(column, rows.getString(role.performerTable().isBlank() ? column : "link_" + performer.slot()));
+                            }
+                            String revision = rows.getString(rows.getMetaData().getColumnCount());
+                            result.add(new PhysicalRow(identity.isEmpty() ? null : objectId(identity),
+                                    revision == null ? "0" : revision, columns));
                         }
-                        if (rows.next()) throw new NonUniqueReadRejection(rejectionCode);
-                        return result;
                     }
+                    return result;
                 }
             });
         } catch (SQLException failure) {
@@ -283,10 +313,19 @@ public class JdbcAppDdlObjectTableReader {
         }
     }
 
+    void populate(AppDdlCatalog.Table table, PhysicalRow row, Object target) {
+        for (var column : table.columns()) {
+            Object value = row.columns().get(column.name());
+            if (column.json(table))
+                ParticipantSnapshotJson.hydrate(target, column.name(), (String)value);
+            else writeColumnValue(target, column.name(), value);
+        }
+    }
+
     private <T> T readRow(AppDdlCatalog.Table table, Class<T> type, ResultSet row) throws SQLException {
         T target = newInstance(type);
         for (var column : table.columns()) {
-            if (table.snapshotFacts().contains(column.name()) && "CLOB".equalsIgnoreCase(column.type()))
+            if (column.json(table))
                 ParticipantSnapshotJson.hydrate(target, column.name(), row.getString(column.name()));
             else writeColumnValue(target, column.name(), row.getObject(column.name()));
         }
@@ -294,16 +333,19 @@ public class JdbcAppDdlObjectTableReader {
     }
 
     private <T> List<T> query(AppDdlCatalog.Table table, Class<T> type, String sql, List<Object> values) {
-        try (Connection connection = dataSource.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
-            bind(statement, values);
-            try (ResultSet resultSet = statement.executeQuery()) {
-                List<T> results = new ArrayList<>();
-                while (resultSet.next()) {
-                    results.add(readRow(table, type, resultSet));
+        try {
+            return com.servpp.service.jdbc.JdbcTransactionScope.execute(dataSource, connection -> {
+                try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                    bind(statement, values);
+                    try (ResultSet resultSet = statement.executeQuery()) {
+                        List<T> results = new ArrayList<>();
+                        while (resultSet.next()) {
+                            results.add(readRow(table, type, resultSet));
+                        }
+                        return List.copyOf(results);
+                    }
                 }
-                return List.copyOf(results);
-            }
+            });
         } catch (SQLException e) {
             throw new IllegalStateException("Cannot query APP DDL table " + table.name(), e);
         }
@@ -313,27 +355,30 @@ public class JdbcAppDdlObjectTableReader {
         if (table.primaryKeys().isEmpty()) {
             return List.of();
         }
-        try (Connection connection = dataSource.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
-            bind(statement, values);
-            try (ResultSet resultSet = statement.executeQuery()) {
-                List<String> results = new ArrayList<>();
-                while (resultSet.next()) {
-                    List<Object> keyValues = new ArrayList<>();
-                    for (String primaryKey : table.primaryKeys()) {
-                        Object value = resultSet.getObject(primaryKey);
-                        if (value == null) {
-                            keyValues.clear();
-                            break;
+        try {
+            return com.servpp.service.jdbc.JdbcTransactionScope.execute(dataSource, connection -> {
+                try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                    bind(statement, values);
+                    try (ResultSet resultSet = statement.executeQuery()) {
+                        List<String> results = new ArrayList<>();
+                        while (resultSet.next()) {
+                            List<Object> keyValues = new ArrayList<>();
+                            for (String primaryKey : table.primaryKeys()) {
+                                Object value = resultSet.getObject(primaryKey);
+                                if (value == null) {
+                                    keyValues.clear();
+                                    break;
+                                }
+                                keyValues.add(value);
+                            }
+                            if (keyValues.size() == table.primaryKeys().size()) {
+                                results.add(objectId(keyValues));
+                            }
                         }
-                        keyValues.add(value);
-                    }
-                    if (keyValues.size() == table.primaryKeys().size()) {
-                        results.add(objectId(keyValues));
+                        return List.copyOf(results);
                     }
                 }
-                return List.copyOf(results);
-            }
+            });
         } catch (SQLException e) {
             throw new IllegalStateException("Cannot query APP DDL table " + table.name(), e);
         }
@@ -351,30 +396,33 @@ public class JdbcAppDdlObjectTableReader {
         if (keyPredicate.values().isEmpty()) {
             return false;
         }
-        try (Connection connection = dataSource.getConnection();
-             PreparedStatement statement = connection.prepareStatement(selectSql(table, keyPredicate))) {
-            bind(statement, keyPredicate.values());
-            try (ResultSet resultSet = statement.executeQuery()) {
-                if (!resultSet.next()) {
-                    return false;
+        try {
+            return com.servpp.service.jdbc.JdbcTransactionScope.execute(dataSource, connection -> {
+                try (PreparedStatement statement = connection.prepareStatement(selectSql(table, keyPredicate))) {
+                    bind(statement, keyPredicate.values());
+                    try (ResultSet resultSet = statement.executeQuery()) {
+                        if (!resultSet.next()) {
+                            return false;
+                        }
+                        for (AppDdlCatalog.Column column : table.columns()) {
+                            if (column.json(table))
+                                ParticipantSnapshotJson.hydrate(target, column.name(), resultSet.getString(column.name()));
+                            else writeColumnValue(target, column.name(), resultSet.getObject(column.name()));
+                        }
+                        if (resultSet.next()) {
+                            throw new IllegalStateException("APP DDL table " + table.name()
+                                    + " has multiple rows for " + keyPredicate.columns() + ".");
+                        }
+                        return true;
+                    }
                 }
-                for (AppDdlCatalog.Column column : table.columns()) {
-                    if (table.snapshotFacts().contains(column.name()) && "CLOB".equalsIgnoreCase(column.type()))
-                        ParticipantSnapshotJson.hydrate(target, column.name(), resultSet.getString(column.name()));
-                    else writeColumnValue(target, column.name(), resultSet.getObject(column.name()));
-                }
-                if (resultSet.next()) {
-                    throw new IllegalStateException("APP DDL table " + table.name()
-                            + " has multiple rows for " + keyPredicate.columns() + ".");
-                }
-                return true;
-            }
+            });
         } catch (SQLException e) {
             throw new IllegalStateException("Cannot hydrate APP DDL table " + table.name(), e);
         }
     }
 
-    private KeyPredicate keyPredicate(AppDdlCatalog.Table table, String objectId, Object target) {
+    KeyPredicate keyPredicate(AppDdlCatalog.Table table, String objectId, Object target) {
         if (table.primaryKeys().isEmpty()) {
             return new KeyPredicate(List.of(), List.of());
         }
@@ -387,6 +435,7 @@ public class JdbcAppDdlObjectTableReader {
         }
         List<String> columns = new ArrayList<>();
         List<Object> values = new ArrayList<>();
+        if (target == null) return new KeyPredicate(columns, values);
         for (String primaryKey : table.primaryKeys()) {
             Object value = readColumnValue(target, primaryKey);
             if (value != null) {
@@ -470,7 +519,7 @@ public class JdbcAppDdlObjectTableReader {
         return " order by " + String.join(", ", orderBy);
     }
 
-    private Optional<String> columnForPath(AppDdlCatalog.Table table, String keyPath) {
+    Optional<String> columnForPath(AppDdlCatalog.Table table, String keyPath) {
         // Query plans use logical private identities; APP columns contain the configured key name.
         if (keyPath.equals("@storageIdentity") || keyPath.endsWith(".@storageIdentity")) {
             String prefix = keyPath.substring(0, keyPath.length() - "@storageIdentity".length()).replace('.', '_');
@@ -547,7 +596,7 @@ public class JdbcAppDdlObjectTableReader {
         Object current = target;
         for (int i = 0; i < segments.length - 1; i++) {
             if (ParticipantPlatformKeys.restore(current,String.join("_",java.util.Arrays.copyOfRange(segments,i,segments.length)),value,catalog)) return;
-            current = readOrCreateNestedProperty(current, segments[i]);
+            current = value == null ? readProperty(current, segments[i]) : readOrCreateNestedProperty(current, segments[i]);
             if (current == null) {
                 return;
             }
@@ -647,6 +696,9 @@ public class JdbcAppDdlObjectTableReader {
         if (value == null || targetType == null || targetType.isInstance(value)) {
             return value;
         }
+        if (targetType == java.time.LocalDate.class && value instanceof java.sql.Date date) return date.toLocalDate();
+        if (targetType == java.time.Instant.class && value instanceof java.sql.Timestamp time) return time.toInstant();
+        if (targetType == java.time.LocalDateTime.class && value instanceof java.sql.Timestamp time) return time.toLocalDateTime();
         if (targetType == String.class) {
             return value.toString();
         }
@@ -682,7 +734,7 @@ public class JdbcAppDdlObjectTableReader {
         return value;
     }
 
-    private <T> T newInstance(Class<T> type) {
+    <T> T newInstance(Class<T> type) {
         try {
             return type.getDeclaredConstructor().newInstance();
         } catch (ReflectiveOperationException e) {
@@ -709,7 +761,7 @@ public class JdbcAppDdlObjectTableReader {
         Class<?> type();
     }
 
-    private record KeyPredicate(List<String> columns, List<Object> values) {
+    record KeyPredicate(List<String> columns, List<Object> values) {
     }
 
     private record MethodProperty(Method method) implements Property {

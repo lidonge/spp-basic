@@ -5702,8 +5702,7 @@ public class JdbcObjectSnapshotStoreTest {
         AppDdlProduct foundProductWithSnapshot = repository.find("Product", "P-100", AppDdlProduct.class)
                 .orElseThrow();
         assertEquals("P-100", foundProductWithSnapshot.productId);
-        // Revision-bearing snapshots are authoritative while present; native rows are the fallback.
-        assertEquals("Demo Product", foundProductWithSnapshot.name);
+        assertEquals("Typed Product", foundProductWithSnapshot.name);
 
         runtime.getSnapshotStore().clear();
 

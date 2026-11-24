@@ -47,7 +47,7 @@ public class JdbcAppDdlObjectTableWriter {
         if (table.isEmpty()) {
             return;
         }
-        save(table.orElseThrow(), objectId, value);
+        save(table.orElseThrow(), objectId, value, true);
     }
 
     public void validateUpdateIdentity(String objectType,Object before,Object after) {
@@ -62,6 +62,26 @@ public class JdbcAppDdlObjectTableWriter {
         });
     }
 
+    void verifyImage(AppDdlCatalog.Table table, Object expected, java.util.Map<String,Object> current) {
+        for (var column : table.columns()) {
+            if (!column.objectBacked() || table.primaryKeys().contains(column.name())) continue;
+            Object previous = readColumnValue(expected, column.name());
+            Object actual = current.get(column.name());
+            boolean same;
+            if (column.json(table)) {
+                same = ParticipantSnapshotJson.matches(previous, (String)actual);
+            } else {
+                Object normalized = normalizeJdbcValue(previous);
+                if (normalized != null && actual instanceof Number number) {
+                    try { same = new BigDecimal(normalized.toString()).compareTo(new BigDecimal(number.toString())) == 0; }
+                    catch (NumberFormatException invalid) { same = false; }
+                } else same = java.util.Objects.equals(normalized == null ? null : normalized.toString(),
+                        actual == null ? null : actual.toString());
+            }
+            if (!same) throw new IllegalStateException("PERSISTENCE_VERSION_CONFLICT");
+        }
+    }
+
     /** Called only after the snapshot CAS succeeds in this same JDBC transaction. */
     public void updateChanged(String objectType, String objectId, Object value, java.util.Set<String> paths) {
         var mapping = catalog.tableForBusinessType(objectType);
@@ -73,7 +93,7 @@ public class JdbcAppDdlObjectTableWriter {
         var assignments = new ArrayList<NativeUpdate.Value>();
         for (var column : columns) {
             Object fact = readColumnValue(value,column.name());
-            assignments.add(new NativeUpdate.Value(column.name(),table.snapshotFacts().contains(column.name()) && "CLOB".equalsIgnoreCase(column.type())
+            assignments.add(new NativeUpdate.Value(column.name(),column.json(table)
                     ? ParticipantSnapshotJson.encode(fact) : normalizeJdbcValue(fact)));
         }
         var keys = primaryKeyValues(table,objectId,value);
@@ -106,7 +126,33 @@ public class JdbcAppDdlObjectTableWriter {
         }
     }
 
-    private void save(AppDdlCatalog.Table table, String objectId, Object value) {
+    boolean insert(AppDdlCatalog.Table table, String objectId, Object value, boolean ifAbsent) {
+        try {
+            return JdbcTransactionScope.execute(dataSource, connection -> {
+                var point = ifAbsent ? connection.setSavepoint() : null;
+                try {
+                    save(table, objectId, value, false);
+                    return true;
+                } catch (IllegalStateException failure) {
+                    if (!(failure.getCause() instanceof SQLException sql) || !"23505".equals(sql.getSQLState()))
+                        throw failure;
+                    if (!ifAbsent) throw new IllegalStateException("PERSISTENCE_ALREADY_EXISTS", sql);
+                    connection.rollback(point);
+                    return false;
+                } finally {
+                    if (point != null) connection.releaseSavepoint(point);
+                }
+            });
+        } catch (SQLException failure) { throw new IllegalStateException("PERSISTENCE_INSERT_FAILED", failure); }
+    }
+
+    String physicalId(AppDdlCatalog.Table table, String objectId, Object value) {
+        var keys = primaryKeyValues(table, objectId, value);
+        if (keys.isEmpty()) throw new IllegalStateException("PERSISTENCE_NATIVE_KEY_MISSING");
+        return keys.size() == 1 ? keys.get(0).toString() : CompositeObjectId.encode(keys);
+    }
+
+    private void save(AppDdlCatalog.Table table, String objectId, Object value, boolean replace) {
         try {
             JdbcTransactionScope.execute(dataSource, connection -> {
                 List<Object> primaryKeyValues = new ArrayList<>();
@@ -122,11 +168,12 @@ public class JdbcAppDdlObjectTableWriter {
                 List<String> columnNames = table.columns().stream()
                         .map(AppDdlCatalog.Column::name)
                         .toList();
-                List<Object> existingValues = existingValues(connection, table, primaryKeyValues, columnNames);
+                List<Object> existingValues = replace ? existingValues(connection, table, primaryKeyValues, columnNames)
+                        : java.util.Collections.nCopies(columnNames.size(), null);
                 List<Object> columnValues = new ArrayList<>();
                 for (int i = 0; i < table.columns().size(); i++) {
                     AppDdlCatalog.Column column = table.columns().get(i);
-                    if (table.snapshotFacts().contains(column.name()) && "CLOB".equalsIgnoreCase(column.type())) {
+                    if (column.json(table)) {
                         // A snapshot replaces the whole value, including an explicit null.
                         columnValues.add(ParticipantSnapshotJson.encode(readColumnValue(value, column.name())));
                         continue;
@@ -139,10 +186,13 @@ public class JdbcAppDdlObjectTableWriter {
                             : platformColumnValue(table, primaryKeyValues, column, existingValues.get(i), value);
                     columnValues.add(normalizeJdbcValue(columnValue));
                 }
-                try (PreparedStatement delete = connection.prepareStatement(deleteSql(table));
-                     PreparedStatement insert = connection.prepareStatement(insertSql(table, columnNames))) {
-                    bind(delete, primaryKeyValues);
-                    delete.executeUpdate();
+                if (replace) {
+                    try (PreparedStatement delete = connection.prepareStatement(deleteSql(table))) {
+                        bind(delete, primaryKeyValues);
+                        delete.executeUpdate();
+                    }
+                }
+                try (PreparedStatement insert = connection.prepareStatement(insertSql(table, columnNames))) {
                     bind(insert, columnValues);
                     insert.executeUpdate();
                 }
@@ -175,7 +225,7 @@ public class JdbcAppDdlObjectTableWriter {
             return;
         }
         if (value != null) {
-            save(table.orElseThrow(), objectId, value);
+            insert(table.orElseThrow(), objectId, value, true);
         }
         try {
             JdbcTransactionScope.execute(dataSource, connection -> {
@@ -219,7 +269,7 @@ public class JdbcAppDdlObjectTableWriter {
             return;
         }
         if (value != null) {
-            save(table.orElseThrow(), objectId, value);
+            insert(table.orElseThrow(), objectId, value, true);
         }
         try {
             JdbcTransactionScope.execute(dataSource, connection -> {

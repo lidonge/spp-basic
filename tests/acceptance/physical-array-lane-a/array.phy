@@ -1,0 +1,21 @@
+domain physicalarray;
+
+phy {
+    environment testing {
+        repository cashVoucherLaneARecords {
+            adapter jdbcObjectRepository;
+            config default = true;
+            config appDdlTables = true;
+            config datasourceUrl = "${spp.xbod.cash-voucher-lane-a-url:jdbc:h2:mem:xbod_cash_voucher_lane_a;DB_CLOSE_DELAY=-1}";
+            config driverClassName = "org.h2.Driver";
+            config table = "xbod_cash_voucher_lane_a_records";
+        }
+        backend cashVoucherLaneA {
+            adapter localJdbc;
+            at cashVoucherLaneA;
+            repository cashVoucherLaneARecords;
+            config datasourceUrl = "${spp.xbod.cash-voucher-lane-a-url:jdbc:h2:mem:xbod_cash_voucher_lane_a;DB_CLOSE_DELAY=-1}";
+            config driverClassName = "org.h2.Driver";
+        }
+    }
+}

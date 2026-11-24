@@ -43,7 +43,10 @@ public final class RepositoryParticipantSnapshots {
         CURRENT.get().put(participant, new Baseline(facts, Map.copyOf(wire.platform()), Map.copyOf(revisions)));
     }
     public static void loaded(Object participant, ObjectRepository repository, ObjectSnapshot snapshot) {
-        CURRENT.get().put(participant, new Baseline(ParticipantCopies.copy(participant), Map.of(),
+        loaded(participant, repository, snapshot, Map.of());
+    }
+    static void loaded(Object participant, ObjectRepository repository, ObjectSnapshot snapshot, Map<String,Object> platform) {
+        CURRENT.get().put(participant, new Baseline(ParticipantCopies.copy(participant), Map.copyOf(platform),
                 mergeRevisions(participant, new Revision(repository, snapshot.objectType(), snapshot.objectId(), snapshot.revision()))));
     }
     public static void transfer(Object source, Object target) {

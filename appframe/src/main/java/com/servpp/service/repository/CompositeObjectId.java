@@ -26,6 +26,16 @@ public final class CompositeObjectId {
         return PREFIX + String.join(".", encodedValues);
     }
 
+    // SQL can join this escaped tuple using ordinary string functions on physical keys.
+    static String lookupKey(String objectId) {
+        if (!objectId.startsWith(PREFIX)) return null;
+        int parts = objectId.substring(PREFIX.length()).split("\\.", -1).length;
+        var values = decode(objectId, parts);
+        if (values.isEmpty()) return null;
+        return values.stream().map(value -> value.replace("%", "%25").replace("|", "%7C"))
+                .collect(java.util.stream.Collectors.joining("|"));
+    }
+
     public static List<String> decode(String objectId, int expectedParts) {
         if (objectId == null || !objectId.startsWith(PREFIX) || expectedParts <= 0) {
             return List.of();

@@ -39,11 +39,12 @@ public class ParticipantRelationshipViewCacheTest {
         p.setProperty("table.ROWS.column.rowKey.objectBacked", "false");
         p.setProperty("table.ROWS.queryService", "privateRows.findRow");
         var store = new com.servpp.service.repository.JdbcObjectSnapshotStore(source, value -> mapper.valueToTree(value).toString());
+        new com.servpp.service.repository.JdbcAppDdlSchemaManager(source).ensureTables(AppDdlCatalog.fromProperties(p));
         var repository = new com.servpp.service.repository.JdbcObjectRepository(store, mapper).useAppDdlCatalog(AppDdlCatalog.fromProperties(p));
         com.servpp.service.transaction.DeclaredTransactionContext.execute(com.servpp.service.transaction.TransactionMode.LOCAL,
                 () -> repository.executeInTransaction(() -> {
-                    store.insert("Row", "one", Map.of("label", "first"));
-                    store.insert("Row", "two", Map.of("label", "second"));
+                    repository.insert("Row", "one", Map.of("label", "first"));
+                    repository.insert("Row", "two", Map.of("label", "second"));
                     store.insert("Rows", "root", Map.of("rows", List.of(
                             Map.of("label", "", "$sppStorageIdentity", Map.of("type", "Row", "id", "one")),
                             Map.of("label", "", "$sppStorageIdentity", Map.of("type", "Row", "id", "two")))));

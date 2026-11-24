@@ -19,6 +19,9 @@ public class SppField extends SppLocalVar {
     public void setPerformerStorageIdentity(boolean value) { performerStorageIdentity = value; }
     private boolean snapshotStorageFact;
     public boolean isSnapshotStorageFact() { return snapshotStorageFact; }
+    public boolean isStoredArray() {
+        return isStoredHere() && !isQuantum() && !isPerformerRelation() && getArrayDimension() > 0;
+    }
     public void setSnapshotStorageFact(boolean value) { snapshotStorageFact = value; }
     private boolean systemResult;
     public boolean isSystemResult() { return systemResult; }

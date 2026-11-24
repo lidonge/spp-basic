@@ -656,6 +656,8 @@ public class OpenApiGenerator extends BaseClassGenerator implements ILogable {
                             + String.join(",", index.getPaths()));
                 }
                 for (DbColumn column : table.getColumns().getArrayList()) {
+                    if (column.getField() instanceof com.servpp.lang.models.SppField field && field.isStoredArray())
+                        out.println("table." + table.getName() + ".column." + column.getName() + ".array=true");
                     out.println("table." + table.getName() + ".column." + column.getName()
                             + ".type=" + column.getJdbcType().getName());
                     out.println("table." + table.getName() + ".column." + column.getName()
