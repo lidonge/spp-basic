@@ -204,7 +204,7 @@ public record AppDdlCatalog(List<Table> tables, Map<String, RoleStorage> roleSto
                     parseInt(properties, prefix + "precision", 0),
                     parseInt(properties, prefix + "scale", 0),
                     parseBoolean(properties, prefix + "nullable", true),
-                    parseBoolean(properties, prefix + "objectBacked", true)));
+                    parseBoolean(properties, prefix + "objectBacked", true), parseBoolean(properties, prefix + "array", false)));
         }
         return List.copyOf(columns);
     }
@@ -337,7 +337,13 @@ public record AppDdlCatalog(List<Table> tables, Map<String, RoleStorage> roleSto
             snapshotFacts = List.copyOf(snapshotFacts); excludedFacts = List.copyOf(excludedFacts); queryService = queryService == null ? "" : queryService; }
     }
 
-    public record Column(String name, String type, int precision, int scale, boolean nullable, boolean objectBacked) {
+    public record Column(String name, String type, int precision, int scale, boolean nullable, boolean objectBacked, boolean array) {
+        public Column(String name, String type, int precision, int scale, boolean nullable, boolean objectBacked) {
+            this(name, type, precision, scale, nullable, objectBacked, false);
+        }
+        public boolean json(Table table) {
+            return "CLOB".equalsIgnoreCase(type) && (array || table.snapshotFacts().contains(name));
+        }
     }
 
     private static List<String> keyPathsByColumnBacking(String businessType, List<String> keyPaths,

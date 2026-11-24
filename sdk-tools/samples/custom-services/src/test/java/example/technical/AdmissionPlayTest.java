@@ -174,6 +174,14 @@ public class AdmissionPlayTest {
             var failure = assertThrows(IllegalArgumentException.class,
                     () -> runtime.executeGeneratedService("ledger.readAdmission", unknown));
             assertTrue(failure.getMessage(), failure.getMessage().contains("Unexpected value 'E9999'"));
+            try (var connection = source.getConnection();
+                 var update = connection.prepareStatement("UPDATE ADMISSIONS SET returnCode=? WHERE account='A3'")) {
+                update.setString(1, alternate ? "404" : "E1214");
+                assertEquals(1, update.executeUpdate());
+            }
+            var changed = mapper.convertValue(Map.of("lookup", Map.of("keyCode", "A3")), ReadAdmissionRequest.class);
+            runtime.executeGeneratedService("ledger.readAdmission", changed);
+            assertEquals("E1214", changed.getLookup().getCode().getValue());
         } finally {
             container.clear();
             if (previous == null) System.clearProperty(property);

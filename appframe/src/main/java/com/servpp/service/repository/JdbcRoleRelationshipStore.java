@@ -114,6 +114,17 @@ public final class JdbcRoleRelationshipStore {
         } catch (SQLException failure) { throw new IllegalStateException("ROLE_RELATIONSHIP_READ_FAILED",failure); }
     }
 
+    void loadMapped(String type, Map<String,Object> columns, Object target) {
+        var role = catalog.roleStorage().get(type);
+        if (role == null) return;
+        List<Object> actors = new ArrayList<>();
+        for (var performer : role.performers()) {
+            String key = (String)columns.get(column(performer.slot()));
+            if (key != null) actors.add(attach(target, role, performer, key));
+        }
+        RoleIdentityContext.attachPerformers(target, type, actors.toArray());
+    }
+
     private Object attach(Object target, AppDdlCatalog.RoleStorage role, AppDdlCatalog.Performer performer, String json) {
         try {
             Map<String,Object> facts = mapper.readerFor(new TypeReference<Map<String,Object>>() { })

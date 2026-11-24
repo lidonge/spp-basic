@@ -30,7 +30,7 @@ public class RepositoryDeleteDdlTest {
         final ObjectMapper mapper = new ObjectMapper();
         final JdbcObjectRepository repository;
         Fixture() throws Exception {
-            source.setURL("jdbc:h2:mem:"+UUID.randomUUID()+";DB_CLOSE_DELAY=-1");
+            source.setURL("jdbc:h2:mem:"+UUID.randomUUID()+";DB_CLOSE_DELAY=-1;QUERY_STATISTICS=TRUE");
             try(var c=source.getConnection(); var s=c.createStatement()) {
                 s.execute("CREATE TABLE stored_record(id VARCHAR(64),region VARCHAR(64),amount BIGINT,PRIMARY KEY(id,region))");
             }
@@ -60,6 +60,93 @@ public class RepositoryDeleteDdlTest {
         }
     }
     private static String key(String id,String region) { return CompositeObjectId.encode(List.of(id,region)); }
+    private void external(Fixture f, String sql) throws Exception {
+        try (var connection = f.source.getConnection(); var statement = connection.createStatement()) {
+            assertEquals(1, statement.executeUpdate(sql));
+        }
+    }
+
+    private void assertViews(Fixture f, Long amount, boolean locked) {
+        var repository = f.repository;
+        var id = key("a", "east");
+        var paths = List.of("region");
+        var keys = List.of("east");
+        var single = locked ? repository.findForUpdate("Stored", id, Stored.class)
+                : repository.find("Stored", id, Stored.class);
+        assertEquals(amount, single.map(Stored::amount).orElse(null));
+        assertEquals(amount != null, repository.find("Stored", id).isPresent());
+        var expected = amount == null ? List.of() : List.of(amount);
+        var keyed = locked ? repository.findByForUpdate("Stored", paths, keys, Stored.class)
+                : repository.findBy("Stored", paths, keys, Stored.class);
+        assertEquals(expected, keyed.stream().map(Stored::amount).toList());
+        assertEquals(expected, repository.findAll("Stored", Stored.class).stream().map(Stored::amount).toList());
+        assertEquals(amount, repository.findUniqueBy("Stored", paths, keys, Stored.class, "NON_UNIQUE", locked)
+                .map(Stored::amount).orElse(null));
+    }
+
+    private void assertBothScopes(Fixture f, Long amount) {
+        assertViews(f, amount, false);
+        f.transaction(() -> assertViews(f, amount, true));
+    }
+
+    @Test public void externalRowsDriveAllViewsAndFirstWriteCreatesRevisionEvidence() throws Exception {
+        var f = new Fixture();
+        var id = key("a", "east");
+        external(f, "insert into stored_record values ('a','east',10)");
+        assertBothScopes(f, 10L);
+        var duplicate = new Stored("a", "east", 90);
+        assertEquals("PERSISTENCE_ALREADY_EXISTS", assertThrows(IllegalStateException.class,
+                () -> f.transaction(() -> f.repository.insert("Stored", id, duplicate))).getMessage());
+        f.transaction(() -> f.repository.insertIfAbsent("Stored", id, duplicate));
+        assertBothScopes(f, 10L);
+        var stale = f.repository.require("Stored", id, Stored.class);
+        assertEquals("0", RepositoryParticipantSnapshots.requireRevision(stale, f.repository, "Stored", id));
+        external(f, "update stored_record set amount=11");
+        stale.setAmount(12);
+        assertEquals("PERSISTENCE_VERSION_CONFLICT", assertThrows(IllegalStateException.class,
+                () -> f.transaction(() -> f.repository.update("Stored", id, stale))).getMessage());
+        assertFalse(f.repository.getStore().find("Stored", id).isPresent());
+        f.transaction(() -> {
+            var current = f.repository.require("Stored", id, Stored.class);
+            current.setAmount(13);
+            f.repository.updateFromRead("Stored", id, current);
+            assertViews(f, 13L, true);
+        });
+        var revision = f.repository.getStore().find("Stored", id).orElseThrow().revision();
+        assertNotEquals("0", revision);
+        external(f, "update stored_record set amount=17");
+        assertBothScopes(f, 17L);
+        var divergent = f.repository.require("Stored", id, Stored.class);
+        divergent.setAmount(18);
+        assertEquals("PERSISTENCE_VERSION_CONFLICT", assertThrows(IllegalStateException.class,
+                () -> f.transaction(() -> f.repository.update("Stored", id, divergent))).getMessage());
+        assertEquals(revision, f.repository.getStore().find("Stored", id).orElseThrow().revision());
+        assertBothScopes(f, 17L);
+        external(f, "delete from stored_record");
+        assertBothScopes(f, null);
+    }
+
+    private long selectCount(Fixture f) throws SQLException {
+        try (var connection = f.source.getConnection(); var query = connection.createStatement();
+             var result = query.executeQuery("select coalesce(sum(execution_count),0) from information_schema.query_statistics "
+                     + "where lower(sql_statement) like 'select %' and lower(sql_statement) not like '%information_schema%'")) {
+            result.next();
+            return result.getLong(1);
+        }
+    }
+
+    @Test public void collectionMaterializesAllRowsInOneStatementInBothScopes() throws Exception {
+        var f = new Fixture();
+        for (String id : List.of("a", "b", "c")) f.seed(new Stored(id, "east", 10));
+        long before = selectCount(f);
+        assertEquals(3, f.repository.findBy("Stored", "region", "east", Stored.class).size());
+        assertEquals(before + 1, selectCount(f));
+        long after = selectCount(f);
+        f.transaction(() -> assertEquals(3, f.repository.findByForUpdate(
+                "Stored", List.of("region"), List.of("east"), Stored.class).size()));
+        assertEquals(after + 1, selectCount(f));
+    }
+
     @Test public void decimalNativeIdentityRetainsAllDigitsWhenOriginalSnapshotIsDecoded() throws Exception {
         var f=new Fixture();
         try(var c=f.source.getConnection();var statement=c.createStatement()) {

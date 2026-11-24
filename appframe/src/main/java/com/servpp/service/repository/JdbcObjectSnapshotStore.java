@@ -76,6 +76,7 @@ public class JdbcObjectSnapshotStore {
                     payload_json clob not null,
                     updated_at timestamp not null,
                     revision_token varchar(64) not null,
+                    composite_key varchar(1024),
                     primary key (object_type, object_id)
                 )
                 """.formatted(this.tableName);
@@ -126,8 +127,8 @@ public class JdbcObjectSnapshotStore {
                 """.formatted(this.tableName);
         this.insertOneSql = """
                 insert into %s (
-                    object_type, object_id, payload_json, updated_at, revision_token
-                ) values (?, ?, ?, ?, ?)
+                    object_type, object_id, payload_json, updated_at, revision_token, composite_key
+                ) values (?, ?, ?, ?, ?, ?)
                 """.formatted(this.tableName);
         this.insertTransactionHistorySql = """
                 insert into %s (
@@ -274,6 +275,7 @@ public class JdbcObjectSnapshotStore {
             statement.setString(3, serializer.apply(value));
             statement.setTimestamp(4, Timestamp.from(Instant.now()));
             statement.setString(5, UUID.randomUUID().toString());
+            statement.setString(6, CompositeObjectId.lookupKey(objectId));
             statement.executeUpdate();
         } catch (SQLException e) {
             String code = e.getSQLState() != null && e.getSQLState().startsWith("23")
@@ -708,6 +710,24 @@ public class JdbcObjectSnapshotStore {
         try (Connection connection = dataSource.getConnection();
              Statement statement = connection.createStatement()) {
             statement.execute(createTableSql);
+            if (!hasColumn(connection, tableName, "composite_key")) {
+                statement.execute("alter table " + tableName + " add column if not exists composite_key varchar(1024)");
+                try (var legacy = connection.prepareStatement("select object_type,object_id from " + tableName
+                        + " where composite_key is null and object_id like 'spp-composite:%'");
+                     var rows = legacy.executeQuery();
+                     var backfill = connection.prepareStatement("update " + tableName
+                             + " set composite_key=? where object_type=? and object_id=? and composite_key is null")) {
+                    while (rows.next()) {
+                        backfill.setString(1, CompositeObjectId.lookupKey(rows.getString(2)));
+                        backfill.setString(2, rows.getString(1));
+                        backfill.setString(3, rows.getString(2));
+                        backfill.addBatch();
+                    }
+                    backfill.executeBatch();
+                }
+            }
+            statement.execute("create index if not exists " + tableName + "_composite_idx on "
+                    + tableName + "(object_type, composite_key)");
             statement.execute(createTransactionHistoryTableSql);
             statement.execute(createTransactionArchiveTableSql);
             ensureTransactionHistoryColumn(connection, "trace_id", "varchar(256)");
@@ -745,6 +765,7 @@ public class JdbcObjectSnapshotStore {
             insert.setString(3, payloadJson);
             insert.setTimestamp(4, updatedAt);
             insert.setString(5, UUID.randomUUID().toString());
+            insert.setString(6, CompositeObjectId.lookupKey(objectId));
             insert.executeUpdate();
 
             if (TRANSACTION_SNAPSHOT_TYPE.equals(objectType)) {
@@ -772,7 +793,7 @@ public class JdbcObjectSnapshotStore {
 
     private void ensureTransactionHistoryColumn(Connection connection, String columnName,
                                                 String columnDefinition) throws SQLException {
-        if (hasTransactionHistoryColumn(connection, columnName)) {
+        if (hasColumn(connection, transactionHistoryTableName, columnName)) {
             return;
         }
         try (Statement statement = connection.createStatement()) {
@@ -781,11 +802,9 @@ public class JdbcObjectSnapshotStore {
         }
     }
 
-    private boolean hasTransactionHistoryColumn(Connection connection, String columnName) throws SQLException {
+    private boolean hasColumn(Connection connection, String table, String columnName) throws SQLException {
         DatabaseMetaData metaData = connection.getMetaData();
-        for (String tablePattern : List.of(transactionHistoryTableName,
-                transactionHistoryTableName.toUpperCase(Locale.ROOT),
-                transactionHistoryTableName.toLowerCase(Locale.ROOT))) {
+        for (String tablePattern : List.of(table, table.toUpperCase(Locale.ROOT), table.toLowerCase(Locale.ROOT))) {
             for (String columnPattern : List.of(columnName, columnName.toUpperCase(Locale.ROOT),
                     columnName.toLowerCase(Locale.ROOT))) {
                 try (ResultSet resultSet = metaData.getColumns(null, null, tablePattern, columnPattern)) {
