@@ -14238,6 +14238,14 @@ public class AppSemanticsTest {
         assertTrue(errors.toString(), errors.stream().anyMatch(error -> error.contains("two distinct quantum attributes")));
     }
 
+    @Test
+    public void parenthesizedAppWritesStillResolveTheirQuantumTarget() throws Exception {
+        var domain = compileDomain("domain rules; Role Wallet { quantum int balance; } atomic calculate adjust(Wallet w);",
+                "domain rules; services { adjust { (w.balance) += 1; } }");
+        var errors = domain.validateAppDeclarations();
+        assertTrue(errors.toString(), errors.stream().anyMatch(error -> error.contains("[P0-a]") && error.contains("a -> b : x")));
+    }
+
     private SppDomain compileDomain(String sppSource, String appSource) throws Exception {
         File dir = Files.createTempDirectory("spp-app-semantics-test").toFile();
         String domainName = sourceDomainName(sppSource);

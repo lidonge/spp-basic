@@ -51,9 +51,16 @@ public final class BusinessCalculationCompiler {
         }
         if (keyword.equals("require")) {
             var condition = expression(ctx.expression(), domain);
-            var code = expression(ctx.rejectionCode().expression(), domain);
+            var location = sourceLocation(ctx.rejectionCode().getStart());
+            IExpression code;
+            try {
+                code = expression(ctx.rejectionCode().expression(), domain);
+            } catch (IllegalArgumentException invalid) {
+                throw new IllegalArgumentException(location + " [require-enum] " + invalid.getMessage()
+                        + ". Declare an enum member for the rejection code.", invalid);
+            }
             var require = new RequireStatement(condition, code);
-            require.sourceLocation = sourceLocation(ctx.rejectionCode().getStart());
+            require.sourceLocation = location;
             return require;
         }
         if (keyword.equals("check")) {

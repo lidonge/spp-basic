@@ -1,5 +1,6 @@
 package com.servpp.service.runtime;
 
+import com.servpp.service.DelegatingService;
 import com.servpp.service.Service;
 import com.servpp.service.Scenario;
 import java.util.function.Supplier;
@@ -11,13 +12,26 @@ public final class GeneratedServiceEntry {
 
     private GeneratedServiceEntry() { }
 
+    static Service originalService(Service service) {
+        Service current = service;
+        while (current instanceof DelegatingService delegatingService) {
+            Service delegate = delegatingService.getDelegateService();
+            if (delegate == null || delegate == current) {
+                return current;
+            }
+            current = delegate;
+        }
+        return current;
+    }
+
     static <T> T dispatch(Service service, Supplier<T> action) {
         if (ACTIVE.get() != null || ENTRY.get() != null)
             throw new IllegalStateException("P0-b: a service cannot start another scenario. Invoke it from the front end.");
-        if (!(service instanceof Scenario) && !(service instanceof GeneratedServiceKindProvider kind
+        Service entry = originalService(service);
+        if (!(entry instanceof Scenario) && !(entry instanceof GeneratedServiceKindProvider kind
                 && kind.getGeneratedServiceKind() == GeneratedServiceKind.SCENARIO))
             throw new IllegalStateException("P0-b: front-end entries must be scenarios. Call the atomic service from its scenario.");
-        ENTRY.set(service);
+        ENTRY.set(entry);
         try { return inService(action); }
         finally { ENTRY.remove(); }
     }

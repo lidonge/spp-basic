@@ -3,6 +3,11 @@ package {{basePackage}}.{{domainName}}.service;
 {{#idempotencyExecution}}import com.servpp.service.idempotency.BusinessIdempotencyManager;
 import com.servpp.service.runtime.InvocationContext;
 {{/idempotencyExecution}}
+import com.servpp.service.Service;
+import com.servpp.service.scenario.IExecutor;
+import com.servpp.service.scenario.IParallelExecuteGroup;
+import com.servpp.service.scenario.ISerialExecuteGroup;
+import com.servpp.service.scenario.ITransactionGroup;
 import com.servpp.service.runtime.GeneratedRoleIdentityContextBinder;
 import com.servpp.service.runtime.GeneratedServiceKind;
 import com.servpp.service.runtime.GeneratedServiceKindProvider;
@@ -31,6 +36,10 @@ public class Simple{{name}} extends {{name}}{{scenarioServiceInterfaces}}{
             this.{{name}} = ({{type.name}})DefaultServiceContainer.getInstance().getService("{{domainName}}", "{{name}}");
             {{/type.name}}
     	{{/sppFieldList}}
+    }
+
+    private void {{funcName}}({{#serviceBody.sppLocalVarList}}{{^-first}},{{/-first}}{{serviceJavaType}} {{name}}{{/serviceBody.sppLocalVarList}}){
+{{scenarioBodyJava}}
     }
 
     @Override

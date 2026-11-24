@@ -27,6 +27,16 @@ public class GeneratedServiceEntryTest {
         assertEquals("done", GeneratedServiceEntry.dispatch(scenario, scenario::execute));
     }
 
+    @Test public void frontEndDispatchReachesTheScenarioThroughItsWrapper() {
+        class Wrapped implements Service, com.servpp.service.DelegatingService {
+            public Service getDelegateService() { return scenario; }
+            public String getName() { return scenario.getName(); }
+            public Object execute(Object... args) { return scenario.execute(args); }
+        }
+        Service wrapped = new Wrapped();
+        assertEquals("done", GeneratedServiceEntry.dispatch(wrapped, wrapped::execute));
+    }
+
     @Test public void atomicCannotBeAFrontEndEntry() {
         Service atomic = new Service() {
             public Object execute(Object... args) { throw new AssertionError(); }

@@ -112,7 +112,7 @@ public interface IServicesHandler extends IApplicationHandler, IJavaExprHandler 
 
     @Override
     default void enterAssignExpr(AppParser.AssignExprContext ctx) {
-        validateWrite(ctx, ctx.expression(0).getText());
+        validateWrite(ctx, ctx.expression(0));
         _enterAssignExpr(ctx);
     }
     @Override
@@ -142,7 +142,7 @@ public interface IServicesHandler extends IApplicationHandler, IJavaExprHandler 
 
     @Override
     default void enterRightIncDecExpr(AppParser.RightIncDecExprContext ctx){
-        validateWrite(ctx, ctx.expression().getText());
+        validateWrite(ctx, ctx.expression());
         _enterRightIncDecExpr(ctx);
     }
 
@@ -153,7 +153,7 @@ public interface IServicesHandler extends IApplicationHandler, IJavaExprHandler 
 
     @Override
     default void enterLeftIncDecAndSignExpr(AppParser.LeftIncDecAndSignExprContext ctx){
-        if (java.util.Set.of("++", "--").contains(ctx.getChild(0).getText())) validateWrite(ctx, ctx.expression().getText());
+        if (java.util.Set.of("++", "--").contains(ctx.getChild(0).getText())) validateWrite(ctx, ctx.expression());
         _enterLeftIncDecAndSignExpr(ctx);
     }
 
@@ -302,7 +302,9 @@ public interface IServicesHandler extends IApplicationHandler, IJavaExprHandler 
         _exitArrayExpr(ctx);
     }
 
-    private void validateWrite(org.antlr.v4.runtime.ParserRuleContext ctx, String path) {
+    private void validateWrite(org.antlr.v4.runtime.ParserRuleContext ctx, AppParser.ExpressionContext target) {
+        while (target instanceof AppParser.ParenthesesExprContext parentheses) target = parentheses.expression();
+        String path = target.getText();
         if (getQualifieField(path, getLocalVarMap()) instanceof com.servpp.lang.models.SppField field && field.isQuantum()) {
             var token = ctx.getStart();
             getSppDomian().addMigrationDiagnostic("P0-a", getAntlrFile() + ":" + token.getLine() + ":" + (token.getCharPositionInLine() + 1)

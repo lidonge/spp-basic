@@ -31,11 +31,6 @@ public class Simple{{name}} extends {{name}} implements RemoteGeneratedService, 
 {{generatedServiceKindMethods}}
 {{remoteCompensationServiceNamesMethod}}
     @Override
-    public void {{funcName}}({{#serviceBody.sppLocalVarList}}{{^-first}},{{/-first}}{{serviceJavaType}} {{name}}{{/serviceBody.sppLocalVarList}}) {
-        throw new UnsupportedOperationException("Remote scenario {{funcName}} requires an adapter implementation.");
-    }
-
-    @Override
     public Object execute(Object... params) {
         throw new UnsupportedOperationException("Remote scenario {{funcName}} requires an adapter implementation.");
     }
