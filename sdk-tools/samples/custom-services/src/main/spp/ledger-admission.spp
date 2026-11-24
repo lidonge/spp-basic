@@ -54,3 +54,18 @@ Scenario serial readBlankAdmission(CodedAdmission result) {
     identify(result);
     checkBlankAdmission(result);
 }
+
+Role AdmissionTicket { String receipt; String(4) batch; String note; }
+Enum AdmissionError { DUPLICATE:"A02" }
+atomic check checkTicket(AdmissionTicket ticket) {
+    require(ticket.note == BLANK, "NOTE_PRESENT");
+}
+Scenario serial readUniqueAdmission(CodedAdmission result, AdmissionTicket ticket) {
+    unique findCodedAdmission by CodedAdmission.accountNumber = BLANK;
+    identify(result);
+    checkBlankAdmission(result);
+    transaction {
+        unique findAdmissionTicket by AdmissionTicket.batch = BLANK else AdmissionError.DUPLICATE;
+        checkTicket(ticket),breakTransaction;
+    }
+}

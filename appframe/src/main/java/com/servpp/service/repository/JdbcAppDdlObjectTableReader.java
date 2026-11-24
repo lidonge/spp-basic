@@ -237,6 +237,62 @@ public class JdbcAppDdlObjectTableReader {
         return query(table, type, sql, queryValues);
     }
 
+    <T> Optional<T> findUnique(String objectType, List<String> paths, List<?> values, Class<T> type,
+                               String rejectionCode, boolean locked,
+                               java.util.function.Function<String, Optional<T>> snapshot) {
+        var table = catalog.tableForBusinessType(objectType).orElseThrow();
+        if (paths.isEmpty() || paths.size() != values.size()) throw new IllegalArgumentException("QUERY_KEY_ARITY");
+        var predicates = new ArrayList<String>();
+        var parameters = new ArrayList<Object>();
+        for (int i = 0; i < paths.size(); i++) {
+            String path = paths.get(i);
+            String column = safeIdentifier(columnForPath(table, path).orElseThrow(() ->
+                    new IllegalArgumentException("No mapped column for " + objectType + "." + path)), "APP DDL column");
+            if (values.get(i) == ObjectRepository.NullPredicate.IS_NULL) {
+                predicates.add(column + " is null");
+            } else {
+                predicates.add(column + " = ?");
+                parameters.add(queryValue(values.get(i)));
+            }
+        }
+        String sql = selectColumnsSql(table) + " where " + String.join(" and ", predicates)
+                + (locked ? " for update" : "");
+        try {
+            return com.servpp.service.jdbc.JdbcTransactionScope.execute(dataSource, connection -> {
+                try (var statement = connection.prepareStatement(sql)) {
+                    statement.setMaxRows(2);
+                    bind(statement, parameters);
+                    try (var rows = statement.executeQuery()) {
+                        if (!rows.next()) return Optional.empty();
+                        var identity = new ArrayList<Object>();
+                        for (String key : table.primaryKeys()) identity.add(rows.getObject(key));
+                        String id = objectId(identity);
+                        var result = snapshot.apply(id);
+                        if (result.isEmpty()) {
+                            T value = readRow(table, type, rows);
+                            RepositoryParticipantSnapshots.attachIdentity(value, objectType, id);
+                            result = Optional.of(value);
+                        }
+                        if (rows.next()) throw new NonUniqueReadRejection(rejectionCode);
+                        return result;
+                    }
+                }
+            });
+        } catch (SQLException failure) {
+            throw new IllegalStateException("Cannot query APP DDL table " + table.name(), failure);
+        }
+    }
+
+    private <T> T readRow(AppDdlCatalog.Table table, Class<T> type, ResultSet row) throws SQLException {
+        T target = newInstance(type);
+        for (var column : table.columns()) {
+            if (table.snapshotFacts().contains(column.name()) && "CLOB".equalsIgnoreCase(column.type()))
+                ParticipantSnapshotJson.hydrate(target, column.name(), row.getString(column.name()));
+            else writeColumnValue(target, column.name(), row.getObject(column.name()));
+        }
+        return target;
+    }
+
     private <T> List<T> query(AppDdlCatalog.Table table, Class<T> type, String sql, List<Object> values) {
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -244,13 +300,7 @@ public class JdbcAppDdlObjectTableReader {
             try (ResultSet resultSet = statement.executeQuery()) {
                 List<T> results = new ArrayList<>();
                 while (resultSet.next()) {
-                    T target = newInstance(type);
-                    for (AppDdlCatalog.Column column : table.columns()) {
-                        if (table.snapshotFacts().contains(column.name()) && "CLOB".equalsIgnoreCase(column.type())) {
-                            ParticipantSnapshotJson.hydrate(target, column.name(), resultSet.getString(column.name()));
-                        } else writeColumnValue(target, column.name(), resultSet.getObject(column.name()));
-                    }
-                    results.add(target);
+                    results.add(readRow(table, type, resultSet));
                 }
                 return List.copyOf(results);
             }

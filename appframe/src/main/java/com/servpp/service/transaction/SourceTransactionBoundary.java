@@ -100,7 +100,8 @@ public final class SourceTransactionBoundary {
         } else body.run();
     }
     private static void reportRejection(BusinessTransactionRejection rejected) {
-        if (rejected.getSuppressed().length != 0) throw rejected;
+        if (rejected.getSuppressed().length != 0
+                || rejected instanceof com.servpp.service.repository.NonUniqueReadRejection) throw rejected;
         com.servpp.service.runtime.BusinessChecks.recordRejection(rejected.getMessage());
     }
 }

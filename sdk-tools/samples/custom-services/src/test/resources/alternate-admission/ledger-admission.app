@@ -11,6 +11,7 @@ play AdmissionLookup by positions.Admission {
 }
 
 tables roles {
+    table ADMISSION_TICKETS(AdmissionTicket) { primarykey(AdmissionTicket.receipt); }
     table STORED_RESULTS(StoredResult) { primarykey(StoredResult.receipt); }
 }
 
@@ -28,3 +29,6 @@ play CodedAdmission by positions.Admission {
     accountNumber = account;
     code = returnCode { NOT_FOUND: "   "; };
 }
+
+blank AdmissionTicket.batch { read: null, spaces; write: null; }
+blank AdmissionTicket.note { read: "", spaces; write: ""; }

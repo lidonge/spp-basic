@@ -4,6 +4,10 @@ import java.util.Set;
 
 /** A deliberately bound blank String key is distinct from a missing query input. */
 public final class BlankReadKeys {
+    public static Object predicateValue(String canonical) {
+        return canonical == null ? ObjectRepository.NullPredicate.IS_NULL : canonical;
+    }
+
     public record Intent(int argument, Set<String> paths) {}
     private record Binding(Object participant, Set<String> paths) {}
     private static final ThreadLocal<Binding> CURRENT = new ThreadLocal<>();

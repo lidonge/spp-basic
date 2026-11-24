@@ -29,7 +29,7 @@ public final class BusinessCalculationCompiler {
         }
         if (ctx.atomiccall() != null) {
             var call = ctx.atomiccall();
-            if (call.readBinding() != null)
+            if (call.readBinding() != null || call.uniqueModifier() != null)
                 throw new IllegalArgumentException("A by read binding is allowed only in scenarios");
             if (call.Identifier() == null || call.scenarioBranch() != null || call.quantumBounds() != null || call.transactionBreak() != null)
                 throw new IllegalArgumentException("Calculate calls cannot identify, guard, or use breakTransaction or bounds");

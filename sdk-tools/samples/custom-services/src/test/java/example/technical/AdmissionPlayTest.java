@@ -11,6 +11,7 @@ import com.servpp.service.transaction.TransactionMode;
 import example.generated.ledger.model.MapperAdmissionToStoredResult;
 import example.generated.ledger.model.ProviderOutcome;
 import example.generated.ledger.model.ReadAdmissionRequest;
+import example.generated.ledger.model.ReadUniqueAdmissionRequest;
 import example.generated.ledger.model.ReadBlankAdmissionRequest;
 import example.generated.ledger.model.StoredResult;
 import example.generated.ledger.model.VerifyAdmissionRequest;
@@ -79,6 +80,42 @@ public class AdmissionPlayTest {
             assertTrue(BusinessChecks.scenarioResult().toString(), BusinessChecks.scenarioResult().passed());
             assertEquals(account, request.getResult().getAccountNumber());
             assertSame(ProviderOutcome.NOT_FOUND, request.getResult().getCode());
+        } finally {
+            container.clear();
+            if (previous == null) System.clearProperty(property);
+            else System.setProperty(property, previous);
+        }
+    }
+
+    @Test public void uniqueBlankKeyDecodesPlayedCodeAndRejectsDuplicateTicket() throws Exception {
+        String property = "spp.basic-ledger.datasource-url";
+        String url = "jdbc:h2:mem:unique_admission_" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1";
+        var source = new DriverManagerJdbcDataSource("org.h2.Driver", url, null, null);
+        var mapper = new ObjectMapper().findAndRegisterModules();
+        var runtime = LocalGeneratedServiceRuntime.jsonSnapshots(source, mapper, ignored -> null);
+        var container = DefaultServiceContainer.getInstance();
+        String previous = System.setProperty(property, url);
+        container.clear();
+        try {
+            GeneratedApplicationDeployment.install(runtime, "basicLedger");
+            try (var connection = source.getConnection(); var seed = connection.createStatement()) {
+                seed.executeUpdate("INSERT INTO ADMISSIONS (account, returnCode) VALUES ('" + " ".repeat(28) + "', '   ')");
+                String canonicalBatch = alternate ? "NULL" : "'    '";
+                seed.executeUpdate("INSERT INTO ADMISSION_TICKETS (receipt, batch, note) VALUES "
+                        + "('T1', " + canonicalBatch + ", ' '), ('T2', ' ', 'other')");
+                var input = Map.of("result", Map.of("accountNumber", "stale"), "ticket", Map.of("batch", "stale"));
+                var request = mapper.convertValue(input, ReadUniqueAdmissionRequest.class);
+                runtime.executeGeneratedService("ledger.readUniqueAdmission", request);
+                assertTrue(BusinessChecks.scenarioResult().toString(), BusinessChecks.scenarioResult().passed());
+                assertSame(ProviderOutcome.NOT_FOUND, request.getResult().getCode());
+                assertEquals(" ".repeat(28), request.getResult().getAccountNumber());
+                assertEquals("T1", request.getTicket().getReceipt());
+                assertEquals(" ", request.getTicket().getNote());
+
+                seed.executeUpdate("INSERT INTO ADMISSION_TICKETS (receipt, batch, note) VALUES ('T3', " + canonicalBatch + ", ' ')");
+                runtime.executeGeneratedService("ledger.readUniqueAdmission", mapper.convertValue(input, ReadUniqueAdmissionRequest.class));
+                assertEquals(new BusinessChecks.Result(false, "A02"), BusinessChecks.scenarioResult());
+            }
         } finally {
             container.clear();
             if (previous == null) System.clearProperty(property);

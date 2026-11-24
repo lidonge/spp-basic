@@ -37,6 +37,21 @@ public class SppServiceCall extends ServiceBaseBody implements IServiceBodyState
         }
     }
 
+    private boolean uniqueRead;
+    private boolean primaryKeyCovered;
+    private final java.util.Set<String> uniquePredicatePaths = new java.util.LinkedHashSet<>();
+    public java.util.Set<String> getUniquePredicatePaths() { return uniquePredicatePaths; }
+    private String uniqueCodeName;
+    private String uniqueCodeJava = "\"PERSISTENCE_NOT_UNIQUE\"";
+    public boolean isUniqueRead() { return uniqueRead; }
+    public void setUniqueRead(boolean value) { uniqueRead = value; }
+    public boolean isPrimaryKeyCovered() { return primaryKeyCovered; }
+    public void setPrimaryKeyCovered(boolean value) { primaryKeyCovered = value; }
+    public String getUniqueCodeName() { return uniqueCodeName; }
+    public void setUniqueCodeName(String value) { uniqueCodeName = value; }
+    public String getUniqueCodeJava() { return uniqueCodeJava; }
+    public void setUniqueCodeJava(String value) { uniqueCodeJava = value; }
+
     private final List<ReadKey> readKeys = new ArrayList<>();
     private final List<BoundReadKey> boundReadKeys = new ArrayList<>();
     public List<ReadKey> getReadKeys() { return readKeys; }

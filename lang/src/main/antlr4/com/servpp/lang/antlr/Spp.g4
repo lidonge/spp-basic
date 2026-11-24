@@ -265,13 +265,15 @@ transactionPropagation
     ;
 
 atomiccall
-    : Identifier ('(' parameters ')')? readBinding? (',' transactionBreak)? quantumBounds? (';' | scenarioBranch ';')
+    : uniqueModifier? Identifier ('(' parameters ')')? (readBinding ('else' rejection=qualifiedName)?)? (',' transactionBreak)? quantumBounds? (';' | scenarioBranch ';')
     | 'identify' '(' qualifiedName ')' (',' transactionBreak)? (';' | scenarioBranch ';')
     ;
 
 transactionBreak
     : {getCurrentToken().getText().equals("breakTransaction")}? Identifier
     ;
+
+uniqueModifier : {getCurrentToken().getText().equals("unique")}? Identifier;
 
 readBinding
     : {getCurrentToken().getText().equals("by")}? Identifier readKey (',' readKey)*
