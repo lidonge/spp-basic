@@ -15,9 +15,9 @@ Role DepositAccrualPlan {
 atomic check checkAccrualPolicy(DepositAccount, DepositInterestPolicy) {
     require(
         DepositInterestPolicy.normalUnit > 0 && DepositInterestPolicy.overdraftUnit > 0,
-        "INVALID_ACCRUAL_UNIT"
+        RejectionCode.INVALID_ACCRUAL_UNIT
     );
-    require(DepositAccount.overdraftPrincipal >= 0, "E1155");
+    require(DepositAccount.overdraftPrincipal <= 0 && DepositAccount.overdraftInterest <= 0 && DepositAccount.collectionInterest <= 0, RejectionCode.E1155);
 }
 
 atomic calculate prepareAccrualDates(DepositAccrualState, BusinessDay, BankDate start, BankDate end) {
@@ -49,12 +49,12 @@ atomic calculate calculateAccrual(
     DepositAccrualPlan.overdraftDays = end.epochDay - start.epochDay;
     DepositAccrualPlan.normalIncrement = InterestProduct.product;
     DepositAccrualPlan.overdraftIncrement = roundDown(
-        DepositAccount.overdraftPrincipal / DepositInterestPolicy.overdraftUnit,
+        -DepositAccount.overdraftPrincipal / DepositInterestPolicy.overdraftUnit,
         0
     ) * DepositInterestPolicy.overdraftUnit * DepositAccrualPlan.overdraftDays;
     DepositAccrualPlan.overdraftInterestIncrement = roundDown(
-        (DepositAccount.overdraftInterest
-            + DepositAccount.collectionInterest)
+        (-DepositAccount.overdraftInterest
+            - DepositAccount.collectionInterest)
             / DepositInterestPolicy.overdraftUnit,
         0
     ) * DepositInterestPolicy.overdraftUnit * DepositAccrualPlan.overdraftDays;
@@ -81,23 +81,23 @@ atomic check checkAccrualDates(
 ) {
     require(
         isGregorianDate(DepositAccrualState.lastProductDate) && isGregorianDate(BusinessDay.date),
-        "EE374"
+        RejectionCode.EE374
     );
-    require(DepositAccrualState.lastProductDate <= BusinessDay.date, "E1175");
+    require(DepositAccrualState.lastProductDate <= BusinessDay.date, RejectionCode.E1175);
     require(
         InterestCalendar.convention == "ACT"
             || InterestCalendar.convention == "360365"
             || InterestCalendar.convention == "360360",
-        "EEC28"
+        RejectionCode.EEC28
     );
-    require(AgreementTerm.effectiveDate == 0 || isGregorianDate(AgreementTerm.effectiveDate), "EE374");
-    require(AgreementTerm.cancelDate == 0 || isGregorianDate(AgreementTerm.cancelDate), "EE374");
+    require(AgreementTerm.effectiveDate == 0 || isGregorianDate(AgreementTerm.effectiveDate), RejectionCode.EE374);
+    require(AgreementTerm.cancelDate == 0 || isGregorianDate(AgreementTerm.cancelDate), RejectionCode.EE374);
     int expected = 5;
     for (AgreementBand band : AgreementBand[]) {
-        require(band.slot == expected && band.threshold >= 0, "INVALID_AGREEMENT_BANDS");
+        require(band.slot == expected && band.threshold >= 0, RejectionCode.INVALID_AGREEMENT_BANDS);
         expected--;
     }
-    require(expected == 0, "INVALID_AGREEMENT_BANDS");
+    require(expected == 0, RejectionCode.INVALID_AGREEMENT_BANDS);
 }
 
 // All local mathematical intermediate participants are created in a calculation atom.
@@ -155,10 +155,20 @@ atomic calculate calculateDepositAccrual(
     DepositAccrualPlan.agreementIncrement = products.bandProduct;
     DepositAccrualPlan.principalDays = 0;
     DepositAccrualPlan.interestDays = 0;
-    if (DepositAccount.overdraftPrincipal > 0) {
+    if (DepositAccount.overdraftPrincipal < 0) {
         DepositAccrualPlan.principalDays = DepositAccrualPlan.overdraftDays;
     }
-    if (DepositAccount.overdraftInterest > 0) {
+    if (DepositAccount.overdraftInterest < 0) {
         DepositAccrualPlan.interestDays = DepositAccrualPlan.overdraftDays;
     }
+}
+
+readonly Scenario serial previewDepositAccrual(
+    DepositAccount, BusinessDay, DepositAccrualState, DepositInterestPolicy, InterestCalendar,
+    AgreementTerm, AgreementPolicy, AgreementBand[], DepositAccrualPlan
+) {
+    checkAccrualDates;
+    checkAccrualPolicy;
+    calculateDepositAccrual;
+    accumulateAccrual;
 }

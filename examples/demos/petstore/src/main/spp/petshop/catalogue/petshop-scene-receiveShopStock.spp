@@ -1,7 +1,7 @@
 domain petshop;
 
 atomic check checkStockReceiptQuantity(StockReceiptAgreement) {
-    require(StockReceiptAgreement.quantity > 0, "INVALID_QUANTITY");
+    require(StockReceiptAgreement.quantity > 0, RejectionCode.INVALID_QUANTITY);
 }
 
 atomic calculate prepareStockReceipt(Goods, StockLine, StockSupply, StockReceiptAgreement) {

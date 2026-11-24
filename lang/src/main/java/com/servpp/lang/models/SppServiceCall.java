@@ -12,6 +12,7 @@ import java.util.Objects;
  * @author lidong@date 2023-11-01@version 1.0
  */
 public class SppServiceCall extends ServiceBaseBody implements IServiceBodyStatement{
+    public String sourceLocation;
     SppService callee;
     public record ReadKey(String path, String constant, String literalType) {
         public boolean literal() { return literalType != null; }

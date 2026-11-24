@@ -10,6 +10,7 @@ public final class BusinessCalculationValidator {
     private final SppService service;
     private final List<String> errors = new ArrayList<>();
     private List<String> roundingWarnings;
+    private List<String> migrationWarnings;
     private final Deque<Map<String, SppLocalVar>> scopes = new ArrayDeque<>();
     private int loops, switches;
     private enum Kind { NUMBER, BOOLEAN, STRING, CHAR, ENUM, OBJECT, NULL, UNKNOWN }
@@ -42,6 +43,12 @@ public final class BusinessCalculationValidator {
         return roundingWarnings;
     }
 
+    public List<String> collectMigrationWarnings() {
+        migrationWarnings = new ArrayList<>();
+        validate();
+        return migrationWarnings;
+    }
+
     private void checkRounding(SppLocalVar target, String name, IExpression value, String compound, String source) {
         if (roundingWarnings != null && new NumericRoundingWarnings(this::resolve).needsRounding(target, value, compound)) {
             String location = source == null ? "" : source + " ";
@@ -53,6 +60,7 @@ public final class BusinessCalculationValidator {
     private void statements(List<IJavaStatement> statements) {
         for (IJavaStatement statement : statements) {
             if (service.isDeclaredQuantumService() && !(statement instanceof IOperationExpression)
+                    && !(statement instanceof CalculationServiceCall)
                     && !(statement instanceof CalculationControl) && !(statement instanceof CalculationRule)
                     && !(statement instanceof QuantumTransferStatement)
                     && (!(statement instanceof RequireStatement constraint) || !constraint.isQuantumConstraint())) {
@@ -67,13 +75,22 @@ public final class BusinessCalculationValidator {
                 if (service.getServiceType() != IConstance.ServiceType.check && !service.isDeclaredQuantumService())
                     error("Business validation belongs in an atomic check explicitly called by a scenario; calculate cannot require.");
                 bool(require.getCondition());
-                if (require.getRejectionCode() != null && type(require.getRejectionCode()) != Kind.ENUM)
-                    error("A named rejection code must be a scalar enum value.");
+                if (require.getRejectionCode() != null && !enumCode(require.getRejectionCode())) {
+                    String hint = "A named rejection code must be a scalar enum value. Declare an enum member.";
+                    if (require.getRejectionCode() instanceof Literal literal && literal.getValue().startsWith("\"")) {
+                        rule("require-enum", require.sourceLocation, hint);
+                    } else {
+                        error(require.sourceLocation + " [require-enum] " + hint);
+                    }
+                }
                 if (service.isDeclaredQuantumService()) validateQuantumCondition(require.getCondition());
             }
             else if (statement instanceof CalculationRule rule) {
                 bool(rule.getCondition()); scoped(rule.getWhenTrue()); scoped(rule.getWhenFalse());
             } else if (statement instanceof IOperationExpression assignment && assignment.getOperation() instanceof IAssignOperation operator) {
+                if (assignment.getLeft() instanceof Reference ref && resolve(ref.getValue()) instanceof SppField field && field.isQuantum()) {
+                    rule("P0-a", ((AssignExpression) assignment).sourceLocation, "Quantum assignment is forbidden. Use a -> b : x.");
+                }
                 if (service.isDeclaredQuantumService()) {
                     var target = assignment.getLeft() instanceof Reference reference ? resolve(reference.getValue()) : null;
                     if (!(target instanceof SppField field) || !field.isQuantum())
@@ -113,13 +130,24 @@ public final class BusinessCalculationValidator {
         }
     }
 
+    private boolean enumCode(IExpression code) {
+        if (type(code) != Kind.ENUM) return false;
+        if (code instanceof ConditionalExpression choice) {
+            return enumCode(choice.getWhenTrue()) && enumCode(choice.getWhenFalse())
+                    && choice.getWhenTrue().getReturnType() == choice.getWhenFalse().getReturnType();
+        }
+        if (code instanceof IOperationExpression operation && "(".equals(operation.getOperation().getOperator()))
+            return enumCode(operation.getRight());
+        return true;
+    }
+
     private void validateTransfer(QuantumTransferStatement transfer) {
         if (!service.isDeclaredQuantumService() || service.getServiceType() != IConstance.ServiceType.update) {
             error("A transfer belongs to a quantum update service.");
             return;
         }
-        // Reuse assignment validation and resolve the endpoint and amount types.
-        statements(new ArrayList<>(transfer.movements(transfer.amount())));
+        type(transfer.source());
+        type(transfer.destination());
         if (type(transfer.amount()) != Kind.NUMBER) {
             error("A quantum transfer amount must be numeric.");
         }
@@ -139,7 +167,7 @@ public final class BusinessCalculationValidator {
 
     private String transferAttribute(Reference reference) {
         String[] path = reference.getValue().split("\\.");
-        var participant = service.getLocalVar(path[0]);
+        var participant = resolve(path[0]);
         if (path.length == 2 && participant != null && participant.getArrayDimension() == 0
                 && resolve(reference.getValue()) instanceof SppField field && field.isQuantum()
                 && field.getArrayDimension() == 0 && NumericBinding.isNumeric(field.getType().getName())) {
@@ -150,11 +178,17 @@ public final class BusinessCalculationValidator {
     }
     private void validateCall(CalculationServiceCall call) {
         var unit = call.domain.getSppClass(com.servpp.lang.general.NameUtil.firstToLowerCase(call.name, false));
-        if (!(unit instanceof SppService target)) { error("Unknown calculation service " + call.name); return; }
+        if (!(unit instanceof SppService target)) {
+            String operation = call.domain.implicitCrudOperation(call.name);
+            if (operation == null) error(call.sourceLocation + " Unknown calculation service " + call.name);
+            else rejectCall(call, operation.equals("find"));
+            return;
+        }
         call.callee = target;
         if (service.getServiceType() != IConstance.ServiceType.calculate || target instanceof SppScenario
                 || target.getServiceType() != IConstance.ServiceType.calculate || target.isQuantumService()) {
-            error("Calculate can only call calculate: " + call.name); return;
+            rejectCall(call, target.getServiceType() == IConstance.ServiceType.query);
+            return;
         }
         if (call.implicit && call.arguments.isEmpty()) {
             for (var parameter : target.getServiceBody().getSppLocalVarList()) {
@@ -176,6 +210,16 @@ public final class BusinessCalculationValidator {
             reference.local = lookupLocal(path) != null; reference.root = reference.local ? lookupLocal(path) : service.getLocalVar(path.split("\\.")[0]);
             if (actual != null) reference.setReturnType(actual.getType());
             call.resolvedArguments.add(reference);
+        }
+    }
+
+    private void rejectCall(CalculationServiceCall call, boolean query) {
+        if (query && (loops > 0 || service.getServiceType() == IConstance.ServiceType.calculate)) {
+            rule("data-access", call.sourceLocation, (loops > 0 ? "Query inside a loop" : "Calculate invokes a query")
+                    + ": " + call.name + ". Read the set with an array query in the scenario and loop in a calculate.");
+        } else {
+            rule("service-call", call.sourceLocation, "Calculate can only call calculate: " + call.name
+                    + ". Call it from the scenario instead; scenarios are front-end entries.");
         }
     }
 
@@ -561,6 +605,15 @@ public final class BusinessCalculationValidator {
         String unquoted = text.substring(1, text.length() - 1);
         if (enumeration.getWireItem(unquoted) == null) {
             error("Unknown value " + text + " for enum " + enumeration.getName());
+        }
+    }
+    private void rule(String rule, String location, String message) {
+        String diagnostic = location + " [" + rule + "] " + message;
+        if ((rule.equals("require-enum") || rule.equals("P0-a"))
+                && "warning".equals(System.getProperty("spp.rule." + rule))) {
+            if (migrationWarnings != null) migrationWarnings.add(diagnostic);
+        } else {
+            error(diagnostic);
         }
     }
     private void error(String message) { errors.add("Business calculation " + service.getName() + ": " + message); }

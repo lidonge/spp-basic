@@ -3,6 +3,11 @@ package {{basePackage}}.{{domainName}}.service;
 {{#idempotencyExecution}}import com.servpp.service.idempotency.BusinessIdempotencyManager;
 import com.servpp.service.runtime.InvocationContext;
 {{/idempotencyExecution}}
+import com.servpp.service.Service;
+import com.servpp.service.scenario.IExecutor;
+import com.servpp.service.scenario.IParallelExecuteGroup;
+import com.servpp.service.scenario.ISerialExecuteGroup;
+import com.servpp.service.scenario.ITransactionGroup;
 import com.servpp.service.runtime.GeneratedRoleIdentityContextBinder;
 import com.servpp.service.runtime.GeneratedServiceKind;
 import com.servpp.service.runtime.GeneratedServiceKindProvider;
@@ -33,6 +38,10 @@ public class Simple{{name}} extends {{name}}{{scenarioServiceInterfaces}}{
     	{{/sppFieldList}}
     }
 
+    private void {{funcName}}({{#serviceBody.sppLocalVarList}}{{^-first}},{{/-first}}{{serviceJavaType}} {{name}}{{/serviceBody.sppLocalVarList}}){
+{{scenarioBodyJava}}
+    }
+
     @Override
     public String getName() {
         return "{{deploymentServiceName}}";
@@ -54,6 +63,7 @@ public class Simple{{name}} extends {{name}}{{scenarioServiceInterfaces}}{
 {{scopeMetadataMethods}}
     @Override
     public Object execute(Object... params) {
+        com.servpp.service.runtime.GeneratedServiceEntry.enterScenario(this);
         return executeWithTechnicalInterceptors(params, () -> {
         {{#requestSuffix}}{{name}}{{requestSuffix}} arg = ({{name}}{{requestSuffix}}) params[params.length -1];
         GeneratedRoleIdentityContextBinder.attach(arg);

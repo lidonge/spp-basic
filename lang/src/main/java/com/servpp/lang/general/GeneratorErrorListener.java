@@ -16,13 +16,22 @@ import java.util.BitSet;
  */
 public class GeneratorErrorListener implements ANTLRErrorListener, ILogable {
     File file;
+    private String ruleDiagnostic;
+    public String ruleDiagnostic() { return ruleDiagnostic; }
     public GeneratorErrorListener(File file) {
         this.file = file;
     }
 
     @Override
     public void syntaxError(Recognizer<?, ?> recognizer, Object offendingSymbol, int line, int charPositionInLine, String msg, RecognitionException e) {
-//        getLogger().error(file + ":" + line + ":" + (charPositionInLine + 1));
+        if (recognizer instanceof com.servpp.lang.antlr.SppParser parser
+                && offendingSymbol instanceof org.antlr.v4.runtime.Token token
+                && java.util.Set.of("while", "for").contains(token.getText())
+                && parser.getRuleInvocationStack().contains("scenario")) {
+            ruleDiagnostic = file + ":" + line + ":" + (charPositionInLine + 1)
+                    + " [data-access] A scenario cannot loop. Read the set with an array query in the scenario and loop in a calculate.";
+            msg = ruleDiagnostic;
+        }
         getLogger().error("{}:{}:{} {}",file , line , (charPositionInLine + 1), msg);
     }
 

@@ -6,8 +6,7 @@ atomic update releaseUnpaidInventory(StockLine[], UnpaidCancellationAgreement);
 
 atomic update releasePaidInventory(StockLine[], PaidCancellationAgreement);
 quantum update refundCancellationFunds(Buyer, Merchant, PaidCancellationAgreement) {
-    Buyer.wallet += PaidCancellationAgreement.refundAmount;
-    Merchant.cash -= PaidCancellationAgreement.refundAmount;
+    Merchant.cash -> Buyer.wallet : PaidCancellationAgreement.refundAmount;
 }
 
 atomic calculate prepareOrderInventory(ShopOrder, StockLine[]) {
@@ -29,3 +28,8 @@ atomic calculate prepareOrderInventory(ShopOrder, StockLine[]) {
 }
 
 atomic update reserveInventory(StockLine[], ShopOrder);
+
+readonly Scenario serial readShopOrderLine(OrderLine) {
+    findOrderLine;
+    identify(OrderLine);
+}

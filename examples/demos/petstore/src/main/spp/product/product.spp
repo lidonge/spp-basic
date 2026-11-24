@@ -1,5 +1,10 @@
 domain product;
 
+Enum RejectionCode {
+    INVALID_PRODUCT_COST,
+    PRODUCT_NAME_REQUIRED
+}
+
 Entity Product {
     business("Product catalogue number") String productCode;
     String name;
@@ -177,8 +182,8 @@ atomic calculate applyProductRevision(Product, ProductRevisionAgreement) {
 }
 
 atomic check checkProductFacts(Product) {
-    require(Product.cost >= 0, "INVALID_PRODUCT_COST");
-    require(Product.name != null && Product.name != "", "PRODUCT_NAME_REQUIRED");
+    require(Product.cost >= 0, RejectionCode.INVALID_PRODUCT_COST);
+    require(Product.name != null && Product.name != "", RejectionCode.PRODUCT_NAME_REQUIRED);
 }
 
 Scenario serial reviseProduct(Product, ProductRevisionAgreement) {

@@ -1,5 +1,9 @@
 domain ledger;
 
+Enum RejectionCode {
+    THE_AMOUNT_MUST_BE_14:"The amount must be 14"
+}
+
 Role Facts {
     int amount;
 }
@@ -13,7 +17,7 @@ atomic calculate twice(Facts) {
 }
 
 atomic check verifyAmount(Facts) {
-    require(Facts.amount == 14, "The amount must be 14");
+    require(Facts.amount == 14, RejectionCode.THE_AMOUNT_MUST_BE_14);
 }
 
 Scenario serial preview(Facts) {

@@ -35,6 +35,21 @@ public class SppDomain {
 
     Map<String, SppCompilationUnit> mapsOfClass = new HashMap<>();
     List<ErrorContent> unFoundClass = new ArrayList<>();
+    private final Set<String> migrationWarnings = new LinkedHashSet<>();
+    public void addMigrationDiagnostic(String rule, String diagnostic) {
+        if ("warning".equals(System.getProperty("spp.rule." + rule))) migrationWarnings.add(diagnostic);
+        else addAppParseError(diagnostic);
+    }
+
+    public List<String> migrationWarnings() {
+        var warnings = new LinkedHashSet<>(migrationWarnings);
+        for (var unit : mapsOfClass.values()) {
+            if (unit instanceof SppService service && service.hasBusinessImplementation())
+                warnings.addAll(new com.servpp.lang.models.app.expr.BusinessCalculationValidator(service).collectMigrationWarnings());
+        }
+        return List.copyOf(warnings);
+    }
+
     private final List<String> appParseErrors = new ArrayList<>();
     private SppCompilationUnit currentClass = null;
     private List<SppDefaultService> sppDefaultServices = new ArrayList<>();
@@ -746,7 +761,7 @@ public class SppDomain {
                 if (!callee.isReal()) {
                     errors.add("Scenario " + owner.getFuncName() + " calls undefined atomic service " + callee.getName() + ".");
                 } else if (callee instanceof SppScenario) {
-                    errors.add("Scenario " + owner.getFuncName() + " cannot call "
+                    errors.add(call.sourceLocation + " [service-call] Scenario " + owner.getFuncName() + " cannot call "
                             + "Scenario " + callee.getFuncName()
                             + "; compose shared atomic services instead.");
                 } else if (callee.getType() != IConstance.CompilationUnitType.atomicservice) {
@@ -4797,11 +4812,18 @@ public class SppDomain {
         var existing = mapsOfClass.get(NameUtil.firstToLowerCase(method, false));
         if (existing instanceof SppService service && service.isReal() && !isDefaultGeneratedService(service))
             return service;
+        String operation = implicitCrudOperation(method);
+        if (operation == null) return null;
+        SppClass participant = (SppClass) mapsOfClass.get(method.substring(operation.length()));
+        return implicitCrudService(operation, participant, 0);
+    }
+
+    /** Identify built-in calls even when no scenario has materialized the service. */
+    public String implicitCrudOperation(String method) {
         for (String operation : List.of("find", "insert", "update", "delete")) {
             if (!method.startsWith(operation)) continue;
             var participant = mapsOfClass.get(method.substring(operation.length()));
-            if (participant instanceof SppClass type && isCrudParticipant(type))
-                return implicitCrudService(operation, type, 0);
+            if (participant instanceof SppClass type && isCrudParticipant(type)) return operation;
         }
         return null;
     }

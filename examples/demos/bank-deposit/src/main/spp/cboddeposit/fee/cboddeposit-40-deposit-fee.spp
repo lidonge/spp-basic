@@ -34,7 +34,7 @@ Role DepositFeePlan {
 atomic check checkFeeAccount(DepositFeeParty, DepositFeeContext) {
     require(
         DepositFeeContext.channel != "Teller" || DepositFeeParty.accountKind == "NormalSavings",
-        "UNSUPPORTED_DEPOSIT_FEE_ACCOUNT"
+        RejectionCode.UNSUPPORTED_DEPOSIT_FEE_ACCOUNT
     );
 }
 
@@ -66,7 +66,7 @@ atomic calculate prepareFeeLookup(DepositFeeParty, DepositFeePlan, DepositFeeRat
 atomic check checkFeeRate(DepositFeePlan, DepositFeeRate) {
     require(
         !DepositFeePlan.applicable || DepositFeeRate.tariff == DepositFeePlan.tariff,
-        "DEPOSIT_FEE_TARIFF_MISMATCH"
+        RejectionCode.DEPOSIT_FEE_TARIFF_MISMATCH
     );
     require(
         !DepositFeePlan.applicable
@@ -74,7 +74,7 @@ atomic check checkFeeRate(DepositFeePlan, DepositFeeRate) {
             && DepositFeeRate.discount >= 0
             && DepositFeeRate.minimum >= 0
             && DepositFeeRate.maximum >= DepositFeeRate.minimum),
-        "INVALID_DEPOSIT_FEE_RATE"
+        RejectionCode.INVALID_DEPOSIT_FEE_RATE
     );
 }
 
@@ -96,5 +96,5 @@ atomic calculate calculateDepositFee(DepositRequest, DepositFeeRate, DepositFeeP
 }
 
 atomic check checkRequiredFeeIdentified(DepositFeePlan, DepositFeeRate) {
-    require(!DepositFeePlan.applicable || DepositFeeRate, "DEPOSIT_FEE_RATE_NOT_FOUND");
+    require(!DepositFeePlan.applicable || DepositFeeRate, RejectionCode.DEPOSIT_FEE_RATE_NOT_FOUND);
 }

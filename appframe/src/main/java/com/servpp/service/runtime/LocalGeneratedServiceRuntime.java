@@ -28,7 +28,7 @@ import javax.sql.DataSource;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import com.servpp.service.DelegatingService;
+import static com.servpp.service.runtime.GeneratedServiceEntry.originalService;
 import com.servpp.service.Service;
 import com.servpp.service.idempotency.BusinessIdempotencyManager;
 import com.servpp.service.idempotency.JdbcBusinessIdempotencyStore;
@@ -27979,18 +27979,6 @@ public class LocalGeneratedServiceRuntime {
         return value == null ? "" : value;
     }
 
-    private Service originalService(Service service) {
-        Service current = service;
-        while (current instanceof DelegatingService delegatingService) {
-            Service delegate = delegatingService.getDelegateService();
-            if (delegate == null || delegate == current) {
-                return current;
-            }
-            current = delegate;
-        }
-        return current;
-    }
-
     public Object executeGeneratedService(String serviceName, Object request) {
         return executeGeneratedService(DefaultServiceContainer.getInstance(), serviceName, request);
     }
@@ -28006,9 +27994,9 @@ public class LocalGeneratedServiceRuntime {
             RemoteServiceAdapter adapter = remoteServiceAdapterFor(serviceName)
                     .orElseThrow(() -> new IllegalStateException("Remote service " + serviceName
                             + " has no registered adapter."));
-            return CurrentObjectContext.withObjects(new Object[] { request }, () -> adapter.execute(serviceName, request));
+            return GeneratedServiceEntry.dispatch(service, () -> CurrentObjectContext.withObjects(new Object[] { request }, () -> adapter.execute(serviceName, request)));
         }
-        return CurrentObjectContext.withObjects(new Object[] { request }, () -> service.execute(request));
+        return GeneratedServiceEntry.dispatch(service, () -> CurrentObjectContext.withObjects(new Object[] { request }, () -> service.execute(request)));
     }
 
     public Optional<String> idempotencyKey(String serviceName, Object request) {

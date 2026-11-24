@@ -52,3 +52,19 @@ failure evidence as well as account and posting values.
 
 These rules demonstrate selected financial modeling capabilities. They are not
 an assertion of complete regulatory, accounting or production-bank coverage.
+
+## Signed overdraft claims
+
+A negative overdraft principal, overdraft interest or collection interest is an
+amount the customer owes. The account balance adds these signed positions to
+the interest base. Overdraft exposure is the positive magnitude of outstanding
+principal and is derived on inquiry, repayment and reversal.
+
+The daily accrual calculation accumulates amount-days. To book a monetary charge,
+`bookOverdraftClaims` takes assessed interest, collection interest and principal
+as non-negative amounts. It decreases each customer claim and increases the
+corresponding income balance for interest or the settlement cash position for a
+principal advance. For example, charging 10 interest posts −10 on the customer
+claim and +10 on interest income. Repaying 4 transfers 4 from settlement cash to
+the claim, leaving −6 owed and 10 income. Reversing that repayment restores the
+−10 claim and returns 4 to cash. All three movements conserve the cash ledger.

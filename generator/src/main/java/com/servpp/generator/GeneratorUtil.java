@@ -110,6 +110,9 @@ public class GeneratorUtil {
                     new org.apache.maven.plugin.logging.SystemStreamLog().warn(sppDomain.getName() + ": " + warning);
                 }
             }
+            for (String warning : sppDomain.migrationWarnings()) {
+                new org.apache.maven.plugin.logging.SystemStreamLog().warn(warning);
+            }
             for (String warning : sppDomain.numericRoundingWarnings()) {
                 new org.apache.maven.plugin.logging.SystemStreamLog().warn(sppDomain.getName() + ": " + warning);
             }

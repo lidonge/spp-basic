@@ -2,14 +2,13 @@ domain client;
 Role Handover { String receiptNumber; quantum decimal cash; }
 Reference Intake from provider.CustodyHandover { String receiptNumber; quantum decimal cash; }
 atomic update insertIntake(Intake);
-atomic calculate prepareIntake(Receipt, Intake) { Intake.receiptNumber = Receipt.receiptNumber; Intake.cash = Receipt.funding; }
+atomic calculate prepareIntake(Receipt, Intake) { Intake.receiptNumber = Receipt.receiptNumber; }
 Role Till { String receiptNumber; quantum decimal cash; }
 Contract Receipt { String receiptNumber; decimal amount; decimal funding; }
 take Receipt as Handover { mapsame; }
 take Receipt as Till { mapsame; }
 atomic calculate prepare(Receipt, Handover) {
     Handover.receiptNumber = Receipt.receiptNumber;
-    Handover.cash = Receipt.amount;
 }
 quantum update receive(Receipt, Handover, Till) { Handover.cash -> Till.cash : Receipt.amount; }
 Scenario serial confirm(Receipt, Handover, Till, Intake, Accepted) {

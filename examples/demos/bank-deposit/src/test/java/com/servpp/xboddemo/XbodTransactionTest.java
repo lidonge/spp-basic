@@ -68,7 +68,7 @@ public class XbodTransactionTest {
     static void verifyStoredFailure(XbodTestSupport demo, JsonNode failed, String agreementField) throws Exception {
         String handlingNumber = failed.path("CashFailureRecord").path("handlingNumber").asText();
         assertFalse(handlingNumber.isEmpty());
-        var stored = demo.call("findCashFailureRecord",Map.of("CashFailureRecord",Map.of("handlingNumber",handlingNumber)))
+        var stored = demo.call("readCashFailure",Map.of("CashFailureRecord",Map.of("handlingNumber",handlingNumber)))
                 .path("CashFailureRecord");
         assertEquals(failed.path("CashFailureRecord").path("handlingState"),stored.path("handlingState"));
         String link = agreementField.equals("CashDepositAgreement") ? "deposit" : "reversal";
@@ -97,11 +97,11 @@ public class XbodTransactionTest {
             assertEquals(!split,info.path("handled").asBoolean());
             assertEquals(split ? "RECONCILIATION_REQUIRED" : "NOT_COMPLETED",failed.path("CashFailureRecord").path("handlingState").asText());
             verifyStoredFailure(demo,failed,"CashReversalAgreement");
-            var account = demo.call("findDepositAccount",Map.of("DepositAccount",Map.of("accountNumber","ACCOUNT-001")));
+            var account = demo.readAccounts();
             amount("100",account.path("DepositAccount").path("interestBase"));
-            var cash = demo.call("findCashSettlementAccount",Map.of("CashSettlementAccount",Map.of("accountNumber","CASH-001")));
+            var cash = demo.readAccounts();
             amount("-100",cash.path("CashSettlementAccount").path("balance"));
-            var original = demo.call("findCashDepositAgreement",Map.of("CashDepositAgreement",Map.of("depositNumber",paid.path("CashDepositAgreement").path("depositNumber").asText())));
+            var original = demo.call("readCashDeposit",Map.of("CashDepositAgreement",Map.of("depositNumber",paid.path("CashDepositAgreement").path("depositNumber").asText())));
             assertEquals(split,original.path("CashDepositAgreement").path("reversed").asBoolean());
             var read = Map.of("CashReversalAgreement",Map.of("reversalNumber",failed.path("CashReversalAgreement").path("reversalNumber").asText()));
             if (split && !receiptInsert) {
@@ -154,7 +154,7 @@ public class XbodTransactionTest {
             var input = deposit(100); input.put("AccountEligibility",Map.of("accountNumber","ACCOUNT-002"));
             var failure = assertThrows(IllegalStateException.class, () -> demo.call("depositCash",input));
             assertEquals("ACCOUNT_PARTICIPANTS_MISMATCH",failure.getMessage());
-            var account = demo.call("findDepositAccount",Map.of("DepositAccount",Map.of("accountNumber","ACCOUNT-001")));
+            var account = demo.readAccounts();
             amount("0",account.path("DepositAccount").path("interestBase"));
         }
     }
@@ -167,7 +167,7 @@ public class XbodTransactionTest {
             input.put("DepositAccrualState",Map.of("accountNumber","ACCOUNT-002"));
             var failure = assertThrows(IllegalStateException.class, () -> demo.call("reverseCash",input));
             assertEquals("ORIGINAL_DEPOSIT_ACCOUNT_MISMATCH",failure.getMessage());
-            var account = demo.call("findDepositAccount",Map.of("DepositAccount",Map.of("accountNumber","ACCOUNT-001")));
+            var account = demo.readAccounts();
             amount("100",account.path("DepositAccount").path("interestBase"));
         }
     }
@@ -183,13 +183,13 @@ public class XbodTransactionTest {
                     "AccountOpeningAgreement",Map.of()),
                     Class.forName("com.servpp.xbod.generated.cboddeposit.model.OpenDepositAccountRequest"));
             demo.execute("openDepositAccount",request);
-            var account = demo.call("findDepositAccount",Map.of("DepositAccount",Map.of("accountNumber","ACCOUNT-001")));
+            var account = demo.readAccounts();
             assertEquals("NORMAL",account.path("DepositAccount").path("loanState").asText());
             amount("0",account.path("DepositAccount").path("interestBase"));
-            var facts = demo.call("findAccountEligibility",Map.of("AccountEligibility",Map.of("accountNumber","ACCOUNT-001")));
+            var facts = demo.readAccounts();
             assertEquals("ACTIVE",facts.path("AccountEligibility").path("status").asText());
             assertEquals(20261007,facts.path("AccountEligibility").path("lastTransactionDate").asInt());
-            var accrual = demo.call("findDepositAccrualState",Map.of("DepositAccrualState",Map.of("accountNumber","ACCOUNT-001")));
+            var accrual = demo.readAccounts();
             amount("0",accrual.path("DepositAccrualState").path("normalProduct"));
             var paid = demo.call("depositCash",deposit(100));
             assertEquals(paid.toString(),"SUCCEEDED",paid.path("CashDepositAgreement").path("resultInfo").path("status").asText());
@@ -215,9 +215,9 @@ public class XbodTransactionTest {
             assertEquals(!split,info.path("handled").asBoolean());
             assertEquals(split ? "RECONCILIATION_REQUIRED" : "NOT_COMPLETED",failed.path("CashFailureRecord").path("handlingState").asText());
             verifyStoredFailure(demo,failed,"CashDepositAgreement");
-            var account = demo.call("findDepositAccount",Map.of("DepositAccount",Map.of("accountNumber","ACCOUNT-001")));
+            var account = demo.readAccounts();
             amount("0",account.path("DepositAccount").path("interestBase"));
-            var clearing = demo.call("findCashSettlementAccount",Map.of("CashSettlementAccount",Map.of("accountNumber","CASH-001")));
+            var clearing = demo.readAccounts();
             amount("0",clearing.path("CashSettlementAccount").path("balance"));
             assertFalse(failed.path("CashFailureRecord").path("handlingNumber").asText().isEmpty());
         }

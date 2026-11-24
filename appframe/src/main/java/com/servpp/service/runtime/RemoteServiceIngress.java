@@ -11,7 +11,7 @@ public final class RemoteServiceIngress {
         if (metadata.isAsyncScope()) throw new IllegalArgumentException("SYNCHRONOUS_REMOTE_REPLAY_REQUIRED");
         return InvocationContext.remote(InvocationContext.Origin.SERVICE, authenticatedCallerId, requestSerialNumber, () -> {
             TechnicalCallHeaders.apply(request, InvocationContext.current());
-            return service.execute(request);
+            return GeneratedServiceEntry.dispatch(service, () -> service.execute(request));
         });
     }
 }

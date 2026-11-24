@@ -9,7 +9,7 @@ atomic calculate captureCartLines(Cart, CartLine[]) {
 }
 
 atomic check checkCart(Buyer, Cart) {
-    require(Cart.buyer == Buyer, "CART_NOT_FOUND");
+    require(Cart.buyer == Buyer, RejectionCode.CART_NOT_FOUND);
 }
 
 atomic calculate addCartProduct(Goods, Cart, CartAdditionAgreement) {

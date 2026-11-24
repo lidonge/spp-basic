@@ -24,7 +24,7 @@ public class SystemServicesGenerationTest {
                 domain rules;
                 Contract Facts { int value; }
                 atomic query readFacts(Facts input);
-                atomic check checkFacts(Facts input) { require(input.value >= 0, "NEGATIVE"); }
+                Enum Fault { NEGATIVE } atomic check checkFacts(Facts input) { require(input.value >= 0, Fault.NEGATIVE); }
                 atomic calculate calculateFacts(Facts input) { input.value *= 2; }
                 atomic update changeFacts(Facts input);
                 Scenario serial preview(Facts input) { checkFacts(input); }
@@ -73,22 +73,11 @@ public class SystemServicesGenerationTest {
             Object request = loader.loadClass("generated.rules.model.CheckFactsRequest").getConstructor().newInstance();
             request.getClass().getMethod("setInput", facts.getClass()).invoke(request, facts);
             try {
-                setter.invoke(facts, -1);
-                assertNotNull(check.execute(request));
-                assertFalse(BusinessChecks.scenarioResult().passed());
-                assertEquals("NEGATIVE", BusinessChecks.scenarioResult().code());
                 setter.invoke(facts, 1);
-                BusinessChecks.restoreScenarioResult(null);
-                assertNotNull(check.execute(request));
-                assertTrue(BusinessChecks.scenarioResult().passed());
+                assertThrows(IllegalStateException.class, () -> check.execute(request));
                 Service update = (Service) loader.loadClass("generated.rules.service.SimpleChangeFacts").getConstructor().newInstance();
                 assertEquals(enabled, ((ScopeMetadataProvider) update).isSystemIdempotencyEnabled());
                 assertEquals(otherServices, ((ScopeMetadataProvider) update).isSystemPartialUpdateEnabled());
-                var updateRequest = loader.loadClass("generated.rules.model.ChangeFactsRequest").getConstructor().newInstance();
-                updateRequest.getClass().getMethod("setInput", facts.getClass()).invoke(updateRequest, facts);
-                InvocationContext.remote(InvocationContext.Origin.USER, "caller", "serial", () -> update.execute(updateRequest));
-                assertEquals(2, facts.getClass().getMethod("getValue").invoke(facts));
-                assertEquals(InvocationContext.Mode.LOCAL, InvocationContext.current().mode());
                 var container = com.servpp.service.server.DefaultServiceContainer.getInstance();
                 Service previousCheck = container.getService("checkFacts"), previousUpdate = container.getService("changeFacts");
                 var previousStore = com.servpp.service.idempotency.BusinessIdempotencyManager.getStore();
@@ -99,16 +88,20 @@ public class SystemServicesGenerationTest {
                     var previewRequest = loader.loadClass("generated.rules.model.PreviewRequest").getConstructor().newInstance();
                     previewRequest.getClass().getMethod("setInput", facts.getClass()).invoke(previewRequest, facts);
                     com.servpp.service.idempotency.BusinessIdempotencyManager.resetReplay();
+                    setter.invoke(facts, -1);
+                    assertNotNull(com.servpp.service.runtime.RemoteServiceIngress.execute(preview, previewRequest, "caller", "invalid"));
+                    assertEquals("NEGATIVE", BusinessChecks.scenarioResult().code());
+                    setter.invoke(facts, 1);
                     for (int index = 0; index < 2; index++) {
-                        assertNotNull(duplicateGuard ? preview.execute(previewRequest)
-                                : InvocationContext.remote(InvocationContext.Origin.USER, "caller", "serial", () -> preview.execute(previewRequest)));
+                        assertNotNull(com.servpp.service.runtime.RemoteServiceIngress.execute(preview, previewRequest, "caller", "valid"));
+                        assertTrue(BusinessChecks.scenarioResult().passed());
                         assertFalse(com.servpp.service.idempotency.BusinessIdempotencyManager.wasReplay());
                     }
                     var flow = (Service) loader.loadClass("generated.rules.service.SimpleChangeFlow").getConstructor().newInstance();
                     var flowRequest = loader.loadClass("generated.rules.model.ChangeFlowRequest").getConstructor().newInstance();
                     flowRequest.getClass().getMethod("setInput", facts.getClass()).invoke(flowRequest, facts);
-                    assertNotNull(InvocationContext.remote(InvocationContext.Origin.USER, "caller", "serial", () -> flow.execute(flowRequest)));
-                    assertEquals(3, facts.getClass().getMethod("getValue").invoke(facts));
+                    assertNotNull(com.servpp.service.runtime.RemoteServiceIngress.execute(flow, flowRequest, "caller", "serial"));
+                    assertEquals(2, facts.getClass().getMethod("getValue").invoke(facts));
                 } finally {
                     com.servpp.service.idempotency.BusinessIdempotencyManager.setStore(previousStore);
                     var field = container.getClass().getDeclaredField("serviceMap"); field.setAccessible(true);

@@ -31,7 +31,8 @@ public abstract class AntlrCompiler {
             throws IOException {
         sppParser.getInterpreter().setPredictionMode(PredictionMode.SLL);
         sppParser.removeErrorListeners();
-        sppParser.addErrorListener(new GeneratorErrorListener(antlrFile));
+        var errors = new GeneratorErrorListener(antlrFile);
+        sppParser.addErrorListener(errors);
 
         ParseTree tree = null;
         try {
@@ -41,6 +42,7 @@ public abstract class AntlrCompiler {
             throw new IOException("Failed to parse " + antlrFile + ".", ex);
         }
         if (sppParser.getNumberOfSyntaxErrors() > 0) {
+            if (errors.ruleDiagnostic() != null) throw new IOException(errors.ruleDiagnostic());
             throw new IOException("Failed to parse " + antlrFile + " with "
                     + sppParser.getNumberOfSyntaxErrors() + " syntax error(s).");
         }

@@ -17,9 +17,9 @@ public class XbodBankNoticeTest {
             input.put("DepositOperatorFacts",Map.of("branch","001","area","R002","province","P1","accountingCentre",false,
                     "operationCode","1102","transactionPrefix","SA01102"));
             assertEquals("DEPOSIT_OPERATOR_CONTEXT_MISMATCH",assertThrows(IllegalStateException.class,() -> demo.call("depositCash",input)).getMessage());
-            amount("0",demo.call("findDepositAccount",Map.of("DepositAccount",Map.of("accountNumber","ACCOUNT-001"))).path("DepositAccount").path("interestBase"));
-            amount("0",demo.call("findCashSettlementAccount",Map.of("CashSettlementAccount",Map.of("accountNumber","CASH-001"))).path("CashSettlementAccount").path("balance"));
-            assertEquals(0,demo.call("findAccountEligibility",Map.of("AccountEligibility",Map.of("accountNumber","ACCOUNT-001"))).path("AccountEligibility").path("detailCount").asInt());
+            amount("0",demo.readAccounts().path("DepositAccount").path("interestBase"));
+            amount("0",demo.readAccounts().path("CashSettlementAccount").path("balance"));
+            assertEquals(0,demo.readAccounts().path("AccountEligibility").path("detailCount").asInt());
             try (var connection = java.sql.DriverManager.getConnection(System.getProperty("spp.xbod.datasource-url")); var statement = connection.createStatement()) {
                 for (String table : new String[]{"CASH_DEPOSITS","CASH_POSTINGS"}) {
                     try (var rows = statement.executeQuery("SELECT COUNT(*) FROM "+table)) {
@@ -42,7 +42,7 @@ public class XbodBankNoticeTest {
             var paid = demo.call("depositCash",input);
             assertEquals("SUCCEEDED",paid.path("CashDepositAgreement").path("resultInfo").path("status").asText());
             String number = paid.path("CashDepositAgreement").path("depositNumber").asText();
-            var saved = demo.call("findCashDepositAgreement",Map.of("CashDepositAgreement",Map.of("depositNumber",number))).path("CashDepositAgreement");
+            var saved = demo.call("readCashDeposit",Map.of("CashDepositAgreement",Map.of("depositNumber",number))).path("CashDepositAgreement");
             assertEquals("WN200",saved.path("notices").path("cardWarning").asText());
             assertEquals("WN201",saved.path("notices").path("passbookWarning").asText());
             assertEquals("WARNING",saved.path("admission").path("status").asText());
@@ -54,11 +54,11 @@ public class XbodBankNoticeTest {
             input.put("DepositOperatorFacts",Map.of("branch","001","area","R001","province","P1","accountingCentre",true,
                     "operationCode","1102","transactionPrefix","SA01102","agencySigned",true));
             demo.call("depositCash",input);
-            var reread = demo.call("findCashDepositAgreement",Map.of("CashDepositAgreement",Map.of("depositNumber",number))).path("CashDepositAgreement");
+            var reread = demo.call("readCashDeposit",Map.of("CashDepositAgreement",Map.of("depositNumber",number))).path("CashDepositAgreement");
             assertEquals(saved.path("notices"),reread.path("notices"));
             assertEquals(saved.path("operator"),reread.path("operator"));
             assertEquals(saved.path("bankProfile"),reread.path("bankProfile"));
-            amount("1200",demo.call("findDepositAccount",Map.of("DepositAccount",Map.of("accountNumber","ACCOUNT-001"))).path("DepositAccount").path("interestBase"));
+            amount("1200",demo.readAccounts().path("DepositAccount").path("interestBase"));
         }
     }
 }

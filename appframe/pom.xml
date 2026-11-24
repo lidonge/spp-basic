@@ -42,4 +42,21 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.3.0</version>
+                <executions>
+                    <execution>
+                        <goals><goal>test-jar</goal></goals>
+                        <configuration>
+                            <classifier>testing</classifier>
+                            <includes><include>**/AtomicServiceTesting*.class</include></includes>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 </project>

@@ -23,10 +23,8 @@ public class XbodSourceIntegrityTest {
             amount("100", result.path("CashDepositAgreement").path("interestBaseDelta"));
             amount("0", result.path("CashDepositAgreement").path("interestPaid"));
             assertEquals(1, result.path("AccountEligibility").path("detailCount").asInt());
-            amount("100", demo.call("findDepositAccount", Map.of("DepositAccount",
-                    Map.of("accountNumber", "ACCOUNT-001"))).path("DepositAccount").path("interestBase"));
-            amount("-100", demo.call("findCashSettlementAccount", Map.of("CashSettlementAccount",
-                    Map.of("accountNumber", "CASH-001"))).path("CashSettlementAccount").path("balance"));
+            amount("100", demo.readAccounts().path("DepositAccount").path("interestBase"));
+            amount("-100", demo.readAccounts().path("CashSettlementAccount").path("balance"));
         }
     }
 
@@ -60,12 +58,11 @@ public class XbodSourceIntegrityTest {
                 input.put(entry.getKey(), Map.of("accountNumber", entry.getValue()));
                 assertEquals(entry.getKey(), "ORIGINAL_SETTLEMENT_ACCOUNTS_MISMATCH",
                         assertThrows(IllegalStateException.class, () -> demo.call("reverseCash", input)).getMessage());
-                var original = demo.call("findCashDepositAgreement", Map.of("CashDepositAgreement",
+                var original = demo.call("readCashDeposit", Map.of("CashDepositAgreement",
                         Map.of("depositNumber", paid.path("CashDepositAgreement").path("depositNumber").asText())));
                 assertFalse(original.path("CashDepositAgreement").path("reversed").asBoolean());
-                amount("100", demo.call("findDepositAccount", Map.of("DepositAccount",
-                        Map.of("accountNumber", "ACCOUNT-001"))).path("DepositAccount").path("interestBase"));
-                amount("0", demo.call("find" + entry.getKey(), Map.of(entry.getKey(),
+                amount("100", demo.readAccounts().path("DepositAccount").path("interestBase"));
+                amount("0", demo.readAccounts("ACCOUNT-001", "CASH-001", Map.of(entry.getKey(),
                         Map.of("accountNumber", entry.getValue()))).path(entry.getKey()).path("balance"));
             }
         }

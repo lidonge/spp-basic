@@ -30,10 +30,10 @@ public final class BusinessCalculationCompiler {
         if (ctx.atomiccall() != null) {
             var call = ctx.atomiccall();
             if (call.readBinding() != null || call.uniqueModifier() != null)
-                throw new IllegalArgumentException("A by read binding is allowed only in scenarios");
+                throw new IllegalArgumentException(sourceLocation(call.getStart()) + " [data-access] A by read binding is allowed only in scenarios. Read the set with an array query in the scenario and loop in a calculate.");
             if (call.Identifier() == null || call.scenarioBranch() != null || call.quantumBounds() != null || call.transactionBreak() != null)
-                throw new IllegalArgumentException("Calculate calls cannot identify, guard, or use breakTransaction or bounds");
-            return new CalculationServiceCall(call.Identifier().getText(), domain, call.parameters() == null,
+                throw new IllegalArgumentException(sourceLocation(call.getStart()) + " [service-call] Calculate calls cannot identify, guard, or use breakTransaction or bounds. Call it from the scenario instead.");
+            return new CalculationServiceCall(sourceLocation(call.getStart()), call.Identifier().getText(), domain, call.parameters() == null,
                 call.parameters() == null ? List.of() : call.parameters().parameter().stream().map(p -> p.getText()).toList());
         }
         if (ctx.calculationBody() != null) {
@@ -51,11 +51,17 @@ public final class BusinessCalculationCompiler {
         }
         if (keyword.equals("require")) {
             var condition = expression(ctx.expression(), domain);
-            var code = expression(ctx.rejectionCode().expression(), domain);
-            if (code instanceof Literal literal && literal.getValue().startsWith("\"")) {
-                return new RequireStatement(condition, literal.getValue());
+            var location = sourceLocation(ctx.rejectionCode().getStart());
+            IExpression code;
+            try {
+                code = expression(ctx.rejectionCode().expression(), domain);
+            } catch (IllegalArgumentException invalid) {
+                throw new IllegalArgumentException(location + " [require-enum] " + invalid.getMessage()
+                        + ". Declare an enum member for the rejection code.", invalid);
             }
-            return new RequireStatement(condition, code);
+            var require = new RequireStatement(condition, code);
+            require.sourceLocation = location;
+            return require;
         }
         if (keyword.equals("check")) {
             return new RequireStatement(expression(ctx.expression(), domain), "\"QUANTUM_CONSTRAINT_REJECTED\"")
@@ -140,7 +146,7 @@ public final class BusinessCalculationCompiler {
         else { Literal one = new Literal(); one.setValue("1"); result.setRight(one); }
         return result;
     }
-    private static String sourceLocation(Token token) {
+    public static String sourceLocation(Token token) {
         return token.getInputStream().getSourceName() + ":" + token.getLine() + ":" + (token.getCharPositionInLine() + 1);
     }
     private static Reference reference(String name) {

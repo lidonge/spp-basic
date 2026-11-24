@@ -55,8 +55,8 @@ public class RemoteScopeGeneratorTest {
         assertTrue(services, services.contains("helperCustomer=com.servpp.openapi.commerce.service.SimpleHelperCustomer"));
 
         String yaml = Files.readString(yamlDir.resolve("commerce.spp.yaml"));
-        assertTrue(yaml, yaml.contains("/commerce/queryCustomer"));
-        assertTrue(yaml, yaml.contains("/commerce/helperCustomer"));
+        assertFalse(yaml, yaml.contains("/commerce/queryCustomer"));
+        assertFalse(yaml, yaml.contains("/commerce/helperCustomer"));
 
         assertTrue(new File(javaDir.toFile(),
                 "com/servpp/openapi/commerce/handler/HelperCustomer.java").isFile());

@@ -459,3 +459,31 @@ The compiler reports distributed deployments as
 `distributed cross-domain quantum transfer not yet supported (APP TCC pending)`.
 The `play ... by` spelling is provisional. Same-domain SPP `take` continues to
 define local role composition.
+
+### Invoking a local atomic service in a test
+
+Install the SDK and add the appframe testing artifact to the test module.
+
+```xml
+<dependency>
+    <groupId>com.servpp</groupId>
+    <artifactId>appframe</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <classifier>testing</classifier>
+    <scope>test</scope>
+</dependency>
+```
+
+Install the generated deployment on the local runtime and pass the generated request
+to the test entry. The call uses the registered service and its configured wrappers.
+
+```java
+import com.servpp.service.runtime.AtomicServiceTesting;
+
+// In src/test/java
+AtomicServiceTesting.invokeAtomic(runtime, "orders.calculateTotal", request);
+```
+
+Production bridges invoke a scenario through `runtime.executeGeneratedService`.
+The scenario owns the business checks and transaction boundary. Use a scenario
+test to verify those guarantees across multiple atomic calls.

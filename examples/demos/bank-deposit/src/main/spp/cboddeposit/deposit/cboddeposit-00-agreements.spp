@@ -79,7 +79,7 @@ atomic calculate prepareDepositAgreement(
     CashDepositAgreement.interestPaid = DepositPlan.interestPaid;
     CashDepositAgreement.collectionPaid = DepositPlan.collectionInterestPaid;
     CashDepositAgreement.principalPaid = DepositPlan.principalPaid;
-    CashDepositAgreement.exposureDelta = DepositPlan.newOverdraftExposure - DepositAccount.overdraftExposure;
+    CashDepositAgreement.exposureDelta = -DepositPlan.principalPaid;
     CashDepositAgreement.fee = DepositFeePlan.fee;
     CashDepositAgreement.transactionDate = BusinessDay.date;
     CashDepositAgreement.previousTransactionDate = AccountEligibility.lastTransactionDate;
@@ -89,7 +89,7 @@ atomic calculate prepareDepositAgreement(
 }
 
 atomic check checkDetailPolicy(DepositDetailPolicy) {
-    require(DepositDetailPolicy.itemCount > 0, "INVALID_DETAIL_COUNT");
+    require(DepositDetailPolicy.itemCount > 0, RejectionCode.INVALID_DETAIL_COUNT);
 }
 
 atomic calculate completeDepositMetadata(
@@ -113,18 +113,16 @@ quantum update settleCashDeposit(
     CashSettlementAccount,
     InterestIncomeAccount,
     CollectionInterestIncomeAccount,
-    PrincipalRecoveryAccount,
     CashDepositAgreement
 ) {
-    DepositAccount.interestBase += CashDepositAgreement.interestBaseDelta;
-    DepositAccount.overdraftInterest -= CashDepositAgreement.interestPaid;
-    DepositAccount.collectionInterest -= CashDepositAgreement.collectionPaid;
-    DepositAccount.overdraftPrincipal -= CashDepositAgreement.principalPaid;
-    DepositAccount.overdraftExposure += CashDepositAgreement.exposureDelta;
-    CashSettlementAccount.balance -= CashDepositAgreement.amount;
-    InterestIncomeAccount.balance += CashDepositAgreement.interestPaid;
-    CollectionInterestIncomeAccount.balance += CashDepositAgreement.collectionPaid;
-    PrincipalRecoveryAccount.balance += CashDepositAgreement.principalPaid;
+    if (CashDepositAgreement.interestBaseDelta >= 0) {
+        CashSettlementAccount.balance -> DepositAccount.interestBase : CashDepositAgreement.interestBaseDelta;
+    } else {
+        DepositAccount.interestBase -> CashSettlementAccount.balance : -CashDepositAgreement.interestBaseDelta;
+    }
+    CashSettlementAccount.balance -> DepositAccount.overdraftInterest : CashDepositAgreement.interestPaid;
+    CashSettlementAccount.balance -> DepositAccount.collectionInterest : CashDepositAgreement.collectionPaid;
+    CashSettlementAccount.balance -> DepositAccount.overdraftPrincipal : CashDepositAgreement.principalPaid;
 }
 
 atomic calculate recordDepositFailure(CashDepositAgreement, CashFailureRecord) {
@@ -139,4 +137,9 @@ atomic calculate recordReversalFailure(CashReversalAgreement, CashFailureRecord)
 
 atomic calculate confirmNoCashMovement(CashFailureRecord) {
     CashFailureRecord.handlingState = CashHandlingState.NOT_COMPLETED;
+}
+
+readonly Scenario serial readCashFailure(CashFailureRecord) {
+    findCashFailureRecord;
+    identify(CashFailureRecord);
 }

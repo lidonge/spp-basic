@@ -6,7 +6,7 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class BusinessCalculationSemanticsTest {
-    private static final String ROLE = "domain rules; Role Values { double a; double b; boolean allowed; String label; } ";
+    private static final String ROLE = "domain rules; Enum Fault { bad, rejected, INVALID } Role Values { double a; double b; boolean allowed; String label; } ";
     @Test public void constructsEnumValuesFromScalarStringExpressions() throws Exception {
         var domain = compile("""
                 domain rules;
@@ -70,12 +70,12 @@ public class BusinessCalculationSemanticsTest {
     @Test public void asciiIntegerTextHasDistinctBooleanAndExactNumericResults() throws Exception {
         var domain = compile("""
                 domain rules;
-                Role Text { String digits; BigDecimal(30,0) value; boolean valid; }
+                Enum Fault { INVALID_TEXT } Role Text { String digits; BigDecimal(30,0) value; boolean valid; }
                 atomic calculate decode(Text text) {
                     text.valid = isAsciiDigits(text.digits);
                     if (text.valid) { text.value = parseUnsignedInteger(text.digits); }
                 }
-                atomic check checkText(Text text) { require(isAsciiDigits(text.digits), "INVALID_TEXT"); }
+                atomic check checkText(Text text) { require(isAsciiDigits(text.digits), Fault.INVALID_TEXT); }
                 """);
         assertTrue(domain.validateAppDeclarations().toString(), domain.validateAppDeclarations().isEmpty());
         var service = (SppService) domain.getSppClass("Decode");
@@ -84,7 +84,7 @@ public class BusinessCalculationSemanticsTest {
                 .collect(java.util.stream.Collectors.joining("\n"));
         assertTrue(generated, generated.contains("AsciiIntegerText.isAsciiDigits"));
         assertTrue(generated, generated.contains("AsciiIntegerText.parseUnsignedInteger"));
-        assertTrue(compile(ROLE + "atomic check checkText(Values v) { require(isAsciiDigits(null), \"INVALID\"); }")
+        assertTrue(compile(ROLE + "atomic check checkText(Values v) { require(isAsciiDigits(null), Fault.INVALID); }")
                 .validateAppDeclarations().isEmpty());
     }
     @Test public void asciiIntegerTextRejectsWrongArityAndNonStringArguments() throws Exception {
@@ -112,11 +112,11 @@ public class BusinessCalculationSemanticsTest {
     @Test public void sameFactsRequiresMatchingDeclaredParticipantsOrCollectionDimensions() throws Exception {
         String source = """
                 domain rules;
-                Role Evidence { double value; }
+                Enum Fault { CHANGED } Role Evidence { double value; }
                 Role Other { double value; }
                 Contract Work { Evidence expected; Evidence actual; Evidence[] oldRows; Evidence[] newRows; Other secondary; }
                 """;
-        String check = "atomic check compare(Work work) { require(%s, \"CHANGED\"); }";
+        String check = "atomic check compare(Work work) { require(%s, Fault.CHANGED); }";
         var valid = compile(source + check.formatted("sameFacts(work.expected, work.actual) && sameFacts(work.oldRows, work.newRows)"));
         assertTrue(valid.validateAppDeclarations().toString(), valid.validateAppDeclarations().isEmpty());
         for (String expression : java.util.List.of("sameFacts(work.expected)", "sameFacts(work.expected, work.secondary)",
@@ -176,7 +176,7 @@ public class BusinessCalculationSemanticsTest {
                     else { if (v.b < 0) { v.a = abs(v.b); } }
                     v.label = v.allowed ? "yes" : "no";
                 }
-                atomic check checkValues(Values v) { require(v.allowed, "rejected"); }
+                atomic check checkValues(Values v) { require(v.allowed, Fault.rejected); }
                 """);
         assertTrue(domain.validateAppDeclarations().toString(), domain.validateAppDeclarations().isEmpty());
         assertTrue(((SppService) domain.getSppClass("Decide")).hasBusinessImplementation());
@@ -267,7 +267,7 @@ public class BusinessCalculationSemanticsTest {
     }
 
     @Test public void checkServicesMayComputeLocalsButCannotMutateParticipantAliases() throws Exception {
-        SppDomain valid = compile(ROLE + "atomic check decide(Values v) { int total=0; for (int i=0; i<3; i++) total+=i; require(total==3, \"bad\"); }");
+        SppDomain valid = compile(ROLE + "atomic check decide(Values v) { int total=0; for (int i=0; i<3; i++) total+=i; require(total==3, Fault.bad); }");
         assertTrue(valid.validateAppDeclarations().toString(), valid.validateAppDeclarations().isEmpty());
         SppDomain invalid = compile(ROLE + "atomic check decide(Values v) { Values alias=v; alias.a=1; }");
         assertFalse(invalid.validateAppDeclarations().isEmpty());
@@ -360,6 +360,71 @@ public class BusinessCalculationSemanticsTest {
         assertEquals(warnings.toString(), 4, warnings.size());
         assertTrue(warnings.toString(), warnings.get(0).contains("local may need rounding"));
         assertTrue(warnings.toString(), warnings.subList(1, 4).stream().allMatch(w -> w.contains("v.amount may need rounding")));
+    }
+
+    @Test public void quantumWritesRequireTransfersAtTheAssignmentSite() throws Exception {
+        String model = "domain rules; Role Wallet { quantum int balance; int copy; }\n";
+        for (String update : java.util.List.of("a.balance = 0", "a.balance += 1", "a.balance -= 1",
+                "++a.balance", "a.balance--", "a.balance *= 2", "a.balance /= 2", "a.balance %= 2")) {
+            for (String kind : java.util.List.of("atomic calculate", "atomic check", "quantum update")) {
+                var errors = compile(model + kind + " change(Wallet a) {\n" + update + "; }").validateBusinessCalculations();
+                assertTrue(errors.toString(), errors.stream().anyMatch(e -> e.contains(".spp:3:1 [P0-a]") && e.contains("a -> b : x")));
+            }
+        }
+        assertTrue(compile(model + "quantum update move(Wallet a, Wallet b) { a.balance -> b.copy : 1; }")
+                .validateBusinessCalculations().stream().anyMatch(e -> e.contains("quantum parameter attribute")));
+        assertTrue(compile(model + "atomic calculate read(Wallet a) { a.copy = a.balance; }")
+                .validateBusinessCalculations().isEmpty());
+    }
+
+    @Test public void queryCallsAreRejectedAtTheCallSite() throws Exception {
+        String model = "domain rules; Role Row { int value; } atomic query read(Row r);\n";
+        for (String prefix : java.util.List.of("", "while (true) ", "for (int i=0; i<2; i++) ")) {
+            var errors = compile(model + "atomic calculate load(Row r) { " + prefix + "\nread(r); }").validateBusinessCalculations();
+            assertTrue(errors.toString(), errors.stream().anyMatch(e -> e.contains(".spp:3:1 [data-access]") && e.contains("array query")));
+        }
+        var implicit = compile(model + "atomic calculate load(Row r) { while (true) {\nfindRow(r); } }").validateBusinessCalculations();
+        assertTrue(implicit.toString(), implicit.stream().anyMatch(e -> e.contains(".spp:3:1 [data-access]") && e.contains("array query")));
+        assertTrue(compile(model + "Scenario serial preview(Row r) { read(r); }").validateScenarioCalls().isEmpty());
+        assertThrows(java.io.IOException.class, () -> compile(model + "Scenario serial preview(Row r) { while (true) { read(r); } }"));
+    }
+
+    @Test public void onlyEnumExpressionsSupplyRejectionCodes() throws Exception {
+        String model = "domain rules; Enum Fault { INVALID } Role Row { Fault reason; String text; }\n";
+        for (String code : java.util.List.of("r.text", "\"INVALID\"", "1")) {
+            var errors = compile(model + "atomic check valid(Row r) { require(true,\n" + code + "); }").validateBusinessCalculations();
+            assertTrue(errors.toString(), errors.stream().anyMatch(e -> e.contains(".spp:3:1 [require-enum]")));
+        }
+        assertTrue(compile(model + "atomic check valid(Row r) { require(true, r.reason); require(true, Fault.INVALID); }")
+                .validateBusinessCalculations().isEmpty());
+    }
+
+    @Test public void rejectNestedServiceCallsButAllowCalculateComposition() throws Exception {
+        String model = "domain rules; Role Row { int value; }\n"
+                + "atomic calculate twice(Row r) { r.value *= 2; }\n"
+                + "atomic check ready(Row r);\nScenario serial preview(Row r) { ready(r); }\n";
+        for (String call : java.util.List.of("ready", "preview")) {
+            var errors = compile(model + "atomic calculate compose(Row r) {\n" + call + "(r); }").validateBusinessCalculations();
+            assertTrue(errors.toString(), errors.stream().anyMatch(e -> e.contains(".spp:6:1 [service-call]")));
+        }
+        var nested = compile(model + "Scenario serial outer(Row r) {\npreview(r); }").validateAppDeclarations();
+        assertTrue(nested.toString(), nested.stream().anyMatch(e -> e.contains(".spp:6:1 [service-call]")));
+        assertTrue(compile(model + "atomic calculate compose(Row r) { twice(r); }").validateBusinessCalculations().isEmpty());
+    }
+
+    @Test public void migrationWarningRetainsSourceLocation() throws Exception {
+        String property = "spp.rule.require-enum";
+        String previous = System.getProperty(property);
+        try {
+            System.setProperty(property, "warning");
+            var domain = compile("domain rules; Role Row { int value; }\natomic check valid(Row r) { require(true, \"OLD_CODE\"); }");
+            assertTrue(domain.validateAppDeclarations().toString(), domain.validateAppDeclarations().isEmpty());
+            assertEquals(1, domain.migrationWarnings().size());
+            assertTrue(domain.migrationWarnings().get(0).contains(".spp:2:"));
+        } finally {
+            if (previous == null) System.clearProperty(property);
+            else System.setProperty(property, previous);
+        }
     }
 
     private SppDomain compile(String source) throws Exception {

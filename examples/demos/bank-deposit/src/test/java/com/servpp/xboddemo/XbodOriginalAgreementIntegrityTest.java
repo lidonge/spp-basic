@@ -37,9 +37,9 @@ public class XbodOriginalAgreementIntegrityTest {
             if(mode==0)input.put("CashDepositAgreement",Map.of("depositNumber","NONEXISTENT"));
             String expected=mode==0 ? "PARTICIPANT_NOT_IDENTIFIED" : mode==1 ? "ORIGINAL_DEPOSIT_MOVEMENT_NOT_BALANCED" : "ORIGINAL_DEPOSIT_ACCOUNT_MISMATCH";
             assertEquals(expected,assertThrows(IllegalStateException.class,()->demo.call("reverseCash",input)).getMessage());
-            amount("100",demo.call("findDepositAccount",Map.of("DepositAccount",Map.of("accountNumber","ACCOUNT-001"))).path("DepositAccount").path("interestBase"));
-            amount("0",demo.call("findDepositAccount",Map.of("DepositAccount",Map.of("accountNumber","ACCOUNT-002"))).path("DepositAccount").path("interestBase"));
-            amount("-100",demo.call("findCashSettlementAccount",Map.of("CashSettlementAccount",Map.of("accountNumber","CASH-001"))).path("CashSettlementAccount").path("balance"));
+            amount("100",demo.readAccounts().path("DepositAccount").path("interestBase"));
+            amount("0",demo.readAccounts("ACCOUNT-002", "CASH-002").path("DepositAccount").path("interestBase"));
+            amount("-100",demo.readAccounts().path("CashSettlementAccount").path("balance"));
             try(var connection=DriverManager.getConnection(url);var statement=connection.createStatement()) {
                 for(String table:new String[]{"CASH_REVERSALS","CASH_REVERSAL_POSTINGS"})try(var rows=statement.executeQuery("SELECT COUNT(*) FROM "+table)) {
                     assertTrue(rows.next());assertEquals(0,rows.getInt(1));

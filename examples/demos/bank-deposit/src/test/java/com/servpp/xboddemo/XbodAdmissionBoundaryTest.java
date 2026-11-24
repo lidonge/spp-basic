@@ -9,7 +9,7 @@ import static com.servpp.xboddemo.XbodTransactionTest.*;
 public class XbodAdmissionBoundaryTest {
     @Test public void preservesArchivedAccountControlChecksAndFrozenAmountCalculation() throws Exception {
         try (var demo = new XbodTestSupport()) {
-            demo.call("checkCashControl", Map.of("CashAccountControl", Map.of("controlStatus","Normal","productKind","DemandDeposit"),
+            demo.call("assessCashDeposit", Map.of("DepositRequest", Map.of("amount", 1), "CashAccountControl", Map.of("controlStatus","Normal","productKind","DemandDeposit"),
                     "AccountEligibility", Map.of("status","ACTIVE")));
             Object[][] cases = {
                     {Map.of("controllingInstitution","branch-1"),"ACTIVE","EN432"},
@@ -19,7 +19,7 @@ public class XbodAdmissionBoundaryTest {
                     {Map.of("cancelledOn",20261007),"ACTIVE","EN113"},
                     {Map.of("productKind","RealEstate"),"ACTIVE","EI090"}};
             for (var row : cases) assertEquals(row[2], assertThrows(IllegalStateException.class,
-                    () -> demo.call("checkCashControl", Map.of("CashAccountControl",row[0],
+                    () -> demo.call("assessCashDeposit", Map.of("DepositRequest", Map.of("amount", 1), "CashAccountControl",row[0],
                             "AccountEligibility",Map.of("status",row[1])))).getMessage());
             var calculated = demo.call("previewDeposit", Map.of("DepositRequest",Map.of("amount",1),
                     "DepositAccount",Map.of("interestBase",10,"frozenAmount",10,"loanState","NORMAL")));
@@ -53,9 +53,9 @@ public class XbodAdmissionBoundaryTest {
                     () -> demo.call("depositCash",crossBranchInput())).getMessage());
             var input = deposit(600); input.put("CashAccountControl",Map.of("controlStatus","Locked"));
             assertEquals("EN432",assertThrows(IllegalStateException.class,() -> demo.call("depositCash",input)).getMessage());
-            amount("0",demo.call("findDepositAccount",Map.of("DepositAccount",Map.of("accountNumber","ACCOUNT-001"))).path("DepositAccount").path("interestBase"));
-            amount("0",demo.call("findCashSettlementAccount",Map.of("CashSettlementAccount",Map.of("accountNumber","CASH-001"))).path("CashSettlementAccount").path("balance"));
-            assertEquals(0,demo.call("findAccountEligibility",Map.of("AccountEligibility",Map.of("accountNumber","ACCOUNT-001"))).path("AccountEligibility").path("detailCount").asInt());
+            amount("0",demo.readAccounts().path("DepositAccount").path("interestBase"));
+            amount("0",demo.readAccounts().path("CashSettlementAccount").path("balance"));
+            assertEquals(0,demo.readAccounts().path("AccountEligibility").path("detailCount").asInt());
             noTradeRows();
         }
     }
@@ -67,7 +67,7 @@ public class XbodAdmissionBoundaryTest {
             var result = demo.call("depositCash",crossBranchInput());
             assertEquals("SUCCEEDED",result.path("CashDepositAgreement").path("resultInfo").path("status").asText());
             amount("2",result.path("CashDepositAgreement").path("fee"));
-            var lines = demo.call("listDepositPostings",Map.of("CashDepositAgreement",Map.of("depositNumber",
+            var lines = demo.call("readCashDeposit",Map.of("CashDepositAgreement",Map.of("depositNumber",
                     result.path("CashDepositAgreement").path("depositNumber").asText()))).path("DepositPostingLineArray");
             assertEquals(8,lines.size());
             for (var line : lines) if (line.path("slot").asInt()==7 || line.path("slot").asInt()==8) amount("2",line.path("amount"));

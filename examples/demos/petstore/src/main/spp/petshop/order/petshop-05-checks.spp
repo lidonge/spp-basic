@@ -1,42 +1,42 @@
 domain petshop;
 
 atomic check checkQuotationInput(Cart, Goods[]) {
-    require(Cart.lines != null, "EMPTY_CART");
+    require(Cart.lines != null, RejectionCode.EMPTY_CART);
     int count = 0;
     for (CartLine line : Cart.lines) {
-        require(line != null && line.quantity != null && line.quantity > 0, "INVALID_QUANTITY");
+        require(line != null && line.quantity != null && line.quantity > 0, RejectionCode.INVALID_QUANTITY);
         boolean found = false;
         for (Goods product : Goods[]) {
             if (product.sku == line.goods.sku) {
                 found = true;
             }
         }
-        require(found, "PRODUCT_UNAVAILABLE");
+        require(found, RejectionCode.PRODUCT_UNAVAILABLE);
         count++;
     }
-    require(count > 0, "EMPTY_CART");
+    require(count > 0, RejectionCode.EMPTY_CART);
 }
 
 atomic check checkUnpaidCancellationAgreementInput(UnpaidCancellationAgreement) {
     require(
         UnpaidCancellationAgreement.reason != null && UnpaidCancellationAgreement.reason != "",
-        "REASON_REQUIRED"
+        RejectionCode.REASON_REQUIRED
     );
 }
 
 atomic check checkUnpaidCancellation(ShopOrder) {
-    require(ShopOrder.status == OrderStatus.UNPAID, "ORDER_NOT_CANCELLABLE");
+    require(ShopOrder.status == OrderStatus.UNPAID, RejectionCode.ORDER_NOT_CANCELLABLE);
 }
 
 atomic check checkPaidCancellationAgreementInput(PaidCancellationAgreement) {
     require(
         PaidCancellationAgreement.reason != null && PaidCancellationAgreement.reason != "",
-        "REASON_REQUIRED"
+        RejectionCode.REASON_REQUIRED
     );
 }
 
 atomic check checkPaidCancellation(ShopOrder) {
-    require(ShopOrder.status == OrderStatus.PAID, "ORDER_NOT_CANCELLABLE");
+    require(ShopOrder.status == OrderStatus.PAID, RejectionCode.ORDER_NOT_CANCELLABLE);
 }
 
 atomic check checkOrderReservation(ShopOrder, StockLine[]) {
@@ -50,10 +50,10 @@ atomic check checkOrderReservation(ShopOrder, StockLine[]) {
                         needed += ordered.quantity;
                     }
                 }
-                require(stock.available >= needed, "INSUFFICIENT_STOCK");
+                require(stock.available >= needed, RejectionCode.INSUFFICIENT_STOCK);
                 found = true;
             }
         }
-        require(found, "INVENTORY_ITEM_NOT_FOUND");
+        require(found, RejectionCode.INVENTORY_ITEM_NOT_FOUND);
     }
 }

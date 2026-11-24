@@ -9,10 +9,10 @@
       "frozenAmount": 0,
       "authorizedAmount": 0,
       "loanState": "NORMAL",
-      "overdraftInterest": 0.005,
-      "collectionInterest": 0.004,
-      "overdraftPrincipal": 0.01,
-      "overdraftExposure": 0.02
+      "overdraftInterest": -0.005,
+      "collectionInterest": -0.004,
+      "overdraftPrincipal": -0.01,
+      "overdraftExposure": 0.01
     },
     "expected": {
       "newInterestBase": 0,
@@ -22,7 +22,7 @@
       "interestPaid": 0.005,
       "collectionInterestPaid": 0.004,
       "principalPaid": 0.001,
-      "newOverdraftExposure": 0.019,
+      "newOverdraftExposure": 0.009,
       "newAccountBalance": -0.009
     },
     "name": "fractional-interest-business-exact"
@@ -37,10 +37,10 @@
       "frozenAmount": 0,
       "authorizedAmount": 0,
       "loanState": "BAD_DEBT",
-      "overdraftInterest": 0.005,
-      "collectionInterest": 0.004,
-      "overdraftPrincipal": 0.01,
-      "overdraftExposure": 0.02
+      "overdraftInterest": -0.005,
+      "collectionInterest": -0.004,
+      "overdraftPrincipal": -0.01,
+      "overdraftExposure": 0.01
     },
     "expected": {
       "interestPaid": 0,
@@ -50,7 +50,7 @@
       "interestBaseIncrease": 0,
       "interestBaseDecrease": 0,
       "principalPaid": 0.01,
-      "newOverdraftExposure": 0.01,
+      "newOverdraftExposure": 0.00,
       "newAccountBalance": -0.009
     },
     "name": "fractional-bad-debt-business-exact"
@@ -92,10 +92,10 @@
       "interestBase": 0,
       "frozenAmount": 0,
       "authorizedAmount": 0,
-      "overdraftInterest": 30,
-      "collectionInterest": 40,
-      "overdraftPrincipal": 100,
-      "overdraftExposure": 120,
+      "overdraftInterest": -30,
+      "collectionInterest": -40,
+      "overdraftPrincipal": -100,
+      "overdraftExposure": 100,
       "loanState": "NORMAL"
     },
     "expected": {
@@ -104,7 +104,7 @@
       "principalPaid": 0,
       "newInterestBase": 0,
       "newAvailableBalance": 0,
-      "newOverdraftExposure": 120,
+      "newOverdraftExposure": 100,
       "newAccountBalance": -120,
       "interestBaseIncrease": 0,
       "interestBaseDecrease": 0
@@ -120,10 +120,10 @@
       "interestBase": 0,
       "frozenAmount": 0,
       "authorizedAmount": 0,
-      "overdraftInterest": 30,
-      "collectionInterest": 40,
-      "overdraftPrincipal": 100,
-      "overdraftExposure": 120,
+      "overdraftInterest": -30,
+      "collectionInterest": -40,
+      "overdraftPrincipal": -100,
+      "overdraftExposure": 100,
       "loanState": "BAD_DEBT"
     },
     "expected": {
@@ -132,7 +132,7 @@
       "principalPaid": 50,
       "newInterestBase": 0,
       "newAvailableBalance": 0,
-      "newOverdraftExposure": 70,
+      "newOverdraftExposure": 50,
       "newAccountBalance": -120,
       "interestBaseIncrease": 0,
       "interestBaseDecrease": 0
@@ -148,10 +148,10 @@
       "interestBase": 0,
       "frozenAmount": 0,
       "authorizedAmount": 0,
-      "overdraftInterest": 30,
-      "collectionInterest": 40,
-      "overdraftPrincipal": 100,
-      "overdraftExposure": 120,
+      "overdraftInterest": -30,
+      "collectionInterest": -40,
+      "overdraftPrincipal": -100,
+      "overdraftExposure": 100,
       "loanState": "WRITTEN_OFF"
     },
     "expected": {
@@ -160,7 +160,7 @@
       "principalPaid": 50,
       "newInterestBase": 0,
       "newAvailableBalance": 0,
-      "newOverdraftExposure": 70,
+      "newOverdraftExposure": 50,
       "newAccountBalance": -120,
       "interestBaseIncrease": 0,
       "interestBaseDecrease": 0
@@ -176,10 +176,10 @@
       "interestBase": 0,
       "frozenAmount": 0,
       "authorizedAmount": 0,
-      "overdraftInterest": 30,
-      "collectionInterest": 40,
-      "overdraftPrincipal": 100,
-      "overdraftExposure": 120,
+      "overdraftInterest": -30,
+      "collectionInterest": -40,
+      "overdraftPrincipal": -100,
+      "overdraftExposure": 100,
       "loanState": "NORMAL"
     },
     "expected": {
@@ -204,10 +204,10 @@
       "interestBase": 0,
       "frozenAmount": 0,
       "authorizedAmount": 0,
-      "overdraftInterest": 30,
-      "collectionInterest": 40,
-      "overdraftPrincipal": 100,
-      "overdraftExposure": 120,
+      "overdraftInterest": -30,
+      "collectionInterest": -40,
+      "overdraftPrincipal": -100,
+      "overdraftExposure": 100,
       "loanState": "BAD_DEBT"
     },
     "expected": {
@@ -232,10 +232,10 @@
       "interestBase": 0,
       "frozenAmount": 0,
       "authorizedAmount": 0,
-      "overdraftInterest": 30,
-      "collectionInterest": 40,
-      "overdraftPrincipal": 100,
-      "overdraftExposure": 120,
+      "overdraftInterest": -30,
+      "collectionInterest": -40,
+      "overdraftPrincipal": -100,
+      "overdraftExposure": 100,
       "loanState": "NORMAL"
     },
     "expected": {
@@ -244,7 +244,7 @@
       "principalPaid": 80,
       "newInterestBase": 0,
       "newAvailableBalance": 0,
-      "newOverdraftExposure": 40,
+      "newOverdraftExposure": 20,
       "newAccountBalance": -20,
       "interestBaseIncrease": 0,
       "interestBaseDecrease": 0
@@ -260,10 +260,10 @@
       "interestBase": 0,
       "frozenAmount": 0,
       "authorizedAmount": 0,
-      "overdraftInterest": 30,
-      "collectionInterest": 40,
-      "overdraftPrincipal": 100,
-      "overdraftExposure": 120,
+      "overdraftInterest": -30,
+      "collectionInterest": -40,
+      "overdraftPrincipal": -100,
+      "overdraftExposure": 100,
       "loanState": "BAD_DEBT"
     },
     "expected": {
@@ -290,8 +290,8 @@
       "authorizedAmount": 0,
       "overdraftInterest": 0,
       "collectionInterest": 0,
-      "overdraftPrincipal": 100,
-      "overdraftExposure": 120,
+      "overdraftPrincipal": -100,
+      "overdraftExposure": 100,
       "loanState": "NORMAL"
     },
     "expected": {
@@ -300,7 +300,7 @@
       "principalPaid": 100,
       "newInterestBase": 0,
       "newAvailableBalance": 0,
-      "newOverdraftExposure": 20,
+      "newOverdraftExposure": 0,
       "newAccountBalance": 0,
       "interestBaseIncrease": 0,
       "interestBaseDecrease": 0
@@ -318,8 +318,8 @@
       "authorizedAmount": 0,
       "overdraftInterest": 0,
       "collectionInterest": 0,
-      "overdraftPrincipal": 100,
-      "overdraftExposure": 120,
+      "overdraftPrincipal": -100,
+      "overdraftExposure": 100,
       "loanState": "NORMAL"
     },
     "expected": {
@@ -344,10 +344,10 @@
       "interestBase": 10,
       "frozenAmount": 30,
       "authorizedAmount": 5,
-      "overdraftInterest": 3,
-      "collectionInterest": 4,
-      "overdraftPrincipal": 5,
-      "overdraftExposure": 8,
+      "overdraftInterest": -3,
+      "collectionInterest": -4,
+      "overdraftPrincipal": -5,
+      "overdraftExposure": 5,
       "loanState": "NORMAL"
     },
     "expected": {
@@ -356,7 +356,7 @@
       "principalPaid": 0,
       "newInterestBase": 20,
       "newAvailableBalance": 0,
-      "newOverdraftExposure": 8,
+      "newOverdraftExposure": 5,
       "newAccountBalance": 8,
       "interestBaseIncrease": 10,
       "interestBaseDecrease": 0
@@ -372,9 +372,9 @@
       "interestBase": 100,
       "frozenAmount": 140,
       "authorizedAmount": 30,
-      "overdraftInterest": 5,
-      "collectionInterest": 10,
-      "overdraftPrincipal": 20,
+      "overdraftInterest": -5,
+      "collectionInterest": -10,
+      "overdraftPrincipal": -20,
       "overdraftExposure": 20,
       "loanState": "NORMAL"
     },
@@ -400,10 +400,10 @@
       "interestBase": 100,
       "frozenAmount": 0,
       "authorizedAmount": 0,
-      "overdraftInterest": 10,
-      "collectionInterest": 20,
-      "overdraftPrincipal": 30,
-      "overdraftExposure": 50,
+      "overdraftInterest": -10,
+      "collectionInterest": -20,
+      "overdraftPrincipal": -30,
+      "overdraftExposure": 30,
       "loanState": "NORMAL"
     },
     "expected": {

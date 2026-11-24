@@ -1,5 +1,13 @@
 domain ledger;
 
+Enum RejectionCode {
+    ACCOUNT_PRESENT,
+    NOTE_PRESENT,
+    ORIGINAL_TEXT_CHANGED,
+    TEXT_PRESENT,
+    WRONG_CODE
+}
+
 Enum ProviderOutcome { NOT_FOUND:"E1214","OLD", SUCCESS:"", UNRECOGNIZED:other }
 Role ProviderResult { String(28) accountNumber; ProviderOutcome code; }
 
@@ -29,8 +37,8 @@ Role StoredResult { String receipt; String accountNumber; ProviderOutcome code; 
 
 Role AdmissionText { String accountNumber; String text; }
 atomic check checkAdmissionText(AdmissionText result) {
-    require(result.text == BLANK, "TEXT_PRESENT");
-    require(result.text == "   ", "ORIGINAL_TEXT_CHANGED");
+    require(result.text == BLANK, RejectionCode.TEXT_PRESENT);
+    require(result.text == "   ", RejectionCode.ORIGINAL_TEXT_CHANGED);
 }
 Scenario serial verifyAdmissionText(AdmissionText result) {
     findAdmissionText;
@@ -46,8 +54,8 @@ Scenario serial verifyBlankAccount(AdmissionText result) {
 
 Role CodedAdmission { String accountNumber; ProviderOutcome code; }
 atomic check checkBlankAdmission(CodedAdmission result) {
-    require(result.accountNumber == BLANK, "ACCOUNT_PRESENT");
-    require(result.code == ProviderOutcome.NOT_FOUND, "WRONG_CODE");
+    require(result.accountNumber == BLANK, RejectionCode.ACCOUNT_PRESENT);
+    require(result.code == ProviderOutcome.NOT_FOUND, RejectionCode.WRONG_CODE);
 }
 Scenario serial readBlankAdmission(CodedAdmission result) {
     findCodedAdmission by CodedAdmission.accountNumber = BLANK;
@@ -58,7 +66,7 @@ Scenario serial readBlankAdmission(CodedAdmission result) {
 Role AdmissionTicket { String receipt; String(4) batch; String note; }
 Enum AdmissionError { DUPLICATE:"A02" }
 atomic check checkTicket(AdmissionTicket ticket) {
-    require(ticket.note == BLANK, "NOTE_PRESENT");
+    require(ticket.note == BLANK, RejectionCode.NOTE_PRESENT);
 }
 Scenario serial readUniqueAdmission(CodedAdmission result, AdmissionTicket ticket) {
     unique findCodedAdmission by CodedAdmission.accountNumber = BLANK;

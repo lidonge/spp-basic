@@ -10,7 +10,7 @@ public class ParticipantConstructionTest {
     private SppDomain compile(String kind, String body) throws Exception {
         var file=Files.createTempFile("participant-new", ".spp");
         try {
-            Files.writeString(file,"domain rules; Role Item { long value; } Role Other { long value; } Role Holder { Item item; Item[] items; } atomic "+kind+" prepare(Holder h) { "+body+" }");
+            Files.writeString(file,"domain rules; Enum Fault { MISSING_VALUE, INVALID } Role Item { long value; } Role Other { long value; } Role Holder { Item item; Item[] items; } atomic "+kind+" prepare(Holder h) { "+body+" }");
             SppProject project=new SppProject();new SppCompiler(file.toFile(),project).compile();return project.getSppDomainMap().get("rules");
         } finally { Files.deleteIfExists(file); }
     }
@@ -29,8 +29,8 @@ public class ParticipantConstructionTest {
         assertFalse(compile("Item value = new Item[] {};").validateAppDeclarations().isEmpty());
     }
     @Test public void boxedModelNumbersMayBeCheckedForAbsence() throws Exception {
-        assertTrue(compile("check", "require(h.item.value != null, \"MISSING_VALUE\");").validateAppDeclarations().isEmpty());
-        assertFalse(compile("check", "require(1 == null, \"INVALID\");").validateAppDeclarations().isEmpty());
+        assertTrue(compile("check", "require(h.item.value != null, Fault.MISSING_VALUE);").validateAppDeclarations().isEmpty());
+        assertFalse(compile("check", "require(1 == null, Fault.INVALID);").validateAppDeclarations().isEmpty());
     }
     @Test public void differentTypesAndArbitraryClassesAreRejected() throws Exception {
         assertFalse(compile("h.item = new Other();").validateAppDeclarations().isEmpty());
