@@ -4812,11 +4812,18 @@ public class SppDomain {
         var existing = mapsOfClass.get(NameUtil.firstToLowerCase(method, false));
         if (existing instanceof SppService service && service.isReal() && !isDefaultGeneratedService(service))
             return service;
+        String operation = implicitCrudOperation(method);
+        if (operation == null) return null;
+        SppClass participant = (SppClass) mapsOfClass.get(method.substring(operation.length()));
+        return implicitCrudService(operation, participant, 0);
+    }
+
+    /** Identify built-in calls even when no scenario has materialized the service. */
+    public String implicitCrudOperation(String method) {
         for (String operation : List.of("find", "insert", "update", "delete")) {
             if (!method.startsWith(operation)) continue;
             var participant = mapsOfClass.get(method.substring(operation.length()));
-            if (participant instanceof SppClass type && isCrudParticipant(type))
-                return implicitCrudService(operation, type, 0);
+            if (participant instanceof SppClass type && isCrudParticipant(type)) return operation;
         }
         return null;
     }

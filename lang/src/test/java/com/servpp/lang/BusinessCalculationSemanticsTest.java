@@ -383,6 +383,8 @@ public class BusinessCalculationSemanticsTest {
             var errors = compile(model + "atomic calculate load(Row r) { " + prefix + "\nread(r); }").validateBusinessCalculations();
             assertTrue(errors.toString(), errors.stream().anyMatch(e -> e.contains(".spp:3:1 [data-access]") && e.contains("array query")));
         }
+        var implicit = compile(model + "atomic calculate load(Row r) { while (true) {\nfindRow(r); } }").validateBusinessCalculations();
+        assertTrue(implicit.toString(), implicit.stream().anyMatch(e -> e.contains(".spp:3:1 [data-access]") && e.contains("array query")));
         assertTrue(compile(model + "Scenario serial preview(Row r) { read(r); }").validateScenarioCalls().isEmpty());
         assertThrows(java.io.IOException.class, () -> compile(model + "Scenario serial preview(Row r) { while (true) { read(r); } }"));
     }

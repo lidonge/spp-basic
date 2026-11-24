@@ -178,17 +178,16 @@ public final class BusinessCalculationValidator {
     }
     private void validateCall(CalculationServiceCall call) {
         var unit = call.domain.getSppClass(com.servpp.lang.general.NameUtil.firstToLowerCase(call.name, false));
-        if (!(unit instanceof SppService target)) { error("Unknown calculation service " + call.name); return; }
+        if (!(unit instanceof SppService target)) {
+            String operation = call.domain.implicitCrudOperation(call.name);
+            if (operation == null) error(call.sourceLocation + " Unknown calculation service " + call.name);
+            else rejectCall(call, operation.equals("find"));
+            return;
+        }
         call.callee = target;
         if (service.getServiceType() != IConstance.ServiceType.calculate || target instanceof SppScenario
                 || target.getServiceType() != IConstance.ServiceType.calculate || target.isQuantumService()) {
-            if (target.getServiceType() == IConstance.ServiceType.query && (loops > 0 || service.getServiceType() == IConstance.ServiceType.calculate)) {
-                rule("data-access", call.sourceLocation, (loops > 0 ? "Query inside a loop" : "Calculate invokes a query")
-                        + ": " + call.name + ". Read the set with an array query in the scenario and loop in a calculate.");
-            } else {
-                rule("service-call", call.sourceLocation, "Calculate can only call calculate: " + call.name
-                        + ". Call it from the scenario instead; scenarios are front-end entries.");
-            }
+            rejectCall(call, target.getServiceType() == IConstance.ServiceType.query);
             return;
         }
         if (call.implicit && call.arguments.isEmpty()) {
@@ -211,6 +210,16 @@ public final class BusinessCalculationValidator {
             reference.local = lookupLocal(path) != null; reference.root = reference.local ? lookupLocal(path) : service.getLocalVar(path.split("\\.")[0]);
             if (actual != null) reference.setReturnType(actual.getType());
             call.resolvedArguments.add(reference);
+        }
+    }
+
+    private void rejectCall(CalculationServiceCall call, boolean query) {
+        if (query && (loops > 0 || service.getServiceType() == IConstance.ServiceType.calculate)) {
+            rule("data-access", call.sourceLocation, (loops > 0 ? "Query inside a loop" : "Calculate invokes a query")
+                    + ": " + call.name + ". Read the set with an array query in the scenario and loop in a calculate.");
+        } else {
+            rule("service-call", call.sourceLocation, "Calculate can only call calculate: " + call.name
+                    + ". Call it from the scenario instead; scenarios are front-end entries.");
         }
     }
 
