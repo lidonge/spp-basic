@@ -2,6 +2,7 @@ package com.servpp.lang.general.app;
 
 import com.servpp.lang.antlr.AppParser;
 import com.servpp.lang.models.app.AppForm;
+import com.servpp.lang.models.app.StringCollation;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.TerminalNode;
@@ -143,6 +144,22 @@ public abstract class BaseHandler implements IHeaderHandler, IPrimaryHandler,
         }
         return result.append('"').toString();
     }
+
+    @Override public void enterStringCollation(AppParser.StringCollationContext ctx) {
+        if (!getAntlrFile().getName().endsWith(".app")) {
+            logSppError(ctx, "Collation must be declared in APP.");
+            return;
+        }
+        StringCollation collation = switch (ctx.sequence.getText()) {
+            case "binary" -> StringCollation.BINARY;
+            case "ebcdic" -> StringCollation.EBCDIC;
+            default -> null;
+        };
+        if (collation == null) logSppError(ctx, "Collation requires binary or ebcdic.");
+        else if (getCurrentRuleBlock().getStringCollation() != null) logSppError(ctx, "Duplicate collation declaration.");
+        else getCurrentRuleBlock().setStringCollation(collation);
+    }
+    @Override public void exitStringCollation(AppParser.StringCollationContext ctx) { }
 
     @Override public void enterBlankPolicy(AppParser.BlankPolicyContext ctx) {
         String target = ctx.qualifiedName() == null ? "" : ctx.qualifiedName().getText();

@@ -374,6 +374,10 @@ public final class NumericJavaRenderer {
                         ? NameUtil.getNameCall(referenceName(reference), true) + "(" + value + ")"
                         : referenceName(reference) + " = " + value;
             }
+            if (operation instanceof OperationExpression comparison && comparison.ordering != null) {
+                if (comparison.ordering == OperationExpression.Ordering.TEXT) return textOrdering(left, right, operator);
+                return enumOrderOperand(left) + ".compareTo(" + enumOrderOperand(right) + ") " + operator + " 0";
+            }
             if (isComparison(operator) && numeric(left) && numeric(right)) {
                 String adapter = findAdapter(left);
                 if (adapter == null) { adapter = findAdapter(right); }
@@ -425,6 +429,39 @@ public final class NumericJavaRenderer {
             }
         }
         return expression.getExpr();
+    }
+
+    private String textOrdering(IExpression left, IExpression right, String operator) {
+        left = BlankLiteral.unwrap(left);
+        right = BlankLiteral.unwrap(right);
+        String a = textOrderOperand(left);
+        String b = textOrderOperand(right);
+        if (left instanceof BlankLiteral blank && !(right instanceof BlankLiteral)) b = blankOrderOperand(blank, right, b);
+        if (right instanceof BlankLiteral blank && !(left instanceof BlankLiteral)) a = blankOrderOperand(blank, left, a);
+        String runtime = "com.servpp.service.runtime.TextOrdering";
+        return runtime + ".compareText(" + a + ", " + b + ", " + runtime + ".Collation."
+                + service.getStringCollation().name() + ") " + operator + " 0";
+    }
+
+    private String blankOrderOperand(BlankLiteral blank, IExpression operand, String javaValue) {
+        var ref = operand instanceof CalculationReference reference ? reference : null;
+        return blank.orderingValue(javaValue, ref == null ? null : ref.field, receiver(ref));
+    }
+
+    private String textOrderOperand(IExpression operand) {
+        operand = BlankLiteral.unwrap(operand);
+        if (operand instanceof BlankLiteral) return "\"\"";
+        if (operand instanceof ConditionalExpression conditional) {
+            return "(" + condition(conditional.getCondition()) + " ? " + textOrderOperand(conditional.getWhenTrue())
+                    + " : " + textOrderOperand(conditional.getWhenFalse()) + ")";
+        }
+        return expression(operand);
+    }
+
+    private String enumOrderOperand(IExpression operand) {
+        SppEnum enumeration = (SppEnum) BlankLiteral.unwrap(operand).getReturnType();
+        String value = expression(BlankLiteral.unwrap(operand));
+        return enumeration.preservesUnknownWireValues() ? "(" + value + ").kind()" : "(" + value + ")";
     }
 
     private String decimal(IExpression expression) {

@@ -37,6 +37,7 @@ annotatableRule
     | requestPolicy
     | transactionPolicy
     | blankPolicy
+    | stringCollation
     | propertyTrackingPolicy
     | systemServices
     | technicalServices
@@ -104,6 +105,10 @@ blankPolicy
     ;
 
 blankForm : NullLiteral | StringLiteral | Identifier;
+
+stringCollation
+    : {"collation".equals(getCurrentToken().getText())}? Identifier sequence=Identifier ';'
+    ;
 
 propertyTrackingPolicy
     : {getCurrentToken().getText().equals("propertyTracking")}? Identifier ':' BooleanLiteral ';'

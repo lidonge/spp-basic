@@ -5,6 +5,7 @@ import com.servpp.lang.general.NameUtil;
 import com.servpp.lang.models.app.AppHeader;
 import com.servpp.lang.models.app.ScopeItem;
 import com.servpp.lang.models.app.SppExtendField;
+import com.servpp.lang.models.app.StringCollation;
 import com.servpp.lang.models.app.expr.IAssignOperation;
 import com.servpp.lang.models.app.expr.IExpression;
 import com.servpp.lang.models.app.expr.IJavaStatement;
@@ -257,6 +258,9 @@ public class SppService extends SppClass{
         }
     }
     public void setNumericGeneration(boolean value) { numericGeneration = value; }
+    private StringCollation stringCollation = StringCollation.BINARY;
+    public void setStringCollation(StringCollation value) { stringCollation = value; }
+    public StringCollation getStringCollation() { return stringCollation; }
 
 
     private String deploymentTransactionMode;

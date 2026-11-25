@@ -235,6 +235,10 @@ public final class BusinessCalculationCompiler {
         operation.setOperator(operator);
         operation.setType(operands.size() == 1 ? IOperation.Opers_Type.Left : IOperation.Opers_Type.Double);
         result.setOperation(operation);
+        if (OperationExpression.isOrderingOperator(operator)) {
+            Token token = ((org.antlr.v4.runtime.tree.TerminalNode) ctx.getChild(1)).getSymbol();
+            result.setOperatorLocation(token.getInputStream().getSourceName(), token.getLine(), token.getCharPositionInLine() + 1);
+        }
         if (operands.size() == 2) { result.setLeft(expression(operands.get(0), domain)); }
         result.setRight(expression(operands.get(operands.size() - 1), domain));
         return result;

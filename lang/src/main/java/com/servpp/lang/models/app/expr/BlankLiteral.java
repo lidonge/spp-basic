@@ -23,6 +23,10 @@ public final class BlankLiteral extends Literal {
         return BlankPolicy.readJava(domain, field, receiver, expression);
     }
 
+    String orderingValue(String expression, SppLocalVar field, String receiver) {
+        return BlankPolicy.orderingJava(domain, field, receiver, expression);
+    }
+
     String write(SppLocalVar field, String receiver) {
         return BlankPolicy.writeJava(domain, field, receiver);
     }

@@ -40,6 +40,11 @@ public record BlankPolicy(Set<String> reads, String write) {
         return render(domain, target, receiver, (policy, field) -> policy.matchJava(value));
     }
 
+    public static String orderingJava(SppDomain domain, SppLocalVar target, String receiver, String value) {
+        return render(domain, target, receiver, (policy, field) -> policy.reads().contains("null")
+                ? "com.servpp.service.runtime.BlankStrings.orderingValue(" + value + ")" : value);
+    }
+
     public static String writeJava(SppDomain domain, SppLocalVar target, String receiver) {
         return render(domain, target, receiver, BlankPolicy::canonicalValue);
     }

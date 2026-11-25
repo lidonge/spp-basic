@@ -3,7 +3,7 @@ package com.servpp.lang.lint;
 import java.io.File;
 import java.util.function.Consumer;
 
-/** Optional observer for located compiler errors on the current compilation thread. */
+/** Optional observer for located compiler diagnostics on the current compilation thread. */
 public final class CompilerDiagnostics {
     private CompilerDiagnostics() { }
     private static final ThreadLocal<Consumer<RepairDiagnostic>> observer = new ThreadLocal<>();
@@ -21,6 +21,16 @@ public final class CompilerDiagnostics {
     public static void report(RepairDiagnostic diagnostic) {
         var receiver = observer.get();
         if (receiver != null) receiver.accept(diagnostic);
+    }
+
+    public static void info(String code, RepairDiagnostic.Location location, String message) {
+        if (observed()) {
+            report(new RepairDiagnostic(code, "info", location.file(), location.line(), location.column(),
+                    message, DiagnosticPages.rule(code, message), message, java.util.List.of(), java.util.List.of(), false));
+        } else {
+            org.slf4j.LoggerFactory.getLogger(CompilerDiagnostics.class).info("{}:{}:{} [{}] {}",
+                    location.file(), location.line(), location.column(), code, message);
+        }
     }
 
     public static void error(String code, File file, int line, int column, String message, String hint) {

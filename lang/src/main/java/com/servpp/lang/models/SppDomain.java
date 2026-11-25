@@ -232,7 +232,9 @@ public class SppDomain {
         errors.addAll(prepareDefaultParticipantBindings());
         errors.addAll(appParseErrors);
         errors.addAll(ruleBlock.getTechnicalServices().validate(this));
+        var collation = StringCollation.resolve(this, errors);
         for (var unit : mapsOfClass.values()) if (unit instanceof SppService service) {
+            service.setStringCollation(collation);
             service.setSystemRequestServices(ruleBlock.isSystemServiceEnabled("idempotency"),
                     ruleBlock.isSystemServiceEnabled("duplicateGuard"));
             service.setSystemPartialUpdateEnabled(ruleBlock.isSystemServiceEnabled("partialUpdate"));
@@ -1191,7 +1193,7 @@ public class SppDomain {
             if (unit instanceof SppService service) {
                 if (service.hasBusinessImplementation()) {
                     applyCalculationBindings(service.getDeclaredJavaStatements());
-                    List<String> businessErrors = new com.servpp.lang.models.app.expr.BusinessCalculationValidator(service).validate();
+                    List<String> businessErrors = new com.servpp.lang.models.app.expr.BusinessCalculationValidator(service).validate(false);
                     if (!businessErrors.isEmpty()) { errors.addAll(businessErrors); continue; }
                 }
                 for (SppLocalVar parameter : service.getServiceBody().getSppLocalVarList()) {

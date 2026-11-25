@@ -4,6 +4,11 @@ package com.servpp.service.runtime;
 public final class BlankStrings {
     private BlankStrings() { }
 
+    /** Normalizes the null representation when APP accepts it at an ordering comparison with BLANK. */
+    public static String orderingValue(String value) {
+        return value == null ? "" : value;
+    }
+
     public static boolean matches(String value, boolean readNull, boolean readEmpty, boolean readSpaces) {
         if (value == null) return readNull;
         if (value.isEmpty()) return readEmpty;

@@ -13,6 +13,7 @@ public final class BusinessCalculationValidator {
     private List<String> migrationWarnings;
     private final Deque<Map<String, SppLocalVar>> scopes = new ArrayDeque<>();
     private int loops, switches;
+    private boolean reportOrderingInfo = true;
     private enum Kind { NUMBER, BOOLEAN, STRING, CHAR, ENUM, OBJECT, NULL, UNKNOWN }
     public BusinessCalculationValidator(SppService service) { this.service = service; }
     public List<String> validateCondition(IExpression condition) {
@@ -27,7 +28,10 @@ public final class BusinessCalculationValidator {
         if (kind != Kind.NUMBER && kind != Kind.NULL) error("Quantum interval endpoint must be a number or null.");
         scopes.pop(); return errors;
     }
-    public List<String> validate() {
+    public List<String> validate() { return validate(true); }
+
+    public List<String> validate(boolean reportOrderingInfo) {
+        this.reportOrderingInfo = reportOrderingInfo;
         if (service.getServiceType() != IConstance.ServiceType.calculate && service.getServiceType() != IConstance.ServiceType.check && !service.isDeclaredQuantumService()) {
             error("Business implementation bodies are only allowed for calculate/check services.");
         }
@@ -39,13 +43,13 @@ public final class BusinessCalculationValidator {
     }
     public List<String> collectRoundingWarnings() {
         roundingWarnings = new ArrayList<>();
-        validate();
+        validate(false);
         return roundingWarnings;
     }
 
     public List<String> collectMigrationWarnings() {
         migrationWarnings = new ArrayList<>();
-        validate();
+        validate(false);
         return migrationWarnings;
     }
 
@@ -388,7 +392,7 @@ public final class BusinessCalculationValidator {
 
     private Kind type(IExpression value) {
         if (value instanceof BlankLiteral) {
-            error("BLANK requires assignment to or equality with a scalar String.");
+            error("BLANK requires assignment to or comparison with a scalar String.");
             return Kind.UNKNOWN;
         }
         if (value instanceof EnumValue) return Kind.ENUM;
@@ -537,12 +541,16 @@ public final class BusinessCalculationValidator {
                 return Kind.BOOLEAN;
             }
         }
-        Kind right = type(operation.getRight());
-        Kind left = operation.getLeft() == null ? right : type(operation.getLeft());
         if (operator.equals("&&") || operator.equals("||")) {
             bool(operation.getLeft()); bool(operation.getRight());
             return Kind.BOOLEAN;
         }
+        if (OperationExpression.isOrderingOperator(operator)) {
+            validateOrdering((OperationExpression) operation, operator);
+            return Kind.BOOLEAN;
+        }
+        Kind right = type(operation.getRight());
+        Kind left = operation.getLeft() == null ? right : type(operation.getLeft());
         if (Set.of("==", "!=").contains(operator)) {
             validateEnumLiteral(operation.getLeft(), operation.getRight());
             validateEnumLiteral(operation.getRight(), operation.getLeft());
@@ -556,8 +564,54 @@ public final class BusinessCalculationValidator {
             return Kind.STRING;
         }
         if (left != Kind.NUMBER || right != Kind.NUMBER) { error("Operator " + operator + " requires numeric operands."); }
-        return Set.of("<", "<=", ">", ">=").contains(operator) ? Kind.BOOLEAN : Kind.NUMBER;
+        return Kind.NUMBER;
     }
+
+    private void validateOrdering(OperationExpression operation, String operator) {
+        IExpression lhs = BlankLiteral.unwrap(operation.getLeft());
+        IExpression rhs = BlankLiteral.unwrap(operation.getRight());
+        Kind left = orderingOperand(lhs);
+        Kind right = orderingOperand(rhs);
+        operation.ordering = null;
+        if (left == Kind.NUMBER && right == Kind.NUMBER) return;
+        if (left == Kind.STRING && right == Kind.STRING) {
+            operation.ordering = OperationExpression.Ordering.TEXT;
+            return;
+        }
+        if (left == Kind.ENUM && right == Kind.ENUM && lhs.getReturnType() == rhs.getReturnType()) {
+            operation.ordering = OperationExpression.Ordering.ENUM;
+            if (reportOrderingInfo && operation.getOperatorLocation() != null) {
+                com.servpp.lang.lint.CompilerDiagnostics.info("SPP_ENUM_ORDER_COMPARE", operation.getOperatorLocation(),
+                        "ordering by enum declaration order; confirm the order is intended");
+            }
+            return;
+        }
+        var location = operation.getOperatorLocation();
+        String source = location == null ? "" : location.file() + ":" + location.line() + ":" + location.column() + " ";
+        error(source + "Operator " + operator + " cannot order " + orderingType(lhs, left) + " and "
+                + orderingType(rhs, right) + ". Use two numbers, two scalar strings, or two values of the same enum type.");
+    }
+
+    private Kind orderingOperand(IExpression expression) {
+        if (expression instanceof BlankLiteral) return Kind.STRING;
+        if (expression instanceof ConditionalExpression conditional) {
+            bool(conditional.getCondition());
+            IExpression yes = BlankLiteral.unwrap(conditional.getWhenTrue());
+            IExpression no = BlankLiteral.unwrap(conditional.getWhenFalse());
+            Kind left = orderingOperand(yes), right = orderingOperand(no);
+            conditional.setReturnType(left == Kind.NULL ? no.getReturnType() : yes.getReturnType());
+            if (left == Kind.NULL && (right == Kind.STRING || right == Kind.ENUM)) return right;
+            if (right == Kind.NULL && (left == Kind.STRING || left == Kind.ENUM)) return left;
+            return left == right && (left != Kind.ENUM || yes.getReturnType() == no.getReturnType())
+                    ? left : Kind.UNKNOWN;
+        }
+        return type(expression);
+    }
+
+    private String orderingType(IExpression expression, Kind kind) {
+        return kind == Kind.ENUM ? expression.getReturnType().getName() : kind.name().toLowerCase(Locale.ROOT);
+    }
+
     private boolean nullableReference(IExpression value) {
         if (!(value instanceof Reference reference)) { return false; }
         SppLocalVar field = resolve(reference.getValue());

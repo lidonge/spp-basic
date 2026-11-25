@@ -14,6 +14,23 @@ public class OperationExpression extends Expression implements IOperationExpress
     IExpression right;
     IOperation operation;
 
+    enum Ordering { TEXT, ENUM }
+    Ordering ordering;
+    private com.servpp.lang.lint.RepairDiagnostic.Location operatorLocation;
+
+    public static boolean isOrderingOperator(String operator) {
+        return switch (operator) {
+            case "<", "<=", ">", ">=" -> true;
+            default -> false;
+        };
+    }
+
+    public void setOperatorLocation(String file, int line, int column) {
+        operatorLocation = new com.servpp.lang.lint.RepairDiagnostic.Location(file, line, column);
+    }
+
+    com.servpp.lang.lint.RepairDiagnostic.Location getOperatorLocation() { return operatorLocation; }
+
     public String getExpr() {
         return  operation.getExpr(left, right);
     }

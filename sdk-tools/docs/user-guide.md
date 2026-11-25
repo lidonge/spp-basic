@@ -316,13 +316,31 @@ for a declaration without a mode. A decimal with no effective scale keeps
 the calculated quotient. Explicit functions such as `roundDown(value, places)` and
 `roundHalfUp(value, places)` remain available.
 
+## SPP operators
+
+The ordering operators `<`, `<=`, `>`, and `>=` accept two numbers,
+two scalar Strings, or two members of the same enum. Implied spaces are
+added to the right of the shorter String, so both `"AB" <= "AB "` and
+`"AB" >= "AB "` are true. `==` and `!=` keep their existing equality
+semantics, including the original String length and spaces.
+
+An explicit `BLANK` represents spaces in ordering. When the other operand
+is null, its APP blank read policy determines whether it represents
+`BLANK`. A null String in ordinary ordering or a null excluded by the
+blank read policy raises a runtime error.
+
+Enum ordering follows the member declaration. If `LOW` precedes `HIGH`,
+then `Priority.LOW < Priority.HIGH` is true for any wire codes declared for
+those members. The compiler emits informational diagnostic
+`SPP_ENUM_ORDER_COMPARE` at the operator. Mixed operands and different enum
+types fail compilation.
+
 ## Legacy system interop
 
 ### Blank String fields
 
-Use `BLANK` when business logic asks whether a String field is empty. An ordinary
-String comparison still compares the original value, including leading and
-trailing spaces. A scenario can also supply the canonical blank as a read key.
+Use `BLANK` when business logic asks whether a String field is empty. String
+equality compares the original value, including leading and trailing spaces. A scenario can also supply the canonical blank as a read key.
 
 ```spp
 if (voucher.reference != BLANK) { voucher.previous = voucher.reference; }
@@ -352,6 +370,24 @@ cannot match a canonical null. The `spaces` read form matches
 one or more ASCII spaces (U+0020). Tabs, mixed text and other whitespace keep
 their original meaning. Assigning `BLANK` with `write: spaces` requires a
 declared width such as `String(30)` and writes exactly that many spaces.
+
+### APP collation
+
+Place the collation declaration alongside the APP blank policy at module
+level. For example, use IBM-037 ordering for legacy codes in the scenarios
+and services deployed by the application.
+
+```app
+collation ebcdic;
+```
+
+The default, `collation binary;`, compares Unicode code points. With
+`ebcdic`, each character is ordered by its unsigned IBM-037 byte value.
+Characters outside IBM-037 follow all mapped characters, in Unicode
+code-point order. Both sequences use the same right-padding rule. For
+example, `"1" < "A"` is true with `binary` and false with `ebcdic`.
+Deployments sharing generated domains must agree on any explicitly
+declared collation.
 
 ### Fixed-width forms
 

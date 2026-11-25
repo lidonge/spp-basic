@@ -74,6 +74,37 @@ public class RepairCliTest {
         assertTrue(page.stdout.contains("BLANK") && page.stdout.contains("Right"));
     }
 
+    @Test public void reportsAndExplainsEnumOrdering() throws Exception {
+        var page = cli("explain", "SPP_ENUM_ORDER_COMPARE");
+        assertEquals(0, page.status);
+        assertTrue(page.stdout, page.stdout.contains("declaration order"));
+
+        Path root = temporary.newFolder().toPath();
+        Files.writeString(root.resolve("entry.spp"), """
+                domain shop;
+                Enum Priority { LOW:"Z", HIGH:"A" }
+                Role Item { boolean ordered; }
+                atomic calculate rank(Item item) { item.ordered = Priority.LOW < Priority.HIGH; }
+                readonly Scenario serial preview(Item item) { rank(item); }
+                """);
+        var result = cli("check", "--source", root.toString(), "--format", "json");
+        assertEquals(result.stdout, 0, result.status);
+        var json = new ObjectMapper();
+        var diagnostics = new java.util.ArrayList<JsonNode>();
+        for (String line : result.stdout.lines().toList()) {
+            var entry = json.readTree(line);
+            if (entry.path("code").asText().equals("SPP_ENUM_ORDER_COMPARE")) diagnostics.add(entry);
+        }
+        assertEquals(result.stdout, 1, diagnostics.size());
+        var diagnostic = diagnostics.get(0);
+        var schema = com.github.fge.jsonschema.main.JsonSchemaFactory.byDefault().getJsonSchema(
+                json.readTree(getClass().getResource("/diagnostic.schema.json")));
+        var validation = schema.validate(diagnostic);
+        assertTrue(validation.toString(), validation.isSuccess());
+        assertEquals("info", diagnostic.path("severity").asText());
+        assertEquals("entry.spp", diagnostic.path("file").asText());
+    }
+
     @Test public void validationReportPreservesLocatedAndUnlocatedErrors() throws Exception {
         Path root = temporary.newFolder().toPath();
         var report = new DiagnosticReport(root);

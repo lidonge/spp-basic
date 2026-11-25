@@ -23,6 +23,10 @@ public class RuleBlock {
     private final Map<String, BlankPolicy> blankPolicies = new java.util.LinkedHashMap<>();
     public Map<String, BlankPolicy> getBlankPolicies() { return blankPolicies; }
 
+    private StringCollation stringCollation;
+    public StringCollation getStringCollation() { return stringCollation; }
+    public void setStringCollation(StringCollation value) { stringCollation = value; }
+
     private final Map<String, Boolean> systemServiceSwitches = new java.util.LinkedHashMap<>();
     public boolean isSystemServiceEnabled(String name) { return systemServiceSwitches.getOrDefault(name, true); }
     public void setSystemServiceEnabled(String name, boolean enabled) {
