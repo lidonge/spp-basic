@@ -1810,18 +1810,33 @@ public class SppService extends SppClass{
     }
 
     public String getDefaultPersistenceStatement() {
-        if (getDefaultPersistenceClass() == null) {
+        if (getDefaultPersistenceClass() == null || returnsDefaultQueryResult()) {
             return "";
         }
         String arguments = serviceBody.getSppLocalVarList().stream()
                 .map(SppLocalVar::getName)
                 .collect(Collectors.joining(","));
-        String mapperCall = "mapper" + defaultClass.getName() + "." + funcName + "(" + arguments + ")";
-        if (serviceType == IConstance.ServiceType.query && !returns.getSppLocalVarList().isEmpty()) {
-            SppLocalVar returnValue = returns.getSppLocalVarList().get(0);
-            return "        ret.set" + returnValue.getType().getName() + "(  " + mapperCall + " );";
+        return "        mapper" + defaultClass.getName() + "." + funcName + "(" + arguments + ");";
+    }
+
+    /**
+     * A generated Get/Search service is void like every participant service, so its mapper result
+     * belongs to the response object that {@code execute} creates, not to the void method.
+     */
+    public String getDefaultQueryResponseStatement() {
+        if (getDefaultPersistenceClass() == null || !returnsDefaultQueryResult()) {
+            return "";
         }
-        return "        " + mapperCall + ";";
+        String arguments = serviceBody.getSppLocalVarList().stream()
+                .map(SppLocalVar::getRequestArgumentCall)
+                .collect(Collectors.joining(","));
+        SppLocalVar returnValue = returns.getSppLocalVarList().get(0);
+        return "        ret.set" + returnValue.getType().getName() + "(  mapper" + defaultClass.getName() + "."
+                + funcName + "(" + arguments + ") );";
+    }
+
+    private boolean returnsDefaultQueryResult() {
+        return serviceType == IConstance.ServiceType.query && !returns.getSppLocalVarList().isEmpty();
     }
 
     public String getObjectSnapshotRulesMethod() {

@@ -86,6 +86,7 @@ public class Simple{{name}} implements {{name}}, ScopeMetadataProvider, Generate
 {{/entryExecution}}
         {{#entryExecution}}    {{/entryExecution}}{{checkExecutionPrefix}}{{funcName}}({{#serviceBody.sppLocalVarList}}{{^-first}},{{/-first}}{{requestArgumentCall}}{{/serviceBody.sppLocalVarList}}){{checkExecutionSuffix}};
         {{#entryExecution}}    {{/entryExecution}}{{name}}{{responseSuffix}} ret = new {{name}}{{responseSuffix}}();
+{{defaultQueryResponseStatement}}
 {{responseHeaderInitialization}}
         {{#entryExecution}}    {{/entryExecution}}return ret;
 {{#entryExecution}}
