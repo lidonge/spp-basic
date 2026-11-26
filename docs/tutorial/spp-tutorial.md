@@ -30,7 +30,7 @@ database-table or generic JSON DTO classes.
 
 ## 2. Prepare the basic SDK
 
-Install Java 17+ and Maven 3.6.3+. The following commands use a POSIX shell and run
+Install JDK 25 and Maven 3.9+. The following commands use a POSIX shell and run
 from the SDK source root. Windows users can use WSL, or adapt paths and classpath
 separators to their shell.
 
@@ -151,7 +151,7 @@ java -cp "target/classes:target/tutorial-lib/*:$(cat target/runtime-classpath.tx
 Expect `BUSINESS PASS preview`. The small
 [`VerifyTutorial.java`](../../sdk-tools/samples/tutorial/VerifyTutorial.java)
 acceptance adapter invokes the generic runner and checks the resulting business
-status. It contains no implementation of the ledger calculation. Java 17 runs
+status. It contains no implementation of the ledger calculation. Java 25 runs
 this source file directly using the generated project's classpath.
 
 The generic runner also prints `PASS preview`, meaning execution returned without

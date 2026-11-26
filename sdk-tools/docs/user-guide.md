@@ -28,7 +28,7 @@ libraries retain their upstream licenses.
 
 ## Install and build
 
-Use Java 17+ and Maven 3.6.3+. Node.js 20+ is needed to build/test the VS Code
+Use JDK 25 and Maven 3.9+ (generated projects also target `maven.compiler.release=25`). Node.js 20+ is needed to build/test the VS Code
 extension, not to run an installed extension. First-time Maven/npm builds need
 their dependency registries. From the SDK source root:
 
@@ -173,7 +173,7 @@ Install a verified `.vsix` using **Extensions → … → Install from VSIX…**
 code --install-extension /path/to/spp-tools-basic-0.1.2.vsix
 ```
 
-Open the project **folder**, trust it if appropriate, and ensure Java 17+ is
+Open the project **folder**, trust it if appropriate, and ensure Java 25 is
 available on the extension host. With Remote SSH, install the extension and Java
 on the remote host; `/home/...` paths are resolved there. A local-machine JAR path
 does not identify a remote JAR.
@@ -231,7 +231,7 @@ when packaging a host application; they describe services, deployments and
 physical bindings.
 
 For an SPP enum that declares an `other` member, the generated Java value
-class exposes `kind()`. Use `switch (value.kind())` in Java 17 to branch on its
+class exposes `kind()`. Use `switch (value.kind())` in Java 25 to branch on its
 nested Java enum constants. The constants use the declared member names,
 including `OTHER` when that is the name of the fallback member. An unrecognized
 wire code has the fallback member's kind and retains its original code in
@@ -509,7 +509,7 @@ phy {
 
 | Implementation | Module | Gapless | Configuration (validated by the class) |
 | --- | --- | --- | --- |
-| `com.servpp.technical.serial.CosIdSerialEngine` | `appframe-serial-cosid` (optional; brings CosId 4.1.1, Apache-2.0) | no | `mode` `segment` or `snowflake`; segment: `step`, `namespace`, `initTable`, `datasourceUrl`, `driverClassName`, `username`, `password`; snowflake: `machine` |
+| `com.servpp.technical.serial.CosIdSerialEngine` | `appframe-serial-cosid` (optional; brings CosId 5.1.0, Apache-2.0) | no | `mode` `segment` or `snowflake`; segment: `step`, `namespace`, `initTable`, `datasourceUrl`, `driverClassName`, `username`, `password`, `maxCounters`; snowflake: `machine`, `namespace` |
 | `com.servpp.service.serial.DbSequenceEngine` | `appframe` | no | `sequence`, `datasourceUrl`, `driverClassName`, `username`, `password`; one counter for all scopes |
 | `com.servpp.service.serial.GaplessCounterEngine` | `appframe` | yes | optional `table`, `keyColumn`, `valueColumn` (default `SPP_SERIAL_COUNTER`, `COUNTER_KEY`, `COUNTER_VALUE`) |
 | `com.servpp.service.serial.InMemorySerialEngine` | `appframe` | no | `store`; deterministic, for tests |
@@ -520,7 +520,11 @@ transaction connection. It needs the counter table to exist:
 It can point at a legacy counter table; the stored value is the last number issued, and rows are keyed
 by the counter key `rule/scope1/scope2` (`SerialValueService.counterKey`).
 `CosIdSerialEngine` keeps one CosId segment generator per counter; a restart skips the unused rest of a
-segment. Add the module to the application's dependencies only when you use it.
+segment. CosId 5 stores its ranges in the tables `cosid_range`, `cosid_slot` and `cosid_namespace`
+(created when `initTable` is true) under the key `namespace/counter`; it does not read the 4.x `cosid`
+table, so an application moving from CosId 4 migrates its last values with the CosId `cosid-migration`
+tool. Snowflake mode uses a static CosId machine slot (`machine`, 0 to 1023) without a restart state file.
+Add the module to the application's dependencies only when you use it.
 
 For deterministic tests and difftests bind `InMemorySerialEngine` and seed it from the same fixture as
 the legacy counter: `InMemorySerialEngine.seed("store", SerialValueService.counterKey("movementSerial", "B01"), 41)`

@@ -7,7 +7,7 @@ mvn -pl :xbod-deposit-demo -am test
 ./demos/bank-deposit/run-demo.sh web
 ```
 
-Use Java 17, Maven and a matching locally installed S++ toolchain. Follow the
+Use JDK 25, Maven 3.9+ and a matching locally installed S++ toolchain. Follow the
 distribution's SDK installation instructions first. Read the web address printed
 by the launcher. Use only isolated demonstration data.
 

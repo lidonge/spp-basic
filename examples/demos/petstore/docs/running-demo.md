@@ -7,7 +7,7 @@ mvn -pl :petstore-demo -am test
 ./demos/petstore/run-demo.sh web
 ```
 
-Open http://127.0.0.1:8086/. The build requires Java 17, Maven and the matching S++
+Open http://127.0.0.1:8086/. The build requires JDK 25, Maven 3.9+ and the matching S++
 toolchain installed in your Maven repository. Follow the distribution's SDK
 installation instructions before generating the demo.
 

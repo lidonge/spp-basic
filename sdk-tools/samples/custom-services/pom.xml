@@ -36,6 +36,7 @@
       </plugin>
       <plugin>
         <groupId>org.openapitools</groupId><artifactId>openapi-generator-maven-plugin</artifactId><version>7.1.0</version>
+        <dependencies><dependency><groupId>com.github.ben-manes.caffeine</groupId><artifactId>caffeine</artifactId><version>3.2.3</version></dependency></dependencies>
         <executions><execution><goals><goal>generate</goal></goals><configuration>
           <inputSpec>${project.build.directory}/spp/src/main/resources/ledger.spp.yaml</inputSpec>
           <configurationFile>${project.build.directory}/spp/src/main/resources/ledger.numeric-codegen.json</configurationFile>
@@ -71,8 +72,8 @@
         </configuration></execution>
         </executions>
       </plugin>
-      <plugin><artifactId>maven-compiler-plugin</artifactId><version>3.11.0</version></plugin>
-      <plugin><artifactId>maven-surefire-plugin</artifactId><version>3.2.5</version></plugin>
+      <plugin><artifactId>maven-compiler-plugin</artifactId><version>3.14.0</version></plugin>
+      <plugin><artifactId>maven-surefire-plugin</artifactId><version>3.5.4</version></plugin>
 
     </plugins>
   </build>

@@ -28,8 +28,8 @@ This project is useful when plain text substitution is not enough and your templ
 
 ## Requirements
 
-- Java 17
-- Maven 3.6.3+
+- Java 25
+- Maven 3.9+
 
 Build the project with:
 

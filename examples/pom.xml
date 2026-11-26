@@ -12,8 +12,7 @@
     <module>demos/bank-deposit</module>
   </modules>
   <properties>
-    <maven.compiler.source>17</maven.compiler.source>
-    <maven.compiler.target>17</maven.compiler.target>
+    <maven.compiler.release>25</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <spp.sdk.version>1.0-SNAPSHOT</spp.sdk.version>
     <jackson.version>2.18.3</jackson.version>
@@ -41,7 +40,7 @@
       <plugins>
         <plugin>
           <artifactId>maven-surefire-plugin</artifactId>
-          <version>3.2.5</version>
+          <version>3.5.4</version>
           <configuration>
             <systemPropertyVariables>
               <spp.examples.enhanced>${spp.examples.enhanced}</spp.examples.enhanced>

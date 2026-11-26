@@ -43,7 +43,7 @@ public final class JavaProjectWriter {
             String title = api.getInfo() == null ? "" : api.getInfo().getTitle();
             String domain = title != null && title.startsWith("OpenAPI ") ? title.substring(8) : "";
             if (!javax.lang.model.SourceVersion.isIdentifier(domain)
-                    || javax.lang.model.SourceVersion.isKeyword(domain, javax.lang.model.SourceVersion.RELEASE_17)
+                    || javax.lang.model.SourceVersion.isKeyword(domain, javax.lang.model.SourceVersion.RELEASE_25)
                     || !domains.add(domain))
                 throw new IOException("Invalid or duplicate S++ domain in generated OpenAPI.");
             Path numeric = specifications.resolve(domain + ".numeric-codegen.json");
@@ -72,7 +72,7 @@ public final class JavaProjectWriter {
         Files.writeString(root.resolve("README.md"), """
                 # Generated S++ Java project
 
-                Java 17+ Maven library project with generated models, API handlers,
+                Java 25 Maven library project with generated models, API handlers,
                 S++ service implementations and runtime catalogs. Run `mvn verify`
                 after installing the matching `com.servpp:appframe:1.0-SNAPSHOT`.
 
@@ -100,7 +100,7 @@ public final class JavaProjectWriter {
 
     public static boolean isValidPackage(String name) {
         return name != null && name.contains(".")
-                && javax.lang.model.SourceVersion.isName(name, javax.lang.model.SourceVersion.RELEASE_17);
+                && javax.lang.model.SourceVersion.isName(name, javax.lang.model.SourceVersion.RELEASE_25);
     }
 
     private String pom(String basePackage, java.util.List<RuntimeDependency> runtimeDependencies) {
@@ -113,7 +113,7 @@ public final class JavaProjectWriter {
                          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
                   <modelVersion>4.0.0</modelVersion>
                   <groupId>%s</groupId><artifactId>spp-generated-project</artifactId><version>1.0-SNAPSHOT</version>
-                  <properties><maven.compiler.release>17</maven.compiler.release><project.build.sourceEncoding>UTF-8</project.build.sourceEncoding></properties>
+                  <properties><maven.compiler.release>25</maven.compiler.release><project.build.sourceEncoding>UTF-8</project.build.sourceEncoding></properties>
                   <dependencies>
                     <dependency><groupId>com.servpp</groupId><artifactId>appframe</artifactId><version>1.0-SNAPSHOT</version></dependency>
                     <dependency><groupId>org.mybatis</groupId><artifactId>mybatis</artifactId><version>3.5.15</version></dependency>
@@ -125,8 +125,8 @@ public final class JavaProjectWriter {
                     <dependency><groupId>com.fasterxml.jackson.datatype</groupId><artifactId>jackson-datatype-jsr310</artifactId><version>2.18.3</version></dependency>
                 %s  </dependencies>
                   <build><plugins>
-                    <plugin><artifactId>maven-compiler-plugin</artifactId><version>3.11.0</version></plugin>
-                    <plugin><artifactId>maven-surefire-plugin</artifactId><version>3.2.5</version></plugin>
+                    <plugin><artifactId>maven-compiler-plugin</artifactId><version>3.14.0</version></plugin>
+                    <plugin><artifactId>maven-surefire-plugin</artifactId><version>3.5.4</version></plugin>
                   </plugins></build>
                 </project>
                 """.formatted(basePackage, extensions);

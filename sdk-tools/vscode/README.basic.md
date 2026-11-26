@@ -2,7 +2,7 @@
 
 Local S++ syntax highlighting, diagnostics, formatting, completion, outline and
 definition navigation, plus an offline compiler with no account or scenario quota.
-The extension runs on the workspace host and needs Java 17 or newer. Remote SSH
+The extension runs on the workspace host and needs Java 25 or newer. Remote SSH
 workspaces therefore need Java and the bundled JARs on the remote host.
 
 Install the basic `.vsix` using **Extensions: Install from VSIX**. Open the

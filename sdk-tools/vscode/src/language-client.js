@@ -159,7 +159,7 @@ function createLanguageController(context, output) {
         stopEntry(entry);
         entry.state = 'failed';
         entry.failure = ['MODULE_NOT_FOUND', 'TypeError', 'RangeError'].includes(error.code || error.name) ? error.code || error.name : 'UNAVAILABLE';
-        output.appendLine('S++ language service unavailable. Check workspace trust, Java 17+, trusted language server JAR and source roots. Basic highlighting remains available.');
+        output.appendLine('S++ language service unavailable. Check workspace trust, Java 25, trusted language server JAR and source roots. Basic highlighting remains available.');
       } else stopEntry(entry);
     }
   }

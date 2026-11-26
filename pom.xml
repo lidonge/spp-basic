@@ -30,13 +30,24 @@
         </profile>
     </profiles>
     <properties>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
+        <maven.compiler.release>25</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <jackson.version>2.18.3</jackson.version>
     </properties>
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <!-- openapi-generator pulls 31.1, whose AbstractFuture calls sun.misc.Unsafe (terminally deprecated on JDK 25) -->
+                <groupId>com.google.guava</groupId>
+                <artifactId>guava</artifactId>
+                <version>33.5.0-jre</version>
+            </dependency>
+            <dependency>
+                <!-- openapi-generator pulls 2.9.3, which calls sun.misc.Unsafe (terminally deprecated on JDK 25) -->
+                <groupId>com.github.ben-manes.caffeine</groupId>
+                <artifactId>caffeine</artifactId>
+                <version>3.2.3</version>
+            </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson</groupId>
                 <artifactId>jackson-bom</artifactId>
@@ -54,6 +65,18 @@
         </dependency>
     </dependencies>
     <build>
+        <pluginManagement>
+            <plugins>
+                <plugin><artifactId>maven-compiler-plugin</artifactId><version>3.14.0</version></plugin>
+                <plugin><artifactId>maven-surefire-plugin</artifactId><version>3.5.4</version></plugin>
+                <plugin><artifactId>maven-failsafe-plugin</artifactId><version>3.5.4</version></plugin>
+                <plugin><artifactId>maven-jar-plugin</artifactId><version>3.4.2</version></plugin>
+                <plugin><artifactId>maven-resources-plugin</artifactId><version>3.3.1</version></plugin>
+                <plugin><artifactId>maven-install-plugin</artifactId><version>3.1.4</version></plugin>
+                <plugin><artifactId>maven-shade-plugin</artifactId><version>3.6.1</version></plugin>
+                <plugin><artifactId>maven-source-plugin</artifactId><version>3.3.1</version></plugin>
+            </plugins>
+        </pluginManagement>
         <directory>${project.basedir}/target</directory>
         <outputDirectory>${project.build.directory}/classes</outputDirectory>
         <testOutputDirectory>${project.build.directory}/test-classes</testOutputDirectory>

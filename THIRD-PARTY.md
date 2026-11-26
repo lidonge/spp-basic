@@ -28,9 +28,9 @@ are preserved. No sibling checkout or preinstalled template JAR is required.
 ## Optional module `appframe-serial-cosid`
 
 The optional `appframe-serial-cosid` module depends on [CosId](https://github.com/Ahoo-Wang/CosId)
-(`me.ahoo.cosid:cosid-core` and `me.ahoo.cosid:cosid-jdbc`, version 4.1.1), Copyright 2021-present Ahoo Wang,
+(`me.ahoo.cosid:cosid-core` and `me.ahoo.cosid:cosid-store-jdbc`, version 5.1.0), Copyright 2021-present Ahoo Wang,
 licensed under the Apache License 2.0. It is resolved from Maven Central and is not copied into this source tree.
-Version 4.1.1 is the latest CosId release built for Java 17; CosId 5.x requires Java 21. CosId's runtime dependencies are
+Version 5.1.0 is the latest CosId release; it is built for Java 21 and later, and `appframe-serial-cosid` uses its public runtime, `SegmentGenerator`, `RangeStore` and `JdbcStore` APIs (CosId 5 is a rewrite with no 4.x API compatibility). CosId's runtime dependencies are
 `org.jspecify:jspecify` (Apache-2.0) and `org.slf4j:slf4j-api` (MIT). The module is not part of `appframe`:
 applications that do not use it do not receive CosId.
 

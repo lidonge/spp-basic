@@ -7,7 +7,7 @@ outcomes. These demonstrations are not production banking or payment systems.
 
 ## Build and run
 
-From the SDK root, install the basic toolchain first (Java 17 and Maven required):
+From the SDK root, install the basic toolchain first (JDK 25 and Maven 3.9+ required):
 
 ```sh
 mvn -Pbasic -DskipTests install

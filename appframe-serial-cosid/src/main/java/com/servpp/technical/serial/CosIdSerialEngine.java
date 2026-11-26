@@ -9,17 +9,24 @@ import java.time.Duration;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import javax.sql.DataSource;
 import me.ahoo.cosid.IdGenerator;
-import me.ahoo.cosid.jdbc.JdbcIdSegmentDistributor;
-import me.ahoo.cosid.jdbc.JdbcIdSegmentDistributorFactory;
-import me.ahoo.cosid.jdbc.JdbcIdSegmentInitializer;
-import me.ahoo.cosid.segment.DefaultSegmentId;
-import me.ahoo.cosid.segment.IdSegmentDistributorDefinition;
-import me.ahoo.cosid.snowflake.MillisecondSnowflakeId;
+import me.ahoo.cosid.observe.GeneratorListener;
+import me.ahoo.cosid.runtime.CosIdRuntime;
+import me.ahoo.cosid.runtime.GeneratorSpec;
+import me.ahoo.cosid.runtime.MachineSpec;
+import me.ahoo.cosid.runtime.RuntimeOptions;
+import me.ahoo.cosid.runtime.RuntimeSpec;
+import me.ahoo.cosid.segment.BatchPolicy;
+import me.ahoo.cosid.segment.RangeStore;
+import me.ahoo.cosid.segment.SegmentGenerator;
+import me.ahoo.cosid.store.jdbc.JdbcStore;
+import me.ahoo.cosid.time.TimeSource;
 
 /**
- * {@link SerialEngine} over the open-source CosId library (Apache-2.0). It has no special standing: it is bound
+ * {@link SerialEngine} over the open-source CosId 5 library (Apache-2.0). It has no special standing: it is bound
  * like any other engine with
  * <pre>
  * technical service movementSerialEngine {
@@ -30,11 +37,11 @@ import me.ahoo.cosid.snowflake.MillisecondSnowflakeId;
  * </pre>
  * Configuration (validated here, not by the grammar):
  * <ul>
- * <li>{@code mode}: {@code segment} (default) keeps one CosId {@link DefaultSegmentId} per counter over the JDBC
- * segment distributor (table {@code cosid}); {@code snowflake} keeps one CosId {@link MillisecondSnowflakeId} (no
- * per-scope order, globally unique).</li>
+ * <li>{@code mode}: {@code segment} (default) keeps one CosId {@link SegmentGenerator} per counter over the JDBC
+ * {@link RangeStore} (table {@code cosid_range}, key {@code namespace/counter}); {@code snowflake} keeps one CosId
+ * runtime snowflake generator on a static machine slot (no per-scope order, globally unique).</li>
  * <li>segment: {@code step} (default 100), {@code namespace} (default {@code spp}), {@code initTable} (default
- * {@code true}: create the CosId table), {@code datasourceUrl} (required), {@code driverClassName},
+ * {@code true}: create the CosId tables), {@code datasourceUrl} (required), {@code driverClassName},
  * {@code username}, {@code password}, {@code maxCounters} (default 10000 live generators).</li>
  * <li>snowflake: {@code machine} (required, 0..1023).</li>
  * </ul>
@@ -43,11 +50,15 @@ import me.ahoo.cosid.snowflake.MillisecondSnowflakeId;
  * grouped reset follows the wall clock; a business date is data, so it is not used.)
  */
 public final class CosIdSerialEngine implements SerialEngine, AutoCloseable {
-    private static final int NAME_LIMIT = 90; // CosId stores "{namespace}.{name}" in varchar(100)
+    private static final int KEY_LIMIT = 255; // CosId stores the range key "{namespace}/{name}" in varchar(255)
+    private static final int MACHINE_BITS = 10; // the default node bits of the CosId snowflake layout
+    private CosIdRuntime runtime;
     private IdGenerator snowflake;
-    private JdbcIdSegmentDistributorFactory factory;
+    private JdbcStore store;
+    private RangeStore ranges;
+    private ExecutorService refills;
+    private BatchPolicy policy;
     private String namespace;
-    private long step;
     private int maxCounters;
     private final Map<String, IdGenerator> generators = new LinkedHashMap<>(16, 0.75f, true);
 
@@ -59,11 +70,12 @@ public final class CosIdSerialEngine implements SerialEngine, AutoCloseable {
                 if (url == null || url.isBlank()) throw new IllegalArgumentException("SERIAL_CONFIGURATION_REQUIRED: datasourceUrl of cosid segment mode");
                 DataSource dataSource = new DriverManagerJdbcDataSource(configuration.get("driverClassName"), url,
                         configuration.get("username"), configuration.get("password"));
-                var initializer = new JdbcIdSegmentInitializer(dataSource);
-                if (Boolean.parseBoolean(configuration.getOrDefault("initTable", "true"))) initializer.tryInitCosIdTable();
-                factory = new JdbcIdSegmentDistributorFactory(dataSource, true, initializer,
-                        JdbcIdSegmentDistributor.INCREMENT_MAX_ID_SQL, JdbcIdSegmentDistributor.FETCH_MAX_ID_SQL, Duration.ofSeconds(10));
-                step = positive(configuration, "step", 100);
+                store = JdbcStore.of(dataSource, Duration.ofSeconds(10));
+                if (Boolean.parseBoolean(configuration.getOrDefault("initTable", "true"))) store.initSchema();
+                ranges = store.ranges();
+                // lookahead 0: reserve only when the current range is used up, so a restart skips at most one step
+                policy = BatchPolicy.builder().step(positive(configuration, "step", 100)).lookahead(Duration.ZERO).build();
+                refills = Executors.newVirtualThreadPerTaskExecutor();
                 namespace = configuration.getOrDefault("namespace", "spp");
                 maxCounters = (int) positive(configuration, "maxCounters", 10_000);
             }
@@ -73,9 +85,15 @@ public final class CosIdSerialEngine implements SerialEngine, AutoCloseable {
                 int id;
                 try { id = Integer.parseInt(machine.trim()); }
                 catch (NumberFormatException failure) { throw new IllegalArgumentException("SERIAL_CONFIGURATION_INVALID: machine " + machine, failure); }
-                if (id < 0 || id >= (1 << MillisecondSnowflakeId.DEFAULT_MACHINE_BIT))
-                    throw new IllegalArgumentException("SERIAL_CONFIGURATION_INVALID: machine " + machine + " is outside 0.." + ((1 << MillisecondSnowflakeId.DEFAULT_MACHINE_BIT) - 1));
-                snowflake = new MillisecondSnowflakeId(id);
+                if (id < 0 || id >= (1 << MACHINE_BITS))
+                    throw new IllegalArgumentException("SERIAL_CONFIGURATION_INVALID: machine " + machine + " is outside 0.." + ((1 << MACHINE_BITS) - 1));
+                namespace = configuration.getOrDefault("namespace", "spp");
+                var spec = RuntimeSpec.builder(namespace)
+                        .machine(MachineSpec.Static.builder(id).bits(MACHINE_BITS).build())
+                        .generator(RuntimeSpec.DEFAULT_GENERATOR, GeneratorSpec.Snowflake.builder().build())
+                        .build();
+                runtime = CosIdRuntime.start(spec, RuntimeOptions.defaults());
+                snowflake = runtime.generator(RuntimeSpec.DEFAULT_GENERATOR);
             }
             default -> throw new IllegalArgumentException("SERIAL_CONFIGURATION_INVALID: mode " + mode + " (segment or snowflake)");
         }
@@ -91,24 +109,31 @@ public final class CosIdSerialEngine implements SerialEngine, AutoCloseable {
         if (existing != null) return existing;
         if (generators.size() >= maxCounters) { // bounded: the least recently used counter (an old date) is dropped
             var eldest = generators.entrySet().iterator();
-            eldest.next();
+            ((SegmentGenerator) eldest.next().getValue()).close();
             eldest.remove();
         }
-        var distributor = factory.create(new IdSegmentDistributorDefinition(namespace, name(counter), 0, step));
-        var created = new DefaultSegmentId(distributor);
+        var created = new SegmentGenerator(namespace, name(counter), ranges, policy, refills, TimeSource.SYSTEM, GeneratorListener.NOOP);
         generators.put(counter, created);
         return created;
     }
 
-    private static String name(String counter) {
-        if (counter.length() <= NAME_LIMIT - 12) return counter;
+    private String name(String counter) {
+        int limit = KEY_LIMIT - namespace.length() - 1 - 12;
+        if (counter.length() <= limit) return counter;
         try {
             String digest = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(counter.getBytes(StandardCharsets.UTF_8)));
-            return counter.substring(0, NAME_LIMIT - 12 - 17) + "~" + digest.substring(0, 16);
+            return counter.substring(0, limit - 17) + "~" + digest.substring(0, 16);
         } catch (java.security.NoSuchAlgorithmException impossible) { throw new IllegalStateException(impossible); }
     }
 
-    @Override public synchronized void close() { generators.clear(); }
+    @Override public synchronized void close() {
+        generators.values().forEach(generator -> ((SegmentGenerator) generator).close());
+        generators.clear();
+        if (refills != null) refills.close();
+        if (store != null) store.close(); // does not close the DataSource it was given
+        if (runtime != null) runtime.close();
+        refills = null; store = null; runtime = null;
+    }
 
     private static long positive(Map<String, String> configuration, String key, long fallback) {
         String value = configuration.get(key);

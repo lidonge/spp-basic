@@ -11,7 +11,7 @@ copied into this source integration.
 
 ## Generated-service demonstrations
 
-JDK 17+, Maven and these Maven artifacts are required:
+JDK 25, Maven 3.9+ and these Maven artifacts are required:
 
 - `com.servpp:generator:${spp.sdk.version}` — source-language Maven plugin and generator.
 - `com.servpp:appframe:${spp.sdk.version}` — generic service/runtime support.

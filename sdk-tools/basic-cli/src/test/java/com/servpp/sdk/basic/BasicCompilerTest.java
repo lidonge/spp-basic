@@ -230,7 +230,7 @@ public class BasicCompilerTest {
                 }
                 """);
         var compiler = javax.tools.ToolProvider.getSystemJavaCompiler();
-        assertEquals(0, compiler.run(null, null, null, "--release", "17", "-d", classes.toString(),
+        assertEquals(0, compiler.run(null, null, null, "--release", "25", "-d", classes.toString(),
                 library.resolve("model/Completion.java").toString(),
                 library.resolve("model/Kind.java").toString(),
                 library.resolve("model/MemberNamedKind.java").toString(),

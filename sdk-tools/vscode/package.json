@@ -26,7 +26,7 @@
     },
     "virtualWorkspaces": {
       "supported": false,
-      "description": "A local or remote filesystem and Java 17+ are required."
+      "description": "A local or remote filesystem and Java 25 are required."
     }
   },
   "contributes": {
@@ -89,7 +89,7 @@
           "type": "string",
           "default": "java",
           "scope": "machine",
-          "description": "Trusted Java 17+ executable on the extension host."
+          "description": "Trusted Java 25 executable on the extension host."
         },
         "spp.cliJar": {
           "type": "string",

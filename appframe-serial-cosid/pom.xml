@@ -11,15 +11,14 @@
 
     <artifactId>appframe-serial-cosid</artifactId>
     <name>S++ serial engine over CosId (optional)</name>
-    <description>Optional SerialEngine implementation backed by the open-source CosId library (Apache-2.0, 4.1.1: the
-        latest release built for Java 17; CosId 5.x requires Java 21).
+    <description>Optional SerialEngine implementation backed by the open-source CosId library (Apache-2.0, 5.1.0,
+        built for Java 21 and later).
         The CosId dependency is on the classpath only when this module is used.</description>
 
     <properties>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
+        <maven.compiler.release>25</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <cosid.version>4.1.1</cosid.version>
+        <cosid.version>5.1.0</cosid.version>
     </properties>
     <dependencies>
         <dependency>
@@ -34,7 +33,7 @@
         </dependency>
         <dependency>
             <groupId>me.ahoo.cosid</groupId>
-            <artifactId>cosid-jdbc</artifactId>
+            <artifactId>cosid-store-jdbc</artifactId>
             <version>${cosid.version}</version>
         </dependency>
         <dependency>

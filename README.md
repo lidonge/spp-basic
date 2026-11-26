@@ -22,7 +22,7 @@ generator, basic JDBC runtime, offline command line, local language server and
 VS Code extension source. Its own code is licensed under Apache-2.0; see
 [third-party notices](THIRD-PARTY.md) for the exceptions and external dependencies.
 
-Java 17 and Maven 3.6.3 or later are required. Maven downloads external dependencies
+JDK 25 and Maven 3.9 or later are required (the build uses `maven.compiler.release=25`; the system default JDK or Maven may be older, so set `JAVA_HOME` and `PATH` accordingly). Maven downloads external dependencies
 from public repositories. The included `vendor/antlrmustache` modules build the
 template engine from source; a sibling checkout or preinstalled S++ JAR is not needed.
 
