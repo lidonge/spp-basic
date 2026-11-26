@@ -47,9 +47,11 @@
 - Entries contain participants only. Default instance names are role names;
   aliases remain allowed. Argument-free calls bind uniquely by type/collection
   dimensions. Query confirmation uses if(participant)/identify, not null tests.
-- Ordinary check failure controls its lexical block and does not roll back by
-  default. Explicit checkXXX,breakTransaction rolls back the current transaction
-  only on failure. Quantum services express increments/decrements; callers
+- A failing check ends its enclosing bare block (if/else bodies are
+  transparent). When that block is a transaction block it rolls the transaction
+  back; in a nested bare serial block it exits only that block. Outside a
+  transaction it only ends its block. checkXXX,breakTransaction rolls back the
+  whole transaction from any depth. Quantum services express increments/decrements; callers
   declare nullable bounds, automatically enforced at settlement with rollback
   of the bound transaction. Legacy built-in checks remain compatible, not for
   new examples. See https://github.com/lidonge/spp-examples/blob/main/book/references/spp-participant-execution.md.

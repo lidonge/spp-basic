@@ -606,8 +606,19 @@ to two rows. Only the first row is hydrated. When the predicates cover the
 primary key, the compiler warns that `unique` is redundant and uses the
 single-row identity lookup.
 
-Use `,breakTransaction` on a bare check or `identify` inside a transaction
-to abort the transaction when the check fails.
+A failing plain check or `identify` ends its enclosing bare block. Only an
+explicit `serial { }`/`parallel { }` block, a `transaction { }` block or a
+failure handler is a bare block; the bodies of `if`/`else` and of a guarded
+check are transparent. When the enclosing bare block is the `transaction { }`
+itself, the failure rolls the whole transaction back, exactly as
+`,breakTransaction` does. A check inside an `if` body that sits directly in the
+transaction therefore also rolls it back. To leave only part of the logic, wrap
+it in an extra `serial { }`: a failing check there exits only that block and
+the transaction continues and commits. Outside a transaction a failing check
+only ends its block.
+
+Use `,breakTransaction` to roll back the whole transaction from any depth,
+including from inside a nested bare block.
 
 ## APP cross-domain role bindings
 

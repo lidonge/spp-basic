@@ -87,9 +87,10 @@ settlement: availability and reserved stock may not become negative; null means
 that side is unbounded. Bounds are enforced at settlement, not merely by a stale
 pre-check. The surrounding transaction also contains ordinary persistence.
 
-An ordinary check does not imply rollback of every surrounding transaction.
-Read its failure semantics and the declared boundary; do not assume Java-style
-exception behavior. Transaction realization still depends on APP/PHY resources.
+A failing check ends its enclosing bare block. Directly in a transaction block
+(also through if/else bodies) that rolls the transaction back; in a nested bare
+serial block it exits only that block. Read its failure semantics and the declared
+boundary; do not assume Java-style exception behavior. Transaction realization still depends on APP/PHY resources.
 
 ## Read the next capability in source
 

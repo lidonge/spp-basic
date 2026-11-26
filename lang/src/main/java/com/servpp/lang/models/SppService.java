@@ -570,12 +570,27 @@ public class SppService extends SppClass{
             indent(java, indent).append("}\n");
         } else {
             indent(java, indent).append("if (!(").append(condition).append(")) {\n");
-            if (call.isBreaksTransaction() || skipsTransfer) indent(java, indent + 4)
+            if (call.isBreaksTransaction() || skipsTransfer || endsTransactionBlock(call)) indent(java, indent + 4)
                     .append("com.servpp.service.transaction.SourceTransactionBoundary.rejectCurrent(com.servpp.service.runtime.BusinessChecks.lastResult().code());\n");
             indent(java, indent + 4).append("com.servpp.service.runtime.BusinessChecks.recordBlockFailure();\n");
             indent(java, indent + 4).append("break ").append(scenarioBlocks.element()).append(";\n");
             indent(java, indent).append("}\n");
         }
+    }
+
+    /**
+     * A failing plain check ends its enclosing bare block. When that block is the source transaction itself, the
+     * transaction rolls back. Bodies of if/else and check guards are transparent: only an explicit serial or
+     * parallel block, a transaction block or a failure handler is a bare block.
+     */
+    private boolean endsTransactionBlock(SppServiceCall call) {
+        for (ServiceBaseBody body = call.getParent(); body != null; body = body.getParent()) {
+            if (body instanceof TransactionBlock) return true;
+            if (body instanceof ConditionalBlock || body instanceof SppServiceCall) continue;
+            if (body instanceof ExecuteBlock && (body.getParent() instanceof ConditionalBlock || body.getParent() instanceof SppServiceCall)) continue;
+            if (body instanceof ExecuteBlock || body instanceof TransactionFailureBlock) return false;
+        }
+        return false;
     }
 
     private boolean hasRequiredTransfer(List<IServiceBodyStatement> statements) {

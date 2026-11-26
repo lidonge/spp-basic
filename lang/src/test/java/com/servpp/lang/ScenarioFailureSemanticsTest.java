@@ -80,4 +80,31 @@ public class ScenarioFailureSemanticsTest {
         assertFalse(code, code.contains("markRollbackOnly"));
         assertTrue(code, code.contains("step"));
     }
+
+    private String rollbackCalls(String body) throws Exception {
+        var domain = compile(body);
+        assertTrue(domain.validateAppDeclarations().toString(), domain.validateAppDeclarations().isEmpty());
+        String code = ((SppService) domain.getSppClass("Run")).getScenarioBodyJava();
+        return code;
+    }
+    private static int rejections(String code) { return code.split("SourceTransactionBoundary.rejectCurrent", -1).length - 1; }
+
+    @Test public void plainCheckDirectlyInTransactionRollsBack() throws Exception {
+        assertEquals(1, rejections(rollbackCalls("transaction { eligible(work); step(work); }")));
+        assertEquals(1, rejections(rollbackCalls("transaction { identify(work); }")));
+    }
+
+    @Test public void ifBodiesAreTransparentToTheTransactionRollback() throws Exception {
+        assertEquals(1, rejections(rollbackCalls("transaction { if (work.allowed) { eligible(work); } else { step(work); } }")));
+        assertEquals(1, rejections(rollbackCalls("transaction { eligible(work) { eligible(work); }; }")));
+    }
+
+    @Test public void nestedBareBlockExitsOnlyItself() throws Exception {
+        assertEquals(0, rejections(rollbackCalls("transaction { serial { eligible(work); } step(work); }")));
+        assertEquals(1, rejections(rollbackCalls("transaction { serial { eligible(work),breakTransaction; } step(work); }")));
+    }
+
+    @Test public void checkOutsideTransactionIsUnchanged() throws Exception {
+        assertEquals(0, rejections(rollbackCalls("eligible(work); if (work.allowed) { eligible(work); } serial { eligible(work); }")));
+    }
 }
