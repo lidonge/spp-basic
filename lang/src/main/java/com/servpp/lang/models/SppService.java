@@ -1374,6 +1374,12 @@ public class SppService extends SppClass{
         return method.toString();
     }
 
+    /** Typed references ({@code Entity.field}) that this service's calculation assigns. */
+    public List<String> assignedFieldReferences() {
+        return calculationAssignmentExpressions().stream()
+                .map(expression -> typedCalculationReference((Reference) expression.getLeft())).toList();
+    }
+
     private boolean hasCalculationAssignments() {
         return !calculationAssignmentExpressions().isEmpty();
     }
@@ -1788,9 +1794,12 @@ public class SppService extends SppClass{
     }
     public String getBusinessNumberAssignmentStatement() {
         if (scopeItem == null) return "";
-        return scopeItem.getBusinessNumbers().stream().map(number ->
+        return java.util.stream.Stream.concat(scopeItem.getBusinessNumbers().stream().map(number ->
             "        com.servpp.service.runtime.BusinessNumbering.assign("+serviceBody.getLocalVar(number.target().argumentIndex()).getName()
-            +", \""+number.target().getObjectIdPath()+"\", \""+number.prefix()+"\");").collect(Collectors.joining("\n"));
+            +", \""+number.target().getObjectIdPath()+"\", \""+number.prefix()+"\");"),
+            scopeItem.getRecordValues().stream().map(value ->
+            "        " + com.servpp.lang.models.app.TechnicalServices.javaRecordInsert(
+                serviceBody.getLocalVar(value.target().argumentIndex()).getName(), value))).collect(Collectors.joining("\n"));
     }
 
     public String getPersistencePreparationStatement() {

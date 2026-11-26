@@ -42,6 +42,7 @@ annotatableRule
     | systemServices
     | technicalServices
     | serviceInterception
+    | serialRule
     ;
 
 legacyForm
@@ -80,8 +81,21 @@ serviceInterception
     ;
 
 interceptionTargets : 'services' | Identifier (',' Identifier)*;
-interceptionHook : interceptionPhase ':' Identifier (',' Identifier)* ';';
-interceptionPhase : 'before' | 'after' | Identifier;
+interceptionHook : interceptionPhase ':' Identifier (',' Identifier)* ('->' target=Identifier)? ';';
+interceptionPhase : 'before' | 'after' | 'insert' | 'update' | Identifier;
+
+serialRule
+    : {getCurrentToken().getText().equals("serial")}? Identifier name=Identifier
+      'using' engine=Identifier
+      '{' serialItem* '}'
+    ;
+serialItem
+    : 'scope' (scopeFields+=Identifier (',' scopeFields+=Identifier)*)? ';'
+    | {getCurrentToken().getText().equals("range")}? Identifier SerialRange ({getCurrentToken().getText().equals("wrap")}? Identifier)? ';'
+    | {getCurrentToken().getText().equals("format")}? Identifier StringLiteral ';'
+    | {getCurrentToken().getText().equals("gapless")}? Identifier ';'
+    ;
+SerialRange : [0-9]+ '..' [0-9]+ ;
 
 phyTechnicalService
     : {getCurrentToken().getText().equals("technical")}? Identifier
@@ -220,7 +234,11 @@ performerStorageDefine : 'performers' ('inline' | 'in' Identifier) ';';
 
 roleStorageDefine : ('current' | 'snapshot') '(' qualifiedName (',' qualifiedName)* ')' ';';
 
-autoNumberDefine : 'auto' qualifiedName 'prefix' StringLiteral ';';
+autoNumberDefine
+    : 'auto' qualifiedName ('prefix' StringLiteral
+        | {getCurrentToken().getText().equals("serial")}? Identifier source=Identifier
+        | {getCurrentToken().getText().equals("context")}? Identifier source=Identifier) ';'
+    ;
 
 keyDefine
     : primaryKeyDefine

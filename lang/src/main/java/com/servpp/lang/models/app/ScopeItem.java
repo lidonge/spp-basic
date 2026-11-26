@@ -60,6 +60,11 @@ public class ScopeItem {
     public int getBusinessIdempotencyModifiers() { return businessIdempotencyModifiers; }
     public boolean isBusinessManagedIdempotency() { return businessIdempotencyModifiers > 0; }
 
+    /** A technical value producer attached to an insert target field (record-level interception). */
+    public record RecordValue(RepositoryHydrationRule.KeyTarget target, String entity, String field, String service,
+                              String implementation, java.util.Map<String, String> configuration) { }
+    private final List<RecordValue> recordValues = new java.util.ArrayList<>();
+    public List<RecordValue> getRecordValues() { return recordValues; }
     public record BusinessNumber(RepositoryHydrationRule.KeyTarget target, String prefix) { }
     private final List<BusinessNumber> businessNumbers = new java.util.ArrayList<>();
     public List<BusinessNumber> getBusinessNumbers() { return businessNumbers; }

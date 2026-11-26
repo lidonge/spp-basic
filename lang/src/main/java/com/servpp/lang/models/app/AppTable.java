@@ -26,6 +26,10 @@ public class AppTable extends Annotation implements INamedObject{
     private Map<String, IConstance.CompilationUnitType> nonBusinessTypeNames = new LinkedHashMap<>();
     private final Map<String, String> autoNumbers = new LinkedHashMap<>();
     public Map<String, String> getAutoNumbers() { return autoNumbers; }
+    /** {@code auto Entity.field serial rule} and {@code auto Entity.field context name}: field to kind and source. */
+    public record RecordAuto(String kind, String source) { }
+    private final Map<String, RecordAuto> recordAutos = new LinkedHashMap<>();
+    public Map<String, RecordAuto> getRecordAutos() { return recordAutos; }
 
     private final Map<String, String> mappedStorageModes = new LinkedHashMap<>();
     public Map<String, String> getMappedStorageModes() { return mappedStorageModes; }

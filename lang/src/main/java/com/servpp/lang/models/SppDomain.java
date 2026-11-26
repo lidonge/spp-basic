@@ -5050,6 +5050,7 @@ public class SppDomain {
         for (var unit : mapsOfClass.values()) if (unit instanceof SppService service)
             service.setDeploymentTransactionMode(ruleBlock.getDeploymentTransactionMode());
         applyTableAutoNumbers(errors);
+        errors.addAll(com.servpp.lang.models.app.RecordInterceptions.apply(this));
         return errors;
     }
 

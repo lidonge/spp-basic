@@ -138,6 +138,7 @@ public interface ITablesHandler extends IApplicationHandler {
     @Override default void exitAutoNumberDefine(AppParser.AutoNumberDefineContext ctx) {
         AppTable table = getLastAppTable();
         String path = ctx.qualifiedName().getText();
+        if (ctx.source != null) { recordAuto(ctx, table, path); return; }
         String literal = ctx.StringLiteral().getText();
         String prefix = literal.substring(1, literal.length() - 1);
         SppClass type = table.getEntity();
@@ -150,8 +151,24 @@ public interface ITablesHandler extends IApplicationHandler {
             logSppError(ctx, "APP table auto numbering requires an explicitly meaningful business String field on this participant and an alphanumeric prefix: " + path);
             return;
         }
+        if (table.getRecordAutos().containsKey(property)) { logSppError(ctx, "Duplicate APP table auto declaration for " + path); return; }
         if (table.getAutoNumbers().putIfAbsent(property, prefix) != null)
             logSppError(ctx, "Duplicate APP table auto numbering for " + path);
+    }
+
+    private void recordAuto(AppParser.AutoNumberDefineContext ctx, AppTable table, String path) {
+        SppClass type = table.getEntity();
+        String expected = type == null ? "" : type.getName() + ".";
+        String property = path.startsWith(expected) ? path.substring(expected.length()) : "";
+        SppField field = type == null ? null : type.getField(property);
+        String kind = ctx.Identifier(0).getText();
+        if (field == null || property.contains(".") || field.getArrayDimension() != 0) {
+            logSppError(ctx, "APP auto " + kind + " requires a scalar field of this participant: " + path);
+            return;
+        }
+        if (table.getAutoNumbers().containsKey(property)
+                || table.getRecordAutos().putIfAbsent(property, new AppTable.RecordAuto(kind, ctx.source.getText())) != null)
+            logSppError(ctx, "Duplicate APP table auto declaration for " + path);
     }
 
     @Override

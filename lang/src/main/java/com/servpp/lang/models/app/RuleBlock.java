@@ -40,6 +40,12 @@ public class RuleBlock {
         setSystemServiceEnabled("propertyTracking", enabled);
     }
 
+    private final Map<String, AppSerialRule> serialRules = new java.util.LinkedHashMap<>();
+    public Map<String, AppSerialRule> getSerialRules() { return serialRules; }
+    private AppSerialRule currentSerialRule;
+    public AppSerialRule getCurrentSerialRule() { return currentSerialRule; }
+    public void setCurrentSerialRule(AppSerialRule rule) { currentSerialRule = rule; }
+
     private final TechnicalServices technicalServices = new TechnicalServices();
     public TechnicalServices getTechnicalServices() { return technicalServices; }
     private final Map<String, DomainRoute> domainRoutes = new java.util.LinkedHashMap<>();

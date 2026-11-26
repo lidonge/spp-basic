@@ -7,7 +7,7 @@ import java.util.stream.Collectors;
 /** APP matching and PHY implementations, kept out of the business service graph. */
 public final class TechnicalServices {
     public record Implementation(String className, Map<String, String> configuration) { }
-    public record Hook(List<String> targets, String phase, List<String> services) { }
+    public record Hook(List<String> targets, String phase, List<String> services, String field) { }
     public record Binding(String phase, String name, Implementation implementation) { }
     private final Set<String> names = new LinkedHashSet<>();
     private final Map<String, Implementation> implementations = new LinkedHashMap<>();
@@ -29,6 +29,7 @@ public final class TechnicalServices {
         var services = domain.getMapsOfClass().values().stream().filter(unit -> unit instanceof SppService)
                 .map(unit -> (SppService)unit).toList();
         for (var hook : hooks) {
+            if (RecordInterceptions.isRecordPhase(hook.phase())) continue; // validated with the entity declarations
             if (!Set.of("before", "after", "failure").contains(hook.phase())) errors.add("Unknown interception phase " + hook.phase());
             for (String name : hook.services()) if (!names.contains(name)) errors.add("Undeclared technical service " + name);
             for (String target : hook.targets()) {
@@ -41,7 +42,7 @@ public final class TechnicalServices {
         for (var service : services) {
             var bindings = new ArrayList<Binding>();
             var seen = new HashSet<String>();
-            for (var hook : hooks) if (matches(hook, service)) for (String name : hook.services()) {
+            for (var hook : hooks) if (!RecordInterceptions.isRecordPhase(hook.phase()) && matches(hook, service)) for (String name : hook.services()) {
                 if (!seen.add(hook.phase() + ":" + name)) errors.add("Duplicate interception " + service.getFuncName() + " " + hook.phase() + " " + name);
                 var implementation = implementations.get(name);
                 if (implementation != null) bindings.add(new Binding(hook.phase(), name, implementation));
@@ -64,6 +65,14 @@ public final class TechnicalServices {
             }
         }
         return out.append('"').toString();
+    }
+    public static String javaRecordInsert(String argument, ScopeItem.RecordValue value) {
+        String config = value.configuration().entrySet().stream().sorted(Map.Entry.comparingByKey())
+                .map(entry -> "java.util.Map.entry(" + quote(entry.getKey()) + ", " + quote(entry.getValue()) + ")")
+                .collect(Collectors.joining(", "));
+        return "com.servpp.service.technical.RecordInterceptors.insert(" + argument + ", " + quote(value.entity()) + ", "
+                + quote(value.field()) + ", new com.servpp.service.technical.RecordInterceptors.Binding("
+                + quote(value.service()) + ", " + quote(value.implementation()) + ", java.util.Map.ofEntries(" + config + ")), this.$sppRepositorySupplier);";
     }
     public static String javaBinding(Binding binding) {
         String config = binding.implementation().configuration().entrySet().stream()

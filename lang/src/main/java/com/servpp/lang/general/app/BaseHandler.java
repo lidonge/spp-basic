@@ -54,9 +54,50 @@ public abstract class BaseHandler implements IHeaderHandler, IPrimaryHandler,
                 : ctx.interceptionTargets().Identifier().stream().map(node -> node.getText()).toList();
         for (var hook : ctx.interceptionHook()) getCurrentRuleBlock().getTechnicalServices().hooks().add(
                 new com.servpp.lang.models.app.TechnicalServices.Hook(targets, hook.interceptionPhase().getText(),
-                        hook.Identifier().stream().map(node -> node.getText()).toList()));
+                        hook.Identifier().stream().filter(node -> hook.target == null || node.getSymbol() != hook.target)
+                                .map(node -> node.getText()).toList(),
+                        hook.target == null ? null : hook.target.getText()));
     }
     @Override public void exitServiceInterception(AppParser.ServiceInterceptionContext ctx) { }
+    @Override public void enterSerialRule(AppParser.SerialRuleContext ctx) {
+        var rule = new com.servpp.lang.models.app.AppSerialRule(ctx.name.getText(), ctx.engine.getText());
+        if (getCurrentRuleBlock().getSerialRules().putIfAbsent(rule.getName(), rule) != null)
+            logSppError(ctx, "Duplicate serial rule " + rule.getName());
+        getCurrentRuleBlock().setCurrentSerialRule(rule);
+    }
+    @Override public void exitSerialRule(AppParser.SerialRuleContext ctx) { }
+    @Override public void enterSerialItem(AppParser.SerialItemContext ctx) {
+        var rule = getCurrentRuleBlock().getCurrentSerialRule();
+        String kind = ctx.getChild(0).getText();
+        switch (kind) {
+            case "scope" -> {
+                if (rule.isScopeDeclared()) logSppError(ctx, "Duplicate scope in serial rule " + rule.getName());
+                rule.markScopeDeclared();
+                for (var field : ctx.scopeFields) {
+                    if (rule.getScope().contains(field.getText())) logSppError(ctx, "Duplicate scope field " + field.getText() + " in serial rule " + rule.getName());
+                    else rule.getScope().add(field.getText());
+                }
+            }
+            case "range" -> {
+                if (rule.isRangeDeclared()) { logSppError(ctx, "Duplicate range in serial rule " + rule.getName()); return; }
+                String[] bounds = ctx.SerialRange().getText().split("\\.\\.");
+                try {
+                    long min = Long.parseLong(bounds[0]), max = Long.parseLong(bounds[1]);
+                    if (min > max) logSppError(ctx, "Serial rule " + rule.getName() + " range start exceeds its end.");
+                    rule.setRange(min, max, ctx.Identifier().size() > 1);
+                } catch (NumberFormatException ex) { logSppError(ctx, "Serial rule " + rule.getName() + " range bounds must be decimal integers in range."); }
+            }
+            case "format" -> {
+                if (rule.isFormatDeclared()) logSppError(ctx, "Duplicate format in serial rule " + rule.getName());
+                rule.setFormat(normalizeConfigValue(ctx.StringLiteral().getText()));
+            }
+            default -> {
+                if (rule.isGapless()) logSppError(ctx, "Duplicate gapless in serial rule " + rule.getName());
+                rule.setGapless(true);
+            }
+        }
+    }
+    @Override public void exitSerialItem(AppParser.SerialItemContext ctx) { }
     @Override public void enterInterceptionTargets(AppParser.InterceptionTargetsContext ctx) { }
     @Override public void exitInterceptionTargets(AppParser.InterceptionTargetsContext ctx) { }
     @Override public void enterInterceptionHook(AppParser.InterceptionHookContext ctx) { }
