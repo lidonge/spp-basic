@@ -1126,10 +1126,16 @@ public class SppDomain {
         boolean centralizedQuantumJdbc = jdbcQuantumStores && !quantumBackends.isEmpty()
                 && quantumBackends.stream().allMatch(backend ->
                     List.of("localJdbc", "local-jdbc").contains(backend.getAdapterName()));
+        // UNIFIED_SERVICE settles the managed transaction's quantum boundary through the settlement
+        // service (one logical command to QService), the same boundary a LOCAL source plan builds.
+        boolean quantumSettlementService = "UNIFIED_SERVICE".equals(ruleBlock.getDeploymentQuantumSystem())
+                && !ruleBlock.getAppQuantumStoreAdapters().isEmpty()
+                && ruleBlock.getAppQuantumStoreAdapters().stream()
+                    .allMatch(adapter -> "quantumService".equals(adapter.getAdapterName()));
         for (var unit : mapsOfClass.values()) {
             if (!(unit instanceof SppScenario scene)) continue;
             validateSourcePlanPhysicalCapabilities(scene,scene.getServiceBody().getSppServiceCallList(),
-                    centralizedQuantumJdbc,localJdbcBackends,errors);
+                    centralizedQuantumJdbc || quantumSettlementService,localJdbcBackends,errors);
         }
     }
     private void validateSourcePlanPhysicalCapabilities(SppScenario scene, List<IServiceBodyStatement> statements,
