@@ -99,12 +99,12 @@ public class JournalQuantumSettlement implements QuantumSettlementService, Ledge
             return response(command, Operation.SETTLE, sameDeltas(prior, command.mutations())
                     && prior.get(0).getStatus() == QuantumEntanglementBoundary.Status.COMMITTED
                     ? Outcome.SUCCESS : Outcome.BUSINESS_FAILED, transactionId,
-                    "IDEMPOTENCY_PAYLOAD_MISMATCH");
+                    reason("IDEMPOTENCY_PAYLOAD_MISMATCH"));
         }
         QuantumEntanglementBoundary boundary = new QuantumEntanglementBoundary(
                 command.resourceName(), List.of(command.resourceName()));
         TransactionContext context = context(transactionId, command);
-        String[] failure = new String[1];
+        SettlementResponse.FailureReason[] failure = new SettlementResponse.FailureReason[1];
         try {
             jdbc.executeInTransaction(() -> {
                 for (QuantumMutation mutation : command.mutations()) {
@@ -124,9 +124,10 @@ public class JournalQuantumSettlement implements QuantumSettlementService, Ledge
                 jdbc.append(context, boundary);
             });
         } catch (QuantumBoundRejection rejected) {
-            failure[0] = rejected.getFailureReason();
+            failure[0] = SettlementResponse.FailureReason.of("QUANTUM_BOUND_REJECTED", rejected.getFailureReason());
         } catch (NotProvisioned missing) {
-            failure[0] = "QUANTUM_NOT_PROVISIONED: " + missing.key;
+            failure[0] = new SettlementResponse.FailureReason("QUANTUM_NOT_PROVISIONED",
+                    Optional.of(missing.key), "Quantum is not provisioned: " + missing.key);
         }
         return failure[0] == null
                 ? response(command, Operation.SETTLE, Outcome.SUCCESS, transactionId, null)
@@ -142,14 +143,14 @@ public class JournalQuantumSettlement implements QuantumSettlementService, Ledge
         String reversalId = transactionId(reversal.key());
         List<QuantumJournalEntry> original = jdbc.findByTransactionId(originalId);
         if (original.isEmpty()) {
-            return response(reversal, Operation.REVERSE, Outcome.BUSINESS_FAILED, null, "ORIGINAL_NOT_FOUND");
+            return response(reversal, Operation.REVERSE, Outcome.BUSINESS_FAILED, null, reason("ORIGINAL_NOT_FOUND"));
         }
         if (original.get(0).getStatus() != QuantumEntanglementBoundary.Status.COMMITTED) {
-            return response(reversal, Operation.REVERSE, Outcome.BUSINESS_FAILED, null, "ORIGINAL_NOT_SUCCESS");
+            return response(reversal, Operation.REVERSE, Outcome.BUSINESS_FAILED, null, reason("ORIGINAL_NOT_SUCCESS"));
         }
         if (!sameDeltas(original, reversal.mutations())) {
             return response(reversal, Operation.REVERSE, Outcome.BUSINESS_FAILED, null,
-                    "ORIGINAL_PAYLOAD_MISMATCH");
+                    reason("ORIGINAL_PAYLOAD_MISMATCH"));
         }
         QuantumEntanglementBoundary boundary = new QuantumEntanglementBoundary(
                 original.get(0).getBoundaryServiceId(), List.of(reversal.resourceName()));
@@ -221,8 +222,12 @@ public class JournalQuantumSettlement implements QuantumSettlementService, Ledge
         return true;
     }
 
+    private static SettlementResponse.FailureReason reason(String code) {
+        return SettlementResponse.FailureReason.of(code, code);
+    }
+
     private static SettlementResponse response(SettlementCommand command, Operation operation, Outcome outcome,
-                                               String receipt, String reason) {
+                                               String receipt, SettlementResponse.FailureReason reason) {
         return new SettlementResponse(command.key(), command.originalRequestKey(), operation,
                 outcome, Optional.ofNullable(receipt), outcome == Outcome.SUCCESS ? Optional.empty()
                 : Optional.ofNullable(reason));

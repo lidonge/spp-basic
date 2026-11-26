@@ -14,6 +14,7 @@ public class HttpLogicalQuantumServiceClient implements LogicalQuantumServiceCli
     private static final String LOGICAL_COMMAND_PATH = "logical/commands";
 
     private final URI commandUri;
+    private final URI capabilitiesUri;
     private final long timeoutMillis;
     private final ObjectMapper objectMapper;
     private final HttpClient httpClient;
@@ -30,6 +31,7 @@ public class HttpLogicalQuantumServiceClient implements LogicalQuantumServiceCli
             throw new IllegalArgumentException("Quantum service timeoutMillis must be positive.");
         }
         this.commandUri = commandUri(endpoint);
+        this.capabilitiesUri = resolve(endpoint, "capabilities");
         this.timeoutMillis = timeoutMillis;
         this.objectMapper = objectMapper == null
                 ? new ObjectMapper().enable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
@@ -67,7 +69,64 @@ public class HttpLogicalQuantumServiceClient implements LogicalQuantumServiceCli
         }
     }
 
+    @Override
+    public LogicalQuantumServiceResponse query(String namespace, String requestKey) {
+        URI uri = URI.create(commandUri + "/" + segment(namespace) + "/" + segment(requestKey));
+        LogicalQuantumServiceResponse decoded = get(uri, LogicalQuantumServiceResponse.class);
+        decoded.requireIdentity(namespace, requestKey);
+        return decoded;
+    }
+
+    @Override
+    public LogicalQuantumCapabilities capabilities() {
+        return get(capabilitiesUri, LogicalQuantumCapabilities.class);
+    }
+
+    private <T> T get(URI uri, Class<T> type) {
+        try {
+            HttpRequest request = HttpRequest.newBuilder(uri)
+                    .timeout(Duration.ofMillis(timeoutMillis))
+                    .header("Accept", "application/json")
+                    .GET()
+                    .build();
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                throw new IllegalStateException("QService logical HTTP " + response.statusCode()
+                        + ": " + response.body());
+            }
+            return objectMapper.readValue(response.body(), type);
+        } catch (IOException e) {
+            throw new IllegalStateException("QService logical HTTP I/O failed.", e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("QService logical HTTP interrupted.", e);
+        }
+    }
+
+    /** Percent-encodes a path segment byte by byte; only the RFC 3986 unreserved bytes stay. */
+    static String segment(String value) {
+        if (value == null || value.isEmpty()) {
+            throw new IllegalArgumentException("path segment must not be blank");
+        }
+        StringBuilder encoded = new StringBuilder();
+        for (byte b : value.getBytes(java.nio.charset.StandardCharsets.UTF_8)) {
+            int c = b & 0xff;
+            if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9')
+                    || c == '-' || c == '.' || c == '_' || c == '~') {
+                encoded.append((char) c);
+            } else {
+                encoded.append('%').append(Character.toUpperCase(Character.forDigit(c >> 4, 16)))
+                        .append(Character.toUpperCase(Character.forDigit(c & 0xf, 16)));
+            }
+        }
+        return encoded.toString();
+    }
+
     private static URI commandUri(String endpoint) {
+        return resolve(endpoint, LOGICAL_COMMAND_PATH);
+    }
+
+    private static URI resolve(String endpoint, String path) {
         String normalized = endpoint == null ? "" : endpoint.trim();
         URI base;
         try {
@@ -86,7 +145,7 @@ public class HttpLogicalQuantumServiceClient implements LogicalQuantumServiceCli
         if (!value.endsWith("/")) {
             value += "/";
         }
-        return URI.create(value + LOGICAL_COMMAND_PATH);
+        return URI.create(value + path);
     }
 
     public String getCommandUri() {

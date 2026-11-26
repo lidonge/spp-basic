@@ -357,7 +357,11 @@ public class LogicalQuantumServiceProtocolTest {
                         42,
                         command.operation() == LogicalQuantumServiceCommand.Operation.REVERSE_ENTANGLE ? 41L : null,
                         command.operation(),
-                        outcome));
+                        outcome),
+                null,
+                outcome == LogicalQuantumServiceResponse.Outcome.BUSINESS_FAILED
+                        ? new LogicalQuantumServiceResponse.FailureReason(
+                                LogicalQuantumServiceResponse.FailureCode.LOWER_BOUND, null, "below") : null);
     }
 
     private TransactionContext context() {

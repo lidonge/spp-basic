@@ -6,7 +6,7 @@ import java.util.Optional;
 public record SettlementResponse(SettlementKey key, Optional<String> originalRequestKey,
                                  Operation operation, Outcome outcome,
                                  Optional<String> receipt,
-                                 Optional<String> failureReason) {
+                                 Optional<FailureReason> failureReason) {
     public enum Operation { SETTLE, REVERSE, RESERVE, CONFIRM, CANCEL, QUERY }
 
     /**
@@ -16,6 +16,22 @@ public record SettlementResponse(SettlementKey key, Optional<String> originalReq
      * UNKNOWN: query or wait for recovery; never resend under a new key.
      */
     public enum Outcome { SUCCESS, BUSINESS_FAILED, NOT_RECEIVED, UNKNOWN }
+
+    /**
+     * Why a BUSINESS_FAILED (or an unresolved UNKNOWN) happened. Branch on {@code code}, never on
+     * {@code message}. {@code quantum} names the logical quantum when the service identified one.
+     */
+    public record FailureReason(String code, Optional<LogicalQuantumKey> quantum, String message) {
+        public FailureReason {
+            code = Values.text(code, "code");
+            quantum = Values.required(quantum, "quantum");
+            message = message == null ? "" : message;
+        }
+
+        public static FailureReason of(String code, String message) {
+            return new FailureReason(code, Optional.empty(), message);
+        }
+    }
 
     public SettlementResponse {
         key = Values.required(key, "key");

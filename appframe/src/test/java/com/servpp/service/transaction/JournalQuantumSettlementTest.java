@@ -128,7 +128,7 @@ public class JournalQuantumSettlementTest {
         SettlementResponse rejected = journal.settle(command("b1", null, "150",
                 new QuantumMutation.Interval("0", null)));
         assertEquals(Outcome.BUSINESS_FAILED, rejected.outcome());
-        assertTrue(rejected.failureReason().orElseThrow().contains("Account.balance"));
+        assertTrue(rejected.failureReason().orElseThrow().message().contains("Account.balance"));
         assertEquals(0, value("A").compareTo(new BigDecimal("100")));
         assertEquals(0, value("B").compareTo(new BigDecimal("5")));
         assertEquals(Outcome.NOT_RECEIVED, journal.query(new SettlementKey("ns", "b1")).outcome());
@@ -144,7 +144,7 @@ public class JournalQuantumSettlementTest {
                 List.of(mutation("A", "-1", null), mutation("GHOST", "1", null)));
         SettlementResponse response = journal.settle(missing);
         assertEquals(Outcome.BUSINESS_FAILED, response.outcome());
-        assertTrue(response.failureReason().orElseThrow().contains("QUANTUM_NOT_PROVISIONED"));
+        assertTrue("QUANTUM_NOT_PROVISIONED".equals(response.failureReason().orElseThrow().code()));
         assertEquals(0, value("A").compareTo(new BigDecimal("100")));
     }
 

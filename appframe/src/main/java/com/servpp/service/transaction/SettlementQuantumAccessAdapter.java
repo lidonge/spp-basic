@@ -143,14 +143,24 @@ public class SettlementQuantumAccessAdapter implements QuantumAccessAdapter {
         SettlementCommand command = built.get();
         SettlementResponse response = null;
         for (int attempt = 0; attempt <= notReceivedRetries; attempt++) {
+            RuntimeException cause = null;
             try {
                 response = operation == Operation.SETTLE ? service.settle(command) : service.reverse(command);
                 response.requireIdentity(command, operation);
             } catch (RuntimeException failure) {
-                boundary.recordQuantumServiceOutcome(LogicalQuantumServiceResponse.Outcome.UNKNOWN);
-                throw new QuantumServiceOutcomeException(LogicalQuantumServiceResponse.Outcome.UNKNOWN,
-                        "Quantum settlement " + operation + " result is UNKNOWN for request "
-                                + command.key().requestKey() + ".", failure);
+                cause = failure;
+                response = null;
+            }
+            if (response == null || response.outcome() == Outcome.UNKNOWN) {
+                // Never resend after an UNKNOWN: ask under the same key. Only NOT_RECEIVED allows a retry.
+                SettlementResponse answer = queryQuietly(command);
+                if (answer == null || answer.outcome() == Outcome.UNKNOWN) {
+                    boundary.recordQuantumServiceOutcome(LogicalQuantumServiceResponse.Outcome.UNKNOWN);
+                    throw new QuantumServiceOutcomeException(LogicalQuantumServiceResponse.Outcome.UNKNOWN,
+                            "Quantum settlement " + operation + " result is UNKNOWN for request "
+                                    + command.key().requestKey() + ".", cause);
+                }
+                response = answer;
             }
             if (response.outcome() != Outcome.NOT_RECEIVED) {
                 break;
@@ -165,7 +175,18 @@ public class SettlementQuantumAccessAdapter implements QuantumAccessAdapter {
         }
         throw new QuantumServiceOutcomeException(outcome, "Quantum settlement " + operation + " returned "
                 + outcome + " for request " + command.key().requestKey()
-                + response.failureReason().map(reason -> ": " + reason).orElse("") + ".");
+                + response.failureReason().map(reason -> ": " + reason.code()
+                        + (reason.message().isBlank() ? "" : " (" + reason.message() + ")")).orElse("") + ".");
+    }
+
+    /** The durable result under the command's key, or null when the service cannot answer. */
+    private SettlementResponse queryQuietly(SettlementCommand command) {
+        try {
+            SettlementResponse answer = service.query(command.key());
+            return answer.key().equals(command.key()) ? answer : null;
+        } catch (RuntimeException failure) {
+            return null;
+        }
     }
 
     private void mark(Operation operation, QuantumEntanglementBoundary boundary) {

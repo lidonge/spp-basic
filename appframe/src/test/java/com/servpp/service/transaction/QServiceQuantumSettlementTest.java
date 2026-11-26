@@ -38,7 +38,10 @@ public class QServiceQuantumSettlementTest {
                                                       LogicalQuantumServiceResponse.Outcome outcome) {
         return new LogicalQuantumServiceResponse(command.namespace(), command.requestKey(),
                 command.originalRequestKey(), new LogicalQuantumServiceResponse.BoundaryResponse(
-                        42, command.originalRequestKey() == null ? null : 41L, command.operation(), outcome));
+                        42, command.originalRequestKey() == null ? null : 41L, command.operation(), outcome),
+                null, outcome == LogicalQuantumServiceResponse.Outcome.BUSINESS_FAILED
+                        ? new LogicalQuantumServiceResponse.FailureReason(
+                                LogicalQuantumServiceResponse.FailureCode.LOWER_BOUND, null, "below") : null);
     }
 
     private static QServiceQuantumSettlement service(
@@ -107,7 +110,8 @@ public class QServiceQuantumSettlementTest {
             throw new IllegalStateException("timeout");
         }).settle(command("r1", null));
         assertEquals(Outcome.UNKNOWN, response.outcome());
-        assertEquals(Optional.of("timeout"), response.failureReason());
+        assertEquals("TRANSPORT_FAILURE", response.failureReason().orElseThrow().code());
+        assertEquals("timeout", response.failureReason().orElseThrow().message());
         assertEquals(command("r1", null).key(), response.key());
     }
 
@@ -115,12 +119,12 @@ public class QServiceQuantumSettlementTest {
     public void rejectsAResponseWhoseIdentityDoesNotEchoTheRequest() {
         assertThrows(IllegalStateException.class, () -> service(wire -> new LogicalQuantumServiceResponse(
                 wire.namespace(), "other", null, new LogicalQuantumServiceResponse.BoundaryResponse(
-                        42, null, wire.operation(), LogicalQuantumServiceResponse.Outcome.SUCCESS)))
+                        42, null, wire.operation(), LogicalQuantumServiceResponse.Outcome.SUCCESS), null, null))
                 .settle(command("r1", null)));
         assertThrows(IllegalStateException.class, () -> service(wire -> new LogicalQuantumServiceResponse(
                 wire.namespace(), wire.requestKey(), null, new LogicalQuantumServiceResponse.BoundaryResponse(
                         42, null, LogicalQuantumServiceCommand.Operation.REVERSE_ENTANGLE,
-                        LogicalQuantumServiceResponse.Outcome.SUCCESS)))
+                        LogicalQuantumServiceResponse.Outcome.SUCCESS), null, null))
                 .settle(command("r1", null)));
     }
 

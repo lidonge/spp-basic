@@ -25,6 +25,7 @@ public class QServiceQuantumSettlement implements QuantumSettlementService {
     private final String name;
     private final LogicalQuantumServiceClient client;
     private final LogicalQuantumProvisioningClient provisioningClient;
+    private volatile Set<Capability> advertised;
 
     public QServiceQuantumSettlement(String name, LogicalQuantumServiceClient client,
                                      LogicalQuantumProvisioningClient provisioningClient) {
@@ -38,11 +39,50 @@ public class QServiceQuantumSettlement implements QuantumSettlementService {
         return name;
     }
 
+    /**
+     * Asks the service once ({@code GET /capabilities}), accepts only ONE_PHASE and PROVISIONING
+     * and fails fast unless the contract is {@code spp-qservice-logical/1}. PROVISIONING also
+     * needs a provisioning client. A client that does not advertise keeps the local default.
+     */
     @Override
     public Set<Capability> capabilities() {
+        Set<Capability> known = advertised;
+        if (known == null) {
+            synchronized (this) {
+                if (advertised == null) {
+                    advertised = discover();
+                }
+                known = advertised;
+            }
+        }
+        return known;
+    }
+
+    private Set<Capability> discover() {
+        LogicalQuantumCapabilities answer = client.capabilities();
         Set<Capability> capabilities = EnumSet.of(Capability.ONE_PHASE);
-        if (provisioningClient != null) capabilities.add(Capability.PROVISIONING);
-        return capabilities;
+        if (answer != null) {
+            if (!LogicalQuantumCapabilities.CONTRACT.equals(answer.contract())) {
+                throw new IllegalStateException("Quantum service " + name + " speaks contract "
+                        + answer.contract() + ", expected " + LogicalQuantumCapabilities.CONTRACT + ".");
+            }
+            Set<String> names = answer.capabilities() == null ? Set.of() : new java.util.HashSet<>(answer.capabilities());
+            for (String capability : names) {
+                if (!capability.equals("ONE_PHASE") && !capability.equals("PROVISIONING")) {
+                    throw new IllegalStateException("Quantum service " + name
+                            + " advertises unsupported capability " + capability + ".");
+                }
+            }
+            if (!names.contains("ONE_PHASE")) {
+                throw new IllegalStateException("Quantum service " + name + " does not advertise ONE_PHASE.");
+            }
+            if (names.contains("PROVISIONING") && provisioningClient != null) {
+                capabilities.add(Capability.PROVISIONING);
+            }
+        } else if (provisioningClient != null) {
+            capabilities.add(Capability.PROVISIONING);
+        }
+        return Set.copyOf(capabilities);
     }
 
     @Override
@@ -55,10 +95,26 @@ public class QServiceQuantumSettlement implements QuantumSettlementService {
         return execute(LogicalQuantumServiceCommand.Operation.REVERSE_ENTANGLE, reversal.requireReversal());
     }
 
-    /** QService v1 has no query endpoint: UNKNOWN is recovered by replaying the same key. */
+    /**
+     * Read-only lookup under {@code key}. SUCCESS and BUSINESS_FAILED are the durable result,
+     * UNKNOWN means a fact exists without a determinate result, NOT_RECEIVED means a same-key
+     * retry is allowed. A transport failure is UNKNOWN.
+     */
     @Override
     public SettlementResponse query(SettlementKey key) {
-        throw new UnsupportedOperationException("QService logical protocol has no query endpoint.");
+        LogicalQuantumServiceResponse response;
+        try {
+            response = client.query(key.namespace(), key.requestKey());
+            response.requireIdentity(key.namespace(), key.requestKey());
+        } catch (UnsupportedOperationException unsupported) {
+            throw unsupported;
+        } catch (RuntimeException failure) {
+            return new SettlementResponse(key, Optional.empty(), Operation.QUERY, Outcome.UNKNOWN,
+                    Optional.empty(), Optional.of(transportFailure(failure)));
+        }
+        return new SettlementResponse(key, Optional.ofNullable(response.originalRequestKey()), Operation.QUERY,
+                Outcome.valueOf(response.outcome().name()), Optional.ofNullable(response.receipt()),
+                reason(response));
     }
 
     @Override
@@ -85,7 +141,7 @@ public class QServiceQuantumSettlement implements QuantumSettlementService {
             response = client.execute(wire);
         } catch (RuntimeException failure) {
             return new SettlementResponse(command.key(), command.originalRequestKey(), operation(operation),
-                    Outcome.UNKNOWN, Optional.empty(), Optional.ofNullable(failure.getMessage()));
+                    Outcome.UNKNOWN, Optional.empty(), Optional.of(transportFailure(failure)));
         }
         response.requireIdentity(wire);
         LogicalQuantumServiceResponse.BoundaryResponse boundary = response.boundaryResponse();
@@ -93,7 +149,20 @@ public class QServiceQuantumSettlement implements QuantumSettlementService {
                 new SettlementKey(response.namespace(), response.requestKey()),
                 Optional.ofNullable(response.originalRequestKey()), operation(boundary.operation()),
                 Outcome.valueOf(boundary.status().name()),
-                Optional.of(Long.toString(boundary.conservationID())), Optional.empty());
+                Optional.ofNullable(response.receipt()), reason(response));
+    }
+
+    private static SettlementResponse.FailureReason transportFailure(RuntimeException failure) {
+        return SettlementResponse.FailureReason.of("TRANSPORT_FAILURE", failure.getMessage());
+    }
+
+    private static Optional<SettlementResponse.FailureReason> reason(LogicalQuantumServiceResponse response) {
+        LogicalQuantumServiceResponse.FailureReason reason = response.failureReason();
+        if (reason == null) return Optional.empty();
+        Optional<LogicalQuantumKey> quantum = reason.quantum() == null ? Optional.empty()
+                : Optional.of(new LogicalQuantumKey(reason.quantum().namespace(),
+                        reason.quantum().attributeId(), reason.quantum().objectId()));
+        return Optional.of(new SettlementResponse.FailureReason(reason.code().name(), quantum, reason.message()));
     }
 
     private static Operation operation(LogicalQuantumServiceCommand.Operation operation) {

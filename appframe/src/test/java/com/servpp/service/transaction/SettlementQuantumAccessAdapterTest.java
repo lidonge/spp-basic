@@ -47,7 +47,19 @@ public class SettlementQuantumAccessAdapterTest {
 
         public SettlementResponse settle(SettlementCommand command) { return answer(command, Operation.SETTLE); }
         public SettlementResponse reverse(SettlementCommand command) { return answer(command, Operation.REVERSE); }
-        public SettlementResponse query(SettlementKey key) { throw new UnsupportedOperationException(); }
+        final List<SettlementKey> queried = new ArrayList<>();
+        List<Outcome> queryOutcomes;
+
+        public SettlementResponse query(SettlementKey key) {
+            if (queryOutcomes == null) throw new UnsupportedOperationException();
+            queried.add(key);
+            Outcome outcome = queryOutcomes.get(Math.min(queried.size(), queryOutcomes.size()) - 1);
+            return new SettlementResponse(key, Optional.empty(), Operation.QUERY, outcome,
+                    outcome == Outcome.NOT_RECEIVED ? Optional.empty() : Optional.of("receipt"),
+                    outcome == Outcome.BUSINESS_FAILED
+                            ? Optional.of(SettlementResponse.FailureReason.of("LOWER_BOUND", "queried"))
+                            : Optional.empty());
+        }
 
         public ProvisionResponse provision(ProvisionCommand command) {
             return new ProvisionResponse(command.key(), command.definition(),
@@ -58,7 +70,7 @@ public class SettlementQuantumAccessAdapterTest {
             commands.add(command);
             Outcome outcome = outcomes.get(Math.min(commands.size(), outcomes.size()) - 1);
             return new SettlementResponse(echoKey.apply(command), command.originalRequestKey(), operation, outcome,
-                    Optional.of("receipt"), outcome == Outcome.BUSINESS_FAILED ? Optional.of("bound") : Optional.empty());
+                    Optional.of("receipt"), outcome == Outcome.BUSINESS_FAILED ? Optional.of(SettlementResponse.FailureReason.of("LOWER_BOUND", "bound")) : Optional.empty());
         }
     }
 
@@ -232,6 +244,56 @@ public class SettlementQuantumAccessAdapterTest {
         assertEquals(LogicalQuantumServiceResponse.Outcome.UNKNOWN, assertThrows(
                 QuantumServiceOutcomeException.class, () -> adapter(mismatch, 0).commit(context(), other)).getOutcome());
         assertEquals(QuantumEntanglementBoundary.Status.OPEN, other.getStatus());
+    }
+
+    @Test
+    public void unknownIsQueriedUnderTheSameKeyAndNeverResent() {
+        for (Outcome durable : List.of(Outcome.SUCCESS, Outcome.BUSINESS_FAILED)) {
+            FakeService service = new FakeService(Outcome.UNKNOWN);
+            service.queryOutcomes = List.of(durable);
+            QuantumEntanglementBoundary boundary = boundary(
+                    record("Account.balance", "A", "-10"), record("Order.balance", "B", "10"));
+            if (durable == Outcome.SUCCESS) {
+                adapter(service, 3).commit(context(), boundary);
+                assertEquals(QuantumEntanglementBoundary.Status.COMMITTED, boundary.getStatus());
+            } else {
+                QuantumServiceOutcomeException failure = assertThrows(QuantumServiceOutcomeException.class,
+                        () -> adapter(service, 3).commit(context(), boundary));
+                assertEquals(LogicalQuantumServiceResponse.Outcome.BUSINESS_FAILED, failure.getOutcome());
+                assertTrue(failure.getMessage(), failure.getMessage().contains("LOWER_BOUND"));
+            }
+            assertEquals(1, service.commands.size());
+            assertEquals(List.of(service.commands.get(0).key()), service.queried);
+        }
+    }
+
+    @Test
+    public void unknownThatStaysUnknownIsNotResentAndNotReceivedFromTheQueryAllowsTheSameKeyRetry() {
+        FakeService stuck = new FakeService(Outcome.UNKNOWN);
+        stuck.queryOutcomes = List.of(Outcome.UNKNOWN);
+        QuantumServiceOutcomeException failure = assertThrows(QuantumServiceOutcomeException.class,
+                () -> adapter(stuck, 3).commit(context(), boundary(
+                        record("Account.balance", "A", "-10"), record("Order.balance", "B", "10"))));
+        assertEquals(LogicalQuantumServiceResponse.Outcome.UNKNOWN, failure.getOutcome());
+        assertEquals(1, stuck.commands.size());
+
+        FakeService lost = new FakeService(Outcome.UNKNOWN, Outcome.SUCCESS);
+        lost.queryOutcomes = List.of(Outcome.NOT_RECEIVED);
+        QuantumEntanglementBoundary boundary = boundary(
+                record("Account.balance", "A", "-10"), record("Order.balance", "B", "10"));
+        adapter(lost, 1).commit(context(), boundary);
+        assertEquals(2, lost.commands.size());
+        assertSame(lost.commands.get(0), lost.commands.get(1));
+        assertEquals(1, lost.queried.size());
+        assertEquals(QuantumEntanglementBoundary.Status.COMMITTED, boundary.getStatus());
+
+        FakeService noRetry = new FakeService(Outcome.UNKNOWN);
+        noRetry.queryOutcomes = List.of(Outcome.NOT_RECEIVED);
+        QuantumServiceOutcomeException notReceived = assertThrows(QuantumServiceOutcomeException.class,
+                () -> adapter(noRetry, 0).commit(context(), boundary(
+                        record("Account.balance", "A", "-10"), record("Order.balance", "B", "10"))));
+        assertEquals(LogicalQuantumServiceResponse.Outcome.NOT_RECEIVED, notReceived.getOutcome());
+        assertEquals(1, noRetry.commands.size());
     }
 
     @Test
