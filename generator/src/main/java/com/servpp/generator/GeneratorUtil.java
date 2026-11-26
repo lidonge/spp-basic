@@ -242,8 +242,30 @@ public class GeneratorUtil {
         if (!destination.getParentFile().isDirectory() && !destination.getParentFile().mkdirs())
             throw new MojoExecutionException("Cannot create application catalog directory");
         try (var output = new java.io.FileOutputStream(destination)) {
-            properties.store(output, "Generated APP local application deployments");
+            storeStable(properties, output, "Generated APP local application deployments");
         } catch (IOException failure) { throw new MojoExecutionException("Cannot write application deployments", failure); }
+    }
+
+    /**
+     * Writes properties like {@link java.util.Properties#store} without the date stamp it puts on
+     * the line after the comment, so equal sources generate byte-identical files (reproducible
+     * jars). The comment must be a single line. Line separators are normalized to {@code \n}.
+     */
+    public static void storeStable(java.util.Properties properties, OutputStream output, String comment)
+            throws IOException {
+        if (comment == null || comment.isBlank() || comment.contains("\n") || comment.contains("\r")) {
+            throw new IllegalArgumentException("comment must be a single non-blank line");
+        }
+        var buffer = new ByteArrayOutputStream();
+        properties.store(buffer, comment);
+        String[] lines = buffer.toString(java.nio.charset.StandardCharsets.ISO_8859_1).replace("\r\n", "\n").split("\n", -1);
+        StringBuilder stable = new StringBuilder();
+        for (int i = 0; i < lines.length; i++) {
+            if (i == 1 && lines[i].startsWith("#")) continue; // the date line
+            if (i == lines.length - 1 && lines[i].isEmpty()) break;
+            stable.append(lines[i]).append('\n');
+        }
+        output.write(stable.toString().getBytes(java.nio.charset.StandardCharsets.ISO_8859_1));
     }
 
     private static List<ParseTreeListener> compilePhysicalAntlr(File sppSourceDirectory, SppProject sppProject,

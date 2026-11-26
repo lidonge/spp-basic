@@ -356,7 +356,7 @@ public class OpenApiGenerator extends BaseClassGenerator implements ILogable {
             }
             web.setProperty(kind + ".count", Integer.toString(n));
         }
-        try (var out = new FileOutputStream(catalogFile(resources, "web.properties"))) { web.store(out, "Generated APP web deployment"); }
+        try (var out = new FileOutputStream(catalogFile(resources, "web.properties"))) { com.servpp.generator.GeneratorUtil.storeStable(web, out, "Generated APP web deployment"); }
         java.util.Properties examples = new java.util.Properties();
         int index = 0;
         for (String exampleName : exampleServiceNames) {
@@ -400,7 +400,7 @@ public class OpenApiGenerator extends BaseClassGenerator implements ILogable {
         }
         examples.setProperty("example.count", Integer.toString(index));
         try (var out = new FileOutputStream(catalogFile(resources, "examples.properties"))) {
-            examples.store(out, "Generated APP example entrypoints");
+            com.servpp.generator.GeneratorUtil.storeStable(examples, out, "Generated APP example entrypoints");
         }
     }
 
@@ -416,7 +416,7 @@ public class OpenApiGenerator extends BaseClassGenerator implements ILogable {
         for (var locale : rules.getConstantTranslations().entrySet()) for (var translation : locale.getValue().entrySet())
             properties.setProperty("locale." + locale.getKey() + "." + translation.getKey(), json.readValue(translation.getValue(), String.class));
         try (var output = new FileOutputStream(catalogFile(new File(genRoot.getParent(), "resources"), "constants.properties"))) {
-            properties.store(output, "Generated APP/PHY constant localization for " + domain.getName());
+            com.servpp.generator.GeneratorUtil.storeStable(properties, output, "Generated APP/PHY constant localization for " + domain.getName());
         }
     }
 
@@ -450,7 +450,7 @@ public class OpenApiGenerator extends BaseClassGenerator implements ILogable {
         }
         File technicalFile = catalogFile(resources, "technical-services.properties");
         ensureDirectory(technicalFile.getParentFile());
-        try (var output = new FileOutputStream(technicalFile)) { technical.store(output, "APP declarations with PHY technical implementations"); }
+        try (var output = new FileOutputStream(technicalFile)) { com.servpp.generator.GeneratorUtil.storeStable(technical, output, "APP declarations with PHY technical implementations"); }
         File physicalFile = catalogFile(resources, "physical.properties");
         ensureDirectory(physicalFile.getParentFile());
 
