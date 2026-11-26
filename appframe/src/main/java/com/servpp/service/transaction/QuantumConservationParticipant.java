@@ -74,7 +74,11 @@ public class QuantumConservationParticipant extends ObjectSnapshotTransactionPar
         return this;
     }
 
-    /** Each collection member conserves its own group, without cancelling another member's deficit. */
+    /**
+     * Each collection member conserves its own group, without cancelling another member's deficit,
+     * unless a scalar attribute shares the group: a scalar source funding several members is
+     * several ordinary transfers, which the group nets as a whole (many recipients, one source).
+     */
     public QuantumConservationParticipant conserveEachArgument(int argumentIndex, String groupId,
                                                                String attributeId, String propertyName) {
         collectionAttributes.add(new CollectionAttribute(argumentIndex, groupId, attributeId, propertyName));
@@ -125,6 +129,8 @@ public class QuantumConservationParticipant extends ObjectSnapshotTransactionPar
         super.afterExecute(context);
         ConservationLedger ledger = context.getOrCreateAttribute(LEDGER_ATTRIBUTE, ConservationLedger::new);
         List<QuantumValue> afterValues = readValues();
+        java.util.Set<String> sharedGroups = new java.util.HashSet<>();
+        for (QuantumAttribute scalar : attributes.subList(0, scalarAttributeCount)) sharedGroups.add(scalar.groupId());
         for (int i = 0; i < attributes.size(); i++) {
             QuantumAttribute attribute = attributes.get(i);
             BigDecimal before = beforeValues.get(i).value();
@@ -133,7 +139,8 @@ public class QuantumConservationParticipant extends ObjectSnapshotTransactionPar
                     : attribute.isArgumentProperty() ? arguments[attribute.argumentIndex()] : null;
             var bound = QuantumInvocationBounds.find(participant, attribute.propertyName());
             QuantumConservationRecord record = ledger.add(attribute.groupId(), attribute.attributeId(),
-                    objectId(attribute), before, after, attribute.collectionMember() != null,
+                    objectId(attribute), before, after,
+                    attribute.collectionMember() != null && !sharedGroups.contains(attribute.groupId()),
                     bound == null ? null : QuantumInvocationBounds.decimal(bound.minimum()),
                     bound == null ? null : QuantumInvocationBounds.decimal(bound.maximum()));
             QuantumParticipantResults.register(context, participant, attribute.propertyName(), attribute.attributeId(), objectId(attribute),
