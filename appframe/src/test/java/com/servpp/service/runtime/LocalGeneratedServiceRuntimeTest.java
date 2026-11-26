@@ -316,6 +316,13 @@ public class LocalGeneratedServiceRuntimeTest {
         AtomicReference<String> requestBody = new AtomicReference<>();
         HttpServer server = HttpServer.create(
                 new InetSocketAddress("127.0.0.1", 0), 0);
+        server.createContext("/capabilities", exchange -> {
+            byte[] bytes = "{\"capabilities\":[\"ONE_PHASE\",\"PROVISIONING\"],\"contract\":\"spp-qservice-logical/1\"}"
+                    .getBytes(StandardCharsets.UTF_8);
+            exchange.sendResponseHeaders(200, bytes.length);
+            exchange.getResponseBody().write(bytes);
+            exchange.close();
+        });
         server.createContext("/logical/provisions", exchange -> {
             requestBody.set(new String(
                     exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
