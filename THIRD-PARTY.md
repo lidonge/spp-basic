@@ -24,3 +24,12 @@ confirmed ownership and authorized both modules for Apache-2.0 distribution on
 2026-10-22. Their fixed upstream revision and original file hashes are recorded
 in `vendor/antlrmustache/ORIGIN.json`; local changes and original author notices
 are preserved. No sibling checkout or preinstalled template JAR is required.
+
+## Optional module `appframe-serial-cosid`
+
+The optional `appframe-serial-cosid` module depends on [CosId](https://github.com/Ahoo-Wang/CosId)
+(`me.ahoo.cosid:cosid-core` and `me.ahoo.cosid:cosid-jdbc`, version 4.1.1), Copyright 2021-present Ahoo Wang,
+licensed under the Apache License 2.0. It is resolved from Maven Central and is not copied into this source tree.
+Version 4.1.1 is the latest CosId release built for Java 17; CosId 5.x requires Java 21. CosId's runtime dependencies are
+`org.jspecify:jspecify` (Apache-2.0) and `org.slf4j:slf4j-api` (MIT). The module is not part of `appframe`:
+applications that do not use it do not receive CosId.

@@ -11,6 +11,7 @@
         <module>generator</module>
         <module>generator-api</module>
         <module>appframe</module>
+        <module>appframe-serial-cosid</module>
         <module>sdk-tools/java-project</module>
         <module>sdk-tools/compiler</module>
         <module>sdk-tools/basic-cli</module>
