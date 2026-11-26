@@ -44,6 +44,16 @@ public class JavaProjectWriterTest {
     }
 
     @Test
+    public void generationManifestHasAFixedKeyOrderSoJarsAreReproducible() throws Exception {
+        Path root = project();
+        new JavaProjectWriter().write(root, "com.example.generated");
+        var keys = new java.util.ArrayList<String>();
+        new ObjectMapper().readTree(root.resolve("spp-generation.json").toFile()).fieldNames().forEachRemaining(keys::add);
+        assertEquals(java.util.List.of("schemaVersion", "sdkVersion", "openapiGeneratorVersion", "runtimeVersion",
+                "basePackage", "domains", "runtimeExtensions"), keys);
+    }
+
+    @Test
     public void emitsCompleteModelApiAndMavenMetadata() throws Exception {
         Path root = project();
         new JavaProjectWriter().write(root, "com.example.generated");

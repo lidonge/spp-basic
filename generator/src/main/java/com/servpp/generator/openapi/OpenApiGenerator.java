@@ -1408,7 +1408,11 @@ public class OpenApiGenerator extends BaseClassGenerator implements ILogable {
             var aliases = field.getAliases();
             for (int alias = 1; alias < aliases.size(); alias++) {
                 String literal = new String(encoder.quoteAsString(aliases.get(alias)));
-                inputAliases.add(Map.of("literal", literal, "index", Integer.toString(index)));
+                // Map.of iterates in a per-JVM random order, which would reorder the generated YAML.
+                var inputAlias = new java.util.LinkedHashMap<String, String>();
+                inputAlias.put("literal", literal);
+                inputAlias.put("index", Integer.toString(index));
+                inputAliases.add(inputAlias);
             }
         }
         if (!inputAliases.isEmpty()) schema.addExtension("x-spp-enum-input-aliases", inputAliases);

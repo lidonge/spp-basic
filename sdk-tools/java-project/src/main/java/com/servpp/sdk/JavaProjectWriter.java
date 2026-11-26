@@ -68,8 +68,7 @@ public final class JavaProjectWriter {
         }
         Files.writeString(root.resolve("pom.xml"), pom(basePackage, runtimeDependencies));
         MAPPER.writerWithDefaultPrettyPrinter().writeValue(root.resolve("spp-generation.json").toFile(),
-                Map.of("schemaVersion", 1, "sdkVersion", "0.1.0", "openapiGeneratorVersion", "6.5.0",
-                        "runtimeVersion", "1.0-SNAPSHOT", "basePackage", basePackage, "domains", domains, "runtimeExtensions", runtimeDependencies));
+                provenance(basePackage, domains, runtimeDependencies));
         Files.writeString(root.resolve("README.md"), """
                 # Generated S++ Java project
 
@@ -84,6 +83,19 @@ public final class JavaProjectWriter {
                 Further conversion follows the selected compiler edition: the open basic
                 compiler works offline; official member components use their own authorization.
                 """);
+    }
+
+    /** Fixed key order: Map.of iterates in a per-JVM random order, which made the file differ run to run. */
+    private static Map<String, Object> provenance(String basePackage, Object domains, Object runtimeDependencies) {
+        var values = new java.util.LinkedHashMap<String, Object>();
+        values.put("schemaVersion", 1);
+        values.put("sdkVersion", "0.1.0");
+        values.put("openapiGeneratorVersion", "6.5.0");
+        values.put("runtimeVersion", "1.0-SNAPSHOT");
+        values.put("basePackage", basePackage);
+        values.put("domains", domains);
+        values.put("runtimeExtensions", runtimeDependencies);
+        return values;
     }
 
     public static boolean isValidPackage(String name) {
