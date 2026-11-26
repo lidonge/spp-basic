@@ -8819,6 +8819,13 @@ public class LocalGeneratedServiceRuntime {
 
     private void validateQuantumServiceLogicalBindings(PhysicalRuntimeCatalog.QuantumStore store,
                                                        List<String> errors) {
+        for (String problem : com.servpp.service.transaction.QServiceClientSecurity.configErrors(store.configuration()))
+            errors.add("Quantum store " + store.name() + " quantumService adapter " + problem);
+        String endpoint = store.configuration().get("endpoint");
+        if (endpoint != null && endpoint.trim().regionMatches(true, 0, "http://", 0, 7)
+                && !"true".equalsIgnoreCase(store.configuration().getOrDefault("insecure", "").trim()))
+            errors.add("Quantum store " + store.name()
+                    + " quantumService adapter config endpoint must use https unless insecure = true is set for development.");
         String namespace = store.configuration().get("namespace");
         if (namespace == null || namespace.isBlank()) {
             errors.add("Quantum store " + store.name()
@@ -8850,6 +8857,10 @@ public class LocalGeneratedServiceRuntime {
 
     private void validateQuantumServiceHttpJsonBindings(PhysicalRuntimeCatalog.QuantumStore store,
                                                         List<String> errors) {
+        for (String key : com.servpp.service.transaction.QServiceClientSecurity.CONFIG_KEYS)
+            if (store.configuration().containsKey(key))
+                errors.add("Quantum store " + store.name() + " quantumService adapter config " + key
+                        + " is only supported when serviceProtocol is LOGICAL_QSERVICE.");
         if (store.configuration().containsKey("namespace")) {
             errors.add("Quantum store " + store.name()
                     + " quantumService adapter config namespace is only supported when serviceProtocol"
@@ -9042,10 +9053,16 @@ public class LocalGeneratedServiceRuntime {
                     }
                 }
                 long timeoutMillis = quantumServiceTimeoutMillis(store.name(), config.get("timeoutMillis"));
+                var security = com.servpp.service.transaction.QServiceClientSecurity.fromConfig(config);
+                var secureHttp = security.newHttpClient();
+                var wireMapper = new com.fasterxml.jackson.databind.ObjectMapper()
+                        .enable(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
                 physicalRuntime.setQuantumAccessAdapter(new SettlementQuantumAccessAdapter(
                         new QServiceQuantumSettlement(store.name(),
-                                new HttpLogicalQuantumServiceClient(config.get("endpoint"), timeoutMillis),
-                                new HttpLogicalQuantumProvisioningClient(config.get("endpoint"), timeoutMillis)),
+                                new HttpLogicalQuantumServiceClient(config.get("endpoint"), timeoutMillis,
+                                        wireMapper, secureHttp, security),
+                                new HttpLogicalQuantumProvisioningClient(config.get("endpoint"), timeoutMillis,
+                                        new com.fasterxml.jackson.databind.ObjectMapper(), secureHttp, security)),
                         config.get("namespace"), definitions));
                 return;
             }

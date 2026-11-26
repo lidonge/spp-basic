@@ -106,8 +106,8 @@ public class QServiceQuantumSettlement implements QuantumSettlementService {
         try {
             response = client.query(key.namespace(), key.requestKey());
             response.requireIdentity(key.namespace(), key.requestKey());
-        } catch (UnsupportedOperationException unsupported) {
-            throw unsupported;
+        } catch (UnsupportedOperationException | QServiceAuthenticationException refused) {
+            throw refused;
         } catch (RuntimeException failure) {
             return new SettlementResponse(key, Optional.empty(), Operation.QUERY, Outcome.UNKNOWN,
                     Optional.empty(), Optional.of(transportFailure(failure)));
@@ -139,6 +139,8 @@ public class QServiceQuantumSettlement implements QuantumSettlementService {
         LogicalQuantumServiceResponse response;
         try {
             response = client.execute(wire);
+        } catch (QServiceAuthenticationException refused) {
+            throw refused;
         } catch (RuntimeException failure) {
             return new SettlementResponse(command.key(), command.originalRequestKey(), operation(operation),
                     Outcome.UNKNOWN, Optional.empty(), Optional.of(transportFailure(failure)));

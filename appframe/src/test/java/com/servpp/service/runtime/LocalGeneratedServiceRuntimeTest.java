@@ -352,6 +352,7 @@ public class LocalGeneratedServiceRuntimeTest {
                             + "quantumStore.globalQuantum.attributes=Account.balance\n"
                             + "quantumStore.globalQuantum.config.endpoint=http://127.0.0.1:"
                             + server.getAddress().getPort() + "\n"
+                            + "quantumStore.globalQuantum.config.insecure=true\n"
                             + "quantumStore.globalQuantum.config.serviceProtocol=LOGICAL_QSERVICE\n"
                             + "quantumStore.globalQuantum.config.namespace=commerce\n"
                             + "quantumStore.globalQuantum.config.reversalMode=SERVICE_REVERSAL\n"

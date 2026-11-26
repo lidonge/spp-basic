@@ -18,22 +18,40 @@ public class HttpLogicalQuantumProvisioningClient
     private final long timeoutMillis;
     private final ObjectMapper objectMapper;
     private final HttpClient httpClient;
+    private final QServiceClientSecurity security;
 
+    /** An https endpoint with the JVM default trust and no client certificate or token. */
     public HttpLogicalQuantumProvisioningClient(String endpoint, long timeoutMillis) {
-        this(endpoint, timeoutMillis,
-                new ObjectMapper().enable(
-                        DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES),
-                HttpClient.newHttpClient());
+        this(endpoint, timeoutMillis, QServiceClientSecurity.defaults());
     }
 
+    /** Builds its own {@link HttpClient} from the TLS settings of {@code security}. */
+    public HttpLogicalQuantumProvisioningClient(
+            String endpoint, long timeoutMillis, QServiceClientSecurity security) {
+        this(endpoint, timeoutMillis, new ObjectMapper(), security.newHttpClient(), security);
+    }
+
+    /** Package-private test seam: plain http is allowed. */
     HttpLogicalQuantumProvisioningClient(
             String endpoint, long timeoutMillis,
             ObjectMapper objectMapper, HttpClient httpClient) {
+        this(endpoint, timeoutMillis, objectMapper, httpClient, QServiceClientSecurity.insecure());
+    }
+
+    /**
+     * Uses a caller-built {@link HttpClient}. Its TLS setup is the caller's business: {@code security} then
+     * contributes only the endpoint rule and the bearer token.
+     */
+    public HttpLogicalQuantumProvisioningClient(
+            String endpoint, long timeoutMillis, ObjectMapper objectMapper,
+            HttpClient httpClient, QServiceClientSecurity security) {
         if (timeoutMillis <= 0) {
             throw new IllegalArgumentException(
                     "Quantum service timeoutMillis must be positive.");
         }
+        this.security = security == null ? QServiceClientSecurity.defaults() : security;
         this.provisioningUri = provisioningUri(endpoint);
+        this.security.requireEndpoint(provisioningUri);
         this.timeoutMillis = timeoutMillis;
         this.objectMapper = (objectMapper == null
                 ? new ObjectMapper() : objectMapper).copy()
@@ -53,14 +71,15 @@ public class HttpLogicalQuantumProvisioningClient
         }
         try {
             String requestBody = objectMapper.writeValueAsString(command);
-            HttpRequest request = HttpRequest.newBuilder(provisioningUri)
+            HttpRequest.Builder request = HttpRequest.newBuilder(provisioningUri)
                     .timeout(Duration.ofMillis(timeoutMillis))
                     .header("Content-Type", "application/json")
                     .header("Accept", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(requestBody))
-                    .build();
+                    .POST(HttpRequest.BodyPublishers.ofString(requestBody));
+            security.authorize(request);
             HttpResponse<String> response = httpClient.send(
-                    request, HttpResponse.BodyHandlers.ofString());
+                    request.build(), HttpResponse.BodyHandlers.ofString());
+            QServiceClientSecurity.requireAuthorized(response.statusCode(), "QService provisioning");
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
                 throw new IllegalStateException("QService provisioning HTTP "
                         + response.statusCode() + ": " + response.body());

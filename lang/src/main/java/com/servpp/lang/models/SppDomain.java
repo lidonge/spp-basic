@@ -2118,7 +2118,47 @@ public class SppDomain {
                 || "object-repository-remote".equals(adapterName);
     }
 
+    private static final List<String> QSERVICE_SECURITY_KEYS = List.of("insecure", "tlsKeyStore", "tlsKeyStoreType",
+            "tlsKeyStorePasswordFile", "tlsTrustStore", "tlsTrustStoreType", "tlsTrustStorePasswordFile", "tokenFile");
+
+    /** Mirrors QServiceClientSecurity.configErrors; the runtime repeats it against the resolved catalog. */
+    private void validateQuantumServiceSecurity(AppQuantumStoreAdapter adapter, boolean logical, List<String> errors) {
+        Map<String, String> config = adapter.getConfiguration();
+        String prefix = "PHY quantum store adapter " + adapter.getName() + " quantumService config ";
+        if (!logical) {
+            for (String key : QSERVICE_SECURITY_KEYS)
+                if (config.containsKey(key))
+                    errors.add(prefix + key + " is only supported when serviceProtocol is LOGICAL_QSERVICE.");
+            return;
+        }
+        java.util.function.Function<String, Boolean> present = key -> {
+            String value = config.get(key);
+            return value != null && !value.isBlank();
+        };
+        for (String key : QSERVICE_SECURITY_KEYS)
+            if (config.containsKey(key) && !present.apply(key)) errors.add(prefix + key + " must not be blank when declared.");
+        String insecure = config.get("insecure");
+        boolean insecureTrue = insecure != null && insecure.trim().equalsIgnoreCase("true");
+        if (insecure != null && !insecure.isBlank() && !insecureTrue && !insecure.trim().equalsIgnoreCase("false")
+                && !insecure.contains("${")) errors.add(prefix + "insecure must be true or false.");
+        boolean security = QSERVICE_SECURITY_KEYS.stream().anyMatch(key -> !key.equals("insecure") && present.apply(key));
+        if (insecureTrue && security) errors.add(prefix + "insecure = true excludes the TLS settings and tokenFile.");
+        if (present.apply("tlsKeyStore") && !present.apply("tlsKeyStorePasswordFile"))
+            errors.add(prefix + "tlsKeyStore requires tlsKeyStorePasswordFile.");
+        if (present.apply("tlsTrustStore") && !present.apply("tlsTrustStorePasswordFile"))
+            errors.add(prefix + "tlsTrustStore requires tlsTrustStorePasswordFile.");
+        if (!present.apply("tlsKeyStore") && (present.apply("tlsKeyStorePasswordFile") || present.apply("tlsKeyStoreType")))
+            errors.add(prefix + "tlsKeyStorePasswordFile and tlsKeyStoreType require tlsKeyStore.");
+        if (!present.apply("tlsTrustStore") && (present.apply("tlsTrustStorePasswordFile") || present.apply("tlsTrustStoreType")))
+            errors.add(prefix + "tlsTrustStorePasswordFile and tlsTrustStoreType require tlsTrustStore.");
+        String endpoint = config.get("endpoint");
+        if (endpoint != null && endpoint.trim().regionMatches(true, 0, "http://", 0, 7) && !insecureTrue
+                && !(insecure != null && insecure.contains("${")))
+            errors.add(prefix + "endpoint must use https unless insecure = true is set for development.");
+    }
+
     private void validateQuantumServiceAdapterConfig(AppQuantumStoreAdapter adapter, List<String> errors) {
+        validateQuantumServiceSecurity(adapter, usesLogicalQuantumServiceProtocol(adapter), errors);
         if (usesLogicalQuantumServiceProtocol(adapter)) {
             String namespace = adapter.getConfiguration().get("namespace");
             if (namespace == null || namespace.isBlank()) {

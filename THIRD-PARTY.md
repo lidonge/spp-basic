@@ -33,3 +33,9 @@ licensed under the Apache License 2.0. It is resolved from Maven Central and is 
 Version 4.1.1 is the latest CosId release built for Java 17; CosId 5.x requires Java 21. CosId's runtime dependencies are
 `org.jspecify:jspecify` (Apache-2.0) and `org.slf4j:slf4j-api` (MIT). The module is not part of `appframe`:
 applications that do not use it do not receive CosId.
+
+## Test-only dependency
+
+`appframe` tests generate certificates with BouncyCastle (`org.bouncycastle:bcpkix-jdk18on`, version 1.77),
+Copyright The Legion of the Bouncy Castle Inc., under the Bouncy Castle License (MIT-style). It has test scope, is
+resolved from Maven Central, is not copied into this tree and is not part of any produced artifact.

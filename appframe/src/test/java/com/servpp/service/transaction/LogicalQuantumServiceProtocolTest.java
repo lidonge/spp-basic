@@ -162,7 +162,7 @@ public class LogicalQuantumServiceProtocolTest {
                     List.of(wireMutation("Account.balance", "A", "-10"),
                             wireMutation("Order.balance", "B", "10")));
             HttpLogicalQuantumServiceClient client = new HttpLogicalQuantumServiceClient(
-                    "http://127.0.0.1:" + server.getAddress().getPort(), 3000);
+                    "http://127.0.0.1:" + server.getAddress().getPort(), 3000, QServiceClientSecurity.insecure());
 
             LogicalQuantumServiceResponse response = client.execute(command);
 
@@ -240,7 +240,7 @@ public class LogicalQuantumServiceProtocolTest {
         try {
             HttpLogicalQuantumProvisioningClient client =
                     new HttpLogicalQuantumProvisioningClient(
-                            "http://127.0.0.1:" + server.getAddress().getPort(), 3000);
+                            "http://127.0.0.1:" + server.getAddress().getPort(), 3000, QServiceClientSecurity.insecure());
             LogicalQuantumProvisioningRequest request =
                     new LogicalQuantumProvisioningRequest(
                             new LogicalQuantumServiceCommand.LogicalKey(
@@ -310,7 +310,7 @@ public class LogicalQuantumServiceProtocolTest {
         try {
             HttpLogicalQuantumProvisioningClient client =
                     new HttpLogicalQuantumProvisioningClient(
-                            "http://127.0.0.1:" + server.getAddress().getPort(), 3000);
+                            "http://127.0.0.1:" + server.getAddress().getPort(), 3000, QServiceClientSecurity.insecure());
             LogicalQuantumProvisioningRequest request =
                     new LogicalQuantumProvisioningRequest(
                             new LogicalQuantumServiceCommand.LogicalKey(

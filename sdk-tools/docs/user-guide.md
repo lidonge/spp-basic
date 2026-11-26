@@ -620,6 +620,56 @@ only ends its block.
 Use `,breakTransaction` to roll back the whole transaction from any depth,
 including from inside a nested bare block.
 
+## QService settlement: TLS and bearer token
+
+A `quantumService` store that speaks `LOGICAL_QSERVICE` reaches QService through
+`HttpLogicalQuantumServiceClient` and `HttpLogicalQuantumProvisioningClient`.
+QService requires mutual TLS and, optionally, a bearer token at its boundary, so
+the PHY `config` of the store carries the client side. Only the JDK key and trust
+manager factories build the `SSLContext`; the client offers TLSv1.3 and TLSv1.2
+only. Passwords and the token are read from files and are never logged.
+
+```spp
+quantumStore globalQuantum {
+    adapter quantumService;
+    config serviceProtocol = "LOGICAL_QSERVICE";
+    config namespace = "commerce";
+    config endpoint = "https://quantum.example.test";
+    config tlsKeyStore = "/etc/spp/client.p12";
+    config tlsKeyStorePasswordFile = "/etc/spp/client.password";
+    config tlsTrustStore = "/etc/spp/qservice-ca.p12";
+    config tlsTrustStorePasswordFile = "/etc/spp/qservice-ca.password";
+    config tokenFile = "/etc/spp/qservice.token";
+}
+```
+
+| Key | Meaning | Default |
+| --- | --- | --- |
+| `tlsKeyStore` | Client certificate and private key | None: no client certificate |
+| `tlsKeyStoreType` | Key store type | `PKCS12` |
+| `tlsKeyStorePasswordFile` | File holding the key store password; required with `tlsKeyStore` | None |
+| `tlsTrustStore` | Trust store holding the QService CA | The JVM default trust |
+| `tlsTrustStoreType` | Trust store type | `PKCS12` |
+| `tlsTrustStorePasswordFile` | File holding the trust store password; required with `tlsTrustStore` | None |
+| `tokenFile` | File holding the bearer token. It is read again for every request, so rotating the file needs no restart. The token is sent as `Authorization: Bearer` on command, query, capabilities and provisioning requests | None: no token |
+| `insecure` | `true` allows an `http://` endpoint for development and excludes every TLS key and `tokenFile` | `false` |
+
+The endpoint must be `https://` unless `insecure = true` is set. Both
+the compiler and the runtime reject the other combinations: a TLS key or
+`tokenFile` with `insecure = true`, a store or password file without its pair,
+and any of these keys on an `HTTP_JSON` store.
+
+Failures are classified for the settlement bridge. A TLS handshake failure (no
+client certificate, an untrusted CA, a distrusted server) is a transport failure:
+the outcome is `UNKNOWN` and the bridge resolves it with a query under the same
+key. HTTP 401 and 403, and a token file that cannot be read, raise
+`QServiceAuthenticationException`: the command was not processed and retrying
+cannot help, so it is never reported as `UNKNOWN`.
+
+Embedding code can build its own `java.net.http.HttpClient` and pass it, with a
+`QServiceClientSecurity`, to the public constructors of both clients. The security
+object then contributes the endpoint rule and the token only.
+
 ## APP cross-domain role bindings
 
 Declare `play ConsumerRole by provider.ProviderType { consumerField = providerField; }`

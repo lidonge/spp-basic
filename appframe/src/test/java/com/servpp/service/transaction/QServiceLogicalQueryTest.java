@@ -51,7 +51,7 @@ public class QServiceLogicalQueryTest {
     }
 
     private static QServiceQuantumSettlement settlement(String endpoint, boolean provisioning) {
-        return new QServiceQuantumSettlement("globalQuantum", new HttpLogicalQuantumServiceClient(endpoint, 3000),
+        return new QServiceQuantumSettlement("globalQuantum", new HttpLogicalQuantumServiceClient(endpoint, 3000, QServiceClientSecurity.insecure()),
                 provisioning ? request -> null : null);
     }
 

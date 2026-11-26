@@ -859,6 +859,57 @@ public class AppSemanticsTest {
         assertTrue(errors.toString(), errors.isEmpty());
     }
 
+    private List<String> quantumServiceSecurityErrors(String protocol, String endpoint, String extraConfig) throws Exception {
+        return compileDomain("""
+                domain commerce;
+                Entity CreditAccount{ quantum double availableCredit; }
+                Role OrderAmount{ quantum double occupiedAmount; }
+                quantum update reserveCredit(CreditAccount account, OrderAmount amount);
+                """, """
+                domain commerce;
+                quantumStore serviceQuantum{
+                    attribute CreditAccount.availableCredit;
+                    attribute OrderAmount.occupiedAmount;
+                }
+                scope{
+                    local{
+                        quantum resource(creditAccounting,
+                            CreditAccount.availableCredit, OrderAmount.occupiedAmount) reserveCredit;
+                    }
+                }
+                """, """
+                domain commerce;
+                phy{
+                    quantumStore serviceQuantum{
+                        adapter quantumService;
+                        config endpoint = "%s";
+                        config serviceProtocol = %s;
+                        %s
+                        quantum "CreditAccount.availableCredit" { numberType DOUBLE; minValue "0"; maxValue "1000000"; scale 0; }
+                        quantum "OrderAmount.occupiedAmount" { numberType DOUBLE; minValue "0"; maxValue "1000000"; scale 0; }
+                    }
+                }
+                """.formatted(endpoint, protocol, extraConfig)).validatePhysicalRuntimeDeclarations();
+    }
+
+    @Test
+    public void phyQuantumServiceSecurityConfigIsValidated() throws Exception {
+        String namespace = "config namespace = \"commerce\"; config reversalMode = SERVICE_REVERSAL; ";
+        String mutual = "config tlsKeyStore = \"/k.p12\"; config tlsKeyStorePasswordFile = \"/k.pw\"; "
+                + "config tlsTrustStore = \"/t.p12\"; config tlsTrustStorePasswordFile = \"/t.pw\"; config tokenFile = \"/t.token\"; ";
+        assertTrue(quantumServiceSecurityErrors("LOGICAL_QSERVICE", "https://q.example.test", namespace + mutual).toString(),
+                quantumServiceSecurityErrors("LOGICAL_QSERVICE", "https://q.example.test", namespace + mutual).isEmpty());
+        assertTrue(quantumServiceSecurityErrors("LOGICAL_QSERVICE", "http://127.0.0.1:9", namespace + "config insecure = true;").isEmpty());
+        assertTrue(quantumServiceSecurityErrors("LOGICAL_QSERVICE", "http://127.0.0.1:9", namespace).stream()
+                .anyMatch(error -> error.contains("must use https unless insecure = true")));
+        assertTrue(quantumServiceSecurityErrors("LOGICAL_QSERVICE", "http://127.0.0.1:9", namespace + "config insecure = true; config tokenFile = \"/t\";").stream()
+                .anyMatch(error -> error.contains("insecure = true excludes")));
+        assertTrue(quantumServiceSecurityErrors("LOGICAL_QSERVICE", "https://q.example.test", namespace + "config tlsKeyStore = \"/k.p12\";").stream()
+                .anyMatch(error -> error.contains("tlsKeyStore requires tlsKeyStorePasswordFile")));
+        assertTrue(quantumServiceSecurityErrors("HTTP_JSON", "https://q.example.test", "config tokenFile = \"/t\";").toString(), quantumServiceSecurityErrors("HTTP_JSON", "https://q.example.test", "config tokenFile = \"/t\";").stream()
+                .anyMatch(error -> error.contains("tokenFile is only supported when serviceProtocol is LOGICAL_QSERVICE")));
+    }
+
     @Test
     public void phyQuantumServiceProtocolSelectsItsReversalContract() throws Exception {
         SppDomain invalid = compileDomain("""

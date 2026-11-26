@@ -18,20 +18,39 @@ public class HttpLogicalQuantumServiceClient implements LogicalQuantumServiceCli
     private final long timeoutMillis;
     private final ObjectMapper objectMapper;
     private final HttpClient httpClient;
+    private final QServiceClientSecurity security;
 
+    /** An https endpoint with the JVM default trust and no client certificate or token. */
     public HttpLogicalQuantumServiceClient(String endpoint, long timeoutMillis) {
-        this(endpoint, timeoutMillis,
-                new ObjectMapper().enable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES),
-                HttpClient.newHttpClient());
+        this(endpoint, timeoutMillis, QServiceClientSecurity.defaults());
     }
 
+    /** Builds its own {@link HttpClient} from the TLS settings of {@code security}. */
+    public HttpLogicalQuantumServiceClient(String endpoint, long timeoutMillis, QServiceClientSecurity security) {
+        this(endpoint, timeoutMillis,
+                new ObjectMapper().enable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES),
+                security.newHttpClient(), security);
+    }
+
+    /** Package-private test seam: plain http is allowed. */
     HttpLogicalQuantumServiceClient(String endpoint, long timeoutMillis,
                                     ObjectMapper objectMapper, HttpClient httpClient) {
+        this(endpoint, timeoutMillis, objectMapper, httpClient, QServiceClientSecurity.insecure());
+    }
+
+    /**
+     * Uses a caller-built {@link HttpClient}. Its TLS setup is the caller's business: {@code security} then
+     * contributes only the endpoint rule and the bearer token.
+     */
+    public HttpLogicalQuantumServiceClient(String endpoint, long timeoutMillis, ObjectMapper objectMapper,
+                                           HttpClient httpClient, QServiceClientSecurity security) {
         if (timeoutMillis <= 0) {
             throw new IllegalArgumentException("Quantum service timeoutMillis must be positive.");
         }
+        this.security = security == null ? QServiceClientSecurity.defaults() : security;
         this.commandUri = commandUri(endpoint);
         this.capabilitiesUri = resolve(endpoint, "capabilities");
+        this.security.requireEndpoint(commandUri);
         this.timeoutMillis = timeoutMillis;
         this.objectMapper = objectMapper == null
                 ? new ObjectMapper().enable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
@@ -46,13 +65,14 @@ public class HttpLogicalQuantumServiceClient implements LogicalQuantumServiceCli
         }
         try {
             String requestBody = objectMapper.writeValueAsString(command);
-            HttpRequest request = HttpRequest.newBuilder(commandUri)
+            HttpRequest.Builder request = HttpRequest.newBuilder(commandUri)
                     .timeout(Duration.ofMillis(timeoutMillis))
                     .header("Content-Type", "application/json")
                     .header("Accept", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(requestBody))
-                    .build();
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+                    .POST(HttpRequest.BodyPublishers.ofString(requestBody));
+            security.authorize(request);
+            HttpResponse<String> response = httpClient.send(request.build(), HttpResponse.BodyHandlers.ofString());
+            QServiceClientSecurity.requireAuthorized(response.statusCode(), "QService logical");
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
                 throw new IllegalStateException("QService logical HTTP " + response.statusCode()
                         + ": " + response.body());
@@ -84,12 +104,13 @@ public class HttpLogicalQuantumServiceClient implements LogicalQuantumServiceCli
 
     private <T> T get(URI uri, Class<T> type) {
         try {
-            HttpRequest request = HttpRequest.newBuilder(uri)
+            HttpRequest.Builder request = HttpRequest.newBuilder(uri)
                     .timeout(Duration.ofMillis(timeoutMillis))
                     .header("Accept", "application/json")
-                    .GET()
-                    .build();
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+                    .GET();
+            security.authorize(request);
+            HttpResponse<String> response = httpClient.send(request.build(), HttpResponse.BodyHandlers.ofString());
+            QServiceClientSecurity.requireAuthorized(response.statusCode(), "QService logical");
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
                 throw new IllegalStateException("QService logical HTTP " + response.statusCode()
                         + ": " + response.body());
