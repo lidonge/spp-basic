@@ -370,6 +370,10 @@ public class JdbcObjectRepository implements ObjectRepository {
         return store.findForUpdate(objectType, objectId).map(value -> read(value, type));
     }
 
+    @Override public java.util.Optional<java.sql.Connection> transactionConnection() {
+        return com.servpp.service.jdbc.JdbcTransactionScope.currentConnection(store.getDataSource());
+    }
+
     @Override public void executeInTransaction(Runnable action) {
         try {
             com.servpp.service.jdbc.JdbcTransactionScope.execute(store.getDataSource(), connection -> {

@@ -17,6 +17,9 @@ public interface ObjectRepository {
     /** Execute a local Saga stage against this repository's own resource. */
     default void executeInTransaction(Runnable action) { action.run(); }
 
+    /** The JDBC connection of the business transaction in progress on this repository's resource, if any. */
+    default java.util.Optional<java.sql.Connection> transactionConnection() { return java.util.Optional.empty(); }
+
     void save(String objectType, String objectId, Object value);
 
     default void verifyWriteTransaction() {
