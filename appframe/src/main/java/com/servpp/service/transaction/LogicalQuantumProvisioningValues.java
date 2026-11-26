@@ -1,7 +1,6 @@
 package com.servpp.service.transaction;
 
-import java.math.BigDecimal;
-import java.math.BigInteger;
+import com.servpp.service.quantum.settlement.QuantumDefinition;
 
 final class LogicalQuantumProvisioningValues {
     private LogicalQuantumProvisioningValues() {
@@ -27,46 +26,25 @@ final class LogicalQuantumProvisioningValues {
 
     static String physicalValue(
             String logicalValue, LogicalQuantumServiceCommand.Definition definition) {
-        requireDefinition(definition);
-        BigDecimal logical;
-        try {
-            logical = new BigDecimal(requireText(logicalValue, "initialValue"));
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException(
-                    "initialValue must be a decimal value: " + logicalValue, e);
-        }
-        BigDecimal scaled = logical.movePointRight(definition.scale());
-        String physical;
-        if ("FLOAT".equals(definition.numberType())
-                || "DOUBLE".equals(definition.numberType())) {
-            physical = scaled.stripTrailingZeros().toPlainString();
-        } else {
-            BigInteger integer;
-            try {
-                integer = scaled.toBigIntegerExact();
-            } catch (ArithmeticException e) {
-                throw new IllegalArgumentException("initialValue " + logical
-                        + " cannot be represented exactly with scale "
-                        + definition.scale(), e);
-            }
-            physical = integer.toString();
-        }
-        return requirePhysicalValue(physical, definition);
+        return settlementDefinition(definition).physicalValue(logicalValue);
     }
 
     static String requirePhysicalValue(
             String value, LogicalQuantumServiceCommand.Definition definition) {
+        return settlementDefinition(definition).requirePhysicalValue(value);
+    }
+
+    private static QuantumDefinition settlementDefinition(
+            LogicalQuantumServiceCommand.Definition definition) {
         requireDefinition(definition);
-        String stableValue = requireText(value, "physicalInitialValue");
-        Number parsed = parse(definition.numberType(), stableValue, "physicalInitialValue");
-        Number min = parse(definition.numberType(), definition.minValue(), "minValue");
-        Number max = parse(definition.numberType(), definition.maxValue(), "maxValue");
-        if (compare(definition.numberType(), parsed, min) < 0
-                || compare(definition.numberType(), parsed, max) > 0) {
-            throw new IllegalArgumentException(
-                    "physicalInitialValue must be within the binding range");
+        try {
+            return new QuantumDefinition(
+                    QuantumDefinition.NumberType.valueOf(definition.numberType()),
+                    definition.minValue(), definition.maxValue(), definition.scale());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("unsupported or invalid definition: "
+                    + e.getMessage(), e);
         }
-        return stableValue;
     }
 
     private static void requireDefinition(LogicalQuantumServiceCommand.Definition definition) {
@@ -85,49 +63,6 @@ final class LogicalQuantumProvisioningValues {
             throw new IllegalArgumentException(
                     "fixed scale requires an integer numberType");
         }
-    }
-
-    private static Number parse(String numberType, String value, String fieldName) {
-        try {
-            return switch (numberType) {
-                case "BYTE" -> Byte.valueOf(value);
-                case "SHORT" -> Short.valueOf(value);
-                case "INT" -> Integer.valueOf(value);
-                case "LONG" -> Long.valueOf(value);
-                case "FLOAT" -> {
-                    float parsed = Float.parseFloat(value);
-                    if (!Float.isFinite(parsed)) {
-                        throw new NumberFormatException("non-finite float");
-                    }
-                    yield parsed;
-                }
-                case "DOUBLE" -> {
-                    double parsed = Double.parseDouble(value);
-                    if (!Double.isFinite(parsed)) {
-                        throw new NumberFormatException("non-finite double");
-                    }
-                    yield parsed;
-                }
-                default -> throw new IllegalArgumentException(
-                        "unsupported numberType " + numberType);
-            };
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException(fieldName + " is not a valid "
-                    + numberType + " value: " + value, e);
-        }
-    }
-
-    private static int compare(String numberType, Number first, Number second) {
-        return switch (numberType) {
-            case "BYTE" -> Byte.compare(first.byteValue(), second.byteValue());
-            case "SHORT" -> Short.compare(first.shortValue(), second.shortValue());
-            case "INT" -> Integer.compare(first.intValue(), second.intValue());
-            case "LONG" -> Long.compare(first.longValue(), second.longValue());
-            case "FLOAT" -> Float.compare(first.floatValue(), second.floatValue());
-            case "DOUBLE" -> Double.compare(first.doubleValue(), second.doubleValue());
-            default -> throw new IllegalArgumentException(
-                    "unsupported numberType " + numberType);
-        };
     }
 
     private static String requireText(String value, String fieldName) {

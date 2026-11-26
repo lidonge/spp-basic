@@ -33,7 +33,7 @@ public class DefaultTransactionManager {
 
     private final Map<TransactionMode, TransactionStrategy> strategies = new EnumMap<>(TransactionMode.class);
     private QuantumJournalStore quantumJournalStore = new InMemoryQuantumJournalStore();
-    private QuantumAccessAdapter quantumAccessAdapter = new JournalQuantumAccessAdapter(quantumJournalStore);
+    private QuantumAccessAdapter quantumAccessAdapter = SettlementQuantumAccessAdapter.journal(quantumJournalStore);
 
     public DefaultTransactionManager() {
         registerStrategy(new AtTransactionStrategy());
@@ -66,7 +66,7 @@ public class DefaultTransactionManager {
 
     public void setQuantumJournalStore(QuantumJournalStore quantumJournalStore) {
         this.quantumJournalStore = Objects.requireNonNull(quantumJournalStore, "quantumJournalStore");
-        this.quantumAccessAdapter = new JournalQuantumAccessAdapter(this.quantumJournalStore);
+        this.quantumAccessAdapter = SettlementQuantumAccessAdapter.journal(this.quantumJournalStore);
     }
 
     public QuantumAccessAdapter getQuantumAccessAdapter() {
@@ -440,8 +440,10 @@ public class DefaultTransactionManager {
     private void settleLocalQuantum(TransactionContext context, List<TransactionEntry> executed) {
         if (DeclaredTransactionContext.currentMode() != TransactionMode.LOCAL
                 || !(context.getQuantumJournalStore() instanceof JdbcQuantumJournalStore jdbc)
-                || quantumAccessAdapter.getClass() != JournalQuantumAccessAdapter.class
-                || ((JournalQuantumAccessAdapter) quantumAccessAdapter).getJournalStore() != jdbc) return;
+                || quantumAccessAdapter.getClass() != SettlementQuantumAccessAdapter.class
+                || !(((SettlementQuantumAccessAdapter) quantumAccessAdapter).getService()
+                        instanceof JournalQuantumSettlement journal)
+                || journal.getJournalStore() != jdbc) return;
         QuantumEntanglementBoundary boundary = context.getQuantumEntanglementBoundary();
         if (boundary == null || boundary.recordCount() == context.settledQuantumRecords()) return;
         SourceTransactionBoundary.assertCommittable();

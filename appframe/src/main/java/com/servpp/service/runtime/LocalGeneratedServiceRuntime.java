@@ -59,11 +59,13 @@ import com.servpp.service.transaction.JdbcTccReservationStore;
 import com.servpp.service.transaction.HttpLogicalQuantumServiceClient;
 import com.servpp.service.transaction.HttpLogicalQuantumProvisioningClient;
 import com.servpp.service.transaction.HttpJsonQuantumServiceClient;
-import com.servpp.service.transaction.LogicalQuantumProvisioningResponse;
 import com.servpp.service.transaction.QuantumAttributeValue;
 import com.servpp.service.transaction.QuantumJournalEntry;
+import com.servpp.service.transaction.QServiceQuantumSettlement;
 import com.servpp.service.transaction.QuantumServiceAccessAdapter;
-import com.servpp.service.transaction.QuantumServiceDefinition;
+import com.servpp.service.transaction.SettlementQuantumAccessAdapter;
+import com.servpp.service.quantum.settlement.ProvisionResponse;
+import com.servpp.service.quantum.settlement.QuantumDefinition;
 import com.servpp.service.transaction.SagaLogEntry;
 import com.servpp.service.transaction.SagaLogRecorder;
 import com.servpp.service.transaction.SagaTransactionGroupCoordinator;
@@ -8796,6 +8798,25 @@ public class LocalGeneratedServiceRuntime {
         }
     }
 
+    private static QuantumDefinition settlementDefinition(PhysicalRuntimeCatalog.QuantumDefinition definition) {
+        if (definition.attributeId() == null || definition.attributeId().isBlank()) {
+            throw new IllegalArgumentException("attributeId must not be blank");
+        }
+        String numberType = definition.numberType() == null ? "" : definition.numberType().trim();
+        if (numberType.isEmpty()) {
+            throw new IllegalArgumentException("numberType must not be blank");
+        }
+        try {
+            return new QuantumDefinition(QuantumDefinition.NumberType.valueOf(numberType),
+                    definition.minValue(), definition.maxValue(), definition.scale());
+        } catch (IllegalArgumentException e) {
+            if (e.getMessage() != null && e.getMessage().startsWith("No enum constant")) {
+                throw new IllegalArgumentException("unsupported numberType " + numberType, e);
+            }
+            throw e;
+        }
+    }
+
     private void validateQuantumServiceLogicalBindings(PhysicalRuntimeCatalog.QuantumStore store,
                                                        List<String> errors) {
         String namespace = store.configuration().get("namespace");
@@ -8807,8 +8828,7 @@ public class LocalGeneratedServiceRuntime {
         for (PhysicalRuntimeCatalog.QuantumDefinition definition : store.definitions()) {
             definitions.put(definition.attributeId(), definition);
             try {
-                new QuantumServiceDefinition(definition.attributeId(), definition.numberType(),
-                        definition.minValue(), definition.maxValue(), definition.scale());
+                settlementDefinition(definition);
             } catch (IllegalArgumentException e) {
                 errors.add("Quantum store " + store.name() + " definition "
                         + definition.attributeId() + " is invalid: " + e.getMessage() + ".");
@@ -9014,17 +9034,19 @@ public class LocalGeneratedServiceRuntime {
                                     quantumServiceTimeoutMillis(store.name(), config.get("timeoutMillis")))));
                     return;
                 }
-                physicalRuntime.setQuantumAccessAdapter(new QuantumServiceAccessAdapter(store.name(),
-                        config.get("endpoint"), physicalQuantumReversalMode(config),
-                        config.get("namespace"), store.definitions().stream()
-                                .map(definition -> new QuantumServiceDefinition(
-                                        definition.attributeId(), definition.numberType(),
-                                        definition.minValue(), definition.maxValue(), definition.scale()))
-                                .toList(),
-                        new HttpLogicalQuantumServiceClient(config.get("endpoint"),
-                                quantumServiceTimeoutMillis(store.name(), config.get("timeoutMillis"))),
-                        new HttpLogicalQuantumProvisioningClient(config.get("endpoint"),
-                                quantumServiceTimeoutMillis(store.name(), config.get("timeoutMillis")))));
+                Map<String, QuantumDefinition> definitions = new LinkedHashMap<>();
+                for (var definition : store.definitions()) {
+                    if (definitions.putIfAbsent(definition.attributeId(), settlementDefinition(definition)) != null) {
+                        throw new IllegalStateException(
+                                "Duplicate quantum service definition " + definition.attributeId() + ".");
+                    }
+                }
+                long timeoutMillis = quantumServiceTimeoutMillis(store.name(), config.get("timeoutMillis"));
+                physicalRuntime.setQuantumAccessAdapter(new SettlementQuantumAccessAdapter(
+                        new QServiceQuantumSettlement(store.name(),
+                                new HttpLogicalQuantumServiceClient(config.get("endpoint"), timeoutMillis),
+                                new HttpLogicalQuantumProvisioningClient(config.get("endpoint"), timeoutMillis)),
+                        config.get("namespace"), definitions));
                 return;
             }
             if (!Set.of("jdbcQuantum", "jdbc-quantum").contains(store.adapterName())) {
@@ -25998,8 +26020,7 @@ public class LocalGeneratedServiceRuntime {
                     if (!definedAttributeIds.add(definition.attributeId())) {
                         return false;
                     }
-                    new QuantumServiceDefinition(definition.attributeId(), definition.numberType(),
-                            definition.minValue(), definition.maxValue(), definition.scale());
+                    settlementDefinition(definition);
                 }
             } catch (IllegalArgumentException e) {
                 return false;
@@ -28568,11 +28589,11 @@ public class LocalGeneratedServiceRuntime {
         getRepository().save(objectType, objectId, object);
     }
 
-    public List<LogicalQuantumProvisioningResponse> provisionQuantumObject(
+    public List<ProvisionResponse> provisionQuantumObject(
             String objectId, Map<String, ?> initialValues) {
         install();
         if (!(physicalRuntime.getQuantumAccessAdapter()
-                instanceof QuantumServiceAccessAdapter adapter)) {
+                instanceof SettlementQuantumAccessAdapter adapter)) {
             throw new IllegalStateException(
                     "Runtime quantum access adapter does not support QService provisioning.");
         }

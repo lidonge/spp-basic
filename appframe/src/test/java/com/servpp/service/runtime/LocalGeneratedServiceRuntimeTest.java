@@ -23,7 +23,7 @@ import com.servpp.service.Service;
 import com.servpp.service.transaction.DefaultTransactionManager;
 import com.servpp.service.transaction.QuantumConservationRecord;
 import com.servpp.service.transaction.QuantumEntanglementBoundary;
-import com.servpp.service.transaction.LogicalQuantumProvisioningResponse;
+import com.servpp.service.quantum.settlement.ProvisionResponse;
 import com.servpp.service.transaction.SagaExecutionScope;
 import com.servpp.service.transaction.SagaRecoveryScanResult;
 import com.servpp.service.transaction.SagaTransactionGroupCoordinator;
@@ -365,12 +365,12 @@ public class LocalGeneratedServiceRuntimeTest {
                     catalog.physicalQuantumPlansByServiceProtocol().get("LOGICAL_QSERVICE"));
             assertFalse(catalog.quantumStoreValidationErrors().stream()
                     .anyMatch(error -> error.contains("config reversalMode must be NEGATIVE_DELTA")));
-            List<LogicalQuantumProvisioningResponse> responses =
+            List<ProvisionResponse> responses =
                     runtime.provisionQuantumObject(
                             "ACCOUNT-1", Map.of("Account.balance", "12.34"));
 
             assertEquals(1, responses.size());
-            assertEquals(23, responses.get(0).quantumID());
+            assertEquals("1234", responses.get(0).physicalInitialValue());
             assertTrue(requestBody.get(),
                     requestBody.get().contains("\"objectId\":\"ACCOUNT-1\""));
             assertTrue(requestBody.get(),

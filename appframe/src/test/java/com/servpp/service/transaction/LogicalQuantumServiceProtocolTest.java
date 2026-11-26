@@ -3,6 +3,10 @@ package com.servpp.service.transaction;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.net.httpserver.HttpServer;
+import com.servpp.service.quantum.settlement.ProvisionResponse;
+import com.servpp.service.quantum.settlement.QuantumDefinition;
+import com.servpp.service.quantum.settlement.SettlementCommand;
+import com.servpp.service.quantum.settlement.SettlementResponse;
 import org.junit.Test;
 
 import java.math.BigDecimal;
@@ -21,18 +25,16 @@ import static org.junit.Assert.assertTrue;
 public class LogicalQuantumServiceProtocolTest {
     @Test
     public void netsRepeatedLogicalKeysBeforeChoosingAtomicShape() {
-        LogicalQuantumServiceCommand command = BusinessTraceContext.execute("REQ-NET-1", () ->
-                LogicalQuantumServiceCommand.from(
-                        LogicalQuantumServiceCommand.Operation.ENTANGLE,
-                        "commerce",
+        SettlementCommand command = BusinessTraceContext.execute("REQ-NET-1", () ->
+                bridge(c -> response(c, LogicalQuantumServiceResponse.Outcome.SUCCESS)).command(
+                        SettlementResponse.Operation.SETTLE,
                         context(),
                         boundary(
                                 record("credit", "Account.balance", "A", "-10"),
                                 record("credit", "Order.balance", "B", "15"),
-                                record("credit", "Order.balance", "B", "-5")),
-                        definitions()).orElseThrow());
+                                record("credit", "Order.balance", "B", "-5"))).orElseThrow());
 
-        assertEquals(LogicalQuantumServiceCommand.AtomicGroupShape.NONE, command.atomicGroupShape());
+        assertEquals(SettlementCommand.AtomicGroupShape.NONE, command.shape());
         assertEquals(2, command.mutations().size());
         assertEquals("-10", command.mutations().get(0).delta());
         assertEquals("10", command.mutations().get(1).delta());
@@ -40,35 +42,30 @@ public class LogicalQuantumServiceProtocolTest {
 
     @Test
     public void detectsOneContributorManyRecipientsAfterNetting() {
-        LogicalQuantumServiceCommand command = BusinessTraceContext.execute("REQ-SPLIT-1", () ->
-                LogicalQuantumServiceCommand.from(
-                        LogicalQuantumServiceCommand.Operation.ENTANGLE,
-                        "commerce",
+        SettlementCommand command = BusinessTraceContext.execute("REQ-SPLIT-1", () ->
+                bridge(c -> response(c, LogicalQuantumServiceResponse.Outcome.SUCCESS)).command(
+                        SettlementResponse.Operation.SETTLE,
                         context(),
                         boundary(
                                 record("split", "Account.balance", "A", "-10"),
                                 record("split", "Order.balance", "B", "6"),
-                                record("split", "Inventory.quantity", "C", "4")),
-                        definitions()).orElseThrow());
+                                record("split", "Inventory.quantity", "C", "4"))).orElseThrow());
 
-        assertEquals(LogicalQuantumServiceCommand.AtomicGroupShape.ONE_CONTRIBUTOR_MANY_RECIPIENTS,
-                command.atomicGroupShape());
+        assertEquals(SettlementCommand.AtomicGroupShape.ONE_TO_MANY, command.shape());
     }
 
     @Test
     public void reversalUsesIndependentKeyAndOriginalPositiveCommandDeltas() {
-        LogicalQuantumServiceCommand command = BusinessTraceContext.execute("REQ-REV-1", () ->
-                LogicalQuantumServiceCommand.from(
-                        LogicalQuantumServiceCommand.Operation.REVERSE_ENTANGLE,
-                        "commerce",
+        SettlementCommand command = BusinessTraceContext.execute("REQ-REV-1", () ->
+                bridge(c -> response(c, LogicalQuantumServiceResponse.Outcome.SUCCESS)).command(
+                        SettlementResponse.Operation.REVERSE,
                         context(),
                         boundary(
                                 record("credit", "Account.balance", "A", "-10"),
-                                record("credit", "Order.balance", "B", "10")),
-                        definitions()).orElseThrow());
+                                record("credit", "Order.balance", "B", "10"))).orElseThrow());
 
-        assertEquals("REQ-REV-1:reversal", command.requestKey());
-        assertEquals("REQ-REV-1", command.originalRequestKey());
+        assertEquals("REQ-REV-1:reversal", command.key().requestKey());
+        assertEquals("REQ-REV-1", command.originalRequestKey().orElseThrow());
         assertEquals("-10", command.mutations().get(0).delta());
         assertEquals("10", command.mutations().get(1).delta());
     }
@@ -82,7 +79,7 @@ public class LogicalQuantumServiceProtocolTest {
             QuantumEntanglementBoundary boundary = boundary(
                     record("credit", "Account.balance", "A", "-10"),
                     record("credit", "Order.balance", "B", "10"));
-            QuantumServiceAccessAdapter adapter = adapter(command -> response(command, outcome));
+            SettlementQuantumAccessAdapter adapter = bridge(command -> response(command, outcome));
 
             QuantumServiceOutcomeException failure = assertThrows(QuantumServiceOutcomeException.class,
                     () -> BusinessTraceContext.execute("REQ-" + outcome, () -> {
@@ -101,7 +98,7 @@ public class LogicalQuantumServiceProtocolTest {
                 record("credit", "Account.balance", "A", "-10"),
                 record("credit", "Order.balance", "B", "10"));
         BusinessTraceContext.execute("REQ-SUCCESS", () -> {
-            adapter(command -> response(command,
+            bridge(command -> response(command,
                     LogicalQuantumServiceResponse.Outcome.SUCCESS)).commit(context(), successful);
             return null;
         });
@@ -114,7 +111,7 @@ public class LogicalQuantumServiceProtocolTest {
         QuantumEntanglementBoundary boundary = boundary(
                 record("credit", "Account.balance", "A", "-10"),
                 record("credit", "Order.balance", "B", "10"));
-        QuantumServiceAccessAdapter adapter = adapter(command -> {
+        SettlementQuantumAccessAdapter adapter = bridge(command -> {
             throw new IllegalStateException("timeout");
         });
 
@@ -159,15 +156,11 @@ public class LogicalQuantumServiceProtocolTest {
         });
         server.start();
         try {
-            LogicalQuantumServiceCommand command = BusinessTraceContext.execute("REQ-HTTP-1", () ->
-                    LogicalQuantumServiceCommand.from(
-                            LogicalQuantumServiceCommand.Operation.ENTANGLE,
-                            "commerce",
-                            context(),
-                            boundary(
-                                    record("credit", "Account.balance", "A", "-10"),
-                                    record("credit", "Order.balance", "B", "10")),
-                            definitions()).orElseThrow());
+            LogicalQuantumServiceCommand command = new LogicalQuantumServiceCommand(
+                    LogicalQuantumServiceCommand.Operation.ENTANGLE, "commerce", "accounting", "REQ-HTTP-1", null,
+                    LogicalQuantumServiceCommand.AtomicGroupShape.NONE,
+                    List.of(wireMutation("Account.balance", "A", "-10"),
+                            wireMutation("Order.balance", "B", "10")));
             HttpLogicalQuantumServiceClient client = new HttpLogicalQuantumServiceClient(
                     "http://127.0.0.1:" + server.getAddress().getPort(), 3000);
 
@@ -185,7 +178,7 @@ public class LogicalQuantumServiceProtocolTest {
     @Test
     public void adapterProvisionsOnlyExplicitObjectAttributesAfterValidatingTheWholeRequest() {
         List<LogicalQuantumProvisioningRequest> requests = new ArrayList<>();
-        QuantumServiceAccessAdapter adapter = provisioningAdapter(request -> {
+        SettlementQuantumAccessAdapter adapter = provisioningAdapter(request -> {
             requests.add(request);
             return new LogicalQuantumProvisioningResponse(
                     request.logicalKey(), requests.size() - 1L, request.definition(),
@@ -195,7 +188,7 @@ public class LogicalQuantumServiceProtocolTest {
         initialValues.put("Account.balance", new BigDecimal("12.34"));
         initialValues.put("Inventory.quantity", 7);
 
-        List<LogicalQuantumProvisioningResponse> responses =
+        List<ProvisionResponse> responses =
                 adapter.provisionObject("OBJECT-1", initialValues);
 
         assertEquals(2, responses.size());
@@ -333,26 +326,27 @@ public class LogicalQuantumServiceProtocolTest {
         }
     }
 
-    private QuantumServiceAccessAdapter adapter(LogicalQuantumServiceClient client) {
-        return new QuantumServiceAccessAdapter("globalQuantum", "https://quantum.example.test",
-                "SERVICE_REVERSAL", "commerce", definitions(), client);
+    private SettlementQuantumAccessAdapter bridge(LogicalQuantumServiceClient client) {
+        return new SettlementQuantumAccessAdapter(
+                new QServiceQuantumSettlement("globalQuantum", client, null), "commerce", definitions());
     }
 
-    private QuantumServiceAccessAdapter provisioningAdapter(
+    private SettlementQuantumAccessAdapter provisioningAdapter(
             LogicalQuantumProvisioningClient client) {
-        return new QuantumServiceAccessAdapter(
-                "globalQuantum", "https://quantum.example.test",
-                "SERVICE_REVERSAL", "commerce",
-                List.of(
-                        new QuantumServiceDefinition(
-                                "Account.balance", "LONG", "0", "1000000", 2),
-                        new QuantumServiceDefinition(
-                                "Order.balance", "LONG", "0", "1000000", 2),
-                        new QuantumServiceDefinition(
-                                "Inventory.quantity", "LONG", "0", "1000000", 0)),
-                command -> response(command,
-                        LogicalQuantumServiceResponse.Outcome.SUCCESS),
-                client);
+        return new SettlementQuantumAccessAdapter(
+                new QServiceQuantumSettlement("globalQuantum",
+                        command -> response(command, LogicalQuantumServiceResponse.Outcome.SUCCESS), client),
+                "commerce",
+                Map.of(
+                        "Account.balance", new QuantumDefinition(QuantumDefinition.NumberType.LONG, "0", "1000000", 2),
+                        "Order.balance", new QuantumDefinition(QuantumDefinition.NumberType.LONG, "0", "1000000", 2),
+                        "Inventory.quantity", new QuantumDefinition(QuantumDefinition.NumberType.LONG, "0", "1000000", 0)));
+    }
+
+    private LogicalQuantumServiceCommand.Mutation wireMutation(String attributeId, String objectId, String delta) {
+        return new LogicalQuantumServiceCommand.Mutation(
+                new LogicalQuantumServiceCommand.LogicalKey("commerce", attributeId, objectId),
+                new LogicalQuantumServiceCommand.Definition("LONG", "0", "1000000", 0), delta);
     }
 
     private LogicalQuantumServiceResponse response(
@@ -387,10 +381,8 @@ public class LogicalQuantumServiceProtocolTest {
                 groupId, attributeId, objectId, before, change, before.add(change));
     }
 
-    private List<QuantumServiceDefinition> definitions() {
-        return List.of(
-                new QuantumServiceDefinition("Account.balance", "LONG", "0", "1000000", 0),
-                new QuantumServiceDefinition("Order.balance", "LONG", "0", "1000000", 0),
-                new QuantumServiceDefinition("Inventory.quantity", "LONG", "0", "1000000", 0));
+    private Map<String, QuantumDefinition> definitions() {
+        QuantumDefinition definition = new QuantumDefinition(QuantumDefinition.NumberType.LONG, "0", "1000000", 0);
+        return Map.of("Account.balance", definition, "Order.balance", definition, "Inventory.quantity", definition);
     }
 }

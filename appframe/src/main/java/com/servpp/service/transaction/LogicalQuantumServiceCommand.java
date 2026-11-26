@@ -1,11 +1,6 @@
 package com.servpp.service.transaction;
 
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 public record LogicalQuantumServiceCommand(
         Operation operation,
@@ -57,97 +52,6 @@ public record LogicalQuantumServiceCommand(
             throw new IllegalArgumentException("logical quantum command requires at least two mutations");
         }
         mutations = List.copyOf(mutations);
-    }
-
-    public static Optional<LogicalQuantumServiceCommand> from(
-            Operation operation,
-            String namespace,
-            TransactionContext context,
-            QuantumEntanglementBoundary boundary,
-            List<QuantumServiceDefinition> definitions) {
-        if (context == null) {
-            throw new IllegalArgumentException("transaction context must not be null");
-        }
-        if (boundary == null) {
-            return Optional.empty();
-        }
-        Map<String, QuantumServiceDefinition> definitionsByAttribute = definitionsByAttribute(definitions);
-        Map<LogicalKey, BigDecimal> netDeltas = new LinkedHashMap<>();
-        for (QuantumConservationRecord record : boundary.getRecords()) {
-            LogicalKey key = new LogicalKey(requireText(namespace, "namespace"),
-                    record.getAttributeId(), record.getObjectId());
-            netDeltas.merge(key, record.getDeltaValue(), BigDecimal::add);
-        }
-        List<Mutation> mutations = new ArrayList<>();
-        for (Map.Entry<LogicalKey, BigDecimal> entry : netDeltas.entrySet()) {
-            if (entry.getValue().signum() == 0) {
-                continue;
-            }
-            QuantumServiceDefinition definition = definitionsByAttribute.get(entry.getKey().attributeId());
-            if (definition == null) {
-                throw new IllegalStateException("Quantum service has no binding definition for "
-                        + entry.getKey().attributeId() + ".");
-            }
-            mutations.add(new Mutation(entry.getKey(),
-                    new Definition(definition.numberType(), definition.minValue(),
-                            definition.maxValue(), definition.scale()),
-                    entry.getValue().stripTrailingZeros().toPlainString()));
-        }
-        if (mutations.isEmpty()) {
-            return Optional.empty();
-        }
-        if (mutations.size() < 2) {
-            throw new IllegalStateException("Quantum service boundary has only one non-zero logical mutation.");
-        }
-        BigDecimal netDelta = mutations.stream()
-                .map(mutation -> new BigDecimal(mutation.delta()))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        if (netDelta.signum() != 0) {
-            throw new IllegalStateException("Quantum service logical mutations are not conserved: " + netDelta + ".");
-        }
-        String originalRequestKey = context.getTraceId();
-        String requestKey = operation == Operation.ENTANGLE
-                ? originalRequestKey
-                : originalRequestKey + ":reversal";
-        return Optional.of(new LogicalQuantumServiceCommand(
-                operation,
-                namespace,
-                boundary.getServiceId(),
-                requestKey,
-                operation == Operation.ENTANGLE ? null : originalRequestKey,
-                shape(mutations),
-                mutations));
-    }
-
-    private static Map<String, QuantumServiceDefinition> definitionsByAttribute(
-            List<QuantumServiceDefinition> definitions) {
-        Map<String, QuantumServiceDefinition> byAttribute = new LinkedHashMap<>();
-        for (QuantumServiceDefinition definition : definitions == null ? List.<QuantumServiceDefinition>of()
-                : definitions) {
-            QuantumServiceDefinition previous = byAttribute.putIfAbsent(definition.attributeId(), definition);
-            if (previous != null) {
-                throw new IllegalArgumentException("Duplicate quantum service definition "
-                        + definition.attributeId() + ".");
-            }
-        }
-        return byAttribute;
-    }
-
-    private static AtomicGroupShape shape(List<Mutation> mutations) {
-        if (mutations.size() == 2) {
-            return AtomicGroupShape.NONE;
-        }
-        long contributors = mutations.stream()
-                .filter(mutation -> new BigDecimal(mutation.delta()).signum() < 0)
-                .count();
-        long recipients = mutations.size() - contributors;
-        if (contributors == 1 && recipients > 1) {
-            return AtomicGroupShape.ONE_CONTRIBUTOR_MANY_RECIPIENTS;
-        }
-        if (contributors > 1 && recipients == 1) {
-            return AtomicGroupShape.MANY_CONTRIBUTORS_ONE_RECIPIENT;
-        }
-        return AtomicGroupShape.NETTED_GROUP;
     }
 
     private static String requireText(String value, String fieldName) {

@@ -9,11 +9,11 @@ import com.servpp.service.idempotency.JdbcBusinessIdempotencyStore;
 import com.servpp.service.transaction.DefaultTccTransactionParticipant;
 import com.servpp.service.transaction.DefaultTransactionManager;
 import com.servpp.service.transaction.JdbcQuantumJournalStore;
-import com.servpp.service.transaction.JournalQuantumAccessAdapter;
 import com.servpp.service.transaction.JdbcSagaLogStore;
 import com.servpp.service.transaction.JdbcTccBranchStore;
 import com.servpp.service.transaction.JdbcTccReservationStore;
 import com.servpp.service.transaction.QuantumAccessAdapter;
+import com.servpp.service.transaction.SettlementQuantumAccessAdapter;
 import com.servpp.service.transaction.SagaLogManager;
 import com.servpp.service.transaction.TccObjectStoreQuantumCoordinator;
 
@@ -42,7 +42,7 @@ public class LocalPhysicalRuntime {
                                 JdbcTccBranchStore tccBranchStore,
                                 JdbcTccReservationStore tccReservationStore) {
         this.quantumJournalStore = quantumJournalStore;
-        this.quantumAccessAdapter = new JournalQuantumAccessAdapter(quantumJournalStore);
+        this.quantumAccessAdapter = SettlementQuantumAccessAdapter.journal(quantumJournalStore);
         this.idempotencyStore = idempotencyStore;
         this.sagaLogStore = sagaLogStore;
         this.tccBranchStore = tccBranchStore;
@@ -87,7 +87,7 @@ public class LocalPhysicalRuntime {
 
     public void setQuantumJournalStore(JdbcQuantumJournalStore quantumJournalStore) {
         this.quantumJournalStore = quantumJournalStore;
-        this.quantumAccessAdapter = new JournalQuantumAccessAdapter(quantumJournalStore);
+        this.quantumAccessAdapter = SettlementQuantumAccessAdapter.journal(quantumJournalStore);
         DefaultTransactionManager.getInstance().setQuantumJournalStore(quantumJournalStore);
     }
 
