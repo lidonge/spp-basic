@@ -434,6 +434,139 @@ relative to its start. Use `labels occurs 3 width 8;` for a scalar array or a
 braced group for an array of participants. Both directions use the exact
 declared count.
 
+## Technical values: serial numbers, context identifiers and interceptors
+
+A transaction serial number, a log number or a generated reference is a technical
+value, not business. SPP never allocates or computes it. APP declares what the value
+is and which field receives it; PHY binds the technical service that produces it.
+Voucher or document numbers that carry business meaning stay in SPP.
+
+### Serial rules
+
+```app
+technical services { movementSerialEngine; }
+
+serial movementSerial using movementSerialEngine {
+    scope operatorBranch, businessDate;   // one counter per scope value
+    range 1..9999 wrap;                   // without wrap, the end is a SERIAL_EXHAUSTED rejection
+    format "{operatorBranch}{businessDate:yyyyMMdd}-{seq:4}";   // optional
+    gapless;                              // optional
+}
+
+tables contracts {
+    table MOVEMENTS(CashMovement) {
+        primarykey(CashMovement.movementCode);
+        auto CashMovement.serialNumber serial movementSerial;
+        auto CashMovement.logNumber context transactionLogNumber;
+    }
+}
+```
+
+* `scope` lists fields of the entity. A counter exists per combination of values; a
+  date or date-time value counts as its calendar date, so a business-date scope resets daily.
+  An empty scope is one global counter. A scope value that is blank is rejected
+  (`SERIAL_SCOPE_VALUE_REQUIRED`).
+* `range a..b` (default `1..Long.MAX_VALUE`) and `wrap` are applied by S++ to the number
+  the engine returns. `format` placeholders: `{seq}`, `{seq:N}` (zero padded), `{scopeField}` and
+  `{dateScopeField:yyyyMMdd}`. A rule with a format fills a `String` field; without one it
+  fills `short`, `int`, `long` or `BigInteger`.
+* `auto Entity.field serial rule;` assigns the field on insert when it is still empty. SPP
+  never mentions it and may read it afterwards. An SPP assignment to the field is a compile error.
+* `gapless` allocates inside the business transaction, so a rollback leaves no gap. The rule's
+  engine must implement `GaplessSerialEngine`, otherwise compilation fails. Without `gapless`
+  an allocation is allowed to leave gaps.
+
+### Context identifiers
+
+`auto Entity.field context name;` fills the field from the trusted invocation context, never
+from a business request. The names are `transactionLogNumber`, `auditLogNumber`,
+`nonAccountingLogNumber` and `triggerSequence`. The ingress establishes them:
+
+```java
+RemoteServiceIngress.execute(service, request, callerId, requestSerial,
+        Map.of("transactionLogNumber", "TL-0001", "triggerSequence", "42"));
+```
+
+They are available to every call under that ingress. A missing name is rejected with
+`CONTEXT_IDENTIFIER_UNAVAILABLE`; the browser ingress supplies none. In tests, set them with
+`InvocationContext.withIdentifiers(Map.of(...), () -> ...)`.
+
+### The serial engine is a technical service
+
+Which library or table produces the raw numbers is a PHY choice. The serial rule names its
+engine, an ordinary technical service. Every implementation is bound the same way; there are no
+engine-specific keywords:
+
+```phy
+phy {
+    technical service movementSerialEngine {
+        implementation: "com.servpp.technical.serial.CosIdSerialEngine";
+        config mode = "segment"; config step = "100";
+        config datasourceUrl = "jdbc:postgresql://db/app"; config driverClassName = "org.postgresql.Driver";
+    }
+}
+```
+
+| Implementation | Module | Gapless | Configuration (validated by the class) |
+| --- | --- | --- | --- |
+| `com.servpp.technical.serial.CosIdSerialEngine` | `appframe-serial-cosid` (optional; brings CosId 4.1.1, Apache-2.0) | no | `mode` `segment` or `snowflake`; segment: `step`, `namespace`, `initTable`, `datasourceUrl`, `driverClassName`, `username`, `password`; snowflake: `machine` |
+| `com.servpp.service.serial.DbSequenceEngine` | `appframe` | no | `sequence`, `datasourceUrl`, `driverClassName`, `username`, `password`; one counter for all scopes |
+| `com.servpp.service.serial.GaplessCounterEngine` | `appframe` | yes | optional `table`, `keyColumn`, `valueColumn` (default `SPP_SERIAL_COUNTER`, `COUNTER_KEY`, `COUNTER_VALUE`) |
+| `com.servpp.service.serial.InMemorySerialEngine` | `appframe` | no | `store`; deterministic, for tests |
+
+`GaplessCounterEngine` runs a locked `UPDATE ... SET v = v + 1` on the repository's business
+transaction connection. It needs the counter table to exist:
+`create table SPP_SERIAL_COUNTER (COUNTER_KEY varchar(200) primary key, COUNTER_VALUE bigint not null)`.
+It can point at a legacy counter table; the stored value is the last number issued, and rows are keyed
+by the counter key `rule/scope1/scope2` (`SerialValueService.counterKey`).
+`CosIdSerialEngine` keeps one CosId segment generator per counter; a restart skips the unused rest of a
+segment. Add the module to the application's dependencies only when you use it.
+
+For deterministic tests and difftests bind `InMemorySerialEngine` and seed it from the same fixture as
+the legacy counter: `InMemorySerialEngine.seed("store", SerialValueService.counterKey("movementSerial", "B01"), 41)`
+makes the next number 42; `InMemorySerialEngine.reset()` clears every store.
+
+### Plug in your own engine, or replace the whole serial
+
+*Engine swap, keeping the S++ serial semantics.* Implement `SerialEngine` and bind it as above. The
+engine returns the raw next number of one counter (starting at 1); S++ still applies range, wrap and format.
+
+```java
+public class MyEngine implements com.servpp.service.serial.SerialEngine {
+    public void configure(java.util.Map<String, String> configuration) { /* validate your keys */ }
+    public long next(com.servpp.service.serial.SerialRequest request) { /* request.counter(), request.scope() ... */ }
+}
+```
+
+`SerialRequest` carries the rule name, the counter key, the scope values, the business date if the scope has
+one, the range, whether the rule is `gapless`, and the business transaction connection.
+
+*Full replacement.* Attach any technical service that implements `FieldValueInterceptor` to an entity insert:
+
+```app
+technical services { bankSerial; }
+intercept CashMovement {
+    insert: bankSerial -> serialNumber;
+}
+```
+
+`produce(FieldValueContext)` receives the entity and field names, the target field's Java type, the record's
+field values (`context.value("operatorBranch")`), the service's PHY configuration, the trusted invocation
+context and the business transaction's connection (`context.connection()`). The returned value is converted to
+the field type and stored when the field is still empty. The compiler rejects an unknown technical service, a field
+SPP also assigns, a field of an unsupported type (use `String`, `int`, `long`, `BigInteger` or `BigDecimal`),
+an implementation that does not implement `FieldValueInterceptor`, and a field with two producers.
+
+`auto ... serial` and `auto ... context` are sugar over this mechanism: they attach the built-in services
+`SerialValueService` and `ContextValueService` as insert interceptors, so built-in and custom services share one runtime
+path. The built-in serial is a technical service you can replace. `update` interception is reserved and
+rejected for now.
+
+Limits: values are produced when an insert service runs, inside the business transaction of the repository
+resource; a gapless allocation outside one fails with `SERIAL_GAPLESS_REQUIRES_TRANSACTION`. The compiler checks
+the engine's contract only when its class is on the generator's classpath; otherwise the same check runs at startup of the
+first allocation.
+
 ## Scenario read bindings and transaction rejection
 
 Use `readonly Scenario serial preview(Entry, Facts)` for a front-end inquiry.

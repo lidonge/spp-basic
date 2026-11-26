@@ -224,6 +224,9 @@ Web ingress uses a browser identifier to scope duplicate handling and
 authenticated customer identity. Authentication and business authorization
 remain the host application's responsibilities.
 
+Record-level value interceptors (`intercept Entity { insert: service -> field; }`, serial numbers and context
+identifiers) are described in the [user guide](user-guide.md#technical-values-serial-numbers-context-identifiers-and-interceptors).
+
 ## Invocation logging and interceptor lifecycle
 
 Bind the supplied logger explicitly:
