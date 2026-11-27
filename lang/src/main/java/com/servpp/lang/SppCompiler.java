@@ -1,5 +1,6 @@
 package com.servpp.lang;
 
+import com.servpp.lang.general.IConstance.CompilationUnitType;
 import com.servpp.lang.general.SppGeneralHandler;
 import com.servpp.lang.models.SppProject;
 import com.servpp.lang.antlr.SppLexer;
@@ -57,6 +58,27 @@ public class SppCompiler extends AntlrCompiler {
         return (SppParser.ProgramContext) parseTree(parser, parser::program);
     }
 
+    public void declareParticipantTypes(SppParser.ProgramContext tree) {
+        var domain = sppProject.addDomain(ParticipantNames.domain(tree));
+        for (var unit : tree.compilationUnits().compilationUnit()) {
+            if (unit.entity() != null) {
+                var entity = unit.entity();
+                var kind = "Reference".equals(entity.getStart().getText())
+                        ? CompilationUnitType.reference
+                        : CompilationUnitType.entity;
+                var type = domain.getSppClass(kind, entity.Identifier().getText());
+                if (!type.isReal()) type.setType(kind);
+            } else if (unit.role() != null) {
+                var role = unit.role();
+                var kind = "Contract".equals(role.getStart().getText())
+                        ? CompilationUnitType.contract
+                        : CompilationUnitType.role;
+                var type = domain.getSppClass(kind, role.Identifier().getText());
+                if (!type.isReal()) type.setType(kind);
+            }
+        }
+    }
+
     public SppGeneralHandler compile(SppParser.ProgramContext tree, ParticipantNames names) {
         var listener = new SppGeneralHandler(sppProject);
         listener.setSppFile(antlrFile);
@@ -71,6 +93,7 @@ public class SppCompiler extends AntlrCompiler {
         var tree = parse();
         var names = new ParticipantNames();
         names.add(tree);
+        declareParticipantTypes(tree);
         return compile(tree, names);
     }
 }

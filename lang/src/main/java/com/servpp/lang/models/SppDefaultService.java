@@ -23,6 +23,7 @@ public class SppDefaultService {
     }
 
     public void addService(SppService sppService){
+        if (sppService == null) return;
         serviceList.add(sppService);
         sppService.setDefaultClass(realm);
     }

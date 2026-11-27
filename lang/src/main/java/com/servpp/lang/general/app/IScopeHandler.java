@@ -912,7 +912,7 @@ public interface IScopeHandler extends IApplicationHandler {
         List<RepositoryHydrationRule> rules = scopeItem.getRepositoryHydrationRules();
         for (int i = 0; i < rules.size(); i++) {
             RepositoryHydrationRule rule = rules.get(i);
-            String responseMethodName = inferRepositoryResponseMethodName(scopeItem.getService(), rule);
+            String responseMethodName = inferRepositoryResponseMethodName(ctx, scopeItem.getService(), rule);
             List<KeyTarget> normalizedTargets = new ArrayList<>();
             boolean changed = false;
             for (KeyTarget target : rule.keyTargets()) {
@@ -929,14 +929,28 @@ public interface IScopeHandler extends IApplicationHandler {
         }
     }
 
-    default String inferRepositoryResponseMethodName(SppService service, RepositoryHydrationRule rule) {
-        if (service == null || rule == null || !rule.appDdlInferred()) return rule == null ? "" : rule.responseMethodName();
-        if (service.getServiceBody().getQualifieField(rule.responseMethodName()) != null) return rule.responseMethodName();
-        List<String> candidates = new ArrayList<>();
-        for (var parameter : service.getServiceBody().getSppLocalVarList())
-            if (parameter.getType() != null && rule.getObjectType().equals(parameter.getType().getName())
-                    && parameter.getArrayDimension() == 0) candidates.add(parameter.getName());
-        return candidates.size() == 1 ? candidates.get(0) : rule.responseMethodName();
+    default String inferRepositoryResponseMethodName(AppParser.ScopeItemIdentifierContext ctx,
+                                                    SppService service, RepositoryHydrationRule rule) {
+        if (!rule.appDdlInferred()) return rule.responseMethodName();
+        var stored = getSppDomian().getSppClass(rule.getObjectType());
+        var candidates = service.getServiceBody().getSppLocalVarList().stream()
+                .filter(parameter -> parameter.getType() == stored
+                        || parameter.getType() instanceof SppClass role && stored instanceof SppClass player
+                        && com.servpp.lang.models.SharedPlayerBinding.player(getSppDomian(), role) == player
+                        && com.servpp.lang.models.SharedPlayerBinding.resolve(getSppDomian(), player, role) != null)
+                .toList();
+        var collections = candidates.stream().filter(parameter -> parameter.getArrayDimension() == 1).toList();
+        if (!collections.isEmpty()) candidates = collections;
+        if (candidates.size() == 1) return candidates.getFirst().getName();
+        if (candidates.size() > 1) {
+            if (!collections.isEmpty()) {
+                logSppError(ctx, "Repository result collection is ambiguous on service " + service.getFuncName()
+                        + " for " + rule.getObjectType() + "; name the destination explicitly.");
+            } else if (candidates.stream().anyMatch(parameter -> parameter.getName().equals(rule.responseMethodName()))) {
+                return rule.responseMethodName();
+            }
+        }
+        return rule.responseMethodName();
     }
 
     default boolean hasRepositoryResponseField(SppService service, String responseMethodName) {
@@ -969,6 +983,16 @@ public interface IScopeHandler extends IApplicationHandler {
                 continue;
             }
             String argumentType = argument.getType().getName();
+            if (argument.getType() instanceof SppClass role
+                    && getSppDomian().getSppClass(target.getObjectType()) instanceof SppClass player
+                    && com.servpp.lang.models.SharedPlayerBinding.player(getSppDomian(), role) == player) {
+                var binding = com.servpp.lang.models.SharedPlayerBinding.resolve(getSppDomian(), role, player);
+                if (binding != null) {
+                    String path = com.servpp.lang.models.SharedPlayerBinding.sourcePath(binding.fields(), target.getObjectIdPath());
+                    if (path != null && hasFieldPath(role, path))
+                        candidates.add(new KeyTarget(i, argumentType + "." + path, target.repositoryObjectPath()));
+                }
+            }
             if (argumentType.equals(target.getObjectType())
                     && argument.getType() instanceof SppClass argumentClass
                     && hasFieldPath(argumentClass, target.getObjectIdPath())) {

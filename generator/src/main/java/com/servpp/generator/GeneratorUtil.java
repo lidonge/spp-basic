@@ -80,19 +80,20 @@ public class GeneratorUtil {
                 }
             }
         }
-        List<ParseTreeListener> sppTreeListeners = new ArrayList<>();
+        for (var source : sppFiles) source.compiler().declareParticipantTypes(source.tree());
+        java.util.Map<SppDomain, SppGeneralHandler> sppHandlers = new java.util.LinkedHashMap<>();
         for (var source : sppFiles) {
             var handler = source.compiler().compile(source.tree(), names);
             sources.add(new RedundancyLint.Source(sppSourceDirectory.toPath().relativize(source.file().toPath()).toString(),
                     source.tree()));
             if (source.file().getName().endsWith(".spp")) {
-                handler.getSppDomain().dealEntityToRoleMaps();
-                handler.getSppDomain().generateDefaultServices(handler);
-                sppTreeListeners.add(handler);
+                sppHandlers.put(handler.getSppDomain(), handler);
             }
         }
-        // Built-in participant CRUD names must be known before APP resolves service references.
-        for (var domain : project.getSppDomainMap().values()) domain.prepareImplicitParticipantServices();
+        sppHandlers.forEach((domain, handler) -> {
+            domain.dealEntityToRoleMaps();
+            domain.generateDefaultServices(handler);
+        });
         //parse app file
         List<ParseTreeListener> appTreeListeners = compileAntlr(sppSourceDirectory, project, ".app", parse);
         //parse rdb file
@@ -132,10 +133,7 @@ public class GeneratorUtil {
         // Split sources share one domain model; validate and emit that model once.
         // Standalone specs retain the final source basename; application specs use the domain name.
         java.util.Map<String, SppGeneralHandler> domainHandlers = new java.util.LinkedHashMap<>();
-        for (ParseTreeListener listener : sppTreeListeners) {
-            SppGeneralHandler handler = (SppGeneralHandler) listener;
-            domainHandlers.put(handler.getSppDomain().getName(), handler);
-        }
+        sppHandlers.forEach((domain, handler) -> domainHandlers.put(domain.getName(), handler));
         boolean multipleDomains = domainHandlers.size() > 1 || project.getSppDomainMap().values().stream()
                 .anyMatch(domain -> !domain.getRuleBlock().getApplicationDeployments().isEmpty());
         if (multipleDomains) writeApplicationDeployments(project, javaOutputDirectory);

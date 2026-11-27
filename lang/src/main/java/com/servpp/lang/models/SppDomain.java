@@ -4833,7 +4833,16 @@ public class SppDomain {
         // Resolve scalar calls first, making overload naming independent of source order.
         pending.sort(java.util.Comparator.comparingInt(ImplicitCrudCall::dimension));
         for (var entry : pending) {
-            SppService service = implicitCrudService(entry.operation(), entry.participant(), entry.actual(), entry.dimension());
+            var target = entry.participant();
+            if (!"find".equals(entry.operation()) && !appTableByBusinessType().containsKey(target.getName())) {
+                var player = SharedPlayerBinding.player(this, target);
+                if (appTableByBusinessType().containsKey(player.getName())
+                        && SharedPlayerBinding.resolve(this, target, player) != null) target = player;
+            }
+            SppService service = entry.actual() != target
+                    && SharedPlayerBinding.resolve(this, entry.actual(), target) == null
+                    ? implicitCrudService(entry.operation(), target, entry.actual(), entry.dimension())
+                    : implicitCrudService(entry.operation(), target, entry.dimension());
             if (service == null) continue;
             entry.call().setCallee(service);
             if (entry.owner().getField(service.getFuncName()) == null)
@@ -4889,7 +4898,8 @@ public class SppDomain {
         if (statements == null) return;
         for (var statement : statements) {
             if (statement instanceof SppServiceCall call && call.getCallee() != null
-                    && (!call.getCallee().isReal() || isDefaultGeneratedService(call.getCallee()))) {
+                    && (!call.getCallee().isReal() || isDefaultGeneratedService(call.getCallee())
+                        || call.getCallee().isImplicitParticipantCrud())) {
                 String method = NameUtil.firstToLowerCase(call.getCallee().getName(), true);
                 for (String operation : List.of("find", "insert", "update", "delete")) {
                     if (!method.startsWith(operation)) continue;
@@ -4901,10 +4911,12 @@ public class SppDomain {
                                 .filter(p -> p.getType() == participant).toList();
                         if (actuals.isEmpty()) actuals = owner.getServiceBody().getSppLocalVarList().stream()
                                 .filter(p -> p.getType() instanceof SppClass actual
-                                        && ParticipantRoleBindings.resolve(this, this, actual, participant) != null).toList();
+                                        && (SharedPlayerBinding.resolve(this, actual, participant) != null
+                                            || ParticipantRoleBindings.resolve(this, this, actual, participant) != null)).toList();
                     }
                     if (actuals.size() != 1 || !(actuals.get(0).getType() instanceof SppClass actual)
-                            || ParticipantRoleBindings.resolve(this, this, actual, participant) == null
+                            || actual != participant && SharedPlayerBinding.resolve(this, actual, participant) == null
+                                && ParticipantRoleBindings.resolve(this, this, actual, participant) == null
                             || actuals.get(0).getArrayDimension() > 1) {
                         String message = "Built-in CRUD " + method + " in " + owner.getFuncName()
                                 + " requires one unambiguous " + participant.getName()
@@ -5026,6 +5038,25 @@ public class SppDomain {
                     && DeploymentEnvironmentPlanner.isAppPlayedRole(this, participant)) {
                 service.setQueryFromPerformers(true);
                 continue;
+            }
+            if (!tables.containsKey(participant.getName()) && service.isImplicitParticipantCrud()
+                    && service.getServiceType() == IConstance.ServiceType.query) {
+                var player = SharedPlayerBinding.player(this, participant);
+                var binding = SharedPlayerBinding.resolve(this, participant, player);
+                if (binding != null && tables.containsKey(player.getName()) && repositories.size() == 1) {
+                    var keys = handler.repositoryTargetsFromAppDdl(context, player.getName()).stream()
+                            .map(key -> {
+                                String path = SharedPlayerBinding.sourcePath(binding.fields(), key.getObjectIdPath());
+                                return path == null ? null : new RepositoryHydrationRule.KeyTarget(0,
+                                        participant.getName() + "." + path, key.repositoryObjectPath());
+                            }).toList();
+                    if (!keys.isEmpty() && !keys.contains(null)) {
+                        scope.addRepositoryHydrationRule(new RepositoryHydrationRule(player.getName(), keys,
+                                parameters.get(0).getName(), repositories.get(0).getName(), true, "APP_DDL_PRIMARY_KEY"));
+                        if (parameters.get(0).getArrayDimension() == 0) scope.declareOptionalRepository();
+                        continue;
+                    }
+                }
             }
             if (!tables.containsKey(participant.getName())) {
                 if (service.getServiceType() == IConstance.ServiceType.query && participant.getReferenceSource() == null
@@ -8289,6 +8320,22 @@ public class SppDomain {
             for (var rule : scope.getPersistenceRules()) {
                 if (rule.keys().isEmpty()) { errors.add(label + " must declare identity keys."); continue; }
                 if (!targets.add(rule.argumentIndex())) { errors.add(label + " declares duplicate write targets."); }
+                var arguments = service.getServiceBody().getSppLocalVarList();
+                if (rule.argumentIndex() >= 0 && rule.argumentIndex() < arguments.size()
+                        && arguments.get(rule.argumentIndex()).getType() instanceof SppClass role
+                        && getSppClass(rule.objectType()) instanceof SppClass player
+                        && SharedPlayerBinding.player(this, role) == player) {
+                    var projection = SharedPlayerBinding.resolve(this, role, player);
+                    if (projection != null) {
+                        service.setPersistenceProjection(rule.argumentIndex(), player, projection);
+                        if (scope.getPersistenceVersions().stream().anyMatch(version ->
+                                version.proposed().argumentIndex() == rule.argumentIndex()))
+                            errors.add(label + " requires a player-typed target for compareVersion.");
+                        if (scope.getBusinessNumbers().stream().anyMatch(number ->
+                                number.target().argumentIndex() == rule.argumentIndex()))
+                            errors.add(label + " requires a player-typed target for business numbers.");
+                    }
+                }
                 Set<String> keys = new LinkedHashSet<>();
                 for (var key : rule.keys()) {
                     boolean performerKey = !key.getObjectType().equals(rule.objectType());
@@ -8355,15 +8402,19 @@ public class SppDomain {
             errors.add(label + " argument index is outside parameter list."); return;
         }
         SppLocalVar parameter = parameters.get(key.argumentIndex());
-        if (parameter.getType() == null || !key.getObjectType().equals(parameter.getType().getName())) {
-            errors.add(label + " target object type must match service parameter type."); return;
+        SppCompilationUnit targetType = getSppClass(key.getObjectType());
+        if (parameter.getType() == null || !key.getObjectType().equals(parameter.getType().getName())
+                && !(parameter.getType() instanceof SppClass role && targetType instanceof SppClass player
+                && SharedPlayerBinding.player(this, role) == player
+                && SharedPlayerBinding.resolve(this, role, player) != null)) {
+            errors.add(label + " target object type must match service parameter type or its player."); return;
         }
         if (parameter.getArrayDimension() > (collectionAllowed ? 1 : 0)) {
             errors.add(label + " version guards require scalar parameters; writes support one-dimensional collections.");
         }
         if (key.isSingleton()) return;
-        if (Set.of("@storageIdentity","@generatedIdentity").contains(key.getObjectIdPath()) && hasOpaqueAppPrimaryKey(parameter.getType().getName())) return;
-        if (parameter.getType() instanceof SppClass type && ParticipantRoleBindings.isStorageIdentityPath(this,type,key.getObjectIdPath())) return;
+        if (Set.of("@storageIdentity","@generatedIdentity").contains(key.getObjectIdPath()) && hasOpaqueAppPrimaryKey(targetType.getName())) return;
+        if (targetType instanceof SppClass type && ParticipantRoleBindings.isStorageIdentityPath(this,type,key.getObjectIdPath())) return;
         if (key.isPlatform()) {
             var table = appTableByBusinessType().get(key.getObjectType());
             String columnName = key.getObjectIdPath().substring("@platform:".length());
@@ -8372,9 +8423,9 @@ public class SppDomain {
                 errors.add(label + " platform version requires an integral APP-only column: " + key.objectPath());
             return;
         }
-        SppField field = resolveFieldPath(parameter.getType(), key.getObjectIdPath());
+        SppField field = resolveFieldPath(targetType, key.getObjectIdPath());
         if (field == null || !isObjectIdField(field)
-                || firstArrayFieldPath(parameter.getType(), key.getObjectIdPath()) != null) {
+                || firstArrayFieldPath(targetType, key.getObjectIdPath()) != null) {
             errors.add(label + " target field must be an existing scalar property: " + key.objectPath());
         }
     }
@@ -9621,8 +9672,16 @@ public class SppDomain {
                 errors.add("Repository query " + service.getFuncName() + " must hydrate a declared participant or its collection: " + rule.responseMethodName());
                 continue;
             }
-            if (target.getType() == null || !rule.getObjectType().equals(target.getType().getName()))
-                errors.add("Repository query target " + rule.responseMethodName() + " must have participant type " + rule.getObjectType());
+            if (target.getType() == null || !rule.getObjectType().equals(target.getType().getName())) {
+                var stored = getSppClass(rule.getObjectType());
+                var projection = stored instanceof SppClass player && target.getType() instanceof SppClass role
+                        && SharedPlayerBinding.player(this, role) == player
+                        ? SharedPlayerBinding.resolve(this, player, role) : null;
+                if (projection == null) {
+                    errors.add("Repository query target " + rule.responseMethodName() + " must have participant type "
+                            + rule.getObjectType() + " or be a mapped role of that participant.");
+                } else service.setRepositoryResultProjection(rule.responseMethodName(), projection);
+            }
             if (target.getArrayDimension() > 1) errors.add("Repository queries support scalar participants or one-dimensional participant collections.");
             boolean collectionKey = rule.keyTargets().stream().anyMatch(key -> {
                 int index = key.argumentIndex();
@@ -9641,7 +9700,7 @@ public class SppDomain {
     private boolean isIdentityBatchQuery(SppService service, RepositoryHydrationRule rule, SppLocalVar target) {
         return target.getArrayDimension() == 1 && rule.keyTargets().stream().allMatch(key -> {
             var parameter = service.getServiceBody().getLocalVar(key.argumentIndex());
-            return parameter == target && parameter.getType().getName().equals(rule.getObjectType());
+            return parameter == target && parameter.getType().getName().equals(key.getObjectType());
         });
     }
 
@@ -10075,49 +10134,41 @@ public class SppDomain {
         return errors;
     }
 
-    private void inheritTakeFields() {
+    public void dealEntityToRoleMaps() {
         var mappers = mapsOfClass.values().stream().filter(SppRoleMapper.class::isInstance)
                 .map(SppRoleMapper.class::cast).toList();
+        var fieldless = mappers.stream().filter(mapper -> mapper.getRole().isReal()
+                && mapper.getRole().getSppFieldList().isEmpty()
+                && mapper.getDeclaredPerformers().size() == 1
+                && mappers.stream().filter(other -> other.getRole() == mapper.getRole()).count() == 1)
+                .collect(java.util.stream.Collectors.toSet());
         boolean changed;
         do {
             changed = false;
             for (var mapper : mappers) {
                 var role = mapper.getRole();
-                if (!role.isReal() || !role.getSppFieldList().isEmpty()
-                        || mapper.getDeclaredPerformers().size() != 1
-                        || mappers.stream().filter(other -> other.getRole() == role).count() != 1) continue;
-                var player = mapper.getDeclaredPerformers().get(0);
-                if (player == role || !player.isReal()) continue;
-                Map<String, String> mappings = new HashMap<>();
+                int before = role.getSppFieldList().size();
+                Map<String, String> entityToRole = new HashMap<>();
                 for (var field : mapper.getSppFieldList()) {
                     if (field instanceof SppRoleField mapping)
-                        mappings.put(mapping.getEntityName(), mapping.getName());
+                        entityToRole.put(mapping.getEntityName(), mapping.getName());
                 }
-                for (var field : player.getSppFieldList()) {
-                    role.addField(field.inheritedAs(mappings.getOrDefault(field.getName(), field.getName())));
-                    changed = true;
+                if (fieldless.contains(mapper)) {
+                    var player = mapper.getDeclaredPerformers().get(0);
+                    if (player != role && player.isReal()) {
+                        for (var field : player.getSppFieldList()) {
+                            if (field.isSyntheticRolePerformer()) continue;
+                            String name = entityToRole.getOrDefault(field.getName(), field.getName());
+                            if (role.getField(name) == null) role.addField(field.inheritedAs(name));
+                        }
+                        mapper.setMapSame(true);
+                    }
                 }
-                mapper.setMapSame(true);
+                takeAll(mapper, entityToRole);
+                changed |= before != role.getSppFieldList().size();
             }
         } while (changed);
-    }
-
-    public void dealEntityToRoleMaps() {
-        inheritTakeFields();
         prepareRoleCompositions();
-        Map<String, SppCompilationUnit> sppClassMap = getMapsOfClass();
-        for (SppCompilationUnit sppClass : sppClassMap.values()) {
-            if (sppClass.getType() == IConstance.CompilationUnitType.rolemapper) {
-//                System.out.println(sppClass);
-                Map<String, String> entityToRole = new HashMap<>();
-                SppRoleMapper sppRoleMapper = (SppRoleMapper) sppClass;
-                for (SppLocalVar var : sppRoleMapper.getSppFieldList()) {
-                    SppRoleField roleField = (SppRoleField) var;
-                    entityToRole.put(roleField.getEntityName(), roleField.getName());
-                }
-                takeAll(sppRoleMapper, entityToRole);
-            }
-        }
     }
 
     public void generateDefaultServices(ILogable logger){
@@ -10139,19 +10190,21 @@ public class SppDomain {
                 //Get
                 sppService =genDefaultService(logger, sppClass, sppClassMap,"Get", IConstance.ServiceType.query);
                 sppDefaultService.addService(sppService);
-                sppService.getReturns().addLocalVar(new SppLocalVar(sppClass,NameUtil.firstToLowerCase(sppClass.getName(),true)));
+                if (sppService != null)
+                    sppService.getReturns().addLocalVar(new SppLocalVar(sppClass,NameUtil.firstToLowerCase(sppClass.getName(),true)));
 
                 //Search
                 sppService =genDefaultService(logger, sppClass, sppClassMap,"Search", IConstance.ServiceType.query);
                 sppDefaultService.addService(sppService);
                 SppLocalVar sppLocalVar = new SppLocalVar(sppClass, NameUtil.firstToLowerCase(sppClass.getName(), true));
                 sppLocalVar.setArrayDimension(1);
-                sppService.getReturns().addLocalVar(sppLocalVar);
+                if (sppService != null) sppService.getReturns().addLocalVar(sppLocalVar);
 
                 //Quantum
                 for(SppField sppField : sppClass.getSppFieldList()){
                     if(sppField.isQuantum()){
                         sppService = genDefaultService(logger, sppClass, sppClassMap,"Increase", IConstance.ServiceType.update);
+                        if (sppService == null) continue;
                         sppService.setQuantumService(true);
                         sppDefaultService.addService(sppService);
                         SppField field = new SppField(sppField.getType(), sppField.getName());
@@ -10160,6 +10213,7 @@ public class SppDomain {
                         sppService.getServiceBody().addLocalVar(field);
 
                         sppService = genDefaultService(logger, sppClass, sppClassMap,"Decrease", IConstance.ServiceType.update);
+                        if (sppService == null) continue;
                         sppService.setQuantumService(true);
                         sppDefaultService.addService(sppService);
                         field = new SppField(sppField.getType(), sppField.getName());
@@ -10181,6 +10235,8 @@ public class SppDomain {
             sppCompilationUnit = new SppService(serviceName);
             addClass(sppCompilationUnit);
         }
+        if (sppCompilationUnit.isReal() && sppCompilationUnit instanceof SppService service
+                && service.getFuncName() != null) return null;
         if(sppCompilationUnit instanceof SppService){
             sppCompilationUnit.setReal(true);
             SppService sppService = (SppService) sppCompilationUnit;

@@ -1,5 +1,6 @@
 package com.servpp.service.repository;
 
+import com.servpp.service.runtime.LocalDomainServices;
 import java.lang.reflect.Array;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -96,6 +97,15 @@ public final class RepositoryWriteSession {
 
     private void write(RepositoryWriteRule rule, Object value, Object expectedVersion, String expectedId) {
         if (value == null) { throw new IllegalStateException("PERSISTENCE_MISSING_TARGET"); }
+        var projection = rule.projection();
+        if (projection != null) {
+            Object player = LocalDomainServices.projectRole(value, projection.rowType(), projection.fields());
+            writeRow(rule, player, expectedVersion, expectedId);
+            LocalDomainServices.mergeRole(value, player, projection.fields());
+        } else writeRow(rule, value, expectedVersion, expectedId);
+    }
+
+    private void writeRow(RepositoryWriteRule rule, Object value, Object expectedVersion, String expectedId) {
         String id = objectId(rule, value);
         if (expectedId != null && !expectedId.equals(id)) { throw new IllegalStateException("PERSISTENCE_IDENTITY_CHANGED"); }
         switch (rule.operation()) {

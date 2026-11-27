@@ -28,6 +28,7 @@ public interface IServiceDefinitionHandler extends ICompilationUnitHandler {
         } else {
             sppService = (SppService) getSppDomain().addClass(sppService);
         }
+        sppService.setDeclaringDomain(getSppDomain());
         push(sppService.getServiceBody());
 
     }

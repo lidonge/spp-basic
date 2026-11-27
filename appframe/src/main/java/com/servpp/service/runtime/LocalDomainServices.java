@@ -60,12 +60,32 @@ public final class LocalDomainServices {
 
     private static Object projectArgument(Object source, RoleArgument role, Map<Object, Object> originals) {
         if (source == null) return null;
-        var values = new LinkedHashMap<String, Object>();
-        role.fields().forEach((target, field) -> values.put(target, read(source, field)));
-        Object target = MAPPER.convertValue(values, role.type());
-        projectMetadata(source, target);
+        Object target = projectRole(source, role.type(), role.fields());
         originals.put(target, source);
         return target;
+    }
+
+    public static <T> T projectRole(Object source, Class<T> type, Map<String, String> fields) {
+        if (source == null) return null;
+        T target = projectRoleFacts(source, type, fields);
+        projectMetadata(source, target);
+        com.servpp.service.repository.RepositoryParticipantSnapshots.transfer(source, target,
+                baseline -> projectRoleFacts(baseline, type, fields));
+        return target;
+    }
+
+    private static <T> T projectRoleFacts(Object source, Class<T> type, Map<String, String> fields) {
+        var values = new LinkedHashMap<String, Object>();
+        fields.forEach((target, field) -> values.put(target, read(source, field)));
+        return MAPPER.convertValue(values, type);
+    }
+
+    public static <T> List<T> projectRoleCollection(Object source, Class<T> type, Map<String, String> fields) {
+        if (source == null) return null;
+        List<T> projected = new ArrayList<>();
+        for (Object participant : ParticipantCollections.list(source))
+            projected.add(projectRole(participant, type, fields));
+        return projected;
     }
 
     @SuppressWarnings("unchecked")
@@ -91,14 +111,22 @@ public final class LocalDomainServices {
     }
 
     private static void mergeRoleArgument(Object target, Object source, RoleArgument role) {
+        mergeRole(target, source, role.fields());
+    }
+
+    public static void mergeRole(Object target, Object source, Map<String, String> fields) {
+        if (target == null || source == null) return;
         var changed = new LinkedHashMap<String, Object>();
-        role.fields().forEach((field, original) -> {
+        fields.forEach((field, original) -> {
             Object value = read(source, field);
             if (!java.util.Objects.deepEquals(value, read(target, original))) changed.put(original, value);
         });
         if (!changed.isEmpty())
             copyFacts(target, changed, target.getClass(), changed.keySet().toArray(String[]::new), new String[0], false, false);
-        com.servpp.service.repository.RepositoryParticipantSnapshots.transfer(source, target);
+        var reverse = new LinkedHashMap<String, String>();
+        fields.forEach((field, original) -> reverse.put(original, field));
+        com.servpp.service.repository.RepositoryParticipantSnapshots.transfer(source, target,
+                baseline -> projectRoleFacts(baseline, target.getClass(), reverse));
         ParticipantIdentity.restore(target, ParticipantIdentity.snapshot(source));
     }
 
@@ -176,6 +204,7 @@ public final class LocalDomainServices {
             values.put(roleField, decoder == null ? value : decoder.decode((String) value));
         });
         copyPlayValues(participant, values);
+        com.servpp.service.repository.RepositoryParticipantSnapshots.transfer(performer, participant);
         PROJECTIONS.get().computeIfAbsent(participant, ignored -> new java.util.concurrent.ConcurrentHashMap<>())
                 .put("playProvider", play.provider());
     }

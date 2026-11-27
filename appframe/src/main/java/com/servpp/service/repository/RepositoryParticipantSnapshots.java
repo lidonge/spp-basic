@@ -50,6 +50,10 @@ public final class RepositoryParticipantSnapshots {
                 mergeRevisions(participant, new Revision(repository, snapshot.objectType(), snapshot.objectId(), snapshot.revision()))));
     }
     public static void transfer(Object source, Object target) {
+        transfer(source, target, facts -> source.getClass() == target.getClass() ? facts : ParticipantCopies.copy(target));
+    }
+
+    public static void transfer(Object source, Object target, java.util.function.UnaryOperator<Object> projectFacts) {
         Object baseline = CURRENT.get().get(source);
         if (baseline instanceof Baseline data) {
             Map<String,Revision> revisions = new java.util.HashMap<>();
@@ -64,7 +68,7 @@ public final class RepositoryParticipantSnapshots {
                 if (!source.getClass().getSimpleName().equals(target.getClass().getSimpleName())) platform = previous.platform();
             }
             revisions.putAll(data.revisions());
-            CURRENT.get().put(target, new Baseline(ParticipantCopies.copy(target), platform, Map.copyOf(revisions)));
+            CURRENT.get().put(target, new Baseline(projectFacts.apply(data.facts()), platform, Map.copyOf(revisions)));
         }
     }
     public static String requireRevision(Object participant, ObjectRepository repository, String type, String id) {

@@ -62,13 +62,9 @@ final class ReadKeyBindings {
             errors.add(label + " requires a unique scalar key participant");
             return;
         }
-        var crudTarget = service.getImplicitCrudTarget();
-        if (crudTarget != null && !ParticipantRoleBindings.identity(domain, crudTarget)
-                .equals(ParticipantRoleBindings.identity(domain, type))) {
-            errors.add(label + " requires a scenario participant of the target type " + crudTarget.getName());
-            return;
-        }
         var actual = call.getSppParameterList().get(formals.indexOf(conditions.get(0)));
+        if (actual.getType() instanceof SppClass actualType
+                && SharedPlayerBinding.resolve(domain, actualType, type) != null) type = actualType;
         var primary = readKeys(domain, type, label, errors);
         if (primary.isEmpty()) return;
         var keys = new LinkedHashSet<>(primary);
@@ -141,6 +137,13 @@ final class ReadKeyBindings {
             return keys;
         }
         var keys = ParticipantRoleBindings.primaryKeys(domain, target);
+        if (keys.isEmpty()) {
+            var player = SharedPlayerBinding.player(domain, target);
+            var binding = SharedPlayerBinding.resolve(domain, target, player);
+            if (binding != null) keys = ParticipantRoleBindings.primaryKeys(domain, player).stream()
+                    .map(path -> SharedPlayerBinding.sourcePath(binding.fields(), path))
+                    .filter(java.util.Objects::nonNull).toList();
+        }
         if (keys.isEmpty()) errors.add(label + " requires APP primary-key fields");
         return keys;
     }
@@ -184,7 +187,9 @@ final class ReadKeyBindings {
         // A source role can also supply a declared take mapping back to its stored performer.
         var reverse = unique && chains.isEmpty() ? takeChains(domain, performer, target, new HashSet<>())
                 : List.<List<TakeStep>>of();
-        if (chains.isEmpty() && reverse.isEmpty()) {
+        var shared = SharedPlayerBinding.resolve(domain, performer, target);
+        if (target == performer) chains = List.of(List.of());
+        if (chains.isEmpty() && reverse.isEmpty() && shared == null) {
             errors.add(label + " participant " + qualifier + " has no take relation to " + target.getName());
             return;
         }
@@ -195,6 +200,11 @@ final class ReadKeyBindings {
                 String field = mappedPath(chain, key, unique);
                 if (field != null && scalarField(performer, field) != null
                         && (!constant || field.equals(parts[1]))) fields.add(field);
+            }
+            if (shared != null && chains.isEmpty()) {
+                String source = SharedPlayerBinding.sourcePath(shared.fields(), key);
+                if (source != null && scalarField(performer, source) != null
+                        && (!constant || source.equals(parts[1]))) fields.add(source);
             }
             for (var chain : reverse) {
                 for (var roleField : performer.getSppFieldList()) {

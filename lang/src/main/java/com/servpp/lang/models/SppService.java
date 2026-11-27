@@ -47,6 +47,10 @@ public class SppService extends SppClass{
     private Map<String, SppConstant> businessConstants = Map.of();
     public void setBusinessConstants(Map<String, SppConstant> constants) { businessConstants = constants; }
     public SppConstant getBusinessConstant(String name) { return businessConstants.get(name); }
+    private SppDomain declaringDomain;
+    public void setDeclaringDomain(SppDomain domain) { declaringDomain = domain; }
+    public SppDomain getDeclaringDomain() { return declaringDomain; }
+
     private boolean domainQualifiedDeployment;
     public void setDomainQualifiedDeployment(boolean qualified) { domainQualifiedDeployment = qualified; }
     public String getDeploymentServiceName() { return domainQualifiedDeployment ? getDomainName() + "." + getFuncName() : getFuncName(); }
@@ -1772,6 +1776,13 @@ public class SppService extends SppClass{
         return hasPersistenceRules() ? ", com.servpp.service.repository.RepositoryWriteRuleProvider" : "";
     }
 
+    private record PersistenceProjection(SppClass player, SharedPlayerBinding binding) { }
+    private final Map<Integer, PersistenceProjection> persistenceProjections = new LinkedHashMap<>();
+
+    void setPersistenceProjection(int argument, SppClass player, SharedPlayerBinding binding) {
+        persistenceProjections.put(argument, new PersistenceProjection(player, binding));
+    }
+
     public String getPersistenceRuleMethods() {
         if (!hasPersistenceRules()) { return ""; }
         String prefix = "com.servpp.service.repository.";
@@ -1784,9 +1795,13 @@ public class SppService extends SppClass{
                     + "\", \"" + version.proposed().getObjectIdPath() + "\", " + version.advanceVersion() + ")";
             String keys = rule.keys().stream().map(k -> "\"" + (k.getObjectType().equals(rule.objectType()) ? k.getObjectIdPath() : "@performer:" + k.objectPath()) + "\"")
                     .collect(Collectors.joining(", ", "java.util.List.of(", ")"));
+            var projection = persistenceProjections.get(rule.argumentIndex());
+            String projectionArgument = projection == null ? "" : ", new " + prefix
+                    + "RepositoryWriteRule.ArgumentProjection(" + getBasePackage() + "." + getDomainName()
+                    + ".model." + projection.player().getName() + ".class, " + projection.binding().javaFields() + ")";
             rules.add("new " + prefix + "RepositoryWriteRule(" + prefix + "RepositoryWriteRule.Operation."
                     + (rule.operation().equals("insertIfAbsent") ? "INSERT_IF_ABSENT" : rule.operation().toUpperCase(java.util.Locale.ROOT)) + ", " + rule.argumentIndex()
-                    + ", \"" + rule.objectType() + "\", " + keys + ", " + guard + ")");
+                    + ", \"" + rule.objectType() + "\", " + keys + ", " + guard + projectionArgument + ")");
         }
         return "    private java.util.function.Supplier<" + prefix + "ObjectRepository> $sppRepositorySupplier;\n"
                 + "    @Override public void configureRepositoryWrites(java.util.function.Supplier<" + prefix
@@ -1928,6 +1943,12 @@ public class SppService extends SppClass{
                 method.append("                ");
                 appendRepositoryHydrationRule(method, rule);
                 appendRepositoryKeyRewrites(method, rule);
+                var projection = repositoryResultProjections.get(rule.responseMethodName());
+                if (projection != null) {
+                    method.append(".projectResult(").append(getBasePackage()).append(".").append(getDomainName())
+                            .append(".model.").append(projection.source().getName()).append(".class, ")
+                            .append(projection.javaFields()).append(")");
+                }
                 if (scopeItem.isOptionalRepository()) { method.append(".asOptional()"); }
                 var readTarget = serviceBody.getQualifieField(rule.responseMethodName());
                 if (readTarget != null) method.append(".transactionRead(").append(!hasQuantumFields(readTarget.getType())).append(")");
@@ -1941,6 +1962,12 @@ public class SppService extends SppClass{
             method.append("    }\n\n");
         }
         return method.toString();
+    }
+
+    private final Map<String, SharedPlayerBinding> repositoryResultProjections = new LinkedHashMap<>();
+
+    void setRepositoryResultProjection(String target, SharedPlayerBinding projection) {
+        repositoryResultProjections.put(target, projection);
     }
 
     private String repositoryParticipantTarget(com.servpp.lang.models.app.RepositoryHydrationRule rule) {

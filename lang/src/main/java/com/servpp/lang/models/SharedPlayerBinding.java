@@ -20,13 +20,14 @@ public record SharedPlayerBinding(SppClass source, Map<String, String> fields) {
     }
 
     public static SharedPlayerBinding resolve(SppDomain domain, SppParameter actual, SppParameter formal) {
-        if (actual == null || actual.getArrayDimension() != formal.getArrayDimension()
+        if (domain == null || actual == null || actual.getArrayDimension() != formal.getArrayDimension()
                 || actual.getArrayDimension() > 1 || !(actual.getType() instanceof SppClass from)
                 || !(formal.getType() instanceof SppClass to) || from == to) return null;
         var source = view(domain, from);
-        if (source == null) return null;
-        var target = source.player == to ? new View(to, sameFields(to)) : view(domain, to);
-        if (target == null || source.player != target.player) return null;
+        var target = view(domain, to);
+        if (source != null && source.player == to) target = new View(to, sameFields(to));
+        else if (target != null && target.player == from) source = new View(from, sameFields(from));
+        if (source == null || target == null || source.player != target.player) return null;
         Map<String, String> byPlayer = new HashMap<>();
         source.fields.forEach((field, playerField) -> byPlayer.put(playerField, field));
         Map<String, String> mapped = new LinkedHashMap<>();
@@ -41,7 +42,29 @@ public record SharedPlayerBinding(SppClass source, Map<String, String> fields) {
         return new SharedPlayerBinding(from, Collections.unmodifiableMap(mapped));
     }
 
+    public static SppClass player(SppDomain domain, SppClass role) {
+        var view = view(domain, role);
+        return view == null ? role : view.player;
+    }
+
+    public static String sourcePath(Map<String, String> fields, String targetPath) {
+        if (targetPath.startsWith("@")) return targetPath;
+        int dot = targetPath.indexOf('.');
+        String source = fields.get(dot < 0 ? targetPath : targetPath.substring(0, dot));
+        return source == null || dot < 0 ? source : source + targetPath.substring(dot);
+    }
+
+    public static SharedPlayerBinding resolve(SppDomain domain, SppClass from, SppClass to) {
+        return resolve(domain, new SppParameter(from, from.getName()), new SppParameter(to, to.getName()));
+    }
+
     private static View view(SppDomain domain, SppClass role) {
+        if (role.getReferenceSource() != null && domain.getProject() != null) {
+            String[] provider = role.getReferenceSource().split("\\.", 2);
+            var owner = domain.getProject().getDomain(provider[0]);
+            if (owner != null && provider.length == 2 && owner.getSppClass(provider[1]) instanceof SppClass player)
+                return new View(player, sameFields(role));
+        }
         if (role.getType() != CompilationUnitType.role) return null;
         var plays = domain.getRuleBlock().getRolePlays().stream()
                 .filter(play -> play.role().equals(role.getName())).toList();
@@ -73,6 +96,18 @@ public record SharedPlayerBinding(SppClass source, Map<String, String> fields) {
         return fields;
     }
 
+    public String javaFields() {
+        return fields.entrySet().stream()
+                .map(field -> "java.util.Map.entry(\"" + field.getKey() + "\", \"" + field.getValue() + "\")")
+                .collect(java.util.stream.Collectors.joining(",", "java.util.Map.ofEntries(", ")"));
+    }
+
+    public String projectJava(String value, SppClass target, int dimensions) {
+        String method = dimensions == 0 ? "projectRole" : "projectRoleCollection";
+        return "com.servpp.service.runtime.LocalDomainServices." + method + "(" + value + ", "
+                + target.getPackageName() + "." + target.getName() + ".class, " + javaFields() + ")";
+    }
+
     public static String invocation(String receiver, List<String> values, List<SppLocalVar> formals,
                                     Map<Integer, SharedPlayerBinding> bindings) {
         if (bindings.isEmpty()) return receiver + "(" + String.join(",", values) + ")";
@@ -85,12 +120,9 @@ public record SharedPlayerBinding(SppClass source, Map<String, String> fields) {
                     + formal.getJavaType();
             if (binding == null) plans.add("null");
             else {
-                var fields = binding.fields.entrySet().stream()
-                        .map(field -> "java.util.Map.entry(\"" + field.getKey() + "\", \"" + field.getValue() + "\")")
-                        .toList();
                 plans.add("new com.servpp.service.runtime.LocalDomainServices.RoleArgument(" + type
                         + ".class, " + binding.source.getPackageName() + "." + binding.source.getName()
-                        + ".class, java.util.Map.ofEntries(" + String.join(",", fields) + "))");
+                        + ".class, " + binding.javaFields() + ")");
             }
             String cast = formal.isParticipantCollection() ? "java.util.List<" + type + ">" : type + formal.getArrayString();
             arguments.add("(" + cast + ") $sppRoleArgs[" + index + "]");

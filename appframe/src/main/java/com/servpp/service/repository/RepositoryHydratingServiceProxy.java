@@ -20,6 +20,7 @@ import java.util.function.Supplier;
 import com.servpp.service.DelegatingService;
 import com.servpp.service.Service;
 import com.servpp.service.runtime.GeneratedRoleIdentityContextBinder;
+import com.servpp.service.runtime.LocalDomainServices;
 import com.servpp.service.runtime.ScopeMetadataProvider;
 
 public final class RepositoryHydratingServiceProxy {
@@ -73,15 +74,21 @@ public final class RepositoryHydratingServiceProxy {
         String resolve(Function<String, String> originalKey);
     }
 
+    public record ResultProjection(Class<?> rowType, Map<String, String> fields) {
+        public ResultProjection {
+            fields = Map.copyOf(fields);
+        }
+    }
+
     public record HydrationRule(String methodName, String objectType, List<KeyTarget> keyTargets,
                                 String responseMethodName, String repositoryName, boolean appDdlInferred,
                                 String sourceHint, boolean optional, boolean readLocked, Boolean ordinaryRead,
-                                Map<String, KeyExpression> keyRewrites) {
+                                Map<String, KeyExpression> keyRewrites, ResultProjection resultProjection) {
         public HydrationRule(String methodName, String objectType, List<KeyTarget> keyTargets,
                              String responseMethodName, String repositoryName, boolean appDdlInferred,
                              String sourceHint, boolean optional, boolean readLocked, Boolean ordinaryRead) {
             this(methodName, objectType, keyTargets, responseMethodName, repositoryName, appDdlInferred,
-                    sourceHint, optional, readLocked, ordinaryRead, Map.of());
+                    sourceHint, optional, readLocked, ordinaryRead, Map.of(), null);
         }
         public HydrationRule(String methodName, String objectType, List<KeyTarget> keyTargets,
                              String responseMethodName, String repositoryName, boolean appDdlInferred,
@@ -90,7 +97,7 @@ public final class RepositoryHydratingServiceProxy {
         }
         public HydrationRule transactionRead(boolean ordinaryParticipant) {
             return new HydrationRule(methodName, objectType, keyTargets, responseMethodName, repositoryName,
-                    appDdlInferred, sourceHint, optional, readLocked, ordinaryParticipant, keyRewrites);
+                    appDdlInferred, sourceHint, optional, readLocked, ordinaryParticipant, keyRewrites, resultProjection);
         }
         public HydrationRule(String methodName, String objectType, List<KeyTarget> keyTargets,
                              String responseMethodName, String repositoryName, boolean appDdlInferred,
@@ -103,16 +110,30 @@ public final class RepositoryHydratingServiceProxy {
         }
         public HydrationRule asOptional() {
             return new HydrationRule(methodName, objectType, keyTargets, responseMethodName, repositoryName,
-                    appDdlInferred, sourceHint, true, readLocked, ordinaryRead, keyRewrites);
+                    appDdlInferred, sourceHint, true, readLocked, ordinaryRead, keyRewrites, resultProjection);
         }
         public HydrationRule forUpdate() {
             return new HydrationRule(methodName, objectType, keyTargets, responseMethodName, repositoryName,
-                    appDdlInferred, sourceHint, optional, true, ordinaryRead, keyRewrites);
+                    appDdlInferred, sourceHint, optional, true, ordinaryRead, keyRewrites, resultProjection);
         }
         public HydrationRule interceptKeys(Map<String, KeyExpression> rewrites) {
             return new HydrationRule(methodName, objectType, keyTargets, responseMethodName, repositoryName,
-                    appDdlInferred, sourceHint, optional, readLocked, ordinaryRead, rewrites);
+                    appDdlInferred, sourceHint, optional, readLocked, ordinaryRead, rewrites, resultProjection);
         }
+        public HydrationRule projectResult(Class<?> rowType, Map<String, String> fields) {
+            return new HydrationRule(methodName, objectType, keyTargets, responseMethodName, repositoryName,
+                    appDdlInferred, sourceHint, optional, readLocked, ordinaryRead, keyRewrites,
+                    new ResultProjection(rowType, fields));
+        }
+
+        private Class<?> readType(Class<?> targetType) {
+            return resultProjection == null ? targetType : resultProjection.rowType();
+        }
+
+        private Object projectRow(Object row, Class<?> targetType) {
+            return resultProjection == null ? row : LocalDomainServices.projectRole(row, targetType, resultProjection.fields());
+        }
+
         public HydrationRule {
             if (readLocked && (responseMethodName == null || responseMethodName.isBlank())) {
                 throw new IllegalArgumentException("Locked repository query requires an explicit scalar response");
@@ -224,7 +245,12 @@ public final class RepositoryHydratingServiceProxy {
                 return invokeExecuteEnvelope(method, args);
             }
             HydrationRule rule = effectiveReadRule(ruleFor(method), args);
-            if (participantTarget(rule)) { hydrateParticipant(rule, args); return invokeDelegate(method, args); }
+            if (participantTarget(rule)) {
+                for (var candidate : rules)
+                    if (method.getName().equals(candidate.methodName()) && participantTarget(candidate))
+                        hydrateParticipant(effectiveReadRule(candidate, args), args);
+                return invokeDelegate(method, args);
+            }
             Object hydratedArgument = null;
             Object queryKey = null;
             Method responseWriter = null;
@@ -432,12 +458,12 @@ public final class RepositoryHydratingServiceProxy {
             if (unique != null && !unique.primaryKeyCovered) {
                 var repository = repositorySupplier.get();
                 var found = repository.findUniqueBy(rule.objectType(), unique.paths, unique.values,
-                        target.getClass(), unique.rejectionCode, rule.readLocked());
+                        rule.readType(target.getClass()), unique.rejectionCode, rule.readLocked());
                 com.servpp.service.runtime.ParticipantIdentity.confirm(target, found.isPresent());
                 unique.recordMatch(found.isPresent());
                 if (found.isEmpty()) repository.prepareUnidentifiedParticipant(rule.objectType(), target);
                 else {
-                    Object row = found.orElseThrow();
+                    Object row = rule.projectRow(found.orElseThrow(), target.getClass());
                     applyParticipant(rule, target, row, RepositoryParticipantSnapshots.objectIdentity(row, rule.objectType()).orElseThrow());
                 }
                 return;
@@ -476,14 +502,20 @@ public final class RepositoryHydratingServiceProxy {
             if(target==null) throw new IllegalStateException("QUERY_PARTICIPANT_INSTANCE_REQUIRED");
             String id=hydrationObjectId(rule,args);
             Optional<?> found;
-            boolean predicate=!rule.appDdlInferred() && !usesRoleParticipantIdentity(rule) && !"@singleton".equals(rule.objectIdPath());
+            boolean predicate = "APP_DDL_NAMED_INDEX".equals(rule.sourceHint())
+                    || (!rule.appDdlInferred() && !usesRoleParticipantIdentity(rule) && !"@singleton".equals(rule.objectIdPath()));
             if(predicate) {
                 // Explicit predicates are filters, even when their value happens to equal another row's ID.
                 var matches=queryCollectionValues(rule,keyValues(rule,args).get(0),args,target.getClass());
                 if(matches.size()>1) throw new IllegalStateException("REPOSITORY_SCALAR_QUERY_AMBIGUOUS");
                 found=matches.isEmpty()?Optional.empty():Optional.of(matches.get(0));
-            } else found=rule.readLocked() ? repositorySupplier.get().findForUpdate(rule.objectType(),id,target.getClass())
-                    : repositorySupplier.get().find(rule.objectType(),id,target.getClass());
+            } else {
+                Class<?> valueType = rule.readType(target.getClass());
+                Class<?> targetType = target.getClass();
+                found = (rule.readLocked() ? repositorySupplier.get().findForUpdate(rule.objectType(), id, valueType)
+                        : repositorySupplier.get().find(rule.objectType(), id, valueType))
+                        .map(row -> rule.projectRow(row, targetType));
+            }
             if (unique != null) {
                 found = found.filter(unique::matches);
                 unique.recordMatch(found.isPresent());
@@ -721,11 +753,13 @@ public final class RepositoryHydratingServiceProxy {
         }
 
         private List<?> queryCollectionValues(HydrationRule rule, Object keyValue, Object[] args, Class<?> valueType) {
+            Class<?> readType = rule.readType(valueType);
             if (rule.keyTargets().size() == 1) {
                 HydrationRule.KeyTarget firstKey = rule.firstKey();
-                return rule.readLocked()
-                        ? repositorySupplier.get().findByForUpdate(rule.objectType(), List.of(firstKey.repositoryObjectIdPath()), List.of(keyValue), valueType)
-                        : repositorySupplier.get().findBy(rule.objectType(), firstKey.repositoryObjectIdPath(), keyValue, valueType);
+                var rows = rule.readLocked()
+                        ? repositorySupplier.get().findByForUpdate(rule.objectType(), List.of(firstKey.repositoryObjectIdPath()), List.of(keyValue), readType)
+                        : repositorySupplier.get().findBy(rule.objectType(), firstKey.repositoryObjectIdPath(), keyValue, readType);
+                return projectRows(rule, rows, valueType);
             }
             List<String> repositoryPaths = new ArrayList<>();
             List<Object> keyValues = new ArrayList<>();
@@ -734,8 +768,14 @@ public final class RepositoryHydratingServiceProxy {
                 repositoryPaths.add(target.repositoryObjectIdPath());
                 keyValues.add(i == 0 ? keyValue : keyValues(rule, args).get(i));
             }
-            return rule.readLocked() ? repositorySupplier.get().findByForUpdate(rule.objectType(), repositoryPaths, keyValues, valueType)
-                    : repositorySupplier.get().findBy(rule.objectType(), repositoryPaths, keyValues, valueType);
+            var rows = rule.readLocked() ? repositorySupplier.get().findByForUpdate(rule.objectType(), repositoryPaths, keyValues, readType)
+                    : repositorySupplier.get().findBy(rule.objectType(), repositoryPaths, keyValues, readType);
+            return projectRows(rule, rows, valueType);
+        }
+
+        private List<?> projectRows(HydrationRule rule, List<?> rows, Class<?> valueType) {
+            if (rule.resultProjection() == null) return rows;
+            return rows.stream().map(row -> rule.projectRow(row, valueType)).toList();
         }
 
         private static boolean isCollectionWriter(Method responseWriter) {

@@ -116,7 +116,7 @@ public final class BusinessCalculationValidator {
                 if (!compatible(left, right) && !absentNumericFact) { error("Assignment type mismatch: " + left + " and " + right); }
                 if (left == Kind.OBJECT && right == Kind.OBJECT && assignment.getLeft().getReturnType() != null
                         && assignment.getRight().getReturnType() != null
-                        && !assignment.getLeft().getReturnType().getName().equals(assignment.getRight().getReturnType().getName())) {
+                        && !compatibleParticipants(assignment.getRight().getReturnType(), assignment.getLeft().getReturnType())) {
                     error("Participant assignment requires the same declared object type.");
                 }
                 if (left == Kind.OBJECT && right == Kind.OBJECT
@@ -292,7 +292,7 @@ public final class BusinessCalculationValidator {
                     if (expected == Kind.NUMBER && actual == Kind.NUMBER)
                         checkRounding(control.local, control.local.getName(), control.condition, null, control.sourceLocation);
                     if (expected == Kind.OBJECT && actual == Kind.OBJECT && control.condition.getReturnType() != null
-                            && !control.local.getType().getName().equals(control.condition.getReturnType().getName())) {
+                            && !compatibleParticipants(control.condition.getReturnType(), control.local.getType())) {
                         error("Local initializer requires the same participant type.");
                     }
                     if (expected == Kind.OBJECT && actual == Kind.OBJECT
@@ -309,7 +309,7 @@ public final class BusinessCalculationValidator {
                     SppLocalVar collection = control.condition instanceof CalculationReference ref ? ref.field : null;
                     if (collection == null || collection.getArrayDimension() != 1) {
                         error("Enhanced for requires a one-dimensional participant collection.");
-                    } else if (!collection.getType().getName().equals(control.local.getType().getName())
+                    } else if (!compatibleParticipants(collection.getType(), control.local.getType())
                             && !(NumericBinding.isNumeric(collection.getType().getName()) && NumericBinding.isNumeric(control.local.getType().getName()))) {
                         error("Enhanced for element type mismatch.");
                     }
@@ -467,7 +467,7 @@ public final class BusinessCalculationValidator {
                 Kind a = type(collection), b = type(element);
                 if (a != Kind.OBJECT || b != Kind.OBJECT || dimensions(collection) != 1 || dimensions(element) != 0
                         || !(collection.getReturnType() instanceof SppClass) || collection.getReturnType() instanceof SppService
-                        || element.getReturnType() == null || !collection.getReturnType().getName().equals(element.getReturnType().getName())) {
+                        || element.getReturnType() == null || !compatibleParticipants(element.getReturnType(), collection.getReturnType())) {
                     error("append requires a one-dimensional collection and a participant of its element type.");
                 }
                 function.setReturnType(collection.getReturnType()); return Kind.OBJECT;
@@ -646,6 +646,11 @@ public final class BusinessCalculationValidator {
         }
         return current;
     }
+    private boolean compatibleParticipants(SppCompilationUnit source, SppCompilationUnit target) {
+        return source.getName().equals(target.getName()) || source instanceof SppClass from && target instanceof SppClass to
+                && SharedPlayerBinding.resolve(service.getDeclaringDomain(), from, to) != null;
+    }
+
     private void validateEnumLiteral(IExpression reference, IExpression value) {
         if (reference == null || !(reference.getReturnType() instanceof SppEnum enumeration)) { return; }
         if (value != null && value.getReturnType() instanceof SppEnum other) {

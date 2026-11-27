@@ -176,9 +176,21 @@ public final class NumericJavaRenderer {
             }
             value = assignmentValue(value, targetAdapter == null ? sourceAdapter : targetAdapter, control.local);
         } else if ("char".equals(control.local.getType().getName())) { value = "String.valueOf(" + element + ")"; }
+        String local = "$sppLocal_" + control.local.getName();
+        String body = statements(control.body);
+        if (control.condition.getReturnType() instanceof SppClass from && control.local.getType() instanceof SppClass to) {
+            var binding = SharedPlayerBinding.resolve(service.getDeclaringDomain(), from, to);
+            if (binding != null) {
+                value = binding.projectJava(element, to, 0);
+                String view = temporary("$sppRoleView");
+                body = "var " + view + " = " + local + ";\ntry {\n" + body + "} finally {\n"
+                        + "com.servpp.service.runtime.LocalDomainServices.mergeRole("
+                        + element + ", " + view + ", " + binding.javaFields() + ");\n}\n";
+            }
+        }
         return "for (var " + element + " : " + expression(control.condition) + ") {\n"
-                + localType(control.local) + " $sppLocal_" + control.local.getName() + " = " + value + ";\n"
-                + statements(control.body) + "}";
+                + localType(control.local) + " " + local + " = " + value + ";\n"
+                + body + "}";
     }
 
     private String switchStatement(CalculationControl control) {
@@ -303,7 +315,7 @@ public final class NumericJavaRenderer {
         if (expression instanceof CalculationFunction function) {
             if (function.getName().equals("append")) {
                 return "com.servpp.service.runtime.ParticipantCollections.append(" + expression(function.getArguments().get(0))
-                        + ", " + expression(function.getArguments().get(1)) + ")";
+                        + ", " + roleValue(function.getArguments().get(1), function.getReturnType(), 0) + ")";
             }
             if (function.getName().equals("sameFacts")) { return factsComparison(function); }
             if (function.getName().equals("copy")) {
@@ -353,15 +365,17 @@ public final class NumericJavaRenderer {
             if (operation.getOperation() instanceof IAssignOperation && left instanceof Reference reference) {
                 if (entranceCollection(reference))
                     return "com.servpp.service.runtime.ParticipantFacts.hydrateCollection(" + expression(left)
-                            + ", com.servpp.service.runtime.ParticipantCollections.list(" + expression(right) + "))";
+                            + ", com.servpp.service.runtime.ParticipantCollections.list(" + roleValue(right, left.getReturnType(), 1) + "))";
                 String value = BlankLiteral.unwrap(right) instanceof BlankLiteral blank ? blank.write(resolve(reference), receiver(reference))
                         : right instanceof Literal && left.getReturnType() instanceof com.servpp.lang.models.SppEnum
-                        ? new AssignOperation().getRightExpr(left, right) : expression(right);
+                        ? new AssignOperation().getRightExpr(left, right)
+                        : roleValue(right, left.getReturnType(), resolve(reference) == null ? 0 : resolve(reference).getArrayDimension());
+                boolean projected = roleBinding(right, left.getReturnType()) != null;
                 if (resolve(reference) != null && resolve(reference).getArrayDimension() == 1
-                        && reference.getValue().contains(".") && rootArray(right)) {
+                        && reference.getValue().contains(".") && rootArray(right) && !projected) {
                     value = "com.servpp.service.runtime.ParticipantCollections.list(" + value + ")";
                 } else if (resolve(reference) != null && resolve(reference).getArrayDimension() == 1
-                        && !reference.getValue().contains(".") && modelCollection(right)) {
+                        && !reference.getValue().contains(".") && (modelCollection(right) || projected)) {
                     String arrayType=localType(resolve(reference));
                     String componentType=arrayType.substring(0,arrayType.length()-2);
                     value="(" + arrayType + ") com.servpp.service.runtime.ParticipantCollections.array(" + value + ", " + componentType + ".class)";
@@ -755,6 +769,16 @@ public final class NumericJavaRenderer {
 
     private boolean isComparison(String operator) {
         return java.util.Set.of("<", "<=", ">", ">=", "==", "!=").contains(operator);
+    }
+
+    private SharedPlayerBinding roleBinding(IExpression value, com.servpp.lang.models.SppCompilationUnit target) {
+        return value.getReturnType() instanceof SppClass from && target instanceof SppClass to
+                ? SharedPlayerBinding.resolve(service.getDeclaringDomain(), from, to) : null;
+    }
+
+    private String roleValue(IExpression value, com.servpp.lang.models.SppCompilationUnit target, int dimensions) {
+        var binding = roleBinding(value, target);
+        return binding == null ? expression(value) : binding.projectJava(expression(value), (SppClass) target, dimensions);
     }
 
     private boolean entranceCollection(Reference reference) {
