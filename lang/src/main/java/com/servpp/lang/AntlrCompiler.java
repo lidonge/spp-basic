@@ -42,6 +42,11 @@ public abstract class AntlrCompiler {
 
     protected void parseFile(Parser sppParser, IAntlrParserExecutor executor, ParseTreeListener listener)
             throws IOException {
+        ParserRuleContext tree = parseTree(sppParser, executor);
+        walkTree(listener, tree);
+    }
+
+    protected ParserRuleContext parseTree(Parser sppParser, IAntlrParserExecutor executor) throws IOException {
         sppParser.getInterpreter().setPredictionMode(PredictionMode.SLL);
         sppParser.removeErrorListeners();
         var errors = new GeneratorErrorListener(antlrFile);
@@ -63,6 +68,10 @@ public abstract class AntlrCompiler {
             throw new IOException("Failed to parse " + antlrFile + ": parser returned no parse tree.");
         }
 
+        return tree;
+    }
+
+    protected void walkTree(ParseTreeListener listener, ParserRuleContext tree) {
         createWalker().walk(listener, tree);
         if (parsed != null) parsed.accept(tree);
     }

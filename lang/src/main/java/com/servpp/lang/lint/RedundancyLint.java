@@ -1,5 +1,6 @@
 package com.servpp.lang.lint;
 
+import com.servpp.lang.ParticipantNames;
 import com.servpp.lang.antlr.AppParser;
 import com.servpp.lang.antlr.SppParser;
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -17,7 +18,8 @@ public final class RedundancyLint {
     private RedundancyLint() { }
 
     /** Findings that are compile errors regardless of the strict-lint setting. */
-    public static final java.util.Set<String> ERROR_CODES = java.util.Set.of(ParticipantTypeLint.CODE);
+    public static final java.util.Set<String> ERROR_CODES = java.util.Set.of(
+            ParticipantTypeLint.CODE, ParticipantNames.EXPLICIT, ParticipantNames.COLLISION);
 
     public record Source(String path, ParserRuleContext tree) {
         String domain() {
@@ -73,6 +75,12 @@ public final class RedundancyLint {
             QueryLint.check(domain, reporter);
             ReviewLint.check(domain, reporter);
             ParticipantTypeLint.check(domain, reporter);
+            var names = new ParticipantNames();
+            for (var source : domain)
+                if (source.tree() instanceof SppParser.ProgramContext tree) names.add(tree);
+            for (var source : domain)
+                if (source.tree() instanceof SppParser.ProgramContext tree)
+                    names.check(tree, problem -> reporter.warn(source, problem.token(), problem.code(), problem.message()));
         }
         findings.sort(Comparator.comparing(Finding::code).thenComparing(Finding::path).thenComparingInt(f -> f.token().getTokenIndex()));
         return List.copyOf(findings);

@@ -152,7 +152,7 @@ public final class QueryLint {
     }
 
     private static String name(ParameterDeclarationContext p) {
-        return p.Identifier() == null ? type(p) : p.Identifier().getText();
+        return com.servpp.lang.ParticipantNames.bindingName(p);
     }
 
     private static boolean array(ParameterDeclarationContext p) { return type(p).endsWith("[]"); }

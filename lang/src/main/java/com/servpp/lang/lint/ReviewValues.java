@@ -65,7 +65,7 @@ final class ReviewValues {
             for (var parameter : definition.parameterDeclarations().parameterDeclaration()) {
                 if (parameter.roletype() == null) continue;
                 String type = parameter.roletype().getText();
-                String name = parameter.Identifier() == null ? type : parameter.Identifier().getText();
+                String name = com.servpp.lang.ParticipantNames.bindingName(parameter);
                 variables.put(name, type);
             }
         }

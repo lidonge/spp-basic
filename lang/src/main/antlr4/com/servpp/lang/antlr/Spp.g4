@@ -48,7 +48,7 @@ enumFallback
     ;
 
 entity
-    : ('Entity' | 'Reference' ) Identifier ('from' qualifiedName)? entityBody
+    : ('Entity' | 'Reference' ) Identifier shortNames? ('from' qualifiedName)? entityBody
     ;
 
 entityBody
@@ -78,8 +78,12 @@ quantumNumber
     ;
 
 role
-    : 'Role' Identifier (roleBody | ';')
-    | 'Contract' Identifier roleBody
+    : 'Role' Identifier shortNames? (roleBody | ';')
+    | 'Contract' Identifier shortNames? roleBody
+    ;
+
+shortNames
+    : 'short' Identifier (',' Identifier)?
     ;
 
 roleBody
@@ -218,8 +222,9 @@ parameterDeclarations
     ;
 
 parameterDeclaration
+    locals [String bindingName]
     : queryKey roletype Identifier?
-    | type Identifier
+    | type Identifier?
     | roletype Identifier
     | roletype
     ;

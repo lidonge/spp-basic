@@ -54,4 +54,21 @@ public class ParticipantTypeLintTest {
                 """);
         assertEquals(List.of(), names(findings));
     }
+    @Test public void reportsExplicitNamesAndShortNameCollisionsAcrossSourceFiles() {
+        var sources = java.util.stream.Stream.of(
+                "domain ledger; Entity ExternalLoss short loss, losses { String code; } Role Losses {}",
+                "domain ledger; atomic calculate summarize(ExternalLoss alias, ExternalLoss[], Losses) { int local = 1; }")
+                .map(text -> {
+                    var parser = new SppParser(new CommonTokenStream(new SppLexer(CharStreams.fromString(text))));
+                    var tree = parser.program();
+                    assertEquals(0, parser.getNumberOfSyntaxErrors());
+                    return new RedundancyLint.Source(text.startsWith("domain ledger; Entity") ? "types.spp" : "services.spp", tree);
+                }).toList();
+        var findings = RedundancyLint.analyze(sources).stream()
+                .filter(finding -> RedundancyLint.ERROR_CODES.contains(finding.code())).toList();
+        assertEquals(List.of("SPP_EXPLICIT_PARAMETER_NAME", "SPP_PARAMETER_SHORT_NAME_COLLISION"),
+                findings.stream().map(RedundancyLint.Finding::code).toList());
+        assertTrue(findings.get(0).message().contains("'loss'"));
+        assertTrue(findings.get(1).message().contains("'losses'"));
+    }
 }

@@ -123,7 +123,7 @@ final class MechanicalEdits {
             String name = args == null ? null : args.parameter(0).getText();
             long matches = scene.serviceDefinition().parameterDeclarations().parameterDeclaration().stream()
                     .filter(p -> p.roletype() != null && p.roletype().getText().equals(type))
-                    .filter(p -> name == null || name.equals(p.Identifier() == null ? type : p.Identifier().getText()))
+                    .filter(p -> name == null || name.equals(com.servpp.lang.ParticipantNames.bindingName(p)))
                     .count();
             if (matches != 1) return false;
         }

@@ -10,6 +10,8 @@ import com.servpp.lang.models.SppService;
  * @author lidong@date 2023-11-01@version 1.0
  */
 public interface IServiceDefinitionHandler extends ICompilationUnitHandler {
+    @Override default void enterShortNames(SppParser.ShortNamesContext ctx) { }
+    @Override default void exitShortNames(SppParser.ShortNamesContext ctx) { }
     @Override default void enterQueryKey(SppParser.QueryKeyContext ctx) { }
     @Override default void exitQueryKey(SppParser.QueryKeyContext ctx) { }
     @Override
@@ -47,14 +49,10 @@ public interface IServiceDefinitionHandler extends ICompilationUnitHandler {
     @Override
     default void enterParameterDeclaration(SppParser.ParameterDeclarationContext ctx) {
         if (ctx.getChildCount() != 0) {
-            String ptype = ctx.type() == null ? ctx.roletype().getText() : ctx.type().getText();
-            String name = ctx.Identifier() == null ? null : ctx.Identifier().getText();
-
-            String[] sdims = ptype.split("\\[");
-            String paramName = name == null ? NameUtil.participantName(sdims[0], sdims.length - 1) : name;
-            SppDomain checker = checkClass(ctx, sdims[0]);
-            int dim = sdims.length - 1;
-            SppLocalVar sppLocalVar = generateLocalVar(sdims[0], dim, paramName);
+            var shape = com.servpp.lang.ParticipantNames.shape(ctx);
+            checkClass(ctx, shape.type());
+            SppLocalVar sppLocalVar = generateLocalVar(shape.type(), shape.dimensions(), ctx.bindingName == null
+                    ? ctx.Identifier() == null ? shape.legacy() : ctx.Identifier().getText() : ctx.bindingName);
             sppLocalVar.setQueryKey(ctx.queryKey() != null);
             Object container = peek();
             if (container instanceof ServiceBody) {

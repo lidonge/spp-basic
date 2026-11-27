@@ -52,14 +52,24 @@ public class SppCompiler extends AntlrCompiler {
         }
         return new SppParser(tokens);
     }
+    public SppParser.ProgramContext parse() throws IOException {
+        var parser = (SppParser) getParser();
+        return (SppParser.ProgramContext) parseTree(parser, parser::program);
+    }
+
+    public SppGeneralHandler compile(SppParser.ProgramContext tree, ParticipantNames names) {
+        var listener = new SppGeneralHandler(sppProject);
+        listener.setSppFile(antlrFile);
+        names.bind(tree);
+        walkTree(listener, tree);
+        return listener;
+    }
+
     @Override
     public ParseTreeListener compile() throws IOException {
-        SppParser sppParser = (SppParser) getParser();
-        SppGeneralHandler listener = new SppGeneralHandler(
-                sppProject);
-        listener.setSppFile(antlrFile);
-
-        parseFile(sppParser, ()->{return sppParser.program();},listener);
-        return listener;
+        var tree = parse();
+        var names = new ParticipantNames();
+        names.add(tree);
+        return compile(tree, names);
     }
 }

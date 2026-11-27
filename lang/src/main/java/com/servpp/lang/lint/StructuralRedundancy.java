@@ -37,7 +37,7 @@ public final class StructuralRedundancy {
                     var ctx = unit.atomicservice(); var def = ctx.serviceDefinition();
                     var params = new ArrayList<String>(); var types = new ArrayList<String>();
                     if (def.parameterDeclarations() != null) for (var p : def.parameterDeclarations().parameterDeclaration()) {
-                        params.add(p.Identifier() == null ? p.roletype().getText() : p.Identifier().getText());
+                        params.add(com.servpp.lang.ParticipantNames.bindingName(p));
                         types.add((p.queryKey() == null ? "" : "key ") + (p.roletype() == null ? p.type().getText() : p.roletype().getText()));
                     }
                     services.add(new Service(source, ctx, def.Identifier().getSymbol(), def.Identifier().getText(),
@@ -47,7 +47,7 @@ public final class StructuralRedundancy {
                     var ctx = unit.scenario(); var def = ctx.serviceDefinition();
                     var params = new ArrayList<String>(); var types = new ArrayList<String>();
                     if (def.parameterDeclarations() != null) for (var p : def.parameterDeclarations().parameterDeclaration()) {
-                        params.add(p.Identifier() == null ? p.roletype().getText() : p.Identifier().getText());
+                        params.add(com.servpp.lang.ParticipantNames.bindingName(p));
                         types.add((p.queryKey() == null ? "" : "key ") + (p.roletype() == null ? p.type().getText() : p.roletype().getText()));
                     }
                     services.add(new Service(source, ctx, def.Identifier().getSymbol(), def.Identifier().getText(),
@@ -264,7 +264,7 @@ public final class StructuralRedundancy {
                     .filter(p -> p.roletype() != null && p.roletype().getText().equals(type)).toList();
             if (matches.size() != 1) return List.of();
             var p = matches.get(0);
-            args.add(p.Identifier() == null ? type : p.Identifier().getText());
+            args.add(com.servpp.lang.ParticipantNames.bindingName(p));
         }
         return args;
     }

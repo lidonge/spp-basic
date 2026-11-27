@@ -65,16 +65,32 @@ public class GeneratorUtil {
             String path = sppSourceDirectory.toPath().relativize(file.toPath()).toString();
             return compiler.compile(tree -> sources.add(new RedundancyLint.Source(path, tree)));
         };
-        //parse enum file first
-        List<ParseTreeListener> sppTreeListeners = compileAntlr(sppSourceDirectory, project, ".enum", parse);
-
-        //parse spp file
-        sppTreeListeners = compileAntlr(sppSourceDirectory, project, ".spp", (sppFile, sppProject) -> {
-            SppGeneralHandler sppGeneralHandler = (SppGeneralHandler) parse.parse(sppFile, sppProject);
-            sppGeneralHandler.getSppDomain().dealEntityToRoleMaps();
-            sppGeneralHandler.getSppDomain().generateDefaultServices(sppGeneralHandler);
-            return sppGeneralHandler;
-        });
+        var names = new com.servpp.lang.ParticipantNames();
+        record SourceFile(File file, SppCompiler compiler, com.servpp.lang.antlr.SppParser.ProgramContext tree) { }
+        List<SourceFile> sppFiles = new ArrayList<>();
+        for (String suffix : List.of(".enum", ".spp")) {
+            for (File file : sourceFiles(sppSourceDirectory, suffix, ignored -> true, Comparator.comparing(File::getName))) {
+                var compiler = new SppCompiler(file, project);
+                try {
+                    var tree = compiler.parse();
+                    names.add(tree);
+                    sppFiles.add(new SourceFile(file, compiler, tree));
+                } catch (IOException failure) {
+                    throw new MojoExecutionException("Failed to compile S++ source file " + file + ".", failure);
+                }
+            }
+        }
+        List<ParseTreeListener> sppTreeListeners = new ArrayList<>();
+        for (var source : sppFiles) {
+            var handler = source.compiler().compile(source.tree(), names);
+            sources.add(new RedundancyLint.Source(sppSourceDirectory.toPath().relativize(source.file().toPath()).toString(),
+                    source.tree()));
+            if (source.file().getName().endsWith(".spp")) {
+                handler.getSppDomain().dealEntityToRoleMaps();
+                handler.getSppDomain().generateDefaultServices(handler);
+                sppTreeListeners.add(handler);
+            }
+        }
         // Built-in participant CRUD names must be known before APP resolves service references.
         for (var domain : project.getSppDomainMap().values()) domain.prepareImplicitParticipantServices();
         //parse app file

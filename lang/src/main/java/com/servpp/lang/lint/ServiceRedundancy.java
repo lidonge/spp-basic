@@ -470,7 +470,7 @@ final class ServiceRedundancy {
         return definition.parameterDeclarations() == null ? List.of() : definition.parameterDeclarations().parameterDeclaration();
     }
     private static String name(ParameterDeclarationContext p) {
-        return p.Identifier() != null ? p.Identifier().getText() : p.roletype().getText();
+        return com.servpp.lang.ParticipantNames.bindingName(p);
     }
     private static String participantType(List<ParameterDeclarationContext> params, String name) {
         for (var p : params) if (p.roletype()!=null && name(p).equals(name) && p.roletype().getChildCount()==1)
