@@ -31,7 +31,7 @@ public class XbodIdempotencyTest {
                 assertFalse(com.servpp.service.idempotency.BusinessIdempotencyManager.wasReplay());
             }
             var account = demo.readAccounts();
-            XbodTransactionTest.amount(coordinated() ? "100" : "300",account.path("DepositAccount").path("interestBase"));
+            XbodTransactionTest.amount(coordinated() ? "100" : "300",account.path("depositAccount").path("interestBase"));
         }
     }
     @Test(timeout=60000) public void concurrentRemoteCopiesDoNotExecuteTwiceAndReplayAfterCompletion() throws Exception { concurrent(false); }
@@ -41,9 +41,9 @@ public class XbodIdempotencyTest {
             XbodTransactionTest.open(demo);
             var paid = reversing ? demo.call("depositCash",XbodTransactionTest.deposit(100)) : null;
             String service = reversing ? "reverseCash" : "depositCash";
-            String agreement = reversing ? "CashReversalAgreement" : "CashDepositAgreement";
+            String agreement = reversing ? "cashReversalAgreement" : "cashDepositAgreement";
             String number = reversing ? "reversalNumber" : "depositNumber";
-            var input = reversing ? XbodTransactionTest.reversal(paid.path("CashDepositAgreement"),20261007,false) : XbodTransactionTest.deposit(100);
+            var input = reversing ? XbodTransactionTest.reversal(paid.path("cashDepositAgreement"),20261007,false) : XbodTransactionTest.deposit(100);
             var executor = java.util.concurrent.Executors.newFixedThreadPool(2);
             var start = new java.util.concurrent.CyclicBarrier(2);
             try (var barrier = coordinated() ? null : com.servpp.service.runtime.ExampleServiceBarrier.activate(
@@ -82,10 +82,10 @@ public class XbodIdempotencyTest {
                 }
                 assertEquals("SUCCEEDED",first.path(agreement).path("resultInfo").path("status").asText());
                 var stored = demo.readAccounts();
-                XbodTransactionTest.amount(reversing ? "0" : "100",stored.path("DepositAccount").path("interestBase"));
+                XbodTransactionTest.amount(reversing ? "0" : "100",stored.path("depositAccount").path("interestBase"));
                 if (reversing) {
-                    var receipt=demo.call("readCashReversal",Map.of("CashReversalAgreement",Map.of("reversalNumber",first.path(agreement).path(number).asText())));
-                    assertEquals(8,receipt.path("CashReversalPostingLineArray").size());
+                    var receipt=demo.call("readCashReversal",Map.of("cashReversalAgreement",Map.of("reversalNumber",first.path(agreement).path(number).asText())));
+                    assertEquals(8,receipt.path("cashReversalPostingLines").size());
                     try(var connection=java.sql.DriverManager.getConnection(System.getProperty("spp.xbod.datasource-url"));var statement=connection.createStatement();var rows=statement.executeQuery("SELECT COUNT(*) FROM CASH_REVERSALS")) {
                         assertTrue(rows.next());assertEquals(1,rows.getInt(1));
                     }
@@ -100,9 +100,9 @@ public class XbodIdempotencyTest {
             input.put("AppHeader",Map.of("callerId","CLAIMED-CLIENT","requestSerialNumber","REPEATED","callMode","REMOTE","callOrigin","USER"));
             var first = demo.call("depositCash",input); var second = demo.call("depositCash",input);
             assertFalse(com.servpp.service.idempotency.BusinessIdempotencyManager.wasReplay());
-            assertNotEquals(first.path("CashDepositAgreement").path("depositNumber"),second.path("CashDepositAgreement").path("depositNumber"));
+            assertNotEquals(first.path("cashDepositAgreement").path("depositNumber"),second.path("cashDepositAgreement").path("depositNumber"));
             var account = demo.readAccounts();
-            XbodTransactionTest.amount("200",account.path("DepositAccount").path("interestBase"));
+            XbodTransactionTest.amount("200",account.path("depositAccount").path("interestBase"));
         }
     }
     @Test public void remoteDepositReplayReturnsOriginalReceiptWithoutDuplicatingFunds() throws Exception {
@@ -111,30 +111,30 @@ public class XbodIdempotencyTest {
             var first = remote(demo,"depositCash",XbodTransactionTest.deposit(100),"BANK-CLIENT","DEPOSIT-001");
             var replay = remote(demo,"depositCash",XbodTransactionTest.deposit(100),"BANK-CLIENT","DEPOSIT-001");
             assertEquals(coordinated(), com.servpp.service.idempotency.BusinessIdempotencyManager.wasReplay());
-            assertEquals(coordinated(), first.path("CashDepositAgreement").path("depositNumber")
-                    .equals(replay.path("CashDepositAgreement").path("depositNumber")));
+            assertEquals(coordinated(), first.path("cashDepositAgreement").path("depositNumber")
+                    .equals(replay.path("cashDepositAgreement").path("depositNumber")));
             var current = demo.readAccounts();
-            XbodTransactionTest.amount(coordinated() ? "100" : "200",current.path("DepositAccount").path("interestBase"));
+            XbodTransactionTest.amount(coordinated() ? "100" : "200",current.path("depositAccount").path("interestBase"));
         }
     }
     @Test public void remoteReversalReplayDoesNotRepeatReversalOrAccountingLines() throws Exception {
         try (var demo = new XbodTestSupport()) {
             XbodTransactionTest.open(demo); var paid = demo.call("depositCash",XbodTransactionTest.deposit(100));
-            var input = XbodTransactionTest.reversal(paid.path("CashDepositAgreement"),20261007,false);
+            var input = XbodTransactionTest.reversal(paid.path("cashDepositAgreement"),20261007,false);
             var first = remote(demo,"reverseCash",input,"BANK-CLIENT","REVERSAL-001");
             if (coordinated()) {
                 var replay = remote(demo,"reverseCash",input,"BANK-CLIENT","REVERSAL-001");
                 assertTrue(com.servpp.service.idempotency.BusinessIdempotencyManager.wasReplay());
-                assertEquals(first.path("CashReversalAgreement").path("reversalNumber"),replay.path("CashReversalAgreement").path("reversalNumber"));
+                assertEquals(first.path("cashReversalAgreement").path("reversalNumber"),replay.path("cashReversalAgreement").path("reversalNumber"));
             } else {
                 var failure = assertThrows(IllegalStateException.class, () -> remote(demo,"reverseCash",input,"BANK-CLIENT","REVERSAL-001"));
                 assertEquals("DEPOSIT_ALREADY_REVERSED", failure.getMessage());
                 assertFalse(com.servpp.service.idempotency.BusinessIdempotencyManager.wasReplay());
             }
-            var saved = demo.call("readCashReversal",Map.of("CashReversalAgreement",Map.of("reversalNumber",first.path("CashReversalAgreement").path("reversalNumber").asText())));
-            assertEquals(8,saved.path("CashReversalPostingLineArray").size());
+            var saved = demo.call("readCashReversal",Map.of("cashReversalAgreement",Map.of("reversalNumber",first.path("cashReversalAgreement").path("reversalNumber").asText())));
+            assertEquals(8,saved.path("cashReversalPostingLines").size());
             var account = demo.readAccounts();
-            XbodTransactionTest.amount("0",account.path("DepositAccount").path("interestBase"));
+            XbodTransactionTest.amount("0",account.path("depositAccount").path("interestBase"));
         }
     }
     @Test public void identicalSerialsFromDifferentCallersAreIndependentRequests() throws Exception {
@@ -143,9 +143,9 @@ public class XbodIdempotencyTest {
             var first = remote(demo,"depositCash",XbodTransactionTest.deposit(100),"BANK-A","SAME-SERIAL");
             var second = remote(demo,"depositCash",XbodTransactionTest.deposit(100),"BANK-B","SAME-SERIAL");
             assertFalse(com.servpp.service.idempotency.BusinessIdempotencyManager.wasReplay());
-            assertNotEquals(first.path("CashDepositAgreement").path("depositNumber"),second.path("CashDepositAgreement").path("depositNumber"));
+            assertNotEquals(first.path("cashDepositAgreement").path("depositNumber"),second.path("cashDepositAgreement").path("depositNumber"));
             var account = demo.readAccounts();
-            XbodTransactionTest.amount("200",account.path("DepositAccount").path("interestBase"));
+            XbodTransactionTest.amount("200",account.path("depositAccount").path("interestBase"));
         }
     }
 }

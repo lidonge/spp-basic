@@ -17,7 +17,7 @@ public class XbodCurrentEligibilityTest {
             var snapshots=new JdbcObjectSnapshotStore(new DriverManagerJdbcDataSource("org.h2.Driver",url,null,null),
                     value->demo.mapper.valueToTree(value).toString(),"xbod_cash_record");
             int changed=0;
-            for (var row:snapshots.findAll()) if (row.objectType().equals("AccountEligibility")) {
+            for (var row:snapshots.findAll()) if (row.objectType().equals("accountEligibility")) {
                 var payload=(ObjectNode)demo.mapper.readTree(row.payloadJson());
                 if (payload.path("accountNumber").asText().equals("ACCOUNT-001")) {
                     payload.put("status","FROZEN");snapshots.save(row.objectType(),row.objectId(),payload);changed++;
@@ -27,15 +27,15 @@ public class XbodCurrentEligibilityTest {
             try(var connection=DriverManager.getConnection(url);var statement=connection.createStatement()) {
                 assertEquals(1,statement.executeUpdate("UPDATE ACCOUNT_ELIGIBILITY SET status='FROZEN' WHERE accountNumber='ACCOUNT-001'"));
             }
-            var input=reversal(paid.path("CashDepositAgreement"),20261007,false);
-            input.put("AccountEligibility",Map.of("accountNumber","ACCOUNT-001","status","ACTIVE"));
+            var input=reversal(paid.path("cashDepositAgreement"),20261007,false);
+            input.put("accountEligibility",Map.of("accountNumber","ACCOUNT-001","status","ACTIVE"));
             assertEquals("EN111",assertThrows(IllegalStateException.class,()->demo.call("reverseCash",input)).getMessage());
             // SA01116 remains a core-rule exception, not an admitted cash reversal path.
-            input.put("DepositOperatorFacts",Map.of("operationCode","1102","transactionPrefix","SA01116"));
+            input.put("depositOperatorFacts",Map.of("operationCode","1102","transactionPrefix","SA01116"));
             assertEquals("UNSUPPORTED_CASH_REVERSAL_PATH",assertThrows(IllegalStateException.class,()->demo.call("reverseCash",input)).getMessage());
-            amount("100",demo.readAccounts().path("DepositAccount").path("interestBase"));
-            assertEquals("FROZEN",demo.readAccounts().path("AccountEligibility").path("status").asText());
-            assertFalse(demo.call("readCashDeposit",Map.of("CashDepositAgreement",Map.of("depositNumber",paid.path("CashDepositAgreement").path("depositNumber").asText()))).path("CashDepositAgreement").path("reversed").asBoolean());
+            amount("100",demo.readAccounts().path("depositAccount").path("interestBase"));
+            assertEquals("FROZEN",demo.readAccounts().path("accountEligibility").path("status").asText());
+            assertFalse(demo.call("readCashDeposit",Map.of("cashDepositAgreement",Map.of("depositNumber",paid.path("cashDepositAgreement").path("depositNumber").asText()))).path("cashDepositAgreement").path("reversed").asBoolean());
             try(var connection=DriverManager.getConnection(url);var statement=connection.createStatement();var rows=statement.executeQuery("SELECT COUNT(*) FROM CASH_REVERSALS")) {
                 assertTrue(rows.next());assertEquals(0,rows.getInt(1));
             }

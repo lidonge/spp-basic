@@ -124,19 +124,19 @@ public class PetstoreScenarioTest {
         String originalName = before.path("name").asText();
         amount(before.path("unitPrice"), "29.90");
         shop.callProvider("product", "reviseProduct", Map.of(
-                "Product", Map.of("productCode", "FOOD-001"),
-                "ProductRevisionAgreement", Map.of("name", "Renamed food", "category", "Food",
+                "product", Map.of("productCode", "FOOD-001"),
+                "productRevisionAgreement", Map.of("name", "Renamed food", "category", "Food",
                         "description", "Revised catalogue", "cost", 15)));
-        JsonNode current = shop.call("reviseShopGoodsPrice", Map.of("Goods", Map.of("sku", "FOOD-001"),
-                "GoodsPriceRevisionAgreement", Map.of("unitPrice", "39.90"))).path("Goods");
+        JsonNode current = shop.call("reviseShopGoodsPrice", Map.of("goods", Map.of("sku", "FOOD-001"),
+                "goodsPriceRevisionAgreement", Map.of("unitPrice", "39.90"))).path("goods");
         assertEquals("Renamed food", current.path("name").asText());
         amount(current.path("price"), "39.90");
         JsonNode after = storedOrder(session).path("lines").get(0);
         assertEquals(originalName, after.path("name").asText());
         amount(after.path("unitPrice"), "29.90");
         amount(after.path("amount"), "59.80");
-        JsonNode detail = shop.call("readShopOrderLine", Map.of("OrderLine",
-                Map.of("lineNumber", before.path("lineNumber").asText()))).path("OrderLine");
+        JsonNode detail = shop.call("readShopOrderLine", Map.of("orderLine",
+                Map.of("lineNumber", before.path("lineNumber").asText()))).path("orderLine");
         assertEquals(originalName, detail.path("name").asText());
         amount(detail.path("unitPrice"), "29.90");
         assertEquals("Renamed food", detail.path("goods").path("name").asText());
@@ -478,8 +478,8 @@ public class PetstoreScenarioTest {
     }
 
     private void quoteBoundary(String price, Session buyer, String total, String shipping) {
-        shop.call("reviseShopGoodsPrice", Map.of("Goods", Map.of("sku", "FOOD-001"),
-                "GoodsPriceRevisionAgreement", Map.of("unitPrice", price)));
+        shop.call("reviseShopGoodsPrice", Map.of("goods", Map.of("sku", "FOOD-001"),
+                "goodsPriceRevisionAgreement", Map.of("unitPrice", price)));
         JsonNode quote = shop.act(buyer, "previewShopOrder", "Quote", "QUOTE-" + price);
         amount(quote.path("order").path("total"), total); amount(quote.path("order").path("shipping"), shipping);
     }
@@ -524,7 +524,7 @@ public class PetstoreScenarioTest {
                 "goods", Map.of("sku", "FOOD-001"), "agreement", Map.of("quantity", 11)));
         Object retry = shop.mapper.convertValue(request, request.getClass());
         shop.execute("reserveShopPet", request);
-        JsonNode agreement = shop.mapper.valueToTree(request).path("PetReservationAgreement");
+        JsonNode agreement = shop.mapper.valueToTree(request).path("petReservationAgreement");
         String number = agreement.path("reservationNumber").asText();
         assertFalse("Acceptance must have a committed business credential", number.isBlank());
         JsonNode saved = shop.call("readShopReservation", Map.of("agreement", Map.of("reservationNumber", number)))
@@ -602,13 +602,13 @@ public class PetstoreScenarioTest {
 
     @Test public void quantumPaymentDoesNotChangeBuyersOrdinaryRevision() throws Exception {
         Session session = order("SEPARATE-FACTS", "2", false);
-        String before = ordinaryRevision("Buyer", session.customerId);
+        String before = ordinaryRevision("buyer", session.customerId);
         pay(session);
-        assertEquals(before, ordinaryRevision("Buyer", session.customerId));
+        assertEquals(before, ordinaryRevision("buyer", session.customerId));
         amount(shop.customer(session).path("wallet"), "4932.20");
         try (var connection = DriverManager.getConnection(shop.jdbcUrl);
              var statement = connection.prepareStatement("select payload_json from petstore_records where object_type=? and object_id=?")) {
-            statement.setString(1, "Buyer"); statement.setString(2, session.customerId);
+            statement.setString(1, "buyer"); statement.setString(2, session.customerId);
             try (var rows = statement.executeQuery()) {
                 assertTrue(rows.next()); assertFalse(shop.mapper.readTree(rows.getString(1)).has("wallet"));
             }

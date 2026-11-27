@@ -18,19 +18,19 @@ public class XbodAccrualRuleTest {
             for (var c : cases) {
                 var state = Map.of("lastProductDate",c[4],"normalProduct",12,"overdraftProduct",7,
                     "overdraftInterestProduct",9,"actualProduct",5,"overdraftDays",2,"overdraftInterestDays",3);
-                var input = Map.of("DepositAccount",Map.of("interestBase",c[0],"overdraftPrincipal",c[1],"overdraftInterest",c[2],"collectionInterest",c[3]),
-                    "BusinessDay",Map.of("date",c[5]),"DepositAccrualState",state,
-                    "DepositInterestPolicy",Map.of("normalEnabled",c[7],"normalUnit",c[8],"overdraftUnit",0.01),
-                    "InterestCalendar",Map.of("convention",c[6]),"AgreementTerm",Map.of("effectiveDate",20261003,"cancelDate",20261007),
-                    "AgreementPolicy",Map.of("enabled",c[9],"mode","2","currency","CNY"),
-                    "AgreementBandArray",List.of(Map.of("slot",5,"threshold",500),Map.of("slot",4,"threshold",400),Map.of("slot",3,"threshold",300),Map.of("slot",2,"threshold",200),Map.of("slot",1,"threshold",100)));
+                var input = Map.of("depositAccount",Map.of("interestBase",c[0],"overdraftPrincipal",c[1],"overdraftInterest",c[2],"collectionInterest",c[3]),
+                    "businessDay",Map.of("date",c[5]),"depositAccrualState",state,
+                    "depositInterestPolicy",Map.of("normalEnabled",c[7],"normalUnit",c[8],"overdraftUnit",0.01),
+                    "interestCalendar",Map.of("convention",c[6]),"agreementTerm",Map.of("effectiveDate",20261003,"cancelDate",20261007),
+                    "agreementPolicy",Map.of("enabled",c[9],"mode","2","currency","CNY"),
+                    "agreementBands",List.of(Map.of("slot",5,"threshold",500),Map.of("slot",4,"threshold",400),Map.of("slot",3,"threshold",300),Map.of("slot",2,"threshold",200),Map.of("slot",1,"threshold",100)));
                 var result = demo.call("previewDepositAccrual",input);
-                var plan = result.path("DepositAccrualPlan");
+                var plan = result.path("depositAccrualPlan");
                 String[] increments = {"normalIncrement","agreementIncrement","overdraftIncrement","overdraftInterestIncrement"};
                 for (int i=0;i<increments.length;i++) amount((String)c[10+i],plan.path(increments[i]));
                 assertEquals(c[14],plan.path("normalDays").asInt());
                 assertEquals(c[15],plan.path("overdraftDays").asInt());
-                var accumulated = result.path("DepositAccrualState");
+                var accumulated = result.path("depositAccrualState");
                 assertEquals(c[16],accumulated.path("overdraftDays").asInt());
                 assertEquals(c[17],accumulated.path("overdraftInterestDays").asInt());
                 assertEquals(c[5],accumulated.path("lastProductDate").asInt());

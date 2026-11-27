@@ -42,22 +42,22 @@ public class XbodPartialPostingTest {
             arm(table);
             String service = reversing ? "reverseCash" : "depositCash";
             Object request = demo.request(service, reversing
-                    ? reversal(paid.path("CashDepositAgreement"), 20261007, false) : deposit(100));
+                    ? reversal(paid.path("cashDepositAgreement"), 20261007, false) : deposit(100));
             boolean split = "testing".equals(System.getProperty("spp.environment"));
             if (split) assertThrows(IllegalStateException.class, () -> demo.execute(service, request));
             else demo.execute(service, request);
             assertEquals("Failure must occur after three successful row writes", 4, FourthInsertFault.writes.get());
             var failed = demo.mapper.valueToTree(request);
-            var info = failed.path(reversing ? "CashReversalAgreement" : "CashDepositAgreement").path("resultInfo");
+            var info = failed.path(reversing ? "cashReversalAgreement" : "cashDepositAgreement").path("resultInfo");
             assertEquals("FAILED", info.path("status").asText());
             assertEquals(split ? "RECOVERY_REQUIRED" : "ROLLED_BACK", info.path("failure").path("recoveryStatus").asText());
             assertEquals(0, count(table));
-            amount(reversing ? "100" : "0", demo.readAccounts().path("DepositAccount").path("interestBase"));
-            amount(reversing ? "-100" : "0", demo.readAccounts().path("CashSettlementAccount").path("balance"));
+            amount(reversing ? "100" : "0", demo.readAccounts().path("depositAccount").path("interestBase"));
+            amount(reversing ? "-100" : "0", demo.readAccounts().path("cashSettlementAccount").path("balance"));
             if (reversing) {
-                var original = demo.call("readCashDeposit", Map.of("CashDepositAgreement",
-                        Map.of("depositNumber", paid.path("CashDepositAgreement").path("depositNumber").asText())));
-                assertEquals(split, original.path("CashDepositAgreement").path("reversed").asBoolean());
+                var original = demo.call("readCashDeposit", Map.of("cashDepositAgreement",
+                        Map.of("depositNumber", paid.path("cashDepositAgreement").path("depositNumber").asText())));
+                assertEquals(split, original.path("cashDepositAgreement").path("reversed").asBoolean());
                 assertEquals(8, count("CASH_POSTINGS"));
             }
             if (!split) {
@@ -65,11 +65,11 @@ public class XbodPartialPostingTest {
                     statement.execute("DROP TRIGGER FAIL_FOURTH");
                 }
                 var retried = demo.call(service, reversing
-                        ? reversal(paid.path("CashDepositAgreement"), 20261007, false) : deposit(100));
-                assertEquals("SUCCEEDED", retried.path(reversing ? "CashReversalAgreement" : "CashDepositAgreement")
+                        ? reversal(paid.path("cashDepositAgreement"), 20261007, false) : deposit(100));
+                assertEquals("SUCCEEDED", retried.path(reversing ? "cashReversalAgreement" : "cashDepositAgreement")
                         .path("resultInfo").path("status").asText());
                 assertEquals(8, count(table));
-                amount(reversing ? "0" : "100", retried.path("DepositAccount").path("interestBase"));
+                amount(reversing ? "0" : "100", retried.path("depositAccount").path("interestBase"));
             }
         }
     }

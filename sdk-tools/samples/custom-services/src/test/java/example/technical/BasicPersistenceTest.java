@@ -23,7 +23,7 @@ public class BasicPersistenceTest {
             var revision = new LinkedHashMap<String,Object>();
             revision.put("note", null);
             revision.put("amount", 14);
-            fixture.call("reviseRecord", Map.of("Entry", Map.of("code", "A"), "Revision", revision));
+            fixture.call("reviseRecord", Map.of("entry", Map.of("code", "A"), "revision", revision));
             var entry = fixture.read();
             assertEquals(14, entry.path("amount").asInt());
             assertTrue(entry.path("note").isNull());
@@ -44,15 +44,15 @@ public class BasicPersistenceTest {
     @Test public void generatedScenarioReadsUsingAnotherParticipantWithoutCalculation() throws Exception {
         try (var fixture = new Fixture()) {
             fixture.create();
-            fixture.call("createRecord", Map.of("Entry", Map.of("code", "B"),
-                    "Revision", Map.of("note", "other row", "amount", 19)));
+            fixture.call("createRecord", Map.of("entry", Map.of("code", "B"),
+                    "revision", Map.of("note", "other row", "amount", 19)));
             var entry = fixture.call("readSelectedRecord",
-                    Map.of("Entry", Map.of("code", "B"), "Lookup", Map.of("entryCode", "A"))).path("Entry");
+                    Map.of("entry", Map.of("code", "B"), "lookup", Map.of("entryCode", "A"))).path("entry");
             assertEquals("A", entry.path("code").asText());
             assertEquals("original", entry.path("note").asText());
             assertEquals(7, entry.path("amount").asInt());
             var missing = fixture.call("readSelectedRecord",
-                    Map.of("Entry", Map.of("code", "B"), "Lookup", Map.of("entryCode", "missing"))).path("Entry");
+                    Map.of("entry", Map.of("code", "B"), "lookup", Map.of("entryCode", "missing"))).path("entry");
             assertEquals("missing", missing.path("code").asText());
         }
     }
@@ -60,10 +60,10 @@ public class BasicPersistenceTest {
     @Test public void generatedReadonlyInquiryProjectsStoredFactsWithoutWriting() throws Exception {
         try (var fixture = new Fixture()) {
             fixture.create();
-            var response = fixture.call("previewRecord", Map.of("Entry", Map.of("code", "A"),
-                    "Facts", Map.of("amount", 0)));
-            assertEquals("original", response.path("Entry").path("note").asText());
-            assertEquals(14, response.path("Facts").path("amount").asInt());
+            var response = fixture.call("previewRecord", Map.of("entry", Map.of("code", "A"),
+                    "facts", Map.of("amount", 0)));
+            assertEquals("original", response.path("entry").path("note").asText());
+            assertEquals(14, response.path("facts").path("amount").asInt());
             try (var connection = fixture.dataSource.getConnection();
                  var statement = connection.createStatement();
                  var rows = statement.executeQuery("SELECT code, note, amount FROM LEDGER_ENTRIES")) {
@@ -120,16 +120,16 @@ public class BasicPersistenceTest {
             return mapper.valueToTree(request);
         }
         JsonNode read() throws Exception {
-            return call("readRecord", Map.of("Entry", Map.of("code", "A"))).path("Entry");
+            return call("readRecord", Map.of("entry", Map.of("code", "A"))).path("entry");
         }
         void create() throws Exception {
-            call("createRecord", Map.of("Entry", Map.of("code", "A"),
-                    "Revision", Map.of("note", "original", "amount", 7)));
+            call("createRecord", Map.of("entry", Map.of("code", "A"),
+                    "revision", Map.of("note", "original", "amount", 7)));
         }
         String revise(int amount) throws Exception {
             try {
-                call("reviseRecord", Map.of("Entry", Map.of("code", "A"),
-                        "Revision", Map.of("note", "revision-" + amount, "amount", amount)));
+                call("reviseRecord", Map.of("entry", Map.of("code", "A"),
+                        "revision", Map.of("note", "revision-" + amount, "amount", amount)));
                 return "OK";
             } catch (IllegalStateException failure) {
                 if (!"PERSISTENCE_VERSION_CONFLICT".equals(failure.getMessage())) throw failure;

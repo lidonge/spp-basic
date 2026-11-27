@@ -5,9 +5,9 @@ import static org.junit.Assert.*;
 import java.util.*;
 
 public class XbodRuleTest {
-    @Test public void recordedBankQualificationAndDocumentNotices() throws Exception { verify("/bank-qualification-cases.json",54,"DepositNotices"); }
-    @Test public void recordedAdmissionAndAuthorizationRules() throws Exception { verify("/admission-cases.json",49,"AdmissionDecision"); }
-    @Test public void recordedFeeRoundingAndTariffRules() throws Exception { verify("/fee-cases.json",16,"DepositFeePlan"); }
+    @Test public void recordedBankQualificationAndDocumentNotices() throws Exception { verify("/bank-qualification-cases.json",54,"depositNotices"); }
+    @Test public void recordedAdmissionAndAuthorizationRules() throws Exception { verify("/admission-cases.json",49,"admissionDecision"); }
+    @Test public void recordedFeeRoundingAndTariffRules() throws Exception { verify("/fee-cases.json",16,"depositFeePlan"); }
     private void verify(String resource, int count, String participant) throws Exception {
         try (var demo = new XbodTestSupport(); var input = getClass().getResourceAsStream(resource)) {
             var rows = demo.mapper.readTree(input); assertEquals(count,rows.size());

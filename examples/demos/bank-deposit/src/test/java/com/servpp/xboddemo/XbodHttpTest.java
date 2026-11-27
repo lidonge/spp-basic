@@ -46,25 +46,25 @@ public class XbodHttpTest {
                 assertEquals("REMOTE",a.path("participants").path("AppHeader").path("callMode").asText());
                 assertEquals("HTTP-DEPOSIT",a.path("participants").path("AppHeader").path("requestSerialNumber").asText());
                 assertTrue(a.path("participants").path("AppHeader").path("callerId").asText().startsWith("browser:"));
-                assertEquals(coordinated, a.path("participants").path("CashDepositAgreement").path("depositNumber")
-                        .equals(b.path("participants").path("CashDepositAgreement").path("depositNumber")));
+                assertEquals(coordinated, a.path("participants").path("cashDepositAgreement").path("depositNumber")
+                        .equals(b.path("participants").path("cashDepositAgreement").path("depositNumber")));
                 var changed = XbodTransactionTest.deposit(100);
-                changed.put("DepositFeeParty",Map.of("accountKind","NormalSavings","customerNumber","CHANGED","branchNumber","001","regionCode","R001"));
+                changed.put("depositFeeParty",Map.of("accountKind","NormalSavings","customerNumber","CHANGED","branchNumber","001","regionCode","R001"));
                 // APP identifies this operation by the account pair, even with another HTTP serial.
                 var conflict = client.send(HttpRequest.newBuilder(depositUrl).timeout(Duration.ofSeconds(30)).header("Cookie",cookie)
                         .header("X-SPP-Request-Serial","HTTP-CHANGED").POST(HttpRequest.BodyPublishers.ofString(demo.mapper.writeValueAsString(demo.request("depositCash",changed)))).build(),HttpResponse.BodyHandlers.ofString());
                 assertEquals(conflict.body(),coordinated ? 400 : 200,conflict.statusCode());
                 if (coordinated) assertEquals("REQUEST_ID_REUSED",demo.mapper.readTree(conflict.body()).path("error").asText());
                 var stored = demo.readAccounts();
-                XbodTransactionTest.amount(coordinated ? "100" : "300",stored.path("DepositAccount").path("interestBase"));
-                var readRequest = demo.request("readDepositAccount", XbodTransactionTest.reversal(a.path("participants").path("CashDepositAgreement"),20261007,false).entrySet().stream()
-                        .filter(entry -> java.util.Set.of("DepositAccount","AccountEligibility","DepositAccrualState","CashSettlementAccount","InterestIncomeAccount","CollectionInterestIncomeAccount","PrincipalRecoveryAccount").contains(entry.getKey()))
+                XbodTransactionTest.amount(coordinated ? "100" : "300",stored.path("depositAccount").path("interestBase"));
+                var readRequest = demo.request("readDepositAccount", XbodTransactionTest.reversal(a.path("participants").path("cashDepositAgreement"),20261007,false).entrySet().stream()
+                        .filter(entry -> java.util.Set.of("depositAccount","accountEligibility","depositAccrualState","cashSettlementAccount","interestIncomeAccount","collectionInterestIncomeAccount","principalRecoveryAccount").contains(entry.getKey()))
                         .collect(java.util.stream.Collectors.toMap(Map.Entry::getKey,Map.Entry::getValue)));
                 var queried = client.send(HttpRequest.newBuilder(URI.create("http://127.0.0.1:"+server.port()+"/api/cboddeposit.readDepositAccount"))
                         .POST(HttpRequest.BodyPublishers.ofString(demo.mapper.writeValueAsString(readRequest))).build(),HttpResponse.BodyHandlers.ofString());
                 assertEquals(queried.body(),200,queried.statusCode());
-                XbodTransactionTest.amount(coordinated ? "100" : "300",demo.mapper.readTree(queried.body()).path("participants").path("DepositAccount").path("interestBase"));
-                var inverse = demo.request("reverseCash",XbodTransactionTest.reversal(a.path("participants").path("CashDepositAgreement"),20261007,false));
+                XbodTransactionTest.amount(coordinated ? "100" : "300",demo.mapper.readTree(queried.body()).path("participants").path("depositAccount").path("interestBase"));
+                var inverse = demo.request("reverseCash",XbodTransactionTest.reversal(a.path("participants").path("cashDepositAgreement"),20261007,false));
                 var reverseRequest = HttpRequest.newBuilder(URI.create("http://127.0.0.1:"+server.port()+"/api/cboddeposit.reverseCash"))
                         .timeout(Duration.ofSeconds(30)).header("Cookie",cookie).header("X-SPP-Request-Serial","HTTP-REVERSE")
                         .POST(HttpRequest.BodyPublishers.ofString(demo.mapper.writeValueAsString(inverse))).build();
@@ -75,7 +75,7 @@ public class XbodHttpTest {
                 if (coordinated) assertTrue(demo.mapper.readTree(reversedReplay.body()).path("replayed").asBoolean());
                 else assertEquals("DEPOSIT_ALREADY_REVERSED",demo.mapper.readTree(reversedReplay.body()).path("error").asText());
                 var after = demo.readAccounts();
-                XbodTransactionTest.amount(coordinated ? "0" : "200",after.path("DepositAccount").path("interestBase"));
+                XbodTransactionTest.amount(coordinated ? "0" : "200",after.path("depositAccount").path("interestBase"));
                 var hidden = client.send(HttpRequest.newBuilder(URI.create("http://127.0.0.1:"+server.port()+"/api/cboddeposit.findDepositAccount"))
                         .timeout(Duration.ofSeconds(5)).POST(HttpRequest.BodyPublishers.ofString("{}")).build(),HttpResponse.BodyHandlers.ofString());
                 assertEquals(404,hidden.statusCode());

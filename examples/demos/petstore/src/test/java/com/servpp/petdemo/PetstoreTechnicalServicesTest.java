@@ -41,7 +41,7 @@ public class PetstoreTechnicalServicesTest {
     }
     @Test public void scenarioAndTypedDefaultQueryAreObservedOnce() {
         var session=shop.openStore("TRACE-READ",false); messages.clear();
-        shop.call("readShopCustomer",Map.of("Buyer",Map.of("membershipNumber",session.customerId)));
+        shop.call("readShopCustomer",Map.of("buyer",Map.of("membershipNumber",session.customerId)));
         if (!tracingAvailable()) {
             assertTrue(messages.toString(), messages.isEmpty());
             assertEquals(session.customerId, shop.customer(session).path("membershipNumber").asText());
@@ -78,7 +78,7 @@ public class PetstoreTechnicalServicesTest {
     @Test public void unhandledTechnicalFailureIsObservedAtAtomAndScenario() {
         var session=shop.openStore("TRACE-FAIL",false); messages.clear();
         try (var fault=ExampleServiceFaults.activate("petshop.findBuyer","before")) {
-            assertThrows(IllegalStateException.class,()->shop.call("readShopCustomer",Map.of("Buyer",Map.of("membershipNumber",session.customerId))));
+            assertThrows(IllegalStateException.class,()->shop.call("readShopCustomer",Map.of("buyer",Map.of("membershipNumber",session.customerId))));
             fault.verifyTriggered();
         }
         assertEquals(tracingAvailable() ? 1 : 0,count("FAILURE","findBuyer"));

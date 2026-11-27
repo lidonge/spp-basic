@@ -29,21 +29,21 @@ public class XbodFailureDispositionTest {
                 statement.execute("CREATE TRIGGER FAIL_HANDLING BEFORE INSERT ON CASH_FAILURES FOR EACH ROW CALL 'com.servpp.xboddemo.XbodFailureDispositionTest$RejectFailureRecord'");
             }
             String scene=reversing ? "reverseCash" : "depositCash";
-            Object request=demo.request(scene,reversing ? reversal(paid.path("CashDepositAgreement"),20261007,false) : deposit(100));
+            Object request=demo.request(scene,reversing ? reversal(paid.path("cashDepositAgreement"),20261007,false) : deposit(100));
             try (var fault=ExampleServiceFaults.activate(reversing ? "cboddeposit.insertCashReversalPostingLine" : "cboddeposit.insertCashDepositAgreement","before")) {
                 var thrown=assertThrows(IllegalStateException.class,()->demo.execute(scene,request));
                 assertTrue(thrown.toString(),thrown.toString().contains("EXAMPLE_SERVICE_FAULT"));
                 fault.verifyTriggered();
             }
             assertEquals(1,RejectFailureRecord.attempts.get());
-            var info=demo.mapper.valueToTree(request).path(reversing ? "CashReversalAgreement" : "CashDepositAgreement").path("resultInfo");
+            var info=demo.mapper.valueToTree(request).path(reversing ? "cashReversalAgreement" : "cashDepositAgreement").path("resultInfo");
             assertEquals("FAILED",info.path("status").asText());assertFalse(info.path("handled").asBoolean());
             assertEquals("testing".equals(System.getProperty("spp.environment")) ? "RECOVERY_REQUIRED" : "ROLLED_BACK",
                     info.path("failure").path("recoveryStatus").asText());
             assertTrue(info.toString(),info.path("failure").path("code").asText().contains("EXAMPLE_SERVICE_FAULT"));
             assertTrue("Secondary disposition failure must remain visible: "+info,info.path("failure").path("suppressedCodes").size()>0);
-            amount(reversing ? "100" : "0",demo.readAccounts().path("DepositAccount").path("interestBase"));
-            amount(reversing ? "-100" : "0",demo.readAccounts().path("CashSettlementAccount").path("balance"));
+            amount(reversing ? "100" : "0",demo.readAccounts().path("depositAccount").path("interestBase"));
+            amount(reversing ? "-100" : "0",demo.readAccounts().path("cashSettlementAccount").path("balance"));
             try (var connection=DriverManager.getConnection(url);var statement=connection.createStatement();var rows=statement.executeQuery("SELECT COUNT(*) FROM CASH_FAILURES")) {
                 assertTrue(rows.next());assertEquals(0,rows.getInt(1));
             }

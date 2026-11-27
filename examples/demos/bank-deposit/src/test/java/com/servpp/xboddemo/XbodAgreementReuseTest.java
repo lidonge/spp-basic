@@ -13,7 +13,7 @@ public class XbodAgreementReuseTest {
             var source = cases.get(1); assertEquals("02",source.path("name").asText());
             var request = demo.request("previewAgreementProduct",demo.mapper.convertValue(source.path("input"),Map.class));
             var first = demo.execute("previewAgreementProduct",request);
-            amount("2000",first.path("AgreementBandArray").get(0).path("product"));
+            amount("2000",first.path("agreementBands").get(0).path("product"));
             for (String name : new String[]{"Normal","Overlap"}) {
                 var period = request.getClass().getMethod("get"+name).invoke(request);
                 period.getClass().getMethod("setAmount",BigDecimal.class).invoke(period,new BigDecimal("500"));
@@ -22,12 +22,12 @@ public class XbodAgreementReuseTest {
             policy.getClass().getMethod("setMode",String.class).invoke(policy,"2");
             policy.getClass().getMethod("setCurrency",String.class).invoke(policy,"CNY");
             var result = demo.execute("previewAgreementProduct",request);
-            amount("3400",result.path("AgreementProduct").path("normalProduct"));
-            amount("1600",result.path("AgreementProduct").path("bandProduct"));
-            amount("100",result.path("AgreementProduct").path("remainingAmount"));
-            assertEquals(0,result.path("AgreementProduct").path("selectedSlot").asInt());
-            assertEquals("2",result.path("AgreementProduct").path("appliedMode").asText());
-            for (int i=0;i<5;i++) amount(i==0?"0":"400",result.path("AgreementBandArray").get(i).path("product"));
+            amount("3400",result.path("agreementProduct").path("normalProduct"));
+            amount("1600",result.path("agreementProduct").path("bandProduct"));
+            amount("100",result.path("agreementProduct").path("remainingAmount"));
+            assertEquals(0,result.path("agreementProduct").path("selectedSlot").asInt());
+            assertEquals("2",result.path("agreementProduct").path("appliedMode").asText());
+            for (int i=0;i<5;i++) amount(i==0?"0":"400",result.path("agreementBands").get(i).path("product"));
         }
     }
     @Test public void invalidBandsAndOverlapLeaveAllParticipantsUnchanged() throws Exception {
@@ -40,7 +40,7 @@ public class XbodAgreementReuseTest {
                 if (caseNo==16) bands.get(4).put("threshold",-1);
                 var request = demo.request("previewAgreementProduct",Map.of("normal",Map.of("amount",650,"unit",1,"days",10),
                         "overlap",Map.of("amount",650,"unit",1,"days",caseNo==17?11:4),
-                        "AgreementPolicy",Map.of("enabled",true,"mode","2","currency","CNY"),"AgreementBandArray",bands));
+                        "agreementPolicy",Map.of("enabled",true,"mode","2","currency","CNY"),"agreementBands",bands));
                 var before = demo.mapper.valueToTree(request);
                 assertEquals(caseNo==17?"INVALID_AGREEMENT_PERIOD":"INVALID_AGREEMENT_BANDS",
                         assertThrows(IllegalStateException.class,() -> demo.execute("previewAgreementProduct",request)).getMessage());

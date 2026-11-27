@@ -7,9 +7,9 @@ import static org.junit.Assert.*;
 /** Historical eligibility rules, executed through generated check services. */
 public class XbodReversalRuleTest {
     private void check(XbodTestSupport demo, String status, int cancelled, String prefix, String expected) throws Exception {
-        var input = Map.of("AccountEligibility", Map.of("status", status),
-                "CashAccountControl", Map.of("cancelledOn", cancelled),
-                "DepositOperatorFacts", Map.of("transactionPrefix", prefix));
+        var input = Map.of("accountEligibility", Map.of("status", status),
+                "cashAccountControl", Map.of("cancelledOn", cancelled),
+                "depositOperatorFacts", Map.of("transactionPrefix", prefix));
         if (expected == null) demo.call("assessReversalEligibility", input);
         else assertEquals(expected, assertThrows(IllegalStateException.class,
                 () -> demo.call("assessReversalEligibility", input)).getMessage());
@@ -26,20 +26,20 @@ public class XbodReversalRuleTest {
     @Test public void coreReversalAndFrontControlRemainIndependentChecks() throws Exception {
         try (var demo = new XbodTestSupport()) {
             var control = Map.of("controllingInstitution", "001", "controlStatus", "Locked");
-            demo.call("assessReversalEligibility", Map.of("CashAccountControl", control,
-                    "AccountEligibility", Map.of("status", "ACTIVE"), "DepositOperatorFacts", Map.of("transactionPrefix", "SA01102")));
+            demo.call("assessReversalEligibility", Map.of("cashAccountControl", control,
+                    "accountEligibility", Map.of("status", "ACTIVE"), "depositOperatorFacts", Map.of("transactionPrefix", "SA01102")));
             assertEquals("EN432", assertThrows(IllegalStateException.class, () -> demo.call("assessCashDeposit",
-                    Map.of("DepositRequest", Map.of("amount", 1), "CashAccountControl", control, "AccountEligibility", Map.of("status", "ACTIVE")))).getMessage());
+                    Map.of("depositRequest", Map.of("amount", 1), "cashAccountControl", control, "accountEligibility", Map.of("status", "ACTIVE")))).getMessage());
         }
     }
     @Test public void reversalRangeAndDocumentNoticeRulesStayVisible() throws Exception {
         try (var demo = new XbodTestSupport()) {
             var profile = Map.of("normalSavings", true, "openingBranch", "001", "depositRange", "SameBranch", "passbookLoss", "Written");
             var operator = Map.of("branch", "002", "transactionPrefix", "SA01116", "mode", "Online", "numericTeller", true);
-            var input = Map.of("DepositBankProfile", profile, "DepositOperatorFacts", operator);
-            var result = demo.call("assessBankQualification", Map.of("DepositBankProfile", profile,
-                    "DepositOperatorFacts", Map.of("branch", "001", "transactionPrefix", "SA01116", "mode", "Online", "numericTeller", true)));
-            assertEquals("WN201", result.path("DepositNotices").path("passbookWarning").asText());
+            var input = Map.of("depositBankProfile", profile, "depositOperatorFacts", operator);
+            var result = demo.call("assessBankQualification", Map.of("depositBankProfile", profile,
+                    "depositOperatorFacts", Map.of("branch", "001", "transactionPrefix", "SA01116", "mode", "Online", "numericTeller", true)));
+            assertEquals("WN201", result.path("depositNotices").path("passbookWarning").asText());
             assertEquals("EN134", assertThrows(IllegalStateException.class,
                     () -> demo.call("assessBankQualification", input)).getMessage());
         }

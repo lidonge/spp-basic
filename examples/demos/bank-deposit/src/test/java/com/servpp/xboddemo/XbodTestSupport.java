@@ -75,12 +75,12 @@ final class XbodTestSupport implements AutoCloseable {
     }
     JsonNode readAccounts(String account, String settlement, Map<String, ?> overrides) throws Exception {
         Map<String, Object> participants = new LinkedHashMap<>();
-        for (String role : List.of("DepositAccount", "AccountEligibility", "DepositAccrualState"))
+        for (String role : List.of("depositAccount", "accountEligibility", "depositAccrualState"))
             participants.put(role, Map.of("accountNumber", account));
-        participants.put("CashSettlementAccount", Map.of("accountNumber", settlement));
-        participants.put("InterestIncomeAccount", Map.of("accountNumber", "BANK-INTEREST"));
-        participants.put("CollectionInterestIncomeAccount", Map.of("accountNumber", "BANK-COLLECTION"));
-        participants.put("PrincipalRecoveryAccount", Map.of("accountNumber", "BANK-PRINCIPAL"));
+        participants.put("cashSettlementAccount", Map.of("accountNumber", settlement));
+        participants.put("interestIncomeAccount", Map.of("accountNumber", "BANK-INTEREST"));
+        participants.put("collectionInterestIncomeAccount", Map.of("accountNumber", "BANK-COLLECTION"));
+        participants.put("principalRecoveryAccount", Map.of("accountNumber", "BANK-PRINCIPAL"));
         participants.putAll(overrides);
         return call("readDepositAccount", participants);
     }

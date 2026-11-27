@@ -16,33 +16,33 @@ public final class XbodRestartProbe {
                 case "setupCrash": {
                     XbodTransactionTest.open(demo);
                     var paid = demo.call("depositCash",XbodTransactionTest.deposit(100));
-                    assertEquals(paid.toString(),"SUCCEEDED",paid.path("CashDepositAgreement").path("resultInfo").path("status").asText());
-                    demo.mapper.writeValue(state.toFile(),Map.of("depositNumber",paid.path("CashDepositAgreement").path("depositNumber").asText()));
+                    assertEquals(paid.toString(),"SUCCEEDED",paid.path("cashDepositAgreement").path("resultInfo").path("status").asText());
+                    demo.mapper.writeValue(state.toFile(),Map.of("depositNumber",paid.path("cashDepositAgreement").path("depositNumber").asText()));
                     if (args[3].equals("setupCrash")) Runtime.getRuntime().halt(73);
                     break;
                 }
                 case "reverse": {
                     var saved = demo.mapper.readTree(state.toFile());
-                    var original = demo.call("readCashDeposit",Map.of("CashDepositAgreement",Map.of("depositNumber",saved.path("depositNumber").asText())));
-                    assertFalse(original.path("CashDepositAgreement").path("reversed").asBoolean());
-                    XbodTransactionTest.amount("100", original.path("CashDepositAgreement").path("amount"));
+                    var original = demo.call("readCashDeposit",Map.of("cashDepositAgreement",Map.of("depositNumber",saved.path("depositNumber").asText())));
+                    assertFalse(original.path("cashDepositAgreement").path("reversed").asBoolean());
+                    XbodTransactionTest.amount("100", original.path("cashDepositAgreement").path("amount"));
                     var before = demo.readAccounts();
-                    XbodTransactionTest.amount("100",before.path("DepositAccount").path("interestBase"));
-                    var reversed = demo.call("reverseCash",XbodTransactionTest.reversal(original.path("CashDepositAgreement"),20261008,false));
-                    assertEquals(reversed.toString(),"SUCCEEDED",reversed.path("CashReversalAgreement").path("resultInfo").path("status").asText());
-                    demo.mapper.writeValue(state.toFile(),Map.of("depositNumber",saved.path("depositNumber").asText(),"reversalNumber",reversed.path("CashReversalAgreement").path("reversalNumber").asText()));
+                    XbodTransactionTest.amount("100",before.path("depositAccount").path("interestBase"));
+                    var reversed = demo.call("reverseCash",XbodTransactionTest.reversal(original.path("cashDepositAgreement"),20261008,false));
+                    assertEquals(reversed.toString(),"SUCCEEDED",reversed.path("cashReversalAgreement").path("resultInfo").path("status").asText());
+                    demo.mapper.writeValue(state.toFile(),Map.of("depositNumber",saved.path("depositNumber").asText(),"reversalNumber",reversed.path("cashReversalAgreement").path("reversalNumber").asText()));
                     break;
                 }
                 case "verify": {
                     var saved = demo.mapper.readTree(state.toFile());
-                    var original = demo.call("readCashDeposit",Map.of("CashDepositAgreement",Map.of("depositNumber",saved.path("depositNumber").asText())));
-                    assertTrue(original.path("CashDepositAgreement").path("reversed").asBoolean());
-                    var reversed = demo.call("readCashReversal",Map.of("CashReversalAgreement",Map.of("reversalNumber",saved.path("reversalNumber").asText())));
-                    assertEquals(8,reversed.path("CashReversalPostingLineArray").size());
+                    var original = demo.call("readCashDeposit",Map.of("cashDepositAgreement",Map.of("depositNumber",saved.path("depositNumber").asText())));
+                    assertTrue(original.path("cashDepositAgreement").path("reversed").asBoolean());
+                    var reversed = demo.call("readCashReversal",Map.of("cashReversalAgreement",Map.of("reversalNumber",saved.path("reversalNumber").asText())));
+                    assertEquals(8,reversed.path("cashReversalPostingLines").size());
                     var account = demo.readAccounts();
-                    XbodTransactionTest.amount("0",account.path("DepositAccount").path("interestBase"));
+                    XbodTransactionTest.amount("0",account.path("depositAccount").path("interestBase"));
                     var cash = demo.readAccounts();
-                    XbodTransactionTest.amount("0",cash.path("CashSettlementAccount").path("balance"));
+                    XbodTransactionTest.amount("0",cash.path("cashSettlementAccount").path("balance"));
                     break;
                 }
                 default: throw new IllegalArgumentException("Unknown probe stage");

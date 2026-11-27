@@ -2,12 +2,12 @@
   {
     "name": "01",
     "input": {
-      "DepositRequest": {
+      "depositRequest": {
         "amount": 0,
         "currency": "CNY",
         "valueDate": 20261007
       },
-      "AccountEligibility": {
+      "accountEligibility": {
         "status": "ACTIVE",
         "temporary": false,
         "expiresOn": 20261007,
@@ -19,32 +19,32 @@
         "transferredToday": 0,
         "accountBalance": 0
       },
-      "DepositProduct": {
+      "depositProduct": {
         "minimumOpeningAmount": 100,
         "maximumOpeningAmount": 5000,
         "maximumBalance": 10000
       },
-      "BusinessDay": {
+      "businessDay": {
         "date": 20261007
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
         "transactionFamily": "GSA0110",
         "businessCode": "SA0"
       },
-      "CashAuthorizationPolicy": {
+      "cashAuthorizationPolicy": {
         "warningThreshold": 500,
         "tellerLimit": 1000,
         "levelAMultiplier": 2,
         "specialUsdLevelB": 1500,
         "specialUsdLevelA": 3000
       },
-      "AuthorizationEvidence": {
+      "authorizationEvidence": {
         "grantedLevel": "NONE"
       },
-      "CashAccountControl": {
+      "cashAccountControl": {
         "controllingInstitution": "",
         "controlStatus": "Normal",
         "cancelledOn": 0,
@@ -58,12 +58,12 @@
   {
     "name": "02",
     "input": {
-      "DepositRequest": {
+      "depositRequest": {
         "amount": 1,
         "currency": "CNY",
         "valueDate": 20261008
       },
-      "AccountEligibility": {
+      "accountEligibility": {
         "status": "ACTIVE",
         "temporary": false,
         "expiresOn": 20261007,
@@ -75,32 +75,32 @@
         "transferredToday": 0,
         "accountBalance": 0
       },
-      "DepositProduct": {
+      "depositProduct": {
         "minimumOpeningAmount": 100,
         "maximumOpeningAmount": 5000,
         "maximumBalance": 10000
       },
-      "BusinessDay": {
+      "businessDay": {
         "date": 20261007
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
         "transactionFamily": "GSA0110",
         "businessCode": "SA0"
       },
-      "CashAuthorizationPolicy": {
+      "cashAuthorizationPolicy": {
         "warningThreshold": 500,
         "tellerLimit": 1000,
         "levelAMultiplier": 2,
         "specialUsdLevelB": 1500,
         "specialUsdLevelA": 3000
       },
-      "AuthorizationEvidence": {
+      "authorizationEvidence": {
         "grantedLevel": "NONE"
       },
-      "CashAccountControl": {
+      "cashAccountControl": {
         "controllingInstitution": "",
         "controlStatus": "Normal",
         "cancelledOn": 0,
@@ -114,12 +114,12 @@
   {
     "name": "03",
     "input": {
-      "DepositRequest": {
+      "depositRequest": {
         "amount": 1,
         "currency": "CNY",
         "valueDate": 20261006
       },
-      "AccountEligibility": {
+      "accountEligibility": {
         "status": "ACTIVE",
         "temporary": false,
         "expiresOn": 20261007,
@@ -131,32 +131,32 @@
         "transferredToday": 0,
         "accountBalance": 0
       },
-      "DepositProduct": {
+      "depositProduct": {
         "minimumOpeningAmount": 100,
         "maximumOpeningAmount": 5000,
         "maximumBalance": 10000
       },
-      "BusinessDay": {
+      "businessDay": {
         "date": 20261007
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
         "transactionFamily": "GSA0110",
         "businessCode": "SA0"
       },
-      "CashAuthorizationPolicy": {
+      "cashAuthorizationPolicy": {
         "warningThreshold": 500,
         "tellerLimit": 1000,
         "levelAMultiplier": 2,
         "specialUsdLevelB": 1500,
         "specialUsdLevelA": 3000
       },
-      "AuthorizationEvidence": {
+      "authorizationEvidence": {
         "grantedLevel": "NONE"
       },
-      "CashAccountControl": {
+      "cashAccountControl": {
         "controllingInstitution": "",
         "controlStatus": "Normal",
         "cancelledOn": 0,
@@ -170,12 +170,12 @@
   {
     "name": "04",
     "input": {
-      "DepositRequest": {
+      "depositRequest": {
         "amount": 1,
         "currency": "CNY",
         "valueDate": 20261007
       },
-      "AccountEligibility": {
+      "accountEligibility": {
         "status": "ACTIVE",
         "temporary": false,
         "expiresOn": 20261007,
@@ -187,32 +187,32 @@
         "transferredToday": 0,
         "accountBalance": 0
       },
-      "DepositProduct": {
+      "depositProduct": {
         "minimumOpeningAmount": 100,
         "maximumOpeningAmount": 5000,
         "maximumBalance": 10000
       },
-      "BusinessDay": {
+      "businessDay": {
         "date": 20261007
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
         "transactionFamily": "GSA0110",
         "businessCode": "SA0"
       },
-      "CashAuthorizationPolicy": {
+      "cashAuthorizationPolicy": {
         "warningThreshold": 500,
         "tellerLimit": 1000,
         "levelAMultiplier": 2,
         "specialUsdLevelB": 1500,
         "specialUsdLevelA": 3000
       },
-      "AuthorizationEvidence": {
+      "authorizationEvidence": {
         "grantedLevel": "NONE"
       },
-      "CashAccountControl": {
+      "cashAccountControl": {
         "controllingInstitution": "",
         "controlStatus": "Normal",
         "cancelledOn": 0,
@@ -226,12 +226,12 @@
   {
     "name": "05",
     "input": {
-      "DepositRequest": {
+      "depositRequest": {
         "amount": 100,
         "currency": "CNY",
         "valueDate": 20261007
       },
-      "AccountEligibility": {
+      "accountEligibility": {
         "status": "CLOSED",
         "temporary": false,
         "expiresOn": 20261007,
@@ -243,32 +243,32 @@
         "transferredToday": 0,
         "accountBalance": 0
       },
-      "DepositProduct": {
+      "depositProduct": {
         "minimumOpeningAmount": 100,
         "maximumOpeningAmount": 5000,
         "maximumBalance": 10000
       },
-      "BusinessDay": {
+      "businessDay": {
         "date": 20261007
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
         "transactionFamily": "GSA0110",
         "businessCode": "SA0"
       },
-      "CashAuthorizationPolicy": {
+      "cashAuthorizationPolicy": {
         "warningThreshold": 500,
         "tellerLimit": 1000,
         "levelAMultiplier": 2,
         "specialUsdLevelB": 1500,
         "specialUsdLevelA": 3000
       },
-      "AuthorizationEvidence": {
+      "authorizationEvidence": {
         "grantedLevel": "NONE"
       },
-      "CashAccountControl": {
+      "cashAccountControl": {
         "controllingInstitution": "",
         "controlStatus": "Normal",
         "cancelledOn": 0,
@@ -282,12 +282,12 @@
   {
     "name": "06",
     "input": {
-      "DepositRequest": {
+      "depositRequest": {
         "amount": 100,
         "currency": "CNY",
         "valueDate": 20261007
       },
-      "AccountEligibility": {
+      "accountEligibility": {
         "status": "ACTIVE",
         "temporary": true,
         "expiresOn": 20261006,
@@ -299,32 +299,32 @@
         "transferredToday": 0,
         "accountBalance": 0
       },
-      "DepositProduct": {
+      "depositProduct": {
         "minimumOpeningAmount": 100,
         "maximumOpeningAmount": 5000,
         "maximumBalance": 10000
       },
-      "BusinessDay": {
+      "businessDay": {
         "date": 20261007
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
         "transactionFamily": "GSA0110",
         "businessCode": "SA0"
       },
-      "CashAuthorizationPolicy": {
+      "cashAuthorizationPolicy": {
         "warningThreshold": 500,
         "tellerLimit": 1000,
         "levelAMultiplier": 2,
         "specialUsdLevelB": 1500,
         "specialUsdLevelA": 3000
       },
-      "AuthorizationEvidence": {
+      "authorizationEvidence": {
         "grantedLevel": "NONE"
       },
-      "CashAccountControl": {
+      "cashAccountControl": {
         "controllingInstitution": "",
         "controlStatus": "Normal",
         "cancelledOn": 0,
@@ -338,12 +338,12 @@
   {
     "name": "07",
     "input": {
-      "DepositRequest": {
+      "depositRequest": {
         "amount": 100,
         "currency": "CNY",
         "valueDate": 20261007
       },
-      "AccountEligibility": {
+      "accountEligibility": {
         "status": "ACTIVE",
         "temporary": true,
         "expiresOn": 20261006,
@@ -355,32 +355,32 @@
         "transferredToday": 0,
         "accountBalance": 0
       },
-      "DepositProduct": {
+      "depositProduct": {
         "minimumOpeningAmount": 100,
         "maximumOpeningAmount": 5000,
         "maximumBalance": 10000
       },
-      "BusinessDay": {
+      "businessDay": {
         "date": 20261007
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
         "transactionFamily": "GSA0110",
         "businessCode": "SA0"
       },
-      "CashAuthorizationPolicy": {
+      "cashAuthorizationPolicy": {
         "warningThreshold": 500,
         "tellerLimit": 1000,
         "levelAMultiplier": 2,
         "specialUsdLevelB": 1500,
         "specialUsdLevelA": 3000
       },
-      "AuthorizationEvidence": {
+      "authorizationEvidence": {
         "grantedLevel": "NONE"
       },
-      "CashAccountControl": {
+      "cashAccountControl": {
         "controllingInstitution": "",
         "controlStatus": "Normal",
         "cancelledOn": 0,
@@ -394,12 +394,12 @@
   {
     "name": "08",
     "input": {
-      "DepositRequest": {
+      "depositRequest": {
         "amount": 100,
         "currency": "CNY",
         "valueDate": 20261007
       },
-      "AccountEligibility": {
+      "accountEligibility": {
         "status": "ACTIVE",
         "temporary": true,
         "expiresOn": 20261007,
@@ -411,32 +411,32 @@
         "transferredToday": 0,
         "accountBalance": 0
       },
-      "DepositProduct": {
+      "depositProduct": {
         "minimumOpeningAmount": 100,
         "maximumOpeningAmount": 5000,
         "maximumBalance": 10000
       },
-      "BusinessDay": {
+      "businessDay": {
         "date": 20261007
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
         "transactionFamily": "GSA0110",
         "businessCode": "SA0"
       },
-      "CashAuthorizationPolicy": {
+      "cashAuthorizationPolicy": {
         "warningThreshold": 500,
         "tellerLimit": 1000,
         "levelAMultiplier": 2,
         "specialUsdLevelB": 1500,
         "specialUsdLevelA": 3000
       },
-      "AuthorizationEvidence": {
+      "authorizationEvidence": {
         "grantedLevel": "NONE"
       },
-      "CashAccountControl": {
+      "cashAccountControl": {
         "controllingInstitution": "",
         "controlStatus": "Normal",
         "cancelledOn": 0,
@@ -450,12 +450,12 @@
   {
     "name": "09",
     "input": {
-      "DepositRequest": {
+      "depositRequest": {
         "amount": 99,
         "currency": "CNY",
         "valueDate": 20261007
       },
-      "AccountEligibility": {
+      "accountEligibility": {
         "status": "ACTIVE",
         "temporary": false,
         "expiresOn": 20261007,
@@ -467,32 +467,32 @@
         "transferredToday": 0,
         "accountBalance": 0
       },
-      "DepositProduct": {
+      "depositProduct": {
         "minimumOpeningAmount": 100,
         "maximumOpeningAmount": 5000,
         "maximumBalance": 10000
       },
-      "BusinessDay": {
+      "businessDay": {
         "date": 20261007
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
         "transactionFamily": "GSA0110",
         "businessCode": "SA0"
       },
-      "CashAuthorizationPolicy": {
+      "cashAuthorizationPolicy": {
         "warningThreshold": 500,
         "tellerLimit": 1000,
         "levelAMultiplier": 2,
         "specialUsdLevelB": 1500,
         "specialUsdLevelA": 3000
       },
-      "AuthorizationEvidence": {
+      "authorizationEvidence": {
         "grantedLevel": "NONE"
       },
-      "CashAccountControl": {
+      "cashAccountControl": {
         "controllingInstitution": "",
         "controlStatus": "Normal",
         "cancelledOn": 0,
@@ -506,12 +506,12 @@
   {
     "name": "10",
     "input": {
-      "DepositRequest": {
+      "depositRequest": {
         "amount": 5001,
         "currency": "CNY",
         "valueDate": 20261007
       },
-      "AccountEligibility": {
+      "accountEligibility": {
         "status": "ACTIVE",
         "temporary": false,
         "expiresOn": 20261007,
@@ -523,32 +523,32 @@
         "transferredToday": 0,
         "accountBalance": 0
       },
-      "DepositProduct": {
+      "depositProduct": {
         "minimumOpeningAmount": 100,
         "maximumOpeningAmount": 5000,
         "maximumBalance": 10000
       },
-      "BusinessDay": {
+      "businessDay": {
         "date": 20261007
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
         "transactionFamily": "GSA0110",
         "businessCode": "SA0"
       },
-      "CashAuthorizationPolicy": {
+      "cashAuthorizationPolicy": {
         "warningThreshold": 500,
         "tellerLimit": 1000,
         "levelAMultiplier": 2,
         "specialUsdLevelB": 1500,
         "specialUsdLevelA": 3000
       },
-      "AuthorizationEvidence": {
+      "authorizationEvidence": {
         "grantedLevel": "NONE"
       },
-      "CashAccountControl": {
+      "cashAccountControl": {
         "controllingInstitution": "",
         "controlStatus": "Normal",
         "cancelledOn": 0,
@@ -562,12 +562,12 @@
   {
     "name": "11",
     "input": {
-      "DepositRequest": {
+      "depositRequest": {
         "amount": 100,
         "currency": "CNY",
         "valueDate": 20261007
       },
-      "AccountEligibility": {
+      "accountEligibility": {
         "status": "ACTIVE",
         "temporary": false,
         "expiresOn": 20261007,
@@ -579,32 +579,32 @@
         "transferredToday": 0,
         "accountBalance": 0
       },
-      "DepositProduct": {
+      "depositProduct": {
         "minimumOpeningAmount": 100,
         "maximumOpeningAmount": 5000,
         "maximumBalance": 10000
       },
-      "BusinessDay": {
+      "businessDay": {
         "date": 20261007
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
         "transactionFamily": "GSA0110",
         "businessCode": "SA0"
       },
-      "CashAuthorizationPolicy": {
+      "cashAuthorizationPolicy": {
         "warningThreshold": 500,
         "tellerLimit": 1000,
         "levelAMultiplier": 2,
         "specialUsdLevelB": 1500,
         "specialUsdLevelA": 3000
       },
-      "AuthorizationEvidence": {
+      "authorizationEvidence": {
         "grantedLevel": "NONE"
       },
-      "CashAccountControl": {
+      "cashAccountControl": {
         "controllingInstitution": "",
         "controlStatus": "Normal",
         "cancelledOn": 0,
@@ -618,12 +618,12 @@
   {
     "name": "12",
     "input": {
-      "DepositRequest": {
+      "depositRequest": {
         "amount": 5000,
         "currency": "CNY",
         "valueDate": 20261007
       },
-      "AccountEligibility": {
+      "accountEligibility": {
         "status": "ACTIVE",
         "temporary": false,
         "expiresOn": 20261007,
@@ -635,32 +635,32 @@
         "transferredToday": 0,
         "accountBalance": 0
       },
-      "DepositProduct": {
+      "depositProduct": {
         "minimumOpeningAmount": 100,
         "maximumOpeningAmount": 5000,
         "maximumBalance": 10000
       },
-      "BusinessDay": {
+      "businessDay": {
         "date": 20261007
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
         "transactionFamily": "GSA0110",
         "businessCode": "SA0"
       },
-      "CashAuthorizationPolicy": {
+      "cashAuthorizationPolicy": {
         "warningThreshold": 500,
         "tellerLimit": 1000,
         "levelAMultiplier": 2,
         "specialUsdLevelB": 1500,
         "specialUsdLevelA": 3000
       },
-      "AuthorizationEvidence": {
+      "authorizationEvidence": {
         "grantedLevel": "NONE"
       },
-      "CashAccountControl": {
+      "cashAccountControl": {
         "controllingInstitution": "",
         "controlStatus": "Normal",
         "cancelledOn": 0,
@@ -674,12 +674,12 @@
   {
     "name": "13",
     "input": {
-      "DepositRequest": {
+      "depositRequest": {
         "amount": 99,
         "currency": "CNY",
         "valueDate": 20261007
       },
-      "AccountEligibility": {
+      "accountEligibility": {
         "status": "ACTIVE",
         "temporary": false,
         "expiresOn": 20261007,
@@ -691,32 +691,32 @@
         "transferredToday": 0,
         "accountBalance": 0
       },
-      "DepositProduct": {
+      "depositProduct": {
         "minimumOpeningAmount": 100,
         "maximumOpeningAmount": 5000,
         "maximumBalance": 10000
       },
-      "BusinessDay": {
+      "businessDay": {
         "date": 20261007
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
         "transactionFamily": "GSA0110",
         "businessCode": "SA0"
       },
-      "CashAuthorizationPolicy": {
+      "cashAuthorizationPolicy": {
         "warningThreshold": 500,
         "tellerLimit": 1000,
         "levelAMultiplier": 2,
         "specialUsdLevelB": 1500,
         "specialUsdLevelA": 3000
       },
-      "AuthorizationEvidence": {
+      "authorizationEvidence": {
         "grantedLevel": "NONE"
       },
-      "CashAccountControl": {
+      "cashAccountControl": {
         "controllingInstitution": "",
         "controlStatus": "Normal",
         "cancelledOn": 0,
@@ -730,12 +730,12 @@
   {
     "name": "14",
     "input": {
-      "DepositRequest": {
+      "depositRequest": {
         "amount": 99,
         "currency": "CNY",
         "valueDate": 20261007
       },
-      "AccountEligibility": {
+      "accountEligibility": {
         "status": "ACTIVE",
         "temporary": false,
         "expiresOn": 20261007,
@@ -747,32 +747,32 @@
         "transferredToday": 0,
         "accountBalance": 0
       },
-      "DepositProduct": {
+      "depositProduct": {
         "minimumOpeningAmount": 100,
         "maximumOpeningAmount": 5000,
         "maximumBalance": 10000
       },
-      "BusinessDay": {
+      "businessDay": {
         "date": 20261007
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
         "transactionFamily": "GSA0110",
         "businessCode": "SA0"
       },
-      "CashAuthorizationPolicy": {
+      "cashAuthorizationPolicy": {
         "warningThreshold": 500,
         "tellerLimit": 1000,
         "levelAMultiplier": 2,
         "specialUsdLevelB": 1500,
         "specialUsdLevelA": 3000
       },
-      "AuthorizationEvidence": {
+      "authorizationEvidence": {
         "grantedLevel": "NONE"
       },
-      "CashAccountControl": {
+      "cashAccountControl": {
         "controllingInstitution": "",
         "controlStatus": "Normal",
         "cancelledOn": 0,
@@ -786,12 +786,12 @@
   {
     "name": "15",
     "input": {
-      "DepositRequest": {
+      "depositRequest": {
         "amount": 99,
         "currency": "CNY",
         "valueDate": 20261007
       },
-      "AccountEligibility": {
+      "accountEligibility": {
         "status": "ACTIVE",
         "temporary": false,
         "expiresOn": 20261007,
@@ -803,32 +803,32 @@
         "transferredToday": 0,
         "accountBalance": 0
       },
-      "DepositProduct": {
+      "depositProduct": {
         "minimumOpeningAmount": 100,
         "maximumOpeningAmount": 5000,
         "maximumBalance": 10000
       },
-      "BusinessDay": {
+      "businessDay": {
         "date": 20261007
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
         "transactionFamily": "GSA0110",
         "businessCode": "SA0"
       },
-      "CashAuthorizationPolicy": {
+      "cashAuthorizationPolicy": {
         "warningThreshold": 500,
         "tellerLimit": 1000,
         "levelAMultiplier": 2,
         "specialUsdLevelB": 1500,
         "specialUsdLevelA": 3000
       },
-      "AuthorizationEvidence": {
+      "authorizationEvidence": {
         "grantedLevel": "NONE"
       },
-      "CashAccountControl": {
+      "cashAccountControl": {
         "controllingInstitution": "",
         "controlStatus": "Normal",
         "cancelledOn": 0,
@@ -842,12 +842,12 @@
   {
     "name": "16",
     "input": {
-      "DepositRequest": {
+      "depositRequest": {
         "amount": 100,
         "currency": "CNY",
         "valueDate": 20261007
       },
-      "AccountEligibility": {
+      "accountEligibility": {
         "status": "ACTIVE",
         "temporary": false,
         "expiresOn": 20261007,
@@ -859,32 +859,32 @@
         "transferredToday": 0,
         "accountBalance": 9901
       },
-      "DepositProduct": {
+      "depositProduct": {
         "minimumOpeningAmount": 100,
         "maximumOpeningAmount": 5000,
         "maximumBalance": 10000
       },
-      "BusinessDay": {
+      "businessDay": {
         "date": 20261007
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
         "transactionFamily": "GSA0110",
         "businessCode": "SA0"
       },
-      "CashAuthorizationPolicy": {
+      "cashAuthorizationPolicy": {
         "warningThreshold": 500,
         "tellerLimit": 1000,
         "levelAMultiplier": 2,
         "specialUsdLevelB": 1500,
         "specialUsdLevelA": 3000
       },
-      "AuthorizationEvidence": {
+      "authorizationEvidence": {
         "grantedLevel": "NONE"
       },
-      "CashAccountControl": {
+      "cashAccountControl": {
         "controllingInstitution": "",
         "controlStatus": "Normal",
         "cancelledOn": 0,
@@ -898,12 +898,12 @@
   {
     "name": "17",
     "input": {
-      "DepositRequest": {
+      "depositRequest": {
         "amount": 100,
         "currency": "CNY",
         "valueDate": 20261007
       },
-      "AccountEligibility": {
+      "accountEligibility": {
         "status": "ACTIVE",
         "temporary": false,
         "expiresOn": 20261007,
@@ -915,32 +915,32 @@
         "transferredToday": 0,
         "accountBalance": 9900
       },
-      "DepositProduct": {
+      "depositProduct": {
         "minimumOpeningAmount": 100,
         "maximumOpeningAmount": 5000,
         "maximumBalance": 10000
       },
-      "BusinessDay": {
+      "businessDay": {
         "date": 20261007
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
         "transactionFamily": "GSA0110",
         "businessCode": "SA0"
       },
-      "CashAuthorizationPolicy": {
+      "cashAuthorizationPolicy": {
         "warningThreshold": 500,
         "tellerLimit": 1000,
         "levelAMultiplier": 2,
         "specialUsdLevelB": 1500,
         "specialUsdLevelA": 3000
       },
-      "AuthorizationEvidence": {
+      "authorizationEvidence": {
         "grantedLevel": "NONE"
       },
-      "CashAccountControl": {
+      "cashAccountControl": {
         "controllingInstitution": "",
         "controlStatus": "Normal",
         "cancelledOn": 0,
@@ -954,12 +954,12 @@
   {
     "name": "18",
     "input": {
-      "DepositRequest": {
+      "depositRequest": {
         "amount": 100000,
         "currency": "CNY",
         "valueDate": 20261007
       },
-      "AccountEligibility": {
+      "accountEligibility": {
         "status": "ACTIVE",
         "temporary": false,
         "expiresOn": 20261007,
@@ -971,32 +971,32 @@
         "transferredToday": 0,
         "accountBalance": 0
       },
-      "DepositProduct": {
+      "depositProduct": {
         "minimumOpeningAmount": 0,
         "maximumOpeningAmount": 0,
         "maximumBalance": 0
       },
-      "BusinessDay": {
+      "businessDay": {
         "date": 20261007
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
         "transactionFamily": "GSA0110",
         "businessCode": "SA0"
       },
-      "CashAuthorizationPolicy": {
+      "cashAuthorizationPolicy": {
         "warningThreshold": 500,
         "tellerLimit": 1000,
         "levelAMultiplier": 2,
         "specialUsdLevelB": 1500,
         "specialUsdLevelA": 3000
       },
-      "AuthorizationEvidence": {
+      "authorizationEvidence": {
         "grantedLevel": "NONE"
       },
-      "CashAccountControl": {
+      "cashAccountControl": {
         "controllingInstitution": "",
         "controlStatus": "Normal",
         "cancelledOn": 0,
@@ -1010,12 +1010,12 @@
   {
     "name": "19",
     "input": {
-      "DepositRequest": {
+      "depositRequest": {
         "amount": 400,
         "currency": "CNY",
         "valueDate": 20261007
       },
-      "AccountEligibility": {
+      "accountEligibility": {
         "status": "ACTIVE",
         "temporary": false,
         "expiresOn": 20261007,
@@ -1027,32 +1027,32 @@
         "transferredToday": 0,
         "accountBalance": 0
       },
-      "DepositProduct": {
+      "depositProduct": {
         "minimumOpeningAmount": 100,
         "maximumOpeningAmount": 5000,
         "maximumBalance": 10000
       },
-      "BusinessDay": {
+      "businessDay": {
         "date": 20261007
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
         "transactionFamily": "GSA0110",
         "businessCode": "SA0"
       },
-      "CashAuthorizationPolicy": {
+      "cashAuthorizationPolicy": {
         "warningThreshold": 500,
         "tellerLimit": 1000,
         "levelAMultiplier": 2,
         "specialUsdLevelB": 1500,
         "specialUsdLevelA": 3000
       },
-      "AuthorizationEvidence": {
+      "authorizationEvidence": {
         "grantedLevel": "NONE"
       },
-      "CashAccountControl": {
+      "cashAccountControl": {
         "controllingInstitution": "",
         "controlStatus": "Normal",
         "cancelledOn": 0,
@@ -1070,12 +1070,12 @@
   {
     "name": "20",
     "input": {
-      "DepositRequest": {
+      "depositRequest": {
         "amount": 400,
         "currency": "CNY",
         "valueDate": 20261007
       },
-      "AccountEligibility": {
+      "accountEligibility": {
         "status": "ACTIVE",
         "temporary": false,
         "expiresOn": 20261007,
@@ -1087,32 +1087,32 @@
         "transferredToday": 0,
         "accountBalance": 0
       },
-      "DepositProduct": {
+      "depositProduct": {
         "minimumOpeningAmount": 100,
         "maximumOpeningAmount": 5000,
         "maximumBalance": 10000
       },
-      "BusinessDay": {
+      "businessDay": {
         "date": 20261007
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
         "transactionFamily": "GSA0110",
         "businessCode": "SA0"
       },
-      "CashAuthorizationPolicy": {
+      "cashAuthorizationPolicy": {
         "warningThreshold": 500,
         "tellerLimit": 1000,
         "levelAMultiplier": 2,
         "specialUsdLevelB": 1500,
         "specialUsdLevelA": 3000
       },
-      "AuthorizationEvidence": {
+      "authorizationEvidence": {
         "grantedLevel": "NONE"
       },
-      "CashAccountControl": {
+      "cashAccountControl": {
         "controllingInstitution": "",
         "controlStatus": "Normal",
         "cancelledOn": 0,
@@ -1129,12 +1129,12 @@
   {
     "name": "21",
     "input": {
-      "DepositRequest": {
+      "depositRequest": {
         "amount": 500,
         "currency": "CNY",
         "valueDate": 20261007
       },
-      "AccountEligibility": {
+      "accountEligibility": {
         "status": "ACTIVE",
         "temporary": false,
         "expiresOn": 20261007,
@@ -1146,32 +1146,32 @@
         "transferredToday": 0,
         "accountBalance": 0
       },
-      "DepositProduct": {
+      "depositProduct": {
         "minimumOpeningAmount": 100,
         "maximumOpeningAmount": 5000,
         "maximumBalance": 10000
       },
-      "BusinessDay": {
+      "businessDay": {
         "date": 20261007
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
         "transactionFamily": "GSA0110",
         "businessCode": "SA0"
       },
-      "CashAuthorizationPolicy": {
+      "cashAuthorizationPolicy": {
         "warningThreshold": 500,
         "tellerLimit": 1000,
         "levelAMultiplier": 2,
         "specialUsdLevelB": 1500,
         "specialUsdLevelA": 3000
       },
-      "AuthorizationEvidence": {
+      "authorizationEvidence": {
         "grantedLevel": "NONE"
       },
-      "CashAccountControl": {
+      "cashAccountControl": {
         "controllingInstitution": "",
         "controlStatus": "Normal",
         "cancelledOn": 0,
@@ -1187,12 +1187,12 @@
   {
     "name": "22",
     "input": {
-      "DepositRequest": {
+      "depositRequest": {
         "amount": 1000,
         "currency": "CNY",
         "valueDate": 20261007
       },
-      "AccountEligibility": {
+      "accountEligibility": {
         "status": "ACTIVE",
         "temporary": false,
         "expiresOn": 20261007,
@@ -1204,32 +1204,32 @@
         "transferredToday": 0,
         "accountBalance": 0
       },
-      "DepositProduct": {
+      "depositProduct": {
         "minimumOpeningAmount": 100,
         "maximumOpeningAmount": 5000,
         "maximumBalance": 10000
       },
-      "BusinessDay": {
+      "businessDay": {
         "date": 20261007
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
         "transactionFamily": "GSA0110",
         "businessCode": "SA0"
       },
-      "CashAuthorizationPolicy": {
+      "cashAuthorizationPolicy": {
         "warningThreshold": 500,
         "tellerLimit": 1000,
         "levelAMultiplier": 2,
         "specialUsdLevelB": 1500,
         "specialUsdLevelA": 3000
       },
-      "AuthorizationEvidence": {
+      "authorizationEvidence": {
         "grantedLevel": "NONE"
       },
-      "CashAccountControl": {
+      "cashAccountControl": {
         "controllingInstitution": "",
         "controlStatus": "Normal",
         "cancelledOn": 0,
@@ -1245,12 +1245,12 @@
   {
     "name": "23",
     "input": {
-      "DepositRequest": {
+      "depositRequest": {
         "amount": 1000.01,
         "currency": "CNY",
         "valueDate": 20261007
       },
-      "AccountEligibility": {
+      "accountEligibility": {
         "status": "ACTIVE",
         "temporary": false,
         "expiresOn": 20261007,
@@ -1262,32 +1262,32 @@
         "transferredToday": 0,
         "accountBalance": 0
       },
-      "DepositProduct": {
+      "depositProduct": {
         "minimumOpeningAmount": 100,
         "maximumOpeningAmount": 5000,
         "maximumBalance": 10000
       },
-      "BusinessDay": {
+      "businessDay": {
         "date": 20261007
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
         "transactionFamily": "GSA0110",
         "businessCode": "SA0"
       },
-      "CashAuthorizationPolicy": {
+      "cashAuthorizationPolicy": {
         "warningThreshold": 500,
         "tellerLimit": 1000,
         "levelAMultiplier": 2,
         "specialUsdLevelB": 1500,
         "specialUsdLevelA": 3000
       },
-      "AuthorizationEvidence": {
+      "authorizationEvidence": {
         "grantedLevel": "NONE"
       },
-      "CashAccountControl": {
+      "cashAccountControl": {
         "controllingInstitution": "",
         "controlStatus": "Normal",
         "cancelledOn": 0,
@@ -1306,12 +1306,12 @@
   {
     "name": "24",
     "input": {
-      "DepositRequest": {
+      "depositRequest": {
         "amount": 2000,
         "currency": "CNY",
         "valueDate": 20261007
       },
-      "AccountEligibility": {
+      "accountEligibility": {
         "status": "ACTIVE",
         "temporary": false,
         "expiresOn": 20261007,
@@ -1323,32 +1323,32 @@
         "transferredToday": 0,
         "accountBalance": 0
       },
-      "DepositProduct": {
+      "depositProduct": {
         "minimumOpeningAmount": 100,
         "maximumOpeningAmount": 5000,
         "maximumBalance": 10000
       },
-      "BusinessDay": {
+      "businessDay": {
         "date": 20261007
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
         "transactionFamily": "GSA0110",
         "businessCode": "SA0"
       },
-      "CashAuthorizationPolicy": {
+      "cashAuthorizationPolicy": {
         "warningThreshold": 500,
         "tellerLimit": 1000,
         "levelAMultiplier": 2,
         "specialUsdLevelB": 1500,
         "specialUsdLevelA": 3000
       },
-      "AuthorizationEvidence": {
+      "authorizationEvidence": {
         "grantedLevel": "B"
       },
-      "CashAccountControl": {
+      "cashAccountControl": {
         "controllingInstitution": "",
         "controlStatus": "Normal",
         "cancelledOn": 0,
@@ -1364,12 +1364,12 @@
   {
     "name": "25",
     "input": {
-      "DepositRequest": {
+      "depositRequest": {
         "amount": 2000,
         "currency": "CNY",
         "valueDate": 20261007
       },
-      "AccountEligibility": {
+      "accountEligibility": {
         "status": "ACTIVE",
         "temporary": false,
         "expiresOn": 20261007,
@@ -1381,32 +1381,32 @@
         "transferredToday": 0,
         "accountBalance": 0
       },
-      "DepositProduct": {
+      "depositProduct": {
         "minimumOpeningAmount": 100,
         "maximumOpeningAmount": 5000,
         "maximumBalance": 10000
       },
-      "BusinessDay": {
+      "businessDay": {
         "date": 20261007
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
         "transactionFamily": "GSA0110",
         "businessCode": "SA0"
       },
-      "CashAuthorizationPolicy": {
+      "cashAuthorizationPolicy": {
         "warningThreshold": 500,
         "tellerLimit": 1000,
         "levelAMultiplier": 2,
         "specialUsdLevelB": 1500,
         "specialUsdLevelA": 3000
       },
-      "AuthorizationEvidence": {
+      "authorizationEvidence": {
         "grantedLevel": "A"
       },
-      "CashAccountControl": {
+      "cashAccountControl": {
         "controllingInstitution": "",
         "controlStatus": "Normal",
         "cancelledOn": 0,
@@ -1422,12 +1422,12 @@
   {
     "name": "26",
     "input": {
-      "DepositRequest": {
+      "depositRequest": {
         "amount": 2000.01,
         "currency": "CNY",
         "valueDate": 20261007
       },
-      "AccountEligibility": {
+      "accountEligibility": {
         "status": "ACTIVE",
         "temporary": false,
         "expiresOn": 20261007,
@@ -1439,32 +1439,32 @@
         "transferredToday": 0,
         "accountBalance": 0
       },
-      "DepositProduct": {
+      "depositProduct": {
         "minimumOpeningAmount": 100,
         "maximumOpeningAmount": 5000,
         "maximumBalance": 10000
       },
-      "BusinessDay": {
+      "businessDay": {
         "date": 20261007
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
         "transactionFamily": "GSA0110",
         "businessCode": "SA0"
       },
-      "CashAuthorizationPolicy": {
+      "cashAuthorizationPolicy": {
         "warningThreshold": 500,
         "tellerLimit": 1000,
         "levelAMultiplier": 2,
         "specialUsdLevelB": 1500,
         "specialUsdLevelA": 3000
       },
-      "AuthorizationEvidence": {
+      "authorizationEvidence": {
         "grantedLevel": "B"
       },
-      "CashAccountControl": {
+      "cashAccountControl": {
         "controllingInstitution": "",
         "controlStatus": "Normal",
         "cancelledOn": 0,
@@ -1481,12 +1481,12 @@
   {
     "name": "27",
     "input": {
-      "DepositRequest": {
+      "depositRequest": {
         "amount": 2000.01,
         "currency": "CNY",
         "valueDate": 20261007
       },
-      "AccountEligibility": {
+      "accountEligibility": {
         "status": "ACTIVE",
         "temporary": false,
         "expiresOn": 20261007,
@@ -1498,32 +1498,32 @@
         "transferredToday": 0,
         "accountBalance": 0
       },
-      "DepositProduct": {
+      "depositProduct": {
         "minimumOpeningAmount": 100,
         "maximumOpeningAmount": 5000,
         "maximumBalance": 10000
       },
-      "BusinessDay": {
+      "businessDay": {
         "date": 20261007
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
         "transactionFamily": "GSA0110",
         "businessCode": "SA0"
       },
-      "CashAuthorizationPolicy": {
+      "cashAuthorizationPolicy": {
         "warningThreshold": 500,
         "tellerLimit": 1000,
         "levelAMultiplier": 2,
         "specialUsdLevelB": 1500,
         "specialUsdLevelA": 3000
       },
-      "AuthorizationEvidence": {
+      "authorizationEvidence": {
         "grantedLevel": "A"
       },
-      "CashAccountControl": {
+      "cashAccountControl": {
         "controllingInstitution": "",
         "controlStatus": "Normal",
         "cancelledOn": 0,
@@ -1539,12 +1539,12 @@
   {
     "name": "28",
     "input": {
-      "DepositRequest": {
+      "depositRequest": {
         "amount": 1500,
         "currency": "CNY",
         "valueDate": 20261007
       },
-      "AccountEligibility": {
+      "accountEligibility": {
         "status": "ACTIVE",
         "temporary": false,
         "expiresOn": 20261007,
@@ -1556,32 +1556,32 @@
         "transferredToday": 0,
         "accountBalance": 0
       },
-      "DepositProduct": {
+      "depositProduct": {
         "minimumOpeningAmount": 100,
         "maximumOpeningAmount": 5000,
         "maximumBalance": 10000
       },
-      "BusinessDay": {
+      "businessDay": {
         "date": 20261007
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
         "transactionFamily": "GSA0110",
         "businessCode": "SA0"
       },
-      "CashAuthorizationPolicy": {
+      "cashAuthorizationPolicy": {
         "warningThreshold": 500,
         "tellerLimit": 1000,
         "levelAMultiplier": 2,
         "specialUsdLevelB": 1500,
         "specialUsdLevelA": 3000
       },
-      "AuthorizationEvidence": {
+      "authorizationEvidence": {
         "grantedLevel": "NONE"
       },
-      "CashAccountControl": {
+      "cashAccountControl": {
         "controllingInstitution": "",
         "controlStatus": "Normal",
         "cancelledOn": 0,
@@ -1597,12 +1597,12 @@
   {
     "name": "29",
     "input": {
-      "DepositRequest": {
+      "depositRequest": {
         "amount": 1500,
         "currency": "CNY",
         "valueDate": 20261007
       },
-      "AccountEligibility": {
+      "accountEligibility": {
         "status": "ACTIVE",
         "temporary": false,
         "expiresOn": 20261007,
@@ -1614,32 +1614,32 @@
         "transferredToday": 0,
         "accountBalance": 0
       },
-      "DepositProduct": {
+      "depositProduct": {
         "minimumOpeningAmount": 100,
         "maximumOpeningAmount": 5000,
         "maximumBalance": 10000
       },
-      "BusinessDay": {
+      "businessDay": {
         "date": 20261007
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
         "transactionFamily": "GSA0110",
         "businessCode": "SA0"
       },
-      "CashAuthorizationPolicy": {
+      "cashAuthorizationPolicy": {
         "warningThreshold": 500,
         "tellerLimit": 1000,
         "levelAMultiplier": 2,
         "specialUsdLevelB": 1500,
         "specialUsdLevelA": 3000
       },
-      "AuthorizationEvidence": {
+      "authorizationEvidence": {
         "grantedLevel": "B"
       },
-      "CashAccountControl": {
+      "cashAccountControl": {
         "controllingInstitution": "",
         "controlStatus": "Normal",
         "cancelledOn": 0,
@@ -1655,12 +1655,12 @@
   {
     "name": "30",
     "input": {
-      "DepositRequest": {
+      "depositRequest": {
         "amount": 1500,
         "currency": "CNY",
         "valueDate": 20261007
       },
-      "AccountEligibility": {
+      "accountEligibility": {
         "status": "ACTIVE",
         "temporary": false,
         "expiresOn": 20261007,
@@ -1672,32 +1672,32 @@
         "transferredToday": 0,
         "accountBalance": 0
       },
-      "DepositProduct": {
+      "depositProduct": {
         "minimumOpeningAmount": 100,
         "maximumOpeningAmount": 5000,
         "maximumBalance": 10000
       },
-      "BusinessDay": {
+      "businessDay": {
         "date": 20261007
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
         "transactionFamily": "GSA0110",
         "businessCode": "SA0"
       },
-      "CashAuthorizationPolicy": {
+      "cashAuthorizationPolicy": {
         "warningThreshold": 500,
         "tellerLimit": 500,
         "levelAMultiplier": 2,
         "specialUsdLevelB": 1500,
         "specialUsdLevelA": 3000
       },
-      "AuthorizationEvidence": {
+      "authorizationEvidence": {
         "grantedLevel": "B"
       },
-      "CashAccountControl": {
+      "cashAccountControl": {
         "controllingInstitution": "",
         "controlStatus": "Normal",
         "cancelledOn": 0,
@@ -1714,12 +1714,12 @@
   {
     "name": "31",
     "input": {
-      "DepositRequest": {
+      "depositRequest": {
         "amount": 9000,
         "currency": "CNY",
         "valueDate": 20261007
       },
-      "AccountEligibility": {
+      "accountEligibility": {
         "status": "ACTIVE",
         "temporary": false,
         "expiresOn": 20261007,
@@ -1731,32 +1731,32 @@
         "transferredToday": 0,
         "accountBalance": 0
       },
-      "DepositProduct": {
+      "depositProduct": {
         "minimumOpeningAmount": 100,
         "maximumOpeningAmount": 5000,
         "maximumBalance": 10000
       },
-      "BusinessDay": {
+      "businessDay": {
         "date": 20261007
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "FL0658000",
         "transactionFamily": "GSA0110",
         "businessCode": "SA0"
       },
-      "CashAuthorizationPolicy": {
+      "cashAuthorizationPolicy": {
         "warningThreshold": 500,
         "tellerLimit": 1000,
         "levelAMultiplier": 2,
         "specialUsdLevelB": 1500,
         "specialUsdLevelA": 3000
       },
-      "AuthorizationEvidence": {
+      "authorizationEvidence": {
         "grantedLevel": "NONE"
       },
-      "CashAccountControl": {
+      "cashAccountControl": {
         "controllingInstitution": "",
         "controlStatus": "Normal",
         "cancelledOn": 0,
@@ -1773,12 +1773,12 @@
   {
     "name": "32",
     "input": {
-      "DepositRequest": {
+      "depositRequest": {
         "amount": 9000,
         "currency": "CNY",
         "valueDate": 20261007
       },
-      "AccountEligibility": {
+      "accountEligibility": {
         "status": "ACTIVE",
         "temporary": false,
         "expiresOn": 20261007,
@@ -1790,32 +1790,32 @@
         "transferredToday": 0,
         "accountBalance": 0
       },
-      "DepositProduct": {
+      "depositProduct": {
         "minimumOpeningAmount": 100,
         "maximumOpeningAmount": 5000,
         "maximumBalance": 10000
       },
-      "BusinessDay": {
+      "businessDay": {
         "date": 20261007
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "FL0655400",
         "transactionFamily": "GSA0110",
         "businessCode": "SA0"
       },
-      "CashAuthorizationPolicy": {
+      "cashAuthorizationPolicy": {
         "warningThreshold": 500,
         "tellerLimit": 1000,
         "levelAMultiplier": 2,
         "specialUsdLevelB": 1500,
         "specialUsdLevelA": 3000
       },
-      "AuthorizationEvidence": {
+      "authorizationEvidence": {
         "grantedLevel": "NONE"
       },
-      "CashAccountControl": {
+      "cashAccountControl": {
         "controllingInstitution": "",
         "controlStatus": "Normal",
         "cancelledOn": 0,
@@ -1832,12 +1832,12 @@
   {
     "name": "33",
     "input": {
-      "DepositRequest": {
+      "depositRequest": {
         "amount": 9000,
         "currency": "CNY",
         "valueDate": 20261007
       },
-      "AccountEligibility": {
+      "accountEligibility": {
         "status": "ACTIVE",
         "temporary": false,
         "expiresOn": 20261007,
@@ -1849,32 +1849,32 @@
         "transferredToday": 0,
         "accountBalance": 0
       },
-      "DepositProduct": {
+      "depositProduct": {
         "minimumOpeningAmount": 100,
         "maximumOpeningAmount": 5000,
         "maximumBalance": 10000
       },
-      "BusinessDay": {
+      "businessDay": {
         "date": 20261007
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "FL0659302",
         "transactionFamily": "GSA0110",
         "businessCode": "SA0"
       },
-      "CashAuthorizationPolicy": {
+      "cashAuthorizationPolicy": {
         "warningThreshold": 500,
         "tellerLimit": 1000,
         "levelAMultiplier": 2,
         "specialUsdLevelB": 1500,
         "specialUsdLevelA": 3000
       },
-      "AuthorizationEvidence": {
+      "authorizationEvidence": {
         "grantedLevel": "NONE"
       },
-      "CashAccountControl": {
+      "cashAccountControl": {
         "controllingInstitution": "",
         "controlStatus": "Normal",
         "cancelledOn": 0,
@@ -1891,12 +1891,12 @@
   {
     "name": "34",
     "input": {
-      "DepositRequest": {
+      "depositRequest": {
         "amount": 9000,
         "currency": "CNY",
         "valueDate": 20261007
       },
-      "AccountEligibility": {
+      "accountEligibility": {
         "status": "ACTIVE",
         "temporary": false,
         "expiresOn": 20261007,
@@ -1908,32 +1908,32 @@
         "transferredToday": 0,
         "accountBalance": 0
       },
-      "DepositProduct": {
+      "depositProduct": {
         "minimumOpeningAmount": 100,
         "maximumOpeningAmount": 5000,
         "maximumBalance": 10000
       },
-      "BusinessDay": {
+      "businessDay": {
         "date": 20261007
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "FL0659304",
         "transactionFamily": "GSA0110",
         "businessCode": "SA0"
       },
-      "CashAuthorizationPolicy": {
+      "cashAuthorizationPolicy": {
         "warningThreshold": 500,
         "tellerLimit": 1000,
         "levelAMultiplier": 2,
         "specialUsdLevelB": 1500,
         "specialUsdLevelA": 3000
       },
-      "AuthorizationEvidence": {
+      "authorizationEvidence": {
         "grantedLevel": "NONE"
       },
-      "CashAccountControl": {
+      "cashAccountControl": {
         "controllingInstitution": "",
         "controlStatus": "Normal",
         "cancelledOn": 0,
@@ -1950,12 +1950,12 @@
   {
     "name": "35",
     "input": {
-      "DepositRequest": {
+      "depositRequest": {
         "amount": 9000,
         "currency": "CNY",
         "valueDate": 20261007
       },
-      "AccountEligibility": {
+      "accountEligibility": {
         "status": "ACTIVE",
         "temporary": false,
         "expiresOn": 20261007,
@@ -1967,32 +1967,32 @@
         "transferredToday": 0,
         "accountBalance": 0
       },
-      "DepositProduct": {
+      "depositProduct": {
         "minimumOpeningAmount": 100,
         "maximumOpeningAmount": 5000,
         "maximumBalance": 10000
       },
-      "BusinessDay": {
+      "businessDay": {
         "date": 20261007
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "FL0659306",
         "transactionFamily": "GSA0110",
         "businessCode": "SA0"
       },
-      "CashAuthorizationPolicy": {
+      "cashAuthorizationPolicy": {
         "warningThreshold": 500,
         "tellerLimit": 1000,
         "levelAMultiplier": 2,
         "specialUsdLevelB": 1500,
         "specialUsdLevelA": 3000
       },
-      "AuthorizationEvidence": {
+      "authorizationEvidence": {
         "grantedLevel": "NONE"
       },
-      "CashAccountControl": {
+      "cashAccountControl": {
         "controllingInstitution": "",
         "controlStatus": "Normal",
         "cancelledOn": 0,
@@ -2009,12 +2009,12 @@
   {
     "name": "36",
     "input": {
-      "DepositRequest": {
+      "depositRequest": {
         "amount": 9000,
         "currency": "CNY",
         "valueDate": 20261007
       },
-      "AccountEligibility": {
+      "accountEligibility": {
         "status": "ACTIVE",
         "temporary": false,
         "expiresOn": 20261007,
@@ -2026,32 +2026,32 @@
         "transferredToday": 0,
         "accountBalance": 0
       },
-      "DepositProduct": {
+      "depositProduct": {
         "minimumOpeningAmount": 100,
         "maximumOpeningAmount": 5000,
         "maximumBalance": 10000
       },
-      "BusinessDay": {
+      "businessDay": {
         "date": 20261007
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "FL0659308",
         "transactionFamily": "GSA0110",
         "businessCode": "SA0"
       },
-      "CashAuthorizationPolicy": {
+      "cashAuthorizationPolicy": {
         "warningThreshold": 500,
         "tellerLimit": 1000,
         "levelAMultiplier": 2,
         "specialUsdLevelB": 1500,
         "specialUsdLevelA": 3000
       },
-      "AuthorizationEvidence": {
+      "authorizationEvidence": {
         "grantedLevel": "NONE"
       },
-      "CashAccountControl": {
+      "cashAccountControl": {
         "controllingInstitution": "",
         "controlStatus": "Normal",
         "cancelledOn": 0,
@@ -2068,12 +2068,12 @@
   {
     "name": "37",
     "input": {
-      "DepositRequest": {
+      "depositRequest": {
         "amount": 9000,
         "currency": "CNY",
         "valueDate": 20261007
       },
-      "AccountEligibility": {
+      "accountEligibility": {
         "status": "ACTIVE",
         "temporary": false,
         "expiresOn": 20261007,
@@ -2085,32 +2085,32 @@
         "transferredToday": 0,
         "accountBalance": 0
       },
-      "DepositProduct": {
+      "depositProduct": {
         "minimumOpeningAmount": 100,
         "maximumOpeningAmount": 5000,
         "maximumBalance": 10000
       },
-      "BusinessDay": {
+      "businessDay": {
         "date": 20261007
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "AGS",
         "transactionId": "GSA01102",
         "transactionFamily": "GSA0110",
         "businessCode": "SA0"
       },
-      "CashAuthorizationPolicy": {
+      "cashAuthorizationPolicy": {
         "warningThreshold": 500,
         "tellerLimit": 1000,
         "levelAMultiplier": 2,
         "specialUsdLevelB": 1500,
         "specialUsdLevelA": 3000
       },
-      "AuthorizationEvidence": {
+      "authorizationEvidence": {
         "grantedLevel": "NONE"
       },
-      "CashAccountControl": {
+      "cashAccountControl": {
         "controllingInstitution": "",
         "controlStatus": "Normal",
         "cancelledOn": 0,
@@ -2126,12 +2126,12 @@
   {
     "name": "38",
     "input": {
-      "DepositRequest": {
+      "depositRequest": {
         "amount": 9000,
         "currency": "CNY",
         "valueDate": 20261007
       },
-      "AccountEligibility": {
+      "accountEligibility": {
         "status": "ACTIVE",
         "temporary": false,
         "expiresOn": 20261007,
@@ -2143,32 +2143,32 @@
         "transferredToday": 0,
         "accountBalance": 0
       },
-      "DepositProduct": {
+      "depositProduct": {
         "minimumOpeningAmount": 100,
         "maximumOpeningAmount": 5000,
         "maximumBalance": 10000
       },
-      "BusinessDay": {
+      "businessDay": {
         "date": 20261007
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": false,
         "channel": "Teller",
         "transactionId": "GSA01102",
         "transactionFamily": "GSA0110",
         "businessCode": "SA0"
       },
-      "CashAuthorizationPolicy": {
+      "cashAuthorizationPolicy": {
         "warningThreshold": 500,
         "tellerLimit": 1000,
         "levelAMultiplier": 2,
         "specialUsdLevelB": 1500,
         "specialUsdLevelA": 3000
       },
-      "AuthorizationEvidence": {
+      "authorizationEvidence": {
         "grantedLevel": "NONE"
       },
-      "CashAccountControl": {
+      "cashAccountControl": {
         "controllingInstitution": "",
         "controlStatus": "Normal",
         "cancelledOn": 0,
@@ -2184,12 +2184,12 @@
   {
     "name": "39",
     "input": {
-      "DepositRequest": {
+      "depositRequest": {
         "amount": 1500,
         "currency": "USD",
         "valueDate": 20261007
       },
-      "AccountEligibility": {
+      "accountEligibility": {
         "status": "ACTIVE",
         "temporary": false,
         "expiresOn": 20261007,
@@ -2201,32 +2201,32 @@
         "transferredToday": 0,
         "accountBalance": 0
       },
-      "DepositProduct": {
+      "depositProduct": {
         "minimumOpeningAmount": 100,
         "maximumOpeningAmount": 5000,
         "maximumBalance": 10000
       },
-      "BusinessDay": {
+      "businessDay": {
         "date": 20261007
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
         "transactionFamily": "XT01821",
         "businessCode": "SA0"
       },
-      "CashAuthorizationPolicy": {
+      "cashAuthorizationPolicy": {
         "warningThreshold": 500,
         "tellerLimit": 1000,
         "levelAMultiplier": 2,
         "specialUsdLevelB": 1500,
         "specialUsdLevelA": 3000
       },
-      "AuthorizationEvidence": {
+      "authorizationEvidence": {
         "grantedLevel": "NONE"
       },
-      "CashAccountControl": {
+      "cashAccountControl": {
         "controllingInstitution": "",
         "controlStatus": "Normal",
         "cancelledOn": 0,
@@ -2243,12 +2243,12 @@
   {
     "name": "40",
     "input": {
-      "DepositRequest": {
+      "depositRequest": {
         "amount": 1500.01,
         "currency": "USD",
         "valueDate": 20261007
       },
-      "AccountEligibility": {
+      "accountEligibility": {
         "status": "ACTIVE",
         "temporary": false,
         "expiresOn": 20261007,
@@ -2260,32 +2260,32 @@
         "transferredToday": 0,
         "accountBalance": 0
       },
-      "DepositProduct": {
+      "depositProduct": {
         "minimumOpeningAmount": 100,
         "maximumOpeningAmount": 5000,
         "maximumBalance": 10000
       },
-      "BusinessDay": {
+      "businessDay": {
         "date": 20261007
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
         "transactionFamily": "XT01821",
         "businessCode": "SA0"
       },
-      "CashAuthorizationPolicy": {
+      "cashAuthorizationPolicy": {
         "warningThreshold": 500,
         "tellerLimit": 1000,
         "levelAMultiplier": 2,
         "specialUsdLevelB": 1500,
         "specialUsdLevelA": 3000
       },
-      "AuthorizationEvidence": {
+      "authorizationEvidence": {
         "grantedLevel": "NONE"
       },
-      "CashAccountControl": {
+      "cashAccountControl": {
         "controllingInstitution": "",
         "controlStatus": "Normal",
         "cancelledOn": 0,
@@ -2302,12 +2302,12 @@
   {
     "name": "41",
     "input": {
-      "DepositRequest": {
+      "depositRequest": {
         "amount": 3000,
         "currency": "USD",
         "valueDate": 20261007
       },
-      "AccountEligibility": {
+      "accountEligibility": {
         "status": "ACTIVE",
         "temporary": false,
         "expiresOn": 20261007,
@@ -2319,32 +2319,32 @@
         "transferredToday": 0,
         "accountBalance": 0
       },
-      "DepositProduct": {
+      "depositProduct": {
         "minimumOpeningAmount": 100,
         "maximumOpeningAmount": 5000,
         "maximumBalance": 10000
       },
-      "BusinessDay": {
+      "businessDay": {
         "date": 20261007
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
         "transactionFamily": "XT01821",
         "businessCode": "SA0"
       },
-      "CashAuthorizationPolicy": {
+      "cashAuthorizationPolicy": {
         "warningThreshold": 500,
         "tellerLimit": 1000,
         "levelAMultiplier": 2,
         "specialUsdLevelB": 1500,
         "specialUsdLevelA": 3000
       },
-      "AuthorizationEvidence": {
+      "authorizationEvidence": {
         "grantedLevel": "NONE"
       },
-      "CashAccountControl": {
+      "cashAccountControl": {
         "controllingInstitution": "",
         "controlStatus": "Normal",
         "cancelledOn": 0,
@@ -2361,12 +2361,12 @@
   {
     "name": "42",
     "input": {
-      "DepositRequest": {
+      "depositRequest": {
         "amount": 3000.01,
         "currency": "USD",
         "valueDate": 20261007
       },
-      "AccountEligibility": {
+      "accountEligibility": {
         "status": "ACTIVE",
         "temporary": false,
         "expiresOn": 20261007,
@@ -2378,32 +2378,32 @@
         "transferredToday": 0,
         "accountBalance": 0
       },
-      "DepositProduct": {
+      "depositProduct": {
         "minimumOpeningAmount": 100,
         "maximumOpeningAmount": 5000,
         "maximumBalance": 10000
       },
-      "BusinessDay": {
+      "businessDay": {
         "date": 20261007
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
         "transactionFamily": "XT01821",
         "businessCode": "SA0"
       },
-      "CashAuthorizationPolicy": {
+      "cashAuthorizationPolicy": {
         "warningThreshold": 500,
         "tellerLimit": 1000,
         "levelAMultiplier": 2,
         "specialUsdLevelB": 1500,
         "specialUsdLevelA": 3000
       },
-      "AuthorizationEvidence": {
+      "authorizationEvidence": {
         "grantedLevel": "NONE"
       },
-      "CashAccountControl": {
+      "cashAccountControl": {
         "controllingInstitution": "",
         "controlStatus": "Normal",
         "cancelledOn": 0,
@@ -2420,12 +2420,12 @@
   {
     "name": "43",
     "input": {
-      "DepositRequest": {
+      "depositRequest": {
         "amount": 100,
         "currency": "CNY",
         "valueDate": 20261007
       },
-      "AccountEligibility": {
+      "accountEligibility": {
         "status": "ACTIVE",
         "temporary": false,
         "expiresOn": 20261007,
@@ -2437,32 +2437,32 @@
         "transferredToday": 0,
         "accountBalance": 0
       },
-      "DepositProduct": {
+      "depositProduct": {
         "minimumOpeningAmount": 100,
         "maximumOpeningAmount": 5000,
         "maximumBalance": 10000
       },
-      "BusinessDay": {
+      "businessDay": {
         "date": 20261007
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
         "transactionFamily": "GSA0110",
         "businessCode": "SA0"
       },
-      "CashAuthorizationPolicy": {
+      "cashAuthorizationPolicy": {
         "warningThreshold": 500,
         "tellerLimit": 1000,
         "levelAMultiplier": 2,
         "specialUsdLevelB": 1500,
         "specialUsdLevelA": 3000
       },
-      "AuthorizationEvidence": {
+      "authorizationEvidence": {
         "grantedLevel": "NONE"
       },
-      "CashAccountControl": {
+      "cashAccountControl": {
         "controllingInstitution": "",
         "controlStatus": "Normal",
         "cancelledOn": 0,
@@ -2502,12 +2502,12 @@
   {
     "name": "46",
     "input": {
-      "DepositRequest": {
+      "depositRequest": {
         "amount": 600,
         "currency": "CNY",
         "valueDate": 20261007
       },
-      "AccountEligibility": {
+      "accountEligibility": {
         "status": "ACTIVE",
         "temporary": false,
         "expiresOn": 20261007,
@@ -2519,32 +2519,32 @@
         "transferredToday": 0,
         "accountBalance": 0
       },
-      "DepositProduct": {
+      "depositProduct": {
         "minimumOpeningAmount": 100,
         "maximumOpeningAmount": 5000,
         "maximumBalance": 10000
       },
-      "BusinessDay": {
+      "businessDay": {
         "date": 20261007
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
         "transactionFamily": "GSA0110",
         "businessCode": "SA0"
       },
-      "CashAuthorizationPolicy": {
+      "cashAuthorizationPolicy": {
         "warningThreshold": 500,
         "tellerLimit": 1000,
         "levelAMultiplier": 2,
         "specialUsdLevelB": 1500,
         "specialUsdLevelA": 3000
       },
-      "AuthorizationEvidence": {
+      "authorizationEvidence": {
         "grantedLevel": "NONE"
       },
-      "CashAccountControl": {
+      "cashAccountControl": {
         "controllingInstitution": "",
         "controlStatus": "Normal",
         "cancelledOn": 0,
@@ -2562,12 +2562,12 @@
   {
     "name": "47",
     "input": {
-      "DepositRequest": {
+      "depositRequest": {
         "amount": 600,
         "currency": "CNY",
         "valueDate": 20261007
       },
-      "AccountEligibility": {
+      "accountEligibility": {
         "status": "ACTIVE",
         "temporary": false,
         "expiresOn": 20261007,
@@ -2579,32 +2579,32 @@
         "transferredToday": 0,
         "accountBalance": 0
       },
-      "DepositProduct": {
+      "depositProduct": {
         "minimumOpeningAmount": 100,
         "maximumOpeningAmount": 5000,
         "maximumBalance": 10000
       },
-      "BusinessDay": {
+      "businessDay": {
         "date": 20261007
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
         "transactionFamily": "GSA0110",
         "businessCode": "SA0"
       },
-      "CashAuthorizationPolicy": {
+      "cashAuthorizationPolicy": {
         "warningThreshold": 500,
         "tellerLimit": 1000,
         "levelAMultiplier": 2,
         "specialUsdLevelB": 1500,
         "specialUsdLevelA": 3000
       },
-      "AuthorizationEvidence": {
+      "authorizationEvidence": {
         "grantedLevel": "NONE"
       },
-      "CashAccountControl": {
+      "cashAccountControl": {
         "controllingInstitution": "",
         "controlStatus": "Locked",
         "cancelledOn": 0,
@@ -2621,12 +2621,12 @@
   {
     "name": "48",
     "input": {
-      "DepositRequest": {
+      "depositRequest": {
         "amount": 600,
         "currency": "CNY",
         "valueDate": 20261007
       },
-      "AccountEligibility": {
+      "accountEligibility": {
         "status": "ACTIVE",
         "temporary": false,
         "expiresOn": 20261007,
@@ -2638,32 +2638,32 @@
         "transferredToday": 0,
         "accountBalance": 0
       },
-      "DepositProduct": {
+      "depositProduct": {
         "minimumOpeningAmount": 100,
         "maximumOpeningAmount": 5000,
         "maximumBalance": 10000
       },
-      "BusinessDay": {
+      "businessDay": {
         "date": 20261007
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
         "transactionFamily": "GSA0110",
         "businessCode": "SA0"
       },
-      "CashAuthorizationPolicy": {
+      "cashAuthorizationPolicy": {
         "warningThreshold": 500,
         "tellerLimit": 1000,
         "levelAMultiplier": 2,
         "specialUsdLevelB": 1500,
         "specialUsdLevelA": 3000
       },
-      "AuthorizationEvidence": {
+      "authorizationEvidence": {
         "grantedLevel": "NONE"
       },
-      "CashAccountControl": {
+      "cashAccountControl": {
         "controllingInstitution": "",
         "controlStatus": "Normal",
         "cancelledOn": 20261007,
@@ -2680,12 +2680,12 @@
   {
     "name": "49",
     "input": {
-      "DepositRequest": {
+      "depositRequest": {
         "amount": 600,
         "currency": "CNY",
         "valueDate": 20261007
       },
-      "AccountEligibility": {
+      "accountEligibility": {
         "status": "ACTIVE",
         "temporary": false,
         "expiresOn": 20261007,
@@ -2697,32 +2697,32 @@
         "transferredToday": 0,
         "accountBalance": 0
       },
-      "DepositProduct": {
+      "depositProduct": {
         "minimumOpeningAmount": 100,
         "maximumOpeningAmount": 5000,
         "maximumBalance": 10000
       },
-      "BusinessDay": {
+      "businessDay": {
         "date": 20261007
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
         "transactionFamily": "GSA0110",
         "businessCode": "SA0"
       },
-      "CashAuthorizationPolicy": {
+      "cashAuthorizationPolicy": {
         "warningThreshold": 500,
         "tellerLimit": 1000,
         "levelAMultiplier": 2,
         "specialUsdLevelB": 1500,
         "specialUsdLevelA": 3000
       },
-      "AuthorizationEvidence": {
+      "authorizationEvidence": {
         "grantedLevel": "NONE"
       },
-      "CashAccountControl": {
+      "cashAccountControl": {
         "controllingInstitution": "",
         "controlStatus": "Normal",
         "cancelledOn": 0,

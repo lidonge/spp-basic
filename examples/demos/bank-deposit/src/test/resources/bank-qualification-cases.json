@@ -4,7 +4,7 @@
     "source": "cboddeposit-99ua-qualification-cases.spp",
     "service": "assessBankQualification",
     "input": {
-      "DepositBankProfile": {
+      "depositBankProfile": {
         "normalSavings": true,
         "restrictedSubtype": false,
         "openingBranch": "001001001",
@@ -22,7 +22,7 @@
         "passbookLoss": "None",
         "groupSubaccount": false
       },
-      "DepositOperatorFacts": {
+      "depositOperatorFacts": {
         "branch": "001001002",
         "province": "001",
         "subbranch": "SB001",
@@ -39,7 +39,7 @@
         "corporateTransfer": false,
         "settlementChannel": "Teller"
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
@@ -55,7 +55,7 @@
     "source": "cboddeposit-99ua-qualification-cases.spp",
     "service": "assessBankQualification",
     "input": {
-      "DepositBankProfile": {
+      "depositBankProfile": {
         "normalSavings": true,
         "restrictedSubtype": false,
         "openingBranch": "001001001",
@@ -73,7 +73,7 @@
         "passbookLoss": "None",
         "groupSubaccount": false
       },
-      "DepositOperatorFacts": {
+      "depositOperatorFacts": {
         "branch": "001001001",
         "province": "001",
         "subbranch": "SB001",
@@ -90,7 +90,7 @@
         "corporateTransfer": false,
         "settlementChannel": "Teller"
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
@@ -106,7 +106,7 @@
     "source": "cboddeposit-99ua-qualification-cases.spp",
     "service": "assessBankQualification",
     "input": {
-      "DepositBankProfile": {
+      "depositBankProfile": {
         "normalSavings": true,
         "restrictedSubtype": false,
         "openingBranch": "001001001",
@@ -124,7 +124,7 @@
         "passbookLoss": "None",
         "groupSubaccount": false
       },
-      "DepositOperatorFacts": {
+      "depositOperatorFacts": {
         "branch": "001001002",
         "province": "001",
         "subbranch": "SB002",
@@ -141,7 +141,7 @@
         "corporateTransfer": false,
         "settlementChannel": "Teller"
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
@@ -157,7 +157,7 @@
     "source": "cboddeposit-99ua-qualification-cases.spp",
     "service": "assessBankQualification",
     "input": {
-      "DepositBankProfile": {
+      "depositBankProfile": {
         "normalSavings": true,
         "restrictedSubtype": false,
         "openingBranch": "001001001",
@@ -175,7 +175,7 @@
         "passbookLoss": "None",
         "groupSubaccount": false
       },
-      "DepositOperatorFacts": {
+      "depositOperatorFacts": {
         "branch": "001001002",
         "province": "001",
         "subbranch": "SB001",
@@ -192,7 +192,7 @@
         "corporateTransfer": false,
         "settlementChannel": "Teller"
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
@@ -208,7 +208,7 @@
     "source": "cboddeposit-99ua-qualification-cases.spp",
     "service": "assessBankQualification",
     "input": {
-      "DepositBankProfile": {
+      "depositBankProfile": {
         "normalSavings": true,
         "restrictedSubtype": false,
         "openingBranch": "001001001",
@@ -226,7 +226,7 @@
         "passbookLoss": "None",
         "groupSubaccount": false
       },
-      "DepositOperatorFacts": {
+      "depositOperatorFacts": {
         "branch": "001001002",
         "province": "001",
         "subbranch": "SB001",
@@ -243,7 +243,7 @@
         "corporateTransfer": false,
         "settlementChannel": "Teller"
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
@@ -259,7 +259,7 @@
     "source": "cboddeposit-99ua-qualification-cases.spp",
     "service": "assessBankQualification",
     "input": {
-      "DepositBankProfile": {
+      "depositBankProfile": {
         "normalSavings": true,
         "restrictedSubtype": false,
         "openingBranch": "001001001",
@@ -277,7 +277,7 @@
         "passbookLoss": "None",
         "groupSubaccount": false
       },
-      "DepositOperatorFacts": {
+      "depositOperatorFacts": {
         "branch": "001001002",
         "province": "001",
         "subbranch": "SB001",
@@ -294,7 +294,7 @@
         "corporateTransfer": false,
         "settlementChannel": "Teller"
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
@@ -310,7 +310,7 @@
     "source": "cboddeposit-99ua-qualification-cases.spp",
     "service": "assessBankQualification",
     "input": {
-      "DepositBankProfile": {
+      "depositBankProfile": {
         "normalSavings": true,
         "restrictedSubtype": false,
         "openingBranch": "001001001",
@@ -328,7 +328,7 @@
         "passbookLoss": "None",
         "groupSubaccount": false
       },
-      "DepositOperatorFacts": {
+      "depositOperatorFacts": {
         "branch": "001001002",
         "province": "001",
         "subbranch": "SB001",
@@ -345,7 +345,7 @@
         "corporateTransfer": false,
         "settlementChannel": "Teller"
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
@@ -361,7 +361,7 @@
     "source": "cboddeposit-99ua-qualification-cases.spp",
     "service": "assessBankQualification",
     "input": {
-      "DepositBankProfile": {
+      "depositBankProfile": {
         "normalSavings": true,
         "restrictedSubtype": false,
         "openingBranch": "001001001",
@@ -379,7 +379,7 @@
         "passbookLoss": "None",
         "groupSubaccount": false
       },
-      "DepositOperatorFacts": {
+      "depositOperatorFacts": {
         "branch": "001001002",
         "province": "001",
         "subbranch": "SB001",
@@ -396,7 +396,7 @@
         "corporateTransfer": false,
         "settlementChannel": "Teller"
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
@@ -412,7 +412,7 @@
     "source": "cboddeposit-99ua-qualification-cases.spp",
     "service": "assessBankQualification",
     "input": {
-      "DepositBankProfile": {
+      "depositBankProfile": {
         "normalSavings": true,
         "restrictedSubtype": false,
         "openingBranch": "001001001",
@@ -430,7 +430,7 @@
         "passbookLoss": "None",
         "groupSubaccount": false
       },
-      "DepositOperatorFacts": {
+      "depositOperatorFacts": {
         "branch": "001001002",
         "province": "001",
         "subbranch": "SB001",
@@ -447,7 +447,7 @@
         "corporateTransfer": false,
         "settlementChannel": "Teller"
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
@@ -463,7 +463,7 @@
     "source": "cboddeposit-99ua-qualification-cases.spp",
     "service": "assessBankQualification",
     "input": {
-      "DepositBankProfile": {
+      "depositBankProfile": {
         "normalSavings": true,
         "restrictedSubtype": false,
         "openingBranch": "001001001",
@@ -481,7 +481,7 @@
         "passbookLoss": "None",
         "groupSubaccount": false
       },
-      "DepositOperatorFacts": {
+      "depositOperatorFacts": {
         "branch": "001001002",
         "province": "001",
         "subbranch": "SB001",
@@ -498,7 +498,7 @@
         "corporateTransfer": false,
         "settlementChannel": "Teller"
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
@@ -514,7 +514,7 @@
     "source": "cboddeposit-99ua-qualification-cases.spp",
     "service": "assessBankQualification",
     "input": {
-      "DepositBankProfile": {
+      "depositBankProfile": {
         "normalSavings": true,
         "restrictedSubtype": false,
         "openingBranch": "001001001",
@@ -532,7 +532,7 @@
         "passbookLoss": "None",
         "groupSubaccount": false
       },
-      "DepositOperatorFacts": {
+      "depositOperatorFacts": {
         "branch": "001001002",
         "province": "002",
         "subbranch": "SB001",
@@ -549,7 +549,7 @@
         "corporateTransfer": false,
         "settlementChannel": "Teller"
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
@@ -565,7 +565,7 @@
     "source": "cboddeposit-99ua-qualification-cases.spp",
     "service": "assessBankQualification",
     "input": {
-      "DepositBankProfile": {
+      "depositBankProfile": {
         "normalSavings": true,
         "restrictedSubtype": false,
         "openingBranch": "001001001",
@@ -583,7 +583,7 @@
         "passbookLoss": "None",
         "groupSubaccount": false
       },
-      "DepositOperatorFacts": {
+      "depositOperatorFacts": {
         "branch": "001001002",
         "province": "001",
         "subbranch": "SB001",
@@ -600,7 +600,7 @@
         "corporateTransfer": false,
         "settlementChannel": "Teller"
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
@@ -616,7 +616,7 @@
     "source": "cboddeposit-99ua-qualification-cases.spp",
     "service": "assessBankQualification",
     "input": {
-      "DepositBankProfile": {
+      "depositBankProfile": {
         "normalSavings": true,
         "restrictedSubtype": false,
         "openingBranch": "001001001",
@@ -634,7 +634,7 @@
         "passbookLoss": "None",
         "groupSubaccount": false
       },
-      "DepositOperatorFacts": {
+      "depositOperatorFacts": {
         "branch": "001001002",
         "province": "001",
         "subbranch": "SB001",
@@ -651,7 +651,7 @@
         "corporateTransfer": false,
         "settlementChannel": "Teller"
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
@@ -667,7 +667,7 @@
     "source": "cboddeposit-99ua-qualification-cases.spp",
     "service": "assessBankQualification",
     "input": {
-      "DepositBankProfile": {
+      "depositBankProfile": {
         "normalSavings": true,
         "restrictedSubtype": false,
         "openingBranch": "001001001",
@@ -685,7 +685,7 @@
         "passbookLoss": "None",
         "groupSubaccount": false
       },
-      "DepositOperatorFacts": {
+      "depositOperatorFacts": {
         "branch": "001001002",
         "province": "001",
         "subbranch": "SB001",
@@ -702,7 +702,7 @@
         "corporateTransfer": false,
         "settlementChannel": "Teller"
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
@@ -718,7 +718,7 @@
     "source": "cboddeposit-99ua-qualification-cases.spp",
     "service": "assessBankQualification",
     "input": {
-      "DepositBankProfile": {
+      "depositBankProfile": {
         "normalSavings": true,
         "restrictedSubtype": false,
         "openingBranch": "001001001",
@@ -736,7 +736,7 @@
         "passbookLoss": "None",
         "groupSubaccount": false
       },
-      "DepositOperatorFacts": {
+      "depositOperatorFacts": {
         "branch": "001001002",
         "province": "001",
         "subbranch": "SB001",
@@ -753,7 +753,7 @@
         "corporateTransfer": false,
         "settlementChannel": "Teller"
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
@@ -769,7 +769,7 @@
     "source": "cboddeposit-99ua-qualification-cases.spp",
     "service": "assessBankQualification",
     "input": {
-      "DepositBankProfile": {
+      "depositBankProfile": {
         "normalSavings": true,
         "restrictedSubtype": false,
         "openingBranch": "001001001",
@@ -787,7 +787,7 @@
         "passbookLoss": "None",
         "groupSubaccount": false
       },
-      "DepositOperatorFacts": {
+      "depositOperatorFacts": {
         "branch": "001001002",
         "province": "001",
         "subbranch": "SB001",
@@ -804,7 +804,7 @@
         "corporateTransfer": false,
         "settlementChannel": "Teller"
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
@@ -820,7 +820,7 @@
     "source": "cboddeposit-99ua-qualification-cases.spp",
     "service": "assessBankQualification",
     "input": {
-      "DepositBankProfile": {
+      "depositBankProfile": {
         "normalSavings": true,
         "restrictedSubtype": false,
         "openingBranch": "001001001",
@@ -838,7 +838,7 @@
         "passbookLoss": "None",
         "groupSubaccount": false
       },
-      "DepositOperatorFacts": {
+      "depositOperatorFacts": {
         "branch": "001001002",
         "province": "001",
         "subbranch": "SB001",
@@ -855,7 +855,7 @@
         "corporateTransfer": false,
         "settlementChannel": "Teller"
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
@@ -871,7 +871,7 @@
     "source": "cboddeposit-99ua-qualification-cases.spp",
     "service": "assessBankQualification",
     "input": {
-      "DepositBankProfile": {
+      "depositBankProfile": {
         "normalSavings": true,
         "restrictedSubtype": false,
         "openingBranch": "001001001",
@@ -889,7 +889,7 @@
         "passbookLoss": "None",
         "groupSubaccount": false
       },
-      "DepositOperatorFacts": {
+      "depositOperatorFacts": {
         "branch": "001001002",
         "province": "001",
         "subbranch": "SB001",
@@ -906,7 +906,7 @@
         "corporateTransfer": false,
         "settlementChannel": "Teller"
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
@@ -922,7 +922,7 @@
     "source": "cboddeposit-99ua-qualification-cases.spp",
     "service": "assessBankQualification",
     "input": {
-      "DepositBankProfile": {
+      "depositBankProfile": {
         "normalSavings": true,
         "restrictedSubtype": false,
         "openingBranch": "001001001",
@@ -940,7 +940,7 @@
         "passbookLoss": "None",
         "groupSubaccount": false
       },
-      "DepositOperatorFacts": {
+      "depositOperatorFacts": {
         "branch": "001001002",
         "province": "001",
         "subbranch": "SB001",
@@ -957,7 +957,7 @@
         "corporateTransfer": false,
         "settlementChannel": "Teller"
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
@@ -973,7 +973,7 @@
     "source": "cboddeposit-99ua-qualification-cases.spp",
     "service": "assessBankQualification",
     "input": {
-      "DepositBankProfile": {
+      "depositBankProfile": {
         "normalSavings": true,
         "restrictedSubtype": false,
         "openingBranch": "001001001",
@@ -991,7 +991,7 @@
         "passbookLoss": "None",
         "groupSubaccount": false
       },
-      "DepositOperatorFacts": {
+      "depositOperatorFacts": {
         "branch": "001001002",
         "province": "001",
         "subbranch": "SB001",
@@ -1008,7 +1008,7 @@
         "corporateTransfer": false,
         "settlementChannel": "Teller"
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
@@ -1024,7 +1024,7 @@
     "source": "cboddeposit-99ua-qualification-cases.spp",
     "service": "assessBankQualification",
     "input": {
-      "DepositBankProfile": {
+      "depositBankProfile": {
         "normalSavings": true,
         "restrictedSubtype": false,
         "openingBranch": "001001001",
@@ -1042,7 +1042,7 @@
         "passbookLoss": "None",
         "groupSubaccount": false
       },
-      "DepositOperatorFacts": {
+      "depositOperatorFacts": {
         "branch": "001001002",
         "province": "001",
         "subbranch": "SB001",
@@ -1059,7 +1059,7 @@
         "corporateTransfer": false,
         "settlementChannel": "Teller"
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
@@ -1075,7 +1075,7 @@
     "source": "cboddeposit-99ua-qualification-cases.spp",
     "service": "assessBankQualification",
     "input": {
-      "DepositBankProfile": {
+      "depositBankProfile": {
         "normalSavings": true,
         "restrictedSubtype": false,
         "openingBranch": "001001001",
@@ -1093,7 +1093,7 @@
         "passbookLoss": "None",
         "groupSubaccount": false
       },
-      "DepositOperatorFacts": {
+      "depositOperatorFacts": {
         "branch": "001001002",
         "province": "001",
         "subbranch": "SB001",
@@ -1110,7 +1110,7 @@
         "corporateTransfer": false,
         "settlementChannel": "Teller"
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
@@ -1126,7 +1126,7 @@
     "source": "cboddeposit-99ua-qualification-cases.spp",
     "service": "assessBankQualification",
     "input": {
-      "DepositBankProfile": {
+      "depositBankProfile": {
         "normalSavings": true,
         "restrictedSubtype": false,
         "openingBranch": "001001001",
@@ -1144,7 +1144,7 @@
         "passbookLoss": "None",
         "groupSubaccount": false
       },
-      "DepositOperatorFacts": {
+      "depositOperatorFacts": {
         "branch": "001001002",
         "province": "001",
         "subbranch": "SB001",
@@ -1161,7 +1161,7 @@
         "corporateTransfer": false,
         "settlementChannel": "Teller"
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
@@ -1177,7 +1177,7 @@
     "source": "cboddeposit-99ua-qualification-cases.spp",
     "service": "assessBankQualification",
     "input": {
-      "DepositBankProfile": {
+      "depositBankProfile": {
         "normalSavings": true,
         "restrictedSubtype": false,
         "openingBranch": "001001001",
@@ -1195,7 +1195,7 @@
         "passbookLoss": "None",
         "groupSubaccount": false
       },
-      "DepositOperatorFacts": {
+      "depositOperatorFacts": {
         "branch": "001001002",
         "province": "001",
         "subbranch": "SB001",
@@ -1212,7 +1212,7 @@
         "corporateTransfer": false,
         "settlementChannel": "Teller"
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
@@ -1228,7 +1228,7 @@
     "source": "cboddeposit-99ua-qualification-cases.spp",
     "service": "assessBankQualification",
     "input": {
-      "DepositBankProfile": {
+      "depositBankProfile": {
         "normalSavings": true,
         "restrictedSubtype": false,
         "openingBranch": "001001001",
@@ -1246,7 +1246,7 @@
         "passbookLoss": "None",
         "groupSubaccount": false
       },
-      "DepositOperatorFacts": {
+      "depositOperatorFacts": {
         "branch": "001001002",
         "province": "001",
         "subbranch": "SB001",
@@ -1263,7 +1263,7 @@
         "corporateTransfer": false,
         "settlementChannel": "Teller"
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
@@ -1279,7 +1279,7 @@
     "source": "cboddeposit-99ua-qualification-cases.spp",
     "service": "assessBankQualification",
     "input": {
-      "DepositBankProfile": {
+      "depositBankProfile": {
         "normalSavings": true,
         "restrictedSubtype": false,
         "openingBranch": "001001001",
@@ -1297,7 +1297,7 @@
         "passbookLoss": "None",
         "groupSubaccount": false
       },
-      "DepositOperatorFacts": {
+      "depositOperatorFacts": {
         "branch": "001001002",
         "province": "001",
         "subbranch": "SB001",
@@ -1314,7 +1314,7 @@
         "corporateTransfer": false,
         "settlementChannel": "Teller"
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
@@ -1330,7 +1330,7 @@
     "source": "cboddeposit-99ua-qualification-cases.spp",
     "service": "assessBankQualification",
     "input": {
-      "DepositBankProfile": {
+      "depositBankProfile": {
         "normalSavings": true,
         "restrictedSubtype": false,
         "openingBranch": "001001001",
@@ -1348,7 +1348,7 @@
         "passbookLoss": "None",
         "groupSubaccount": false
       },
-      "DepositOperatorFacts": {
+      "depositOperatorFacts": {
         "branch": "001001002",
         "province": "001",
         "subbranch": "SB001",
@@ -1365,7 +1365,7 @@
         "corporateTransfer": false,
         "settlementChannel": "Teller"
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
@@ -1381,7 +1381,7 @@
     "source": "cboddeposit-99ub-qualification-cases.spp",
     "service": "assessBankQualification",
     "input": {
-      "DepositBankProfile": {
+      "depositBankProfile": {
         "normalSavings": true,
         "restrictedSubtype": false,
         "openingBranch": "001001001",
@@ -1399,7 +1399,7 @@
         "passbookLoss": "None",
         "groupSubaccount": false
       },
-      "DepositOperatorFacts": {
+      "depositOperatorFacts": {
         "branch": "001001002",
         "province": "001",
         "subbranch": "SB001",
@@ -1416,7 +1416,7 @@
         "corporateTransfer": false,
         "settlementChannel": "Teller"
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
@@ -1432,7 +1432,7 @@
     "source": "cboddeposit-99ub-qualification-cases.spp",
     "service": "assessBankQualification",
     "input": {
-      "DepositBankProfile": {
+      "depositBankProfile": {
         "normalSavings": true,
         "restrictedSubtype": false,
         "openingBranch": "001001001",
@@ -1450,7 +1450,7 @@
         "passbookLoss": "None",
         "groupSubaccount": false
       },
-      "DepositOperatorFacts": {
+      "depositOperatorFacts": {
         "branch": "001001002",
         "province": "001",
         "subbranch": "SB001",
@@ -1467,7 +1467,7 @@
         "corporateTransfer": false,
         "settlementChannel": "Teller"
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
@@ -1483,7 +1483,7 @@
     "source": "cboddeposit-99ub-qualification-cases.spp",
     "service": "assessBankQualification",
     "input": {
-      "DepositBankProfile": {
+      "depositBankProfile": {
         "normalSavings": true,
         "restrictedSubtype": false,
         "openingBranch": "001001001",
@@ -1501,7 +1501,7 @@
         "passbookLoss": "None",
         "groupSubaccount": false
       },
-      "DepositOperatorFacts": {
+      "depositOperatorFacts": {
         "branch": "001001002",
         "province": "001",
         "subbranch": "SB001",
@@ -1518,7 +1518,7 @@
         "corporateTransfer": false,
         "settlementChannel": "Teller"
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
@@ -1534,7 +1534,7 @@
     "source": "cboddeposit-99ub-qualification-cases.spp",
     "service": "assessBankQualification",
     "input": {
-      "DepositBankProfile": {
+      "depositBankProfile": {
         "normalSavings": true,
         "restrictedSubtype": false,
         "openingBranch": "001001001",
@@ -1552,7 +1552,7 @@
         "passbookLoss": "None",
         "groupSubaccount": false
       },
-      "DepositOperatorFacts": {
+      "depositOperatorFacts": {
         "branch": "001001002",
         "province": "001",
         "subbranch": "SB001",
@@ -1569,7 +1569,7 @@
         "corporateTransfer": false,
         "settlementChannel": "Teller"
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
@@ -1585,7 +1585,7 @@
     "source": "cboddeposit-99ub-qualification-cases.spp",
     "service": "assessBankQualification",
     "input": {
-      "DepositBankProfile": {
+      "depositBankProfile": {
         "normalSavings": true,
         "restrictedSubtype": false,
         "openingBranch": "001001001",
@@ -1603,7 +1603,7 @@
         "passbookLoss": "None",
         "groupSubaccount": false
       },
-      "DepositOperatorFacts": {
+      "depositOperatorFacts": {
         "branch": "001001002",
         "province": "001",
         "subbranch": "SB001",
@@ -1620,7 +1620,7 @@
         "corporateTransfer": false,
         "settlementChannel": "Teller"
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
@@ -1636,7 +1636,7 @@
     "source": "cboddeposit-99ub-qualification-cases.spp",
     "service": "assessBankQualification",
     "input": {
-      "DepositBankProfile": {
+      "depositBankProfile": {
         "normalSavings": true,
         "restrictedSubtype": false,
         "openingBranch": "001001001",
@@ -1654,7 +1654,7 @@
         "passbookLoss": "None",
         "groupSubaccount": false
       },
-      "DepositOperatorFacts": {
+      "depositOperatorFacts": {
         "branch": "001001002",
         "province": "001",
         "subbranch": "SB001",
@@ -1671,7 +1671,7 @@
         "corporateTransfer": false,
         "settlementChannel": "Teller"
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
@@ -1687,7 +1687,7 @@
     "source": "cboddeposit-99ub-qualification-cases.spp",
     "service": "assessBankQualification",
     "input": {
-      "DepositBankProfile": {
+      "depositBankProfile": {
         "normalSavings": true,
         "restrictedSubtype": false,
         "openingBranch": "001001001",
@@ -1705,7 +1705,7 @@
         "passbookLoss": "None",
         "groupSubaccount": false
       },
-      "DepositOperatorFacts": {
+      "depositOperatorFacts": {
         "branch": "001001002",
         "province": "001",
         "subbranch": "SB001",
@@ -1722,7 +1722,7 @@
         "corporateTransfer": false,
         "settlementChannel": "Teller"
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
@@ -1738,7 +1738,7 @@
     "source": "cboddeposit-99ub-qualification-cases.spp",
     "service": "assessBankQualification",
     "input": {
-      "DepositBankProfile": {
+      "depositBankProfile": {
         "normalSavings": true,
         "restrictedSubtype": false,
         "openingBranch": "001001001",
@@ -1756,7 +1756,7 @@
         "passbookLoss": "None",
         "groupSubaccount": false
       },
-      "DepositOperatorFacts": {
+      "depositOperatorFacts": {
         "branch": "001001002",
         "province": "001",
         "subbranch": "SB001",
@@ -1773,7 +1773,7 @@
         "corporateTransfer": false,
         "settlementChannel": "Teller"
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
@@ -1789,7 +1789,7 @@
     "source": "cboddeposit-99ub-qualification-cases.spp",
     "service": "assessBankQualification",
     "input": {
-      "DepositBankProfile": {
+      "depositBankProfile": {
         "normalSavings": true,
         "restrictedSubtype": false,
         "openingBranch": "001001001",
@@ -1807,7 +1807,7 @@
         "passbookLoss": "None",
         "groupSubaccount": false
       },
-      "DepositOperatorFacts": {
+      "depositOperatorFacts": {
         "branch": "001001002",
         "province": "001",
         "subbranch": "SB001",
@@ -1824,7 +1824,7 @@
         "corporateTransfer": false,
         "settlementChannel": "Teller"
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
@@ -1840,7 +1840,7 @@
     "source": "cboddeposit-99ub-qualification-cases.spp",
     "service": "assessBankQualification",
     "input": {
-      "DepositBankProfile": {
+      "depositBankProfile": {
         "normalSavings": true,
         "restrictedSubtype": false,
         "openingBranch": "001001001",
@@ -1858,7 +1858,7 @@
         "passbookLoss": "None",
         "groupSubaccount": false
       },
-      "DepositOperatorFacts": {
+      "depositOperatorFacts": {
         "branch": "001001002",
         "province": "001",
         "subbranch": "SB001",
@@ -1875,7 +1875,7 @@
         "corporateTransfer": true,
         "settlementChannel": "Teller"
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
@@ -1891,7 +1891,7 @@
     "source": "cboddeposit-99ub-qualification-cases.spp",
     "service": "assessBankQualification",
     "input": {
-      "DepositBankProfile": {
+      "depositBankProfile": {
         "normalSavings": true,
         "restrictedSubtype": false,
         "openingBranch": "001001001",
@@ -1909,7 +1909,7 @@
         "passbookLoss": "None",
         "groupSubaccount": false
       },
-      "DepositOperatorFacts": {
+      "depositOperatorFacts": {
         "branch": "001001002",
         "province": "001",
         "subbranch": "SB001",
@@ -1926,7 +1926,7 @@
         "corporateTransfer": false,
         "settlementChannel": "Teller"
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
@@ -1942,7 +1942,7 @@
     "source": "cboddeposit-99ub-qualification-cases.spp",
     "service": "assessBankQualification",
     "input": {
-      "DepositBankProfile": {
+      "depositBankProfile": {
         "normalSavings": true,
         "restrictedSubtype": false,
         "openingBranch": "001001001",
@@ -1960,7 +1960,7 @@
         "passbookLoss": "None",
         "groupSubaccount": true
       },
-      "DepositOperatorFacts": {
+      "depositOperatorFacts": {
         "branch": "001001002",
         "province": "001",
         "subbranch": "SB001",
@@ -1977,7 +1977,7 @@
         "corporateTransfer": false,
         "settlementChannel": "HVP"
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
@@ -1993,7 +1993,7 @@
     "source": "cboddeposit-99ub-qualification-cases.spp",
     "service": "assessBankQualification",
     "input": {
-      "DepositBankProfile": {
+      "depositBankProfile": {
         "normalSavings": true,
         "restrictedSubtype": false,
         "openingBranch": "001001001",
@@ -2011,7 +2011,7 @@
         "passbookLoss": "None",
         "groupSubaccount": true
       },
-      "DepositOperatorFacts": {
+      "depositOperatorFacts": {
         "branch": "001001002",
         "province": "001",
         "subbranch": "SB001",
@@ -2028,7 +2028,7 @@
         "corporateTransfer": false,
         "settlementChannel": "BEP"
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
@@ -2044,7 +2044,7 @@
     "source": "cboddeposit-99ub-qualification-cases.spp",
     "service": "assessBankQualification",
     "input": {
-      "DepositBankProfile": {
+      "depositBankProfile": {
         "normalSavings": true,
         "restrictedSubtype": false,
         "openingBranch": "001001001",
@@ -2062,7 +2062,7 @@
         "passbookLoss": "None",
         "groupSubaccount": true
       },
-      "DepositOperatorFacts": {
+      "depositOperatorFacts": {
         "branch": "001001002",
         "province": "001",
         "subbranch": "SB001",
@@ -2079,7 +2079,7 @@
         "corporateTransfer": false,
         "settlementChannel": "NXY"
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
@@ -2095,7 +2095,7 @@
     "source": "cboddeposit-99ub-qualification-cases.spp",
     "service": "assessBankQualification",
     "input": {
-      "DepositBankProfile": {
+      "depositBankProfile": {
         "normalSavings": true,
         "restrictedSubtype": true,
         "openingBranch": "001001001",
@@ -2113,7 +2113,7 @@
         "passbookLoss": "None",
         "groupSubaccount": false
       },
-      "DepositOperatorFacts": {
+      "depositOperatorFacts": {
         "branch": "001001002",
         "province": "001",
         "subbranch": "SB001",
@@ -2130,7 +2130,7 @@
         "corporateTransfer": true,
         "settlementChannel": "Teller"
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
@@ -2146,7 +2146,7 @@
     "source": "cboddeposit-99ub-qualification-cases.spp",
     "service": "assessBankQualification",
     "input": {
-      "DepositBankProfile": {
+      "depositBankProfile": {
         "normalSavings": true,
         "restrictedSubtype": true,
         "openingBranch": "001001001",
@@ -2164,7 +2164,7 @@
         "passbookLoss": "None",
         "groupSubaccount": false
       },
-      "DepositOperatorFacts": {
+      "depositOperatorFacts": {
         "branch": "001001002",
         "province": "001",
         "subbranch": "SB001",
@@ -2181,7 +2181,7 @@
         "corporateTransfer": false,
         "settlementChannel": "Teller"
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
@@ -2197,7 +2197,7 @@
     "source": "cboddeposit-99ub-qualification-cases.spp",
     "service": "assessBankQualification",
     "input": {
-      "DepositBankProfile": {
+      "depositBankProfile": {
         "normalSavings": false,
         "restrictedSubtype": false,
         "openingBranch": "001001001",
@@ -2215,7 +2215,7 @@
         "passbookLoss": "None",
         "groupSubaccount": true
       },
-      "DepositOperatorFacts": {
+      "depositOperatorFacts": {
         "branch": "001001002",
         "province": "001",
         "subbranch": "SB001",
@@ -2232,7 +2232,7 @@
         "corporateTransfer": false,
         "settlementChannel": "HVP"
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
@@ -2248,7 +2248,7 @@
     "source": "cboddeposit-99uc-qualification-cases.spp",
     "service": "assessBankQualification",
     "input": {
-      "DepositBankProfile": {
+      "depositBankProfile": {
         "normalSavings": true,
         "restrictedSubtype": false,
         "openingBranch": "001001001",
@@ -2266,7 +2266,7 @@
         "passbookLoss": "Written",
         "groupSubaccount": false
       },
-      "DepositOperatorFacts": {
+      "depositOperatorFacts": {
         "branch": "001001002",
         "province": "001",
         "subbranch": "SB001",
@@ -2283,7 +2283,7 @@
         "corporateTransfer": false,
         "settlementChannel": "Teller"
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
@@ -2302,7 +2302,7 @@
     "source": "cboddeposit-99uc-qualification-cases.spp",
     "service": "assessBankQualification",
     "input": {
-      "DepositBankProfile": {
+      "depositBankProfile": {
         "normalSavings": true,
         "restrictedSubtype": false,
         "openingBranch": "001001001",
@@ -2320,7 +2320,7 @@
         "passbookLoss": "Written",
         "groupSubaccount": false
       },
-      "DepositOperatorFacts": {
+      "depositOperatorFacts": {
         "branch": "001001002",
         "province": "001",
         "subbranch": "SB001",
@@ -2337,7 +2337,7 @@
         "corporateTransfer": false,
         "settlementChannel": "Teller"
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
@@ -2356,7 +2356,7 @@
     "source": "cboddeposit-99uc-qualification-cases.spp",
     "service": "assessBankQualification",
     "input": {
-      "DepositBankProfile": {
+      "depositBankProfile": {
         "normalSavings": true,
         "restrictedSubtype": false,
         "openingBranch": "001001001",
@@ -2374,7 +2374,7 @@
         "passbookLoss": "Written",
         "groupSubaccount": false
       },
-      "DepositOperatorFacts": {
+      "depositOperatorFacts": {
         "branch": "001001002",
         "province": "001",
         "subbranch": "SB001",
@@ -2391,7 +2391,7 @@
         "corporateTransfer": false,
         "settlementChannel": "Teller"
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
@@ -2410,7 +2410,7 @@
     "source": "cboddeposit-99uc-qualification-cases.spp",
     "service": "assessBankQualification",
     "input": {
-      "DepositBankProfile": {
+      "depositBankProfile": {
         "normalSavings": true,
         "restrictedSubtype": false,
         "openingBranch": "001001001",
@@ -2428,7 +2428,7 @@
         "passbookLoss": "Written",
         "groupSubaccount": false
       },
-      "DepositOperatorFacts": {
+      "depositOperatorFacts": {
         "branch": "001001002",
         "province": "001",
         "subbranch": "SB001",
@@ -2445,7 +2445,7 @@
         "corporateTransfer": false,
         "settlementChannel": "Teller"
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
@@ -2464,7 +2464,7 @@
     "source": "cboddeposit-99uc-qualification-cases.spp",
     "service": "assessBankQualification",
     "input": {
-      "DepositBankProfile": {
+      "depositBankProfile": {
         "normalSavings": true,
         "restrictedSubtype": false,
         "openingBranch": "001001001",
@@ -2482,7 +2482,7 @@
         "passbookLoss": "Written",
         "groupSubaccount": false
       },
-      "DepositOperatorFacts": {
+      "depositOperatorFacts": {
         "branch": "001001002",
         "province": "001",
         "subbranch": "SB001",
@@ -2499,7 +2499,7 @@
         "corporateTransfer": false,
         "settlementChannel": "Teller"
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
@@ -2518,7 +2518,7 @@
     "source": "cboddeposit-99uc-qualification-cases.spp",
     "service": "assessBankQualification",
     "input": {
-      "DepositBankProfile": {
+      "depositBankProfile": {
         "normalSavings": true,
         "restrictedSubtype": false,
         "openingBranch": "001001001",
@@ -2536,7 +2536,7 @@
         "passbookLoss": "Written",
         "groupSubaccount": false
       },
-      "DepositOperatorFacts": {
+      "depositOperatorFacts": {
         "branch": "001001002",
         "province": "001",
         "subbranch": "SB001",
@@ -2553,7 +2553,7 @@
         "corporateTransfer": false,
         "settlementChannel": "Teller"
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
@@ -2572,7 +2572,7 @@
     "source": "cboddeposit-99uc-qualification-cases.spp",
     "service": "assessBankQualification",
     "input": {
-      "DepositBankProfile": {
+      "depositBankProfile": {
         "normalSavings": true,
         "restrictedSubtype": false,
         "openingBranch": "001001001",
@@ -2590,7 +2590,7 @@
         "passbookLoss": "Written",
         "groupSubaccount": false
       },
-      "DepositOperatorFacts": {
+      "depositOperatorFacts": {
         "branch": "001001002",
         "province": "001",
         "subbranch": "SB001",
@@ -2607,7 +2607,7 @@
         "corporateTransfer": false,
         "settlementChannel": "Teller"
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
@@ -2626,7 +2626,7 @@
     "source": "cboddeposit-99uc-qualification-cases.spp",
     "service": "assessBankQualification",
     "input": {
-      "DepositBankProfile": {
+      "depositBankProfile": {
         "normalSavings": true,
         "restrictedSubtype": false,
         "openingBranch": "001001001",
@@ -2644,7 +2644,7 @@
         "passbookLoss": "Written",
         "groupSubaccount": false
       },
-      "DepositOperatorFacts": {
+      "depositOperatorFacts": {
         "branch": "001001002",
         "province": "001",
         "subbranch": "SB001",
@@ -2661,7 +2661,7 @@
         "corporateTransfer": false,
         "settlementChannel": "Teller"
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
@@ -2680,7 +2680,7 @@
     "source": "cboddeposit-99uc-qualification-cases.spp",
     "service": "assessBankQualification",
     "input": {
-      "DepositBankProfile": {
+      "depositBankProfile": {
         "normalSavings": true,
         "restrictedSubtype": false,
         "openingBranch": "001001001",
@@ -2698,7 +2698,7 @@
         "passbookLoss": "None",
         "groupSubaccount": false
       },
-      "DepositOperatorFacts": {
+      "depositOperatorFacts": {
         "branch": "001001002",
         "province": "001",
         "subbranch": "",
@@ -2715,7 +2715,7 @@
         "corporateTransfer": false,
         "settlementChannel": "Teller"
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",
@@ -2731,7 +2731,7 @@
     "source": "cboddeposit-99uc-qualification-cases.spp",
     "service": "assessBankQualification",
     "input": {
-      "DepositBankProfile": {
+      "depositBankProfile": {
         "normalSavings": true,
         "restrictedSubtype": false,
         "openingBranch": "001001001",
@@ -2749,7 +2749,7 @@
         "passbookLoss": "None",
         "groupSubaccount": false
       },
-      "DepositOperatorFacts": {
+      "depositOperatorFacts": {
         "branch": "001001002",
         "province": "001",
         "subbranch": "SB001",
@@ -2766,7 +2766,7 @@
         "corporateTransfer": false,
         "settlementChannel": "Teller"
       },
-      "CashChannel": {
+      "cashChannel": {
         "teller": true,
         "channel": "Teller",
         "transactionId": "GSA01102",

@@ -112,8 +112,8 @@ final class PetstoreTestSupport implements AutoCloseable {
                 participants.put("goods", Map.of("sku", sku));
             }
             if (java.util.Set.of("addCartItem", "setCartQuantity").contains(service)) agreement.put("quantity", command.get("quantity"));
-            participants.put(service.equals("clearShopCart") ? "Buyer" : "customer", buyer);
-            participants.put(service.equals("clearShopCart") ? "CartClearingAgreement" : "agreement", agreement);
+            participants.put(service.equals("clearShopCart") ? "buyer" : "customer", buyer);
+            participants.put(service.equals("clearShopCart") ? "cartClearingAgreement" : "agreement", agreement);
             return call(service, participants);
         }
         if (java.util.Set.of("payShopOrder", "shipShopOrder", "deliverShopOrder", "cancelUnpaidShopOrder", "cancelPaidShopOrder", "approveShopReturn").contains(service)) {
@@ -130,9 +130,9 @@ final class PetstoreTestSupport implements AutoCloseable {
         if (service.equals("requestShopReturn")) {
             return call(service, Map.of(
                     "AppHeader", Map.of("globalSerialNumber", command.get("requestId")),
-                    "Buyer", Map.of("membershipNumber", command.get("customerId")),
-                    "ShopOrder", Map.of("orderNumber", command.get("orderId")),
-                    "ReturnRequestAgreement", Map.of("reason", command.get("reason"))));
+                    "buyer", Map.of("membershipNumber", command.get("customerId")),
+                    "shopOrder", Map.of("orderNumber", command.get("orderId")),
+                    "returnRequestAgreement", Map.of("reason", command.get("reason"))));
         }
         if (java.util.Set.of("placeShopOrder", "previewShopOrder").contains(service)) return execute(service, purchaseRequest(service, command));
         throw new IllegalArgumentException("No participant fixture mapping for " + service);
@@ -155,13 +155,13 @@ final class PetstoreTestSupport implements AutoCloseable {
     }
 
     JsonNode fund(Session session, String amount) {
-        return call("fundShopWallet", Map.of("Buyer", Map.of("membershipNumber", session.customerId),
-                "WalletFundingAgreement", Map.of("amount", amount)));
+        return call("fundShopWallet", Map.of("buyer", Map.of("membershipNumber", session.customerId),
+                "walletFundingAgreement", Map.of("amount", amount)));
     }
 
     JsonNode receive(String sku, int quantity) {
-        return call("receiveShopStock", Map.of("Goods", Map.of("sku", sku),
-                "StockReceiptAgreement", Map.of("quantity", quantity)));
+        return call("receiveShopStock", Map.of("goods", Map.of("sku", sku),
+                "stockReceiptAgreement", Map.of("quantity", quantity)));
     }
 
     JsonNode customer(Session session) {

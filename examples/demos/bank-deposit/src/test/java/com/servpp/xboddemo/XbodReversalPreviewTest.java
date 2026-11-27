@@ -13,19 +13,19 @@ public class XbodReversalPreviewTest {
             open(demo);
             var paid = demo.call("depositCash", deposit(100));
             demo.call("depositCash", deposit(5));
-            var input = reversal(paid.path("CashDepositAgreement"), 20261007, false);
+            var input = reversal(paid.path("cashDepositAgreement"), 20261007, false);
             var preview = demo.call("previewCashReversal", input);
-            assertEquals(8, preview.path("CashReversalPostingLineArray").size());
-            amount("100", preview.path("DepositPostingTotals").path("debit"));
-            amount("100", preview.path("DepositPostingTotals").path("credit"));
-            amount("105", preview.path("DepositAccount").path("interestBase"));
-            assertFalse(preview.path("CashDepositAgreement").path("reversed").asBoolean());
-            verifyNoReversal(demo, paid.path("CashDepositAgreement").path("depositNumber").asText());
+            assertEquals(8, preview.path("cashReversalPostingLines").size());
+            amount("100", preview.path("depositPostingTotals").path("debit"));
+            amount("100", preview.path("depositPostingTotals").path("credit"));
+            amount("105", preview.path("depositAccount").path("interestBase"));
+            assertFalse(preview.path("cashDepositAgreement").path("reversed").asBoolean());
+            verifyNoReversal(demo, paid.path("cashDepositAgreement").path("depositNumber").asText());
             amount("105", demo.readAccounts()
-                    .path("DepositAccount").path("interestBase"));
+                    .path("depositAccount").path("interestBase"));
             demo.call("reverseCash", input);
             amount("5", demo.readAccounts()
-                    .path("DepositAccount").path("interestBase"));
+                    .path("depositAccount").path("interestBase"));
         }
     }
 
@@ -33,19 +33,19 @@ public class XbodReversalPreviewTest {
         try (var demo = new XbodTestSupport()) {
             open(demo);
             var paid = demo.call("depositCash", deposit(100));
-            var input = reversal(paid.path("CashDepositAgreement"), 20261007, false);
-            input.put("CashDepositAgreement", Map.of("depositNumber", "MISSING"));
+            var input = reversal(paid.path("cashDepositAgreement"), 20261007, false);
+            input.put("cashDepositAgreement", Map.of("depositNumber", "MISSING"));
             assertEquals("PARTICIPANT_NOT_IDENTIFIED", assertThrows(IllegalStateException.class,
                     () -> demo.call("previewCashReversal", input)).getMessage());
-            verifyNoReversal(demo, paid.path("CashDepositAgreement").path("depositNumber").asText());
+            verifyNoReversal(demo, paid.path("cashDepositAgreement").path("depositNumber").asText());
             amount("100", demo.readAccounts()
-                    .path("DepositAccount").path("interestBase"));
+                    .path("depositAccount").path("interestBase"));
         }
     }
 
     private void verifyNoReversal(XbodTestSupport demo, String depositNumber) throws Exception {
-        var original = demo.call("readCashDeposit", Map.of("CashDepositAgreement", Map.of("depositNumber", depositNumber)));
-        assertFalse(original.path("CashDepositAgreement").path("reversed").asBoolean());
+        var original = demo.call("readCashDeposit", Map.of("cashDepositAgreement", Map.of("depositNumber", depositNumber)));
+        assertFalse(original.path("cashDepositAgreement").path("reversed").asBoolean());
         try (var connection = DriverManager.getConnection(System.getProperty("spp.xbod.datasource-url"));
              var statement = connection.createStatement()) {
             for (String table : new String[]{"CASH_REVERSALS", "CASH_REVERSAL_POSTINGS"}) {

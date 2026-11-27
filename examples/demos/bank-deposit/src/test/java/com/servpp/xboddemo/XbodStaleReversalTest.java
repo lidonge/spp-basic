@@ -13,7 +13,7 @@ public class XbodStaleReversalTest {
     private void verify(boolean changedReceipt) throws Exception {
         try (var demo=new XbodTestSupport()) {
             open(demo);var paid=demo.call("depositCash",deposit(100));
-            Object request=demo.request("reverseCash",reversal(paid.path("CashDepositAgreement"),20261007,false));
+            Object request=demo.request("reverseCash",reversal(paid.path("cashDepositAgreement"),20261007,false));
             var prepared=new CountDownLatch(1);var resume=new CountDownLatch(1);var armed=new AtomicBoolean(true);
             var services=com.servpp.service.server.DefaultServiceContainer.getInstance();
             var originalService=services.getService("cboddeposit", "prepareCashReversalPostings");
@@ -34,10 +34,10 @@ public class XbodStaleReversalTest {
                 var attempt=worker.submit(()->demo.execute("reverseCash",request));
                 assertTrue("Reversal reached its prepared boundary",prepared.await(20,TimeUnit.SECONDS));
                 com.fasterxml.jackson.databind.JsonNode later=null;
-                if (changedReceipt) changeStoredReceiptFee(demo,paid.path("CashDepositAgreement").path("depositNumber").asText(),1);
+                if (changedReceipt) changeStoredReceiptFee(demo,paid.path("cashDepositAgreement").path("depositNumber").asText(),1);
                 else {
                     later=demo.call("depositCash",deposit(5));
-                    assertEquals("SUCCEEDED",later.path("CashDepositAgreement").path("resultInfo").path("status").asText());
+                    assertEquals("SUCCEEDED",later.path("cashDepositAgreement").path("resultInfo").path("status").asText());
                 }
                 resume.countDown();
                 boolean partial=changedReceipt && "testing".equals(System.getProperty("spp.environment"));
@@ -47,27 +47,27 @@ public class XbodStaleReversalTest {
                     assertEquals("PERSISTENCE_VERSION_CONFLICT",error.getCause().getMessage());
                     response=demo.mapper.valueToTree(request);
                 } else response=attempt.get(30,TimeUnit.SECONDS);
-                var failed=response.path("CashReversalAgreement").path("resultInfo");
+                var failed=response.path("cashReversalAgreement").path("resultInfo");
                 assertEquals(failed.toString(),"FAILED",failed.path("status").asText());
                 assertEquals(failed.toString(),!partial,failed.path("handled").asBoolean());
                 if (partial) assertEquals("RECOVERY_REQUIRED",failed.path("failure").path("recoveryStatus").asText());
-                amount(changedReceipt ? "100" : "105",demo.readAccounts().path("DepositAccount").path("interestBase"));
-                assertFalse(demo.call("readCashDeposit",Map.of("CashDepositAgreement",Map.of("depositNumber",paid.path("CashDepositAgreement").path("depositNumber").asText()))).path("CashDepositAgreement").path("reversed").asBoolean());
+                amount(changedReceipt ? "100" : "105",demo.readAccounts().path("depositAccount").path("interestBase"));
+                assertFalse(demo.call("readCashDeposit",Map.of("cashDepositAgreement",Map.of("depositNumber",paid.path("cashDepositAgreement").path("depositNumber").asText()))).path("cashDepositAgreement").path("reversed").asBoolean());
                 if (changedReceipt) {
-                    var original=demo.call("readCashDeposit",Map.of("CashDepositAgreement",Map.of("depositNumber",paid.path("CashDepositAgreement").path("depositNumber").asText())));
-                    amount("1",original.path("CashDepositAgreement").path("fee"));
+                    var original=demo.call("readCashDeposit",Map.of("cashDepositAgreement",Map.of("depositNumber",paid.path("cashDepositAgreement").path("depositNumber").asText())));
+                    amount("1",original.path("cashDepositAgreement").path("fee"));
                     if (partial) {
-                        assertEquals("RECONCILIATION_REQUIRED",response.path("CashFailureRecord").path("handlingState").asText());
+                        assertEquals("RECONCILIATION_REQUIRED",response.path("cashFailureRecord").path("handlingState").asText());
                         return;
                     }
-                    changeStoredReceiptFee(demo,paid.path("CashDepositAgreement").path("depositNumber").asText(),0);
+                    changeStoredReceiptFee(demo,paid.path("cashDepositAgreement").path("depositNumber").asText(),0);
                 }
-                var retried=demo.call("reverseCash",reversal(paid.path("CashDepositAgreement"),20261007,false));
-                assertEquals("SUCCEEDED",retried.path("CashReversalAgreement").path("resultInfo").path("status").asText());
-                amount(changedReceipt ? "0" : "5",retried.path("DepositAccount").path("interestBase"));
+                var retried=demo.call("reverseCash",reversal(paid.path("cashDepositAgreement"),20261007,false));
+                assertEquals("SUCCEEDED",retried.path("cashReversalAgreement").path("resultInfo").path("status").asText());
+                amount(changedReceipt ? "0" : "5",retried.path("depositAccount").path("interestBase"));
                 if (!changedReceipt) {
-                var remaining=demo.call("readCashDeposit",Map.of("CashDepositAgreement",Map.of("depositNumber",later.path("CashDepositAgreement").path("depositNumber").asText())));
-                assertEquals(8,remaining.path("DepositPostingLineArray").size());
+                var remaining=demo.call("readCashDeposit",Map.of("cashDepositAgreement",Map.of("depositNumber",later.path("cashDepositAgreement").path("depositNumber").asText())));
+                assertEquals(8,remaining.path("depositPostingLines").size());
                 }
             } finally { resume.countDown();worker.shutdownNow();assertTrue(worker.awaitTermination(5,TimeUnit.SECONDS)); }
         }
@@ -79,7 +79,7 @@ public class XbodStaleReversalTest {
             value->demo.mapper.valueToTree(value).toString(),"xbod_cash_record");
         int changed=0;
         for (var row:store.findAll()) {
-            if (!row.objectType().equals("CashDepositAgreement")) continue;
+            if (!row.objectType().equals("cashDepositAgreement")) continue;
             var payload=(com.fasterxml.jackson.databind.node.ObjectNode)demo.mapper.readTree(row.payloadJson());
             if (!number.equals(payload.path("depositNumber").asText())) continue;
             payload.put("fee",fee);store.save(row.objectType(),row.objectId(),payload);changed++;

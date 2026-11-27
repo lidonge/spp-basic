@@ -17,7 +17,7 @@ public class XbodOriginalPostingIntegrityTest {
         try (var demo = new XbodTestSupport()) {
             open(demo);
             var paid = demo.call("depositCash", deposit(100));
-            String number = paid.path("CashDepositAgreement").path("depositNumber").asText();
+            String number = paid.path("cashDepositAgreement").path("depositNumber").asText();
             String url = System.getProperty("spp.xbod.datasource-url");
             // Deliberately damage the stored fixture in both persistence representations.
             try (var connection = DriverManager.getConnection(url); var statement = connection.createStatement()) {
@@ -30,7 +30,7 @@ public class XbodOriginalPostingIntegrityTest {
                     value -> demo.mapper.valueToTree(value).toString(), "xbod_cash_record");
             int damaged = 0;
             for (var snapshot : snapshots.findAll()) {
-                if (!snapshot.objectType().equals("DepositPostingLine") && !snapshot.objectType().endsWith(".DepositPostingLine")) continue;
+                if (!snapshot.objectType().equals("depositPostingLine") && !snapshot.objectType().endsWith(".DepositPostingLine")) continue;
                 var payload = (ObjectNode) demo.mapper.readTree(snapshot.payloadJson());
                 if (payload.path("slot").asInt() != 1) continue;
                 assertEquals(number, payload.path("deposit").path("depositNumber").asText());
@@ -45,15 +45,15 @@ public class XbodOriginalPostingIntegrityTest {
                 damaged++;
             }
             assertEquals(1, damaged);
-            var stored = demo.call("readCashDeposit", Map.of("CashDepositAgreement", Map.of("depositNumber", number)));
-            assertEquals(missing ? 7 : 8, stored.path("DepositPostingLineArray").size());
+            var stored = demo.call("readCashDeposit", Map.of("cashDepositAgreement", Map.of("depositNumber", number)));
+            assertEquals(missing ? 7 : 8, stored.path("depositPostingLines").size());
             var failure = assertThrows(IllegalStateException.class,
-                    () -> demo.call("reverseCash", reversal(paid.path("CashDepositAgreement"), 20261007, false)));
+                    () -> demo.call("reverseCash", reversal(paid.path("cashDepositAgreement"), 20261007, false)));
             assertEquals(missing ? "INVALID_ORIGINAL_DEPOSIT_POSTINGS" : "ORIGINAL_DEPOSIT_LEDGER_EVIDENCE_MISMATCH", failure.getMessage());
-            amount("100", demo.readAccounts().path("DepositAccount").path("interestBase"));
-            amount("-100", demo.readAccounts().path("CashSettlementAccount").path("balance"));
-            assertFalse(demo.call("readCashDeposit", Map.of("CashDepositAgreement",
-                    Map.of("depositNumber", number))).path("CashDepositAgreement").path("reversed").asBoolean());
+            amount("100", demo.readAccounts().path("depositAccount").path("interestBase"));
+            amount("-100", demo.readAccounts().path("cashSettlementAccount").path("balance"));
+            assertFalse(demo.call("readCashDeposit", Map.of("cashDepositAgreement",
+                    Map.of("depositNumber", number))).path("cashDepositAgreement").path("reversed").asBoolean());
             try (var connection = DriverManager.getConnection(url); var statement = connection.createStatement();
                  var rows = statement.executeQuery("SELECT COUNT(*) FROM CASH_REVERSAL_POSTINGS")) {
                 assertTrue(rows.next()); assertEquals(0, rows.getInt(1));

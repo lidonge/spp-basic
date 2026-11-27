@@ -11,8 +11,8 @@ public class XbodAccrualFailureTest {
     @Test public void nonzeroAccrualRespectsLocalRollbackAndSplitRecoveryBoundary() throws Exception {
         try(var demo=new XbodTestSupport()) {
             open(demo);demo.call("depositCash",deposit(100));
-            var input=deposit(50);input.put("BusinessDay",Map.of("date",20261008));
-            input.put("DepositRequest",Map.of("amount",50,"currency","CNY","valueDate",20261008));
+            var input=deposit(50);input.put("businessDay",Map.of("date",20261008));
+            input.put("depositRequest",Map.of("amount",50,"currency","CNY","valueDate",20261008));
             Object request=demo.request("depositCash",input);
             boolean split="testing".equals(System.getProperty("spp.environment"));
             try(var fault=ExampleServiceFaults.activate("cboddeposit.insertCashDepositAgreement","before")) {
@@ -21,13 +21,13 @@ public class XbodAccrualFailureTest {
                 fault.verifyTriggered();
             }
             var failed=demo.mapper.valueToTree(request);
-            var info=failed.path("CashDepositAgreement").path("resultInfo");
+            var info=failed.path("cashDepositAgreement").path("resultInfo");
             assertEquals("FAILED",info.path("status").asText());assertEquals(!split,info.path("handled").asBoolean());
             assertEquals(split ? "RECOVERY_REQUIRED" : "ROLLED_BACK",info.path("failure").path("recoveryStatus").asText());
-            verifyStoredFailure(demo,failed,"CashDepositAgreement");
-            amount("100",demo.readAccounts().path("DepositAccount").path("interestBase"));
-            amount("-100",demo.readAccounts().path("CashSettlementAccount").path("balance"));
-            var accrual=demo.readAccounts().path("DepositAccrualState");
+            verifyStoredFailure(demo,failed,"cashDepositAgreement");
+            amount("100",demo.readAccounts().path("depositAccount").path("interestBase"));
+            amount("-100",demo.readAccounts().path("cashSettlementAccount").path("balance"));
+            var accrual=demo.readAccounts().path("depositAccrualState");
             amount(split ? "100" : "0",accrual.path("normalProduct"));
             assertEquals(split ? 20261008 : 20261007,accrual.path("lastProductDate").asInt());
             try(var connection=DriverManager.getConnection(System.getProperty("spp.xbod.datasource-url"));var statement=connection.createStatement()) {
@@ -36,9 +36,9 @@ public class XbodAccrualFailureTest {
                 }
             }
             if(!split) {
-                var retried=demo.call("depositCash",input);assertEquals("SUCCEEDED",retried.path("CashDepositAgreement").path("resultInfo").path("status").asText());
-                amount("150",retried.path("DepositAccount").path("interestBase"));
-                amount("100",demo.readAccounts().path("DepositAccrualState").path("normalProduct"));
+                var retried=demo.call("depositCash",input);assertEquals("SUCCEEDED",retried.path("cashDepositAgreement").path("resultInfo").path("status").asText());
+                amount("150",retried.path("depositAccount").path("interestBase"));
+                amount("100",demo.readAccounts().path("depositAccrualState").path("normalProduct"));
             }
         }
     }

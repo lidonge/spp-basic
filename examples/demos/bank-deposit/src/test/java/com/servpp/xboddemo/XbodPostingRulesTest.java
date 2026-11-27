@@ -24,19 +24,19 @@ public class XbodPostingRulesTest {
             assertEquals(6, cases.size());
             for (var row : cases) {
                 var request = demo.mapper.convertValue(row.path("request"), Map.class);
-                var plan = demo.call("previewDeposit", Map.of("DepositRequest", request,
-                        "DepositAccount", demo.mapper.convertValue(row.path("account"), Map.class)));
-                var classified = demo.call("previewDepositAllocation", Map.of("DepositRequest", request,
-                        "DepositPlan", demo.mapper.convertValue(plan.path("DepositPlan"), Map.class)));
-                var accounting = demo.mapper.convertValue(classified.path("DepositAccounting"), Map.class);
+                var plan = demo.call("previewDeposit", Map.of("depositRequest", request,
+                        "depositAccount", demo.mapper.convertValue(row.path("account"), Map.class)));
+                var classified = demo.call("previewDepositAllocation", Map.of("depositRequest", request,
+                        "depositPlan", demo.mapper.convertValue(plan.path("depositPlan"), Map.class)));
+                var accounting = demo.mapper.convertValue(classified.path("depositAccounting"), Map.class);
 
                 var fee = Map.of("fee", new BigDecimal(row.path("fee").asText()));
                 var lines = lines();
 
-                var result = demo.call("previewDepositPostings", Map.of("DepositAccounting", accounting,
-                        "DepositFeePlan", fee, "DepositPostingLineArray", lines));
+                var result = demo.call("previewDepositPostings", Map.of("depositAccounting", accounting,
+                        "depositFeePlan", fee, "depositPostingLines", lines));
                 for (int index = 0; index < 8; index++) {
-                    var line = result.path("DepositPostingLineArray").get(index);
+                    var line = result.path("depositPostingLines").get(index);
                     assertEquals(row.path("name").asText() + " slot " + (index + 1), 0,
                             new BigDecimal(row.path("expected").get(index).asText()).compareTo(line.path("amount").decimalValue()));
                     assertEquals(lines.get(index).get("subject"), line.path("subject").asText());
@@ -44,7 +44,7 @@ public class XbodPostingRulesTest {
                     assertEquals(index + 1, line.path("slot").asInt());
                 }
                 for (String side : List.of("debit", "credit")) assertEquals(row.path("name").asText(), 0,
-                        new BigDecimal(row.path("total").asText()).compareTo(result.path("DepositPostingTotals").path(side).decimalValue()));
+                        new BigDecimal(row.path("total").asText()).compareTo(result.path("depositPostingTotals").path(side).decimalValue()));
 
             }
         }
@@ -55,9 +55,9 @@ public class XbodPostingRulesTest {
             for (String invalidField : List.of("side", "subject")) {
                 var lines = lines();
                 lines.get(0).put(invalidField, invalidField.equals("side") ? "Credit" : null);
-                var request = demo.request("previewDepositPostings", Map.of("DepositPostingLineArray", lines));
+                var request = demo.request("previewDepositPostings", Map.of("depositPostingLines", lines));
                 if (invalidField.equals("subject")) {
-                    var participants = (List<?>) request.getClass().getMethod("getDepositPostingLineArray").invoke(request);
+                    var participants = (List<?>) request.getClass().getMethod("getDepositPostingLines").invoke(request);
                     participants.get(0).getClass().getMethod("setSubject", String.class).invoke(participants.get(0), (Object) null);
                 }
                 var before = demo.mapper.valueToTree(request);
@@ -71,9 +71,9 @@ public class XbodPostingRulesTest {
     @Test public void rejectsForgedTotalsAndMissingAllocation() throws Exception {
         try (var demo = new XbodTestSupport()) {
             assertEquals("DEPOSIT_ACCOUNTING_TOTAL_MISMATCH", assertThrows(IllegalStateException.class,
-                    () -> demo.call("previewDepositPostings", Map.of("DepositAccounting", Map.of("transactionAmount", 10)))).getMessage());
+                    () -> demo.call("previewDepositPostings", Map.of("depositAccounting", Map.of("transactionAmount", 10)))).getMessage());
             assertEquals("DEPOSIT_ACCOUNTING_NOT_BALANCED", assertThrows(IllegalStateException.class,
-                    () -> demo.call("previewDepositPostings", Map.of("DepositAccounting", Map.of("transactionAmount", 10, "fundingTotal", 10)))).getMessage());
+                    () -> demo.call("previewDepositPostings", Map.of("depositAccounting", Map.of("transactionAmount", 10, "fundingTotal", 10)))).getMessage());
         }
     }
 }
