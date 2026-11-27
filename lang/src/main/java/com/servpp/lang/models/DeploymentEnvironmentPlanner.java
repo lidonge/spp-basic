@@ -7,6 +7,24 @@ import java.util.*;
 /** Resolves APP environment contracts against the selected PHY, before service binding. */
 public final class DeploymentEnvironmentPlanner {
     private DeploymentEnvironmentPlanner() { }
+    /** A fieldless role uses the provider's facts, including explicit key renames. */
+    public static RolePlay inheritPlayFields(SppDomain domain, RolePlay play) {
+        var owner = domain.getProject() == null ? null : domain.getProject().getDomain(play.providerDomain());
+        if (owner == null || !(owner.getSppClass(play.providerType()) instanceof SppClass player)
+                || !(domain.getSppClass(play.role()) instanceof SppClass role) || player == role
+                || !role.getSppFieldList().isEmpty()) return play;
+        var mappings = new java.util.LinkedHashMap<>(play.fields());
+        for (var field : player.getSppFieldList()) {
+            if (!mappings.containsValue(field.getName())) mappings.putIfAbsent(field.getName(), field.getName());
+        }
+        mappings.forEach((target, source) -> {
+            var field = player.getField(source);
+            if (field != null) role.addField(field.inheritedAs(target));
+        });
+        return new RolePlay(play.role(), play.providerDomain(), play.providerType(),
+                mappings, play.codeTables());
+    }
+
     public static List<String> prepare(SppProject project) {
         List<String> errors = new ArrayList<>();
         String selected = System.getProperty("spp.environment", "develop");

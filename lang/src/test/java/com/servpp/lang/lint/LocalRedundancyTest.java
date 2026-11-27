@@ -20,7 +20,7 @@ public class LocalRedundancyTest {
                 + "Role PersonView { String name; int age; } "
                 + "take Person as PersonView { int age = age; String name = name; }"));
         var warnings = run(sources);
-        assertEquals(List.of("SPP_REDUNDANT_COPY_TYPE", "SPP_REDUNDANT_COPY_TYPE", "SPP_REDUNDANT_TAKE_MAP"), warnings);
+        assertEquals(List.of("SPP_REDUNDANT_COPY_TYPE", "SPP_REDUNDANT_TAKE_MAP"), warnings);
     }
 
     @Test public void differentFieldTypesAndExplicitDifferentMappingsAreLegitimate() {

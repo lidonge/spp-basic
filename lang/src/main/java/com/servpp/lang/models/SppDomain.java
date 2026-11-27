@@ -347,9 +347,8 @@ public class SppDomain {
                 } else if(call.getCallee()!=null) {
                     if(call.isImplicitArguments() && call.getSppParameterList().isEmpty()) {
                         for(var parameter:call.getCallee().getServiceBody().getSppLocalVarList()) {
-                            var matches=owner.getServiceBody().getSppLocalVarList().stream().filter(p ->
-                                    p.getType().getName().equals(parameter.getType().getName())
-                                    && p.getArrayDimension()==parameter.getArrayDimension()).toList();
+                            var matches = SharedPlayerBinding.candidates(this,
+                                    owner.getServiceBody().getSppLocalVarList(), parameter);
                             if(matches.size()!=1) errors.add("Participant binding missing or ambiguous in " + owner.getFuncName()
                                     + " calling " + call.getCallee().getFuncName() + ": " + parameter.getType().getName());
                             else call.addParameter(new SppParameter(matches.get(0).getType(), matches.get(0).getName()).setArrayDimension(matches.get(0).getArrayDimension()));
@@ -362,10 +361,12 @@ public class SppDomain {
                         if (actual.getType() instanceof SppClass model && model.isSystemBuiltin())
                             errors.add("System result participants cannot be passed to atomic services.");
                         var formal = call.getCallee().getServiceBody().getSppLocalVarList().get(index);
-                        if (actual.getType() == null || !actual.getType().getName().equals(formal.getType().getName())
-                                || actual.getArrayDimension() != formal.getArrayDimension())
-                            errors.add("Participant type mismatch in " + owner.getFuncName() + " calling " + call.getCallee().getFuncName()
-                                    + " at argument " + (index + 1));
+                        if (!SharedPlayerBinding.exact(actual, formal)) {
+                            var binding = SharedPlayerBinding.resolve(this, actual, formal);
+                            if (binding == null) errors.add("Participant type mismatch in " + owner.getFuncName()
+                                    + " calling " + call.getCallee().getFuncName() + " at argument " + (index + 1));
+                            else call.getSharedPlayerBindings().put(index, binding);
+                        }
                     }
                     if(call.getGuardStatements()!=null && call.getCallee().getServiceType()!=IConstance.ServiceType.check)
                         errors.add("Only check/identify can guard a block: " + call.getCallee().getFuncName());
@@ -10066,7 +10067,35 @@ public class SppDomain {
         return errors;
     }
 
+    private void inheritTakeFields() {
+        var mappers = mapsOfClass.values().stream().filter(SppRoleMapper.class::isInstance)
+                .map(SppRoleMapper.class::cast).toList();
+        boolean changed;
+        do {
+            changed = false;
+            for (var mapper : mappers) {
+                var role = mapper.getRole();
+                if (!role.isReal() || !role.getSppFieldList().isEmpty()
+                        || mapper.getDeclaredPerformers().size() != 1
+                        || mappers.stream().filter(other -> other.getRole() == role).count() != 1) continue;
+                var player = mapper.getDeclaredPerformers().get(0);
+                if (player == role || !player.isReal()) continue;
+                Map<String, String> mappings = new HashMap<>();
+                for (var field : mapper.getSppFieldList()) {
+                    if (field instanceof SppRoleField mapping)
+                        mappings.put(mapping.getEntityName(), mapping.getName());
+                }
+                for (var field : player.getSppFieldList()) {
+                    role.addField(field.inheritedAs(mappings.getOrDefault(field.getName(), field.getName())));
+                    changed = true;
+                }
+                mapper.setMapSame(true);
+            }
+        } while (changed);
+    }
+
     public void dealEntityToRoleMaps() {
+        inheritTakeFields();
         prepareRoleCompositions();
         Map<String, SppCompilationUnit> sppClassMap = getMapsOfClass();
         for (SppCompilationUnit sppClass : sppClassMap.values()) {

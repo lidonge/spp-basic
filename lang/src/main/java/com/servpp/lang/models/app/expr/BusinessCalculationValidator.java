@@ -196,20 +196,23 @@ public final class BusinessCalculationValidator {
         }
         if (call.implicit && call.arguments.isEmpty()) {
             for (var parameter : target.getServiceBody().getSppLocalVarList()) {
-                var matches = service.getServiceBody().getSppLocalVarList().stream()
-                        .filter(p -> p.getType().getName().equals(parameter.getType().getName())
-                            && p.getArrayDimension() == parameter.getArrayDimension()).toList();
+                var matches = SharedPlayerBinding.candidates(call.domain,
+                        service.getServiceBody().getSppLocalVarList(), parameter);
                 if (matches.size() != 1) { error("Calculation participant binding missing or ambiguous: " + parameter.getType().getName()); return; }
                 call.arguments.add(matches.get(0).getName());
             }
         }
         if (call.arguments.size() != target.getServiceBody().getSppLocalVarList().size()) { error("Calculation participant count mismatch: " + call.name); return; }
         call.resolvedArguments.clear();
+        call.roleBindings.clear();
         for (int i=0; i<call.arguments.size(); i++) {
             String path = call.arguments.get(i);
             var actual = resolve(path); var expected = target.getServiceBody().getSppLocalVarList().get(i);
-            if (actual == null || !actual.getType().getName().equals(expected.getType().getName())
-                    || actual.getArrayDimension() != expected.getArrayDimension()) error("Calculation participant mismatch: " + call.arguments.get(i));
+            if (!SharedPlayerBinding.exact(actual, expected)) {
+                var binding = SharedPlayerBinding.resolve(call.domain, actual, expected);
+                if (binding == null) error("Calculation participant mismatch: " + path);
+                else call.roleBindings.put(i, binding);
+            }
             var reference = new CalculationReference(); reference.setValue(path); reference.field = actual;
             reference.local = lookupLocal(path) != null; reference.root = reference.local ? lookupLocal(path) : service.getLocalVar(path.split("\\.")[0]);
             if (actual != null) reference.setReturnType(actual.getType());

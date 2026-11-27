@@ -15,17 +15,17 @@ public class SameDomainRoleGenerationTest {
         Files.writeString(source.resolve("ops.spp"), """
                 domain ops;
                 Entity Operator { String operatorNumber; String operatorName; }
-                Role Registrar { String operatorNumber; String operatorName; }
-                Role Releaser { String operatorNumber; String operatorName; }
-                Scenario serial readOperators(Registrar registrar, Releaser releaser) {
-                    findRegistrar by Registrar.operatorNumber = "R1";
-                    findReleaser by Releaser.operatorNumber = "R2";
+                Role Registrar short registrar;
+                Role Releaser short releaser;
+                Scenario serial readOperators(Registrar, Releaser) {
+                    findRegistrar by registrar.operatorNumber = "R1";
+                    findReleaser by releaser.operatorNumber = "R2";
                 }
                 """);
         Files.writeString(source.resolve("ops.app"), """
                 domain ops;
-                play Registrar by ops.Operator { operatorNumber = operatorNumber; operatorName = operatorName; }
-                play Releaser by ops.Operator { operatorNumber = operatorNumber; operatorName = operatorName; }
+                play Registrar by ops.Operator { operatorNumber = operatorNumber; }
+                play Releaser by ops.Operator { operatorNumber = operatorNumber; }
                 tables entities { table OPERATORS(Operator) { primarykey(Operator.operatorNumber); } }
                 scope { local {} }
                 """);
@@ -52,5 +52,6 @@ public class SameDomainRoleGenerationTest {
         String query = Files.readString(javaOutput.resolve("example/ops/service/SimpleFindRegistrar.java"));
         assertTrue(query, query.contains("ParticipantRoleQueries.Play(\"ops.findOperator\", example.ops.model.Operator.class"));
         assertTrue(query, query.contains("Map.entry(\"operatorNumber\", \"operatorNumber\")"));
+        assertTrue(query, query.contains("Map.entry(\"operatorName\", \"operatorName\")"));
     }
 }

@@ -39,13 +39,21 @@ public final class LocalRedundancy {
 
     private static void checkCopiedTypes(List<RedundancyLint.Source> sources, RedundancyLint.Reporter reporter) {
         Map<Map<String, String>, SeenType> seen = new HashMap<>();
+        Set<String> played = new HashSet<>();
+        for (var source : sources) walk(source.tree(), node -> {
+            if (node instanceof SppParser.ActasContext take)
+                played.add(take.Identifier(take.Identifier().size() - 1).getText());
+            else if (node instanceof com.servpp.lang.antlr.AppParser.RolePlayContext play)
+                played.add(play.role.getText());
+        });
         List<DeclaredType> declarations = new ArrayList<>();
         for (RedundancyLint.Source source : sources) {
             if (!(source.tree() instanceof SppParser.ProgramContext program)) continue;
             walk(program, node -> {
                 if (node instanceof SppParser.EntityContext entity && entity.Identifier() != null)
                     declarations.add(new DeclaredType(source, entity.Identifier().getSymbol(), fields(entity.entityBody())));
-                else if (node instanceof SppParser.RoleContext role && role.getStart().getText().equals("Role"))
+                else if (node instanceof SppParser.RoleContext role && role.getStart().getText().equals("Role")
+                        && !played.contains(role.Identifier().getText()))
                     declarations.add(new DeclaredType(source, role.Identifier().getSymbol(), fields(role.roleBody())));
             });
         }
@@ -217,7 +225,7 @@ public final class LocalRedundancy {
                     String type = parameter.roletype().Identifier() == null ? "" : parameter.roletype().Identifier().getText();
                     boolean array = parameter.roletype().getText().contains("[");
                     if (type.isEmpty() || array) continue;
-                    String name = parameter.Identifier() == null ? type : parameter.Identifier().getText();
+                    String name = com.servpp.lang.ParticipantNames.bindingName(parameter);
                     participants.put(name, type);
                 } else if (parameter.type() != null && parameter.type().primitiveType() != null
                         && parameter.type().primitiveType().getText().equals("String")

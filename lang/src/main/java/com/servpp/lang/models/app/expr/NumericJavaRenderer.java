@@ -1,6 +1,7 @@
 package com.servpp.lang.models.app.expr;
 
 import com.servpp.lang.general.NameUtil;
+import com.servpp.lang.models.SharedPlayerBinding;
 import com.servpp.lang.models.SppClass;
 import com.servpp.lang.models.SppEnum;
 import com.servpp.lang.models.SppEnumItem;
@@ -22,7 +23,7 @@ public final class NumericJavaRenderer {
         if (statement instanceof QuantumTransferStatement transfer) { return transfer(transfer); }
         if (statement instanceof CalculationServiceCall call) {
             String type = call.callee.getBasePackage() + "." + call.callee.getDomainName() + ".handler." + call.callee.getName();
-            String args = call.resolvedArguments.stream().map(reference -> {
+            var args = call.resolvedArguments.stream().map(reference -> {
                 String value = expression(reference);
                 if (reference.field != null && reference.field.isParticipantCollection())
                     return "com.servpp.service.runtime.ParticipantCollections.list(" + value + ")";
@@ -31,9 +32,11 @@ public final class NumericJavaRenderer {
                             + "[]) com.servpp.service.runtime.ParticipantCollections.array(" + value + ", "
                             + reference.field.getType().getPackageName() + "." + reference.field.getJavaType() + ".class)";
                 return value;
-            }).collect(java.util.stream.Collectors.joining(","));
-            return "((" + type + ") com.servpp.service.server.DefaultServiceContainer.getInstance().getService(\""
-                    + service.getDomainName() + "\", \"" + call.name + "\"))." + call.name + "(" + args + ");";
+            }).toList();
+            String receiver = "((" + type + ") com.servpp.service.server.DefaultServiceContainer.getInstance().getService(\""
+                    + service.getDomainName() + "\", \"" + call.name + "\"))." + call.name;
+            return SharedPlayerBinding.invocation(receiver, args, call.callee.getServiceBody().getSppLocalVarList(),
+                    call.roleBindings) + ";";
         }
         if (statement instanceof CalculationControl control) { return control(control); }
         if (statement instanceof CalculationRule rule) {

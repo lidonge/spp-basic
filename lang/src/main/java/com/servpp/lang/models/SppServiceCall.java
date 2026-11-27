@@ -138,6 +138,9 @@ public class SppServiceCall extends ServiceBaseBody implements IServiceBodyState
     public SppParameter getParameter(String name){
         return sppParameterHashMap.get(name);
     }
+    private final java.util.Map<Integer, SharedPlayerBinding> sharedPlayerBindings = new java.util.LinkedHashMap<>();
+    public java.util.Map<Integer, SharedPlayerBinding> getSharedPlayerBindings() { return sharedPlayerBindings; }
+
     public SppService getCallee() {
         return callee;
     }

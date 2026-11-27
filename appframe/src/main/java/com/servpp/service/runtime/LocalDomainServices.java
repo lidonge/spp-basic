@@ -31,6 +31,77 @@ public final class LocalDomainServices {
         var shared = PROJECTIONS.get();
         return () -> { var previous = PROJECTIONS.get(); PROJECTIONS.set(shared); try { DomainServiceRouter.executeScope(action); } finally { PROJECTIONS.set(previous); } };
     }
+    /** A call-site view of a participant with a compiler-validated target-to-source fact map. */
+    public record RoleArgument(Class<?> type, Class<?> sourceType, Map<String, String> fields) { }
+
+    public static void withRoleArguments(Object[] arguments, RoleArgument[] roles, java.util.function.Consumer<Object[]> call) {
+        Object[] actual = arguments.clone();
+        var original = new java.util.IdentityHashMap<Object, Object>();
+        for (int index = 0; index < actual.length; index++) {
+            var role = roles[index];
+            if (role == null || arguments[index] == null) continue;
+            if (arguments[index] instanceof List<?> list) {
+                List<Object> members = new ArrayList<>();
+                for (Object participant : list) members.add(projectArgument(participant, role, original));
+                actual[index] = members;
+            } else actual[index] = projectArgument(arguments[index], role, original);
+        }
+        com.servpp.service.repository.TransactionQueryReads.project(arguments, actual, () -> call.accept(actual));
+        for (int index = 0; index < actual.length; index++) {
+            var role = roles[index];
+            if (role == null || actual[index] == null) continue;
+            if (arguments[index] instanceof List<?> list && actual[index] instanceof List<?> members) {
+                mergeRoleArgumentList(list, members, role, original);
+            } else {
+                mergeRoleArgument(arguments[index], actual[index], role);
+            }
+        }
+    }
+
+    private static Object projectArgument(Object source, RoleArgument role, Map<Object, Object> originals) {
+        if (source == null) return null;
+        var values = new LinkedHashMap<String, Object>();
+        role.fields().forEach((target, field) -> values.put(target, read(source, field)));
+        Object target = MAPPER.convertValue(values, role.type());
+        projectMetadata(source, target);
+        originals.put(target, source);
+        return target;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static void mergeRoleArgumentList(List<?> original, List<?> members, RoleArgument role,
+                                              Map<Object, Object> originals) {
+        var target = (List<Object>) original;
+        var output = new ArrayList<>();
+        for (Object member : members) {
+            if (member == null) { output.add(null); continue; }
+            Object destination = originals.get(member);
+            if (destination == null) {
+                destination = MAPPER.convertValue(Map.of(), role.sourceType());
+                originals.put(member, destination);
+            }
+            mergeRoleArgument(destination, member, role);
+            output.add(destination);
+        }
+        if (target.size() != output.size() || java.util.stream.IntStream.range(0, target.size())
+                .anyMatch(index -> target.get(index) != output.get(index))) {
+            target.clear();
+            target.addAll(output);
+        }
+    }
+
+    private static void mergeRoleArgument(Object target, Object source, RoleArgument role) {
+        var changed = new LinkedHashMap<String, Object>();
+        role.fields().forEach((field, original) -> {
+            Object value = read(source, field);
+            if (!java.util.Objects.deepEquals(value, read(target, original))) changed.put(original, value);
+        });
+        if (!changed.isEmpty())
+            copyFacts(target, changed, target.getClass(), changed.keySet().toArray(String[]::new), new String[0], false, false);
+        com.servpp.service.repository.RepositoryParticipantSnapshots.transfer(source, target);
+        ParticipantIdentity.restore(target, ParticipantIdentity.snapshot(source));
+    }
+
     static Object roleView(Object participant, Class<?> type) {
         var views = PROJECTIONS.get().computeIfAbsent(participant, ignored -> new java.util.concurrent.ConcurrentHashMap<>());
         return views.computeIfAbsent("roleView:" + type.getName(), ignored -> {

@@ -73,6 +73,17 @@ public class SppField extends SppLocalVar {
         return field;
     }
 
+    SppField inheritedAs(String name) {
+        try {
+            var field = (SppField) clone();
+            field.setName(name);
+            field.setInheritedThroughTakeAll(true);
+            return field;
+        } catch (CloneNotSupportedException failure) {
+            throw new IllegalStateException(failure);
+        }
+    }
+
     public SppClass getParent() {
         return parent;
     }

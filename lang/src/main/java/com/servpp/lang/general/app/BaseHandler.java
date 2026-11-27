@@ -310,8 +310,10 @@ public abstract class BaseHandler implements IHeaderHandler, IPrimaryHandler,
             if (fields.putIfAbsent(source, target) != null || !targets.add(target))
                 logSppError(field, "Duplicate APP play field mapping " + source + " = " + target);
         }
-        getCurrentRuleBlock().getRolePlays().add(new com.servpp.lang.models.app.RolePlay(
-                ctx.role.getText(), ctx.providerDomain.getText(), ctx.providerType.getText(), fields, tables));
+        var play = new com.servpp.lang.models.app.RolePlay(
+                ctx.role.getText(), ctx.providerDomain.getText(), ctx.providerType.getText(), fields, tables);
+        getCurrentRuleBlock().getRolePlays().add(
+                com.servpp.lang.models.DeploymentEnvironmentPlanner.inheritPlayFields(getSppDomian(), play));
     }
     @Override public void enterPlayCodeEntry(AppParser.PlayCodeEntryContext ctx) { }
     @Override public void exitPlayCodeEntry(AppParser.PlayCodeEntryContext ctx) { }

@@ -11,6 +11,7 @@ public final class CalculationServiceCall implements IJavaStatement {
     public final boolean implicit;
     public final List<String> arguments = new ArrayList<>();
     public final List<CalculationReference> resolvedArguments = new ArrayList<>();
+    public final Map<Integer, SharedPlayerBinding> roleBindings = new LinkedHashMap<>();
     public SppService callee;
     private IContainer parent;
     public CalculationServiceCall(String sourceLocation, String name, SppDomain domain, boolean implicit, List<String> arguments) {

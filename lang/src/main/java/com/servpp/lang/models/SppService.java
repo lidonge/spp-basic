@@ -658,7 +658,10 @@ public class SppService extends SppClass{
     }
 
     private String scenarioInvocation(SppServiceCall call) {
-        String value=call.getCallee().getFuncName() + "." + call.getCallee().getFuncName() + "(" + joinScenarioArguments(call) + ")";
+        var callee = call.getCallee();
+        String value = SharedPlayerBinding.invocation(callee.getFuncName() + "." + callee.getFuncName(),
+                call.getSppParameterList().stream().map(SppParameter::getNameCall).toList(),
+                callee.getServiceBody().getSppLocalVarList(), call.getSharedPlayerBindings());
         value = transactionQueryInvocation(call, value);
         if (call.getResultTarget()!=null) {
             SppLocalVar result=call.getCallee().getReturns().getSppLocalVarList().get(0);
