@@ -10152,12 +10152,24 @@ public class SppDomain {
 
     public void dealEntityToRoleMaps() {
         var mappers = mapsOfClass.values().stream().filter(SppRoleMapper.class::isInstance)
-                .map(SppRoleMapper.class::cast).toList();
-        var fieldless = mappers.stream().filter(mapper -> mapper.getRole().isReal()
-                && mapper.getRole().getSppFieldList().isEmpty()
-                && mapper.getDeclaredPerformers().size() == 1
-                && mappers.stream().filter(other -> other.getRole() == mapper.getRole()).count() == 1)
-                .collect(java.util.stream.Collectors.toSet());
+                .map(SppRoleMapper.class::cast)
+                .sorted(java.util.Comparator.comparingLong(SppRoleMapper::getSequence)).toList();
+        // A fieldless role takes the facts of its player: the first take, or the APP play that replaces it.
+        // Further takes only map their own sources onto those facts and never add facts of their own.
+        var fieldless = new java.util.HashSet<SppRoleMapper>();
+        var followers = new java.util.HashSet<SppRoleMapper>();
+        var inheriting = new java.util.HashSet<SppClass>();
+        var seen = new java.util.HashSet<SppClass>();
+        for (var mapper : mappers) {
+            var role = mapper.getRole();
+            if (!seen.add(role)) {
+                if (inheriting.contains(role)) followers.add(mapper);
+            } else if (role.isReal() && role.getSppFieldList().isEmpty()
+                    && mapper.getDeclaredPerformers().size() == 1) {
+                fieldless.add(mapper);
+                inheriting.add(role);
+            }
+        }
         boolean changed;
         do {
             changed = false;
@@ -10178,9 +10190,10 @@ public class SppDomain {
                             if (role.getField(name) == null) role.addField(field.inheritedAs(name));
                         }
                         mapper.setMapSame(true);
+                        role.setRoleFieldsFromTake(true);
                     }
                 }
-                takeAll(mapper, entityToRole);
+                if (!followers.contains(mapper)) takeAll(mapper, entityToRole);
                 changed |= before != role.getSppFieldList().size();
             }
         } while (changed);

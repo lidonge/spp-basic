@@ -11,11 +11,21 @@ public final class DeploymentEnvironmentPlanner {
     public static RolePlay inheritPlayFields(SppDomain domain, RolePlay play) {
         var owner = domain.getProject() == null ? null : domain.getProject().getDomain(play.providerDomain());
         if (owner == null || !(owner.getSppClass(play.providerType()) instanceof SppClass player)
-                || !(domain.getSppClass(play.role()) instanceof SppClass role) || player == role
-                || !role.getSppFieldList().isEmpty()) return play;
+                || !(domain.getSppClass(play.role()) instanceof SppClass role) || player == role) return play;
+        // Facts taken provisionally from the first take give way to the player's: the play names the player.
+        if (role.isRoleFieldsFromTake()) {
+            role.clearFields();
+            role.setRoleFieldsFromTake(false);
+        } else if (!role.getSppFieldList().isEmpty()) return play;
+        var renames = new HashMap<String, String>();
+        for (var unit : domain.getMapsOfClass().values())
+            if (unit instanceof SppRoleMapper take && take.getRole() == role && take.getDeclaredPerformers().contains(player))
+                for (var field : take.getSppFieldList())
+                    if (field instanceof SppRoleField mapping) renames.put(mapping.getEntityName(), mapping.getName());
         var mappings = new java.util.LinkedHashMap<>(play.fields());
         for (var field : player.getSppFieldList()) {
-            if (!mappings.containsValue(field.getName())) mappings.putIfAbsent(field.getName(), field.getName());
+            if (!mappings.containsValue(field.getName()))
+                mappings.putIfAbsent(renames.getOrDefault(field.getName(), field.getName()), field.getName());
         }
         mappings.forEach((target, source) -> {
             var field = player.getField(source);

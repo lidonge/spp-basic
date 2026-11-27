@@ -110,6 +110,16 @@ public class SppClass extends SppCompilationUnit implements INamedObject {
         return null;
     }
 
+    private boolean roleFieldsFromTake;
+    /** True while a fieldless role's facts are provisionally those of its first take, before APP names a player. */
+    public boolean isRoleFieldsFromTake() { return roleFieldsFromTake; }
+    public void setRoleFieldsFromTake(boolean value) { roleFieldsFromTake = value; }
+
+    public void clearFields() {
+        sppFieldMap.clear();
+        sppFieldList.clear();
+    }
+
     public SppField getField(String fieldName) {
         SppField field = sppFieldMap.get(fieldName);
         if (field == null) for (SppField candidate : sppFieldList)

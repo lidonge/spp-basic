@@ -10,6 +10,10 @@ import java.util.List;
  * @author lidong@date 2023-11-03@version 1.0
  */
 public class SppRoleMapper extends SppService{
+    private static final java.util.concurrent.atomic.AtomicLong SEQUENCE = new java.util.concurrent.atomic.AtomicLong();
+    private final long sequence = SEQUENCE.getAndIncrement();
+    /** Declaration order of takes; the first take of a role names its player when no APP play does. */
+    public long getSequence() { return sequence; }
     SppClass role;
     List<SppClass> entities;
     private final List<SppClass> declaredPerformers = new ArrayList<>();

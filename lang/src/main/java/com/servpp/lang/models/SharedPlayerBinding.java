@@ -75,9 +75,11 @@ public record SharedPlayerBinding(SppClass source, Map<String, String> fields) {
             if (owner == null || !(owner.getSppClass(play.providerType()) instanceof SppClass player)) return null;
             return new View(player, play.fields());
         }
+        // The first take names the player; further takes only map other sources onto its facts.
         var takes = domain.getMapsOfClass().values().stream().filter(SppRoleMapper.class::isInstance)
-                .map(SppRoleMapper.class::cast).filter(take -> take.getRole() == role).toList();
-        if (takes.size() != 1 || takes.get(0).getDeclaredPerformers().size() != 1) return null;
+                .map(SppRoleMapper.class::cast).filter(take -> take.getRole() == role)
+                .sorted(Comparator.comparingLong(SppRoleMapper::getSequence)).toList();
+        if (takes.isEmpty() || takes.get(0).getDeclaredPerformers().size() != 1) return null;
         var take = takes.get(0);
         var player = take.getDeclaredPerformers().get(0);
         Map<String, String> fields = new LinkedHashMap<>();
