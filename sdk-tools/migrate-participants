@@ -13,7 +13,8 @@ parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("root", type=Path)
 parser.add_argument("--apply", action="store_true", help="Install edits after a successful staged build")
 parser.add_argument("--verify", help="Build command run from a temporary copy of ROOT")
-parser.add_argument("--conflicts", type=Path, help="Write the conflict list to this file")
+parser.add_argument("--conflicts", type=Path, help="Write the conflict TSV to this file")
+parser.add_argument("--short-names", type=Path, help="Read type<TAB>short mappings from this file")
 parser.add_argument("--manifest", type=Path, help="Only inspect these newline-separated paths relative to ROOT")
 parser.add_argument("--summary", action="store_true", help="Omit the unified diff")
 parser.add_argument("--use-declared-names", action="store_true",
@@ -37,12 +38,24 @@ if not runtime.is_file():
     parser.error(f"ANTLR runtime is missing at {runtime}")
 
 skip = {".git", "target", "node_modules"}
+
+
+def source_paths(fragments_only=False):
+    for directory, subdirs, files in os.walk(root):
+        subdirs[:] = sorted(set(subdirs) - skip)
+        if fragments_only and Path(directory).parts[-2:] != ("spp", "statements"):
+            continue
+        for name in files:
+            path = Path(directory) / name
+            if path.suffix == ".spp":
+                yield path.relative_to(root)
+
+
 if args.manifest:
     paths = [Path(line) for line in args.manifest.read_text().splitlines() if line.strip()]
+    paths.extend(source_paths(fragments_only=True))
 else:
-    paths = [path.relative_to(root) for directory, subdirs, files in os.walk(root)
-             for _ in [subdirs.__setitem__(slice(None), sorted(set(subdirs) - skip))]
-             for name in files if (path := Path(directory) / name).suffix == ".spp"]
+    paths = source_paths()
 paths = sorted(set(paths))
 for path in paths:
     if path.is_absolute() or path.suffix != ".spp" or ".." in path.parts or (root / path).resolve() != root / path:
@@ -54,14 +67,20 @@ with tempfile.TemporaryDirectory(prefix="spp-participants-") as temporary:
     edits = workspace / "edits"
     edits.mkdir()
     manifest.write_text("".join(f"{path}\n" for path in paths))
-    subprocess.run(["java", "-cp", os.pathsep.join(map(str, [compiler, lang, runtime])),
-                    "com.servpp.sdk.compiler.ParticipantMigration",
-                    str(root), str(manifest), str(edits), str(args.use_declared_names).lower()], check=True)
-    conflicts = (edits / ".conflicts").read_text()
+    command = ["java", "-cp", os.pathsep.join(map(str, [compiler, lang, runtime])),
+               "com.servpp.sdk.compiler.ParticipantMigration",
+               str(root), str(manifest), str(edits), str(args.use_declared_names).lower()]
+    if args.short_names:
+        command.append(str(args.short_names))
+    result = subprocess.run(command)
+    if result.returncode not in (0, 2):
+        raise SystemExit(result.returncode)
+    has_conflicts = result.returncode == 2
+    report = (edits / ".conflicts").read_text()
     if args.conflicts:
-        args.conflicts.write_text(conflicts.replace(f"{root}/", ""))
-    elif conflicts:
-        print(conflicts, end="")
+        args.conflicts.write_text(report)
+    elif has_conflicts:
+        print(report, end="")
     changed = sorted(path for path in paths if (edits / path).is_file())
     originals = {path: (root / path).read_bytes() for path in changed}
     if not args.summary:
@@ -69,13 +88,13 @@ with tempfile.TemporaryDirectory(prefix="spp-participants-") as temporary:
             previous = originals[path].decode().splitlines(keepends=True)
             proposed = (edits / path).read_bytes().decode().splitlines(keepends=True)
             print("".join(difflib.unified_diff(previous, proposed, f"a/{path}", f"b/{path}")), end="")
-    if args.verify and not conflicts:
+    if args.verify and not has_conflicts:
         staged = workspace / "project"
         shutil.copytree(root, staged, ignore=shutil.ignore_patterns(*skip), symlinks=True)
         for path in changed:
             shutil.copyfile(edits / path, staged / path)
         subprocess.run(shlex.split(args.verify), cwd=staged, check=True)
-    if args.apply and not conflicts:
+    if args.apply and not has_conflicts:
         if any((root / path).read_bytes() != originals[path] for path in changed):
             parser.error("A source changed during verification. Run migration again.")
         for path in changed:
@@ -87,5 +106,5 @@ with tempfile.TemporaryDirectory(prefix="spp-participants-") as temporary:
                 os.replace(replacement.name, source)
             finally:
                 Path(replacement.name).unlink(missing_ok=True)
-    if conflicts:
+    if has_conflicts:
         raise SystemExit(2)

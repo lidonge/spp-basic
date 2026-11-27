@@ -771,17 +771,34 @@ Build the Basic SDK compiler, then run the migrator over one source project.
 
 ```sh
 mvn -pl sdk-tools/compiler -am -DskipTests package
-sdk-tools/migrate-participants /path/to/project --conflicts /tmp/spp-conflicts.txt
-sdk-tools/migrate-participants /path/to/project --apply --verify "mvn -B -o test"
+sdk-tools/migrate-participants /path/to/project --conflicts /tmp/spp-conflicts.tsv
+printf 'ExternalLoss\tloss\nExternalLoss[]\tlosses\n' > /tmp/short-names.tsv
+sdk-tools/migrate-participants /path/to/project --short-names /tmp/short-names.tsv \
+  --apply --verify "mvn -B -o test"
 ```
 
 The default prints a unified diff and leaves the input tree untouched.
 `--summary` prints counts without the diff. Use `--manifest` to select source
-files relative to the root. Review conflicts such as differing explicit aliases,
-short-name collisions, local-variable capture and unsupported syntax. After
-choosing names, `--use-declared-names` migrates to the declared names and uses
-the defaults for the remaining types. `--apply` requires a successful build in
-a temporary copy and a conflict-free plan. Run it again to confirm zero edits.
+files relative to the root. The conflict TSV lists repeated types and their
+parameter names, differing aliases with counts and a suggested short name,
+and parse errors. For differing aliases, the most frequent name is suggested.
+Ties use the compiler default. Use distinct roles to resolve repeated participant
+types. The TSV also identifies names that collide or would be captured by locals.
+
+Supply a headerless, tab-separated `type<TAB>short` file with `--short-names`.
+Prefix a type with its S++ domain, as in `ledger.ExternalLoss`, to override an
+unqualified mapping. Use `Type[]` for an explicit array short name. The type
+declaration must be in scope to install a custom name. `--use-declared-names`
+resolves the remaining aliases using declared names or compiler defaults.
+
+For projects with statement templates, the migrator expands `include fragment;`
+and `include fragment(formal=actual);` in memory using named files under
+`spp/statements/`. The dry run retains the original include directives. When
+a rename reaches a shared fragment, the TSV identifies the include that needs
+an updated binding or fragment.
+
+`--apply` requires a successful build in a temporary copy and a conflict-free
+plan. Run it again to confirm zero edits.
 
 ### Same-domain role over an entity
 

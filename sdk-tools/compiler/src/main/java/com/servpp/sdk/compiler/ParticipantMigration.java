@@ -20,62 +20,147 @@ public final class ParticipantMigration {
         Path output = Path.of(arguments[2]);
         boolean useDeclaredNames = Boolean.parseBoolean(arguments[3]);
         List<Path> files = Files.readAllLines(manifest).stream().map(root::resolve).toList();
-        Result result = new ParticipantMigration().migrate(files, useDeclaredNames);
+        Map<String, String> mapping = arguments.length == 5 ? readMapping(Path.of(arguments[4])) : Map.of();
+        Result result = new ParticipantMigration().migrate(files, useDeclaredNames, mapping);
         for (var change : result.changed.entrySet()) {
             Path target = output.resolve(root.relativize(change.getKey()));
             Files.createDirectories(target.getParent());
             Files.writeString(target, change.getValue());
         }
-        Files.write(output.resolve(".conflicts"), result.conflicts);
+        List<String> tsv = new ArrayList<>();
+        tsv.add("kind\tdomain/flow\tfile:line\tservice\ttype\tnames\tsuggested_short_name\tspp_domain\tdetails");
+        result.conflicts.forEach(conflict -> tsv.add(conflict.tsv(root)));
+        Files.write(output.resolve(".conflicts"), tsv);
+        System.out.println("Files scanned: " + files.size());
         System.out.println("Files touched: " + result.changed.size());
         System.out.println("Services rewritten: " + result.servicesRewritten);
         System.out.println("Unresolved conflicts: " + result.conflicts.size());
+        if (!result.conflicts.isEmpty()) System.exit(2);
     }
 
-    private record FileSource(Path path, String text, ProgramContext tree) {
+    static Map<String, String> readMapping(Path path) throws IOException {
+        Map<String, String> mapping = new LinkedHashMap<>();
+        int line = 0;
+        for (String row : Files.readAllLines(path)) {
+            line++;
+            if (row.isBlank() || row.stripLeading().startsWith("#")) continue;
+            String[] fields = row.split("\t", -1);
+            if (fields.length != 2 || !fields[0].matches(
+                    "(?:\\p{javaJavaIdentifierStart}\\p{javaJavaIdentifierPart}*\\.)?"
+                            + "\\p{javaJavaIdentifierStart}\\p{javaJavaIdentifierPart}*(?:\\[\\])?")
+                    || !identifier(fields[1]) || mapping.putIfAbsent(fields[0], fields[1]) != null)
+                throw new IOException(path + ":" + line + ": expected a unique type<TAB>short mapping");
+        }
+        return mapping;
+    }
+
+    private static boolean identifier(String name) {
+        if (name.isEmpty()) return false;
+        var lexer = new SppLexer(CharStreams.fromString(name));
+        lexer.removeErrorListeners();
+        var token = lexer.nextToken();
+        return token.getType() == SppLexer.Identifier && token.getText().equals(name);
+    }
+
+    private record FileSource(Path path, String text, StatementTemplates.View view, ProgramContext tree) {
         String domain() { return ParticipantNames.domain(tree); }
-        int offset(int codePoint) { return text.offsetByCodePoints(0, codePoint); }
+        int offset(Token token) { return view.text().offsetByCodePoints(0, token.getStartIndex()); }
+        int sourceStart(Token token) { return view.sourceOffset(offset(token)); }
+        int sourceEnd(Token token) { return sourceStart(token) + token.getText().length(); }
     }
-    private record Type(String domain, String type) { }
-    private record Slot(Type type, int dimensions, boolean value) { }
-    private record Declaration(FileSource file, Token name, ShortNames shortNames) { }
+
+    private record Type(String domain, String type) {
+        String mapped(Map<String, String> mapping, String suffix) {
+            String key = type + suffix;
+            return mapping.getOrDefault(domain + "." + key, mapping.get(key));
+        }
+    }
+    private record Slot(Type type, int dimensions, boolean value) {
+        String spelling() { return type.type + "[]".repeat(dimensions); }
+        String defaultName() { return ParticipantNames.defaults(type.type, value).forShape(dimensions); }
+    }
+    private record Declaration(FileSource file, Token name, ShortNames names, ShortNamesContext clause) { }
     private record Service(FileSource file, ServiceDefinitionContext definition, ParseTree body) {
-        String location() { return file.path + ":" + definition.getStart().getLine() + " " + definition.Identifier().getText(); }
+        Site site() { return new Site(file.path, lineAt(file.text, file.sourceStart(definition.getStart())),
+                definition.Identifier().getText(), file.domain()); }
     }
+    private record Site(Path path, int line, String service, String domain) {
+        String location(Path root) { return root.relativize(path) + ":" + line; }
+
+        String domainFlow(Path root) {
+            Path relative = root.relativize(path);
+            if (relative.getNameCount() > 2) {
+                String top = relative.getName(0).toString();
+                if (top.equals("applications")) return relative.subpath(0, 2).toString();
+                if (top.equals("domains")) {
+                    String group = relative.getName(2).toString();
+                    return relative.subpath(0, (group.equals("flows") || group.equals("shared"))
+                            && relative.getNameCount() > 4 ? 4 : 2).toString();
+                }
+            }
+            return domain.isEmpty() ? relative.getName(0).toString() : domain;
+        }
+    }
+    public record Conflict(String kind, Site site, String type, String names, String suggestion,
+                           String detail, List<Site> usages) {
+        String tsv(Path root) {
+            var locations = new StringJoiner(", ");
+            for (Site usage : usages) locations.add(usage.location(root) + " " + usage.service);
+            String details = locations.length() == 0 ? detail : locations.toString();
+            return String.join("\t", List.of(kind, site.domainFlow(root), site.location(root), site.service, type,
+                    names, suggestion, site.domain, details).stream()
+                    .map(value -> value.replace("\t", "\\t").replace("\n", "\\n").replace("\r", "\\r")).toList());
+        }
+    }
+
     private record Edit(int start, int end, String text) { }
+    private record Binding(Slot slot, String name, boolean typeSpelling) { }
     private final Map<Type, Declaration> declarations = new LinkedHashMap<>();
     private final Map<Type, ShortNames> selected = new LinkedHashMap<>();
     private final Map<FileSource, List<Edit>> edits = new LinkedHashMap<>();
-    private final List<String> conflicts = new ArrayList<>();
+    private final List<Conflict> conflicts = new ArrayList<>();
     private final Set<Slot> blocked = new HashSet<>();
-    private final Set<Type> used = new HashSet<>();
+    private final Set<Type> used = new LinkedHashSet<>();
     private final List<FileSource> files = new ArrayList<>();
     private final List<Service> services = new ArrayList<>();
     private int rewritten;
 
-    public record Result(Map<Path, String> changed, List<String> conflicts, int servicesRewritten) { }
+    public record Result(Map<Path, String> changed, List<Conflict> conflicts, int servicesRewritten) { }
 
     public Result migrate(List<Path> paths, boolean useDeclaredNames) throws IOException {
+        return migrate(paths, useDeclaredNames, Map.of());
+    }
+
+    public Result migrate(List<Path> paths, boolean useDeclaredNames, Map<String, String> mapping) throws IOException {
+        var templates = new StatementTemplates(paths);
         for (Path path : paths) {
+            if (StatementTemplates.isFragment(path)) continue;
+            String source;
             try {
-                String text = Files.readString(path);
-                var file = new FileSource(path, text, parse(text));
+                source = Files.readString(path);
+            } catch (IOException failure) {
+                parseConflict(path, 1, "Cannot read source: " + failure.getClass().getSimpleName());
+                continue;
+            }
+            try {
+                var view = templates.expand(path, source);
+                var file = new FileSource(path, source, view, parse(view));
                 files.add(file);
                 index(file);
-            } catch (IOException failure) {
-                conflicts.add(path + " " + failure.getMessage());
+            } catch (StatementTemplates.IncludeFailure failure) {
+                parseConflict(path, lineAt(source, failure.offset), failure.getMessage());
+            } catch (SyntaxFailure failure) {
+                parseConflict(path, lineAt(source, failure.offset), failure.getMessage());
             }
         }
-        chooseNames(useDeclaredNames);
+        chooseNames(useDeclaredNames, mapping);
         services.forEach(this::rewrite);
         for (Type type : used) {
             Declaration declaration = declarations.get(type);
             ShortNames names = selected.get(type);
-            if (declaration == null || declaration.shortNames != null || names == null
-                    || names.equals(ParticipantNames.defaults(type.type, false))) continue;
-            int offset = declaration.file.offset(declaration.name.getStopIndex() + 1);
-            edit(declaration.file, new Edit(offset, offset, " short " + names.scalar()
-                    + (names.array() == null ? "" : ", " + names.array())));
+            if (declaration == null || names == null || names.equals(declaration.names)) continue;
+            if (declaration.clause == null && names.equals(ParticipantNames.defaults(type.type, false))) continue;
+            editDeclaration(declaration, names);
         }
         Map<Path, String> changed = new LinkedHashMap<>();
         for (FileSource file : files) {
@@ -89,23 +174,68 @@ public final class ParticipantMigration {
         return new Result(Collections.unmodifiableMap(changed), List.copyOf(conflicts), rewritten);
     }
 
-    private static ProgramContext parse(String text) throws IOException {
-        List<String> errors = new ArrayList<>();
+    private void editDeclaration(Declaration declaration, ShortNames names) {
+        FileSource file = declaration.file;
+        if (declaration.clause == null) {
+            int offset = file.sourceEnd(declaration.name);
+            edit(file, new Edit(offset, offset, " short " + names.scalar()
+                    + (names.array() == null ? "" : ", " + names.array())));
+            return;
+        }
+        Token scalar = declaration.clause.Identifier(0).getSymbol();
+        String newScalar = names.scalar();
+        if (declaration.clause.Identifier().size() == 2) {
+            Token array = declaration.clause.Identifier(1).getSymbol();
+            String newArray = names.forShape(1);
+            if (!array.getText().equals(newArray))
+                edit(file, new Edit(file.sourceStart(array), file.sourceEnd(array), newArray));
+        } else if (names.array() != null) {
+            newScalar += ", " + names.array();
+        }
+        if (!scalar.getText().equals(newScalar))
+            edit(file, new Edit(file.sourceStart(scalar), file.sourceEnd(scalar), newScalar));
+    }
+
+    private static final class SyntaxFailure extends IOException {
+        final int offset;
+
+        SyntaxFailure(int offset, String message) {
+            super(message);
+            this.offset = offset;
+        }
+    }
+
+    private static ProgramContext parse(StatementTemplates.View view) throws SyntaxFailure {
+        List<SyntaxFailure> errors = new ArrayList<>();
         var listener = new BaseErrorListener() {
             @Override public void syntaxError(Recognizer<?, ?> recognizer, Object symbol, int line,
                                               int column, String message, RecognitionException failure) {
-                if (errors.isEmpty()) errors.add(line + ":" + (column + 1) + " " + message);
+                if (!errors.isEmpty()) return;
+                int offset = 0;
+                for (int previous = 1; previous < line; previous++) offset = view.text().indexOf('\n', offset) + 1;
+                offset = view.text().offsetByCodePoints(offset, column);
+                errors.add(new SyntaxFailure(view.sourceOffset(offset), message));
             }
         };
-        var lexer = new SppLexer(CharStreams.fromString(text));
+        var lexer = new SppLexer(CharStreams.fromString(view.text()));
         lexer.removeErrorListeners();
         lexer.addErrorListener(listener);
         var parser = new SppParser(new CommonTokenStream(lexer));
         parser.removeErrorListeners();
         parser.addErrorListener(listener);
         var tree = parser.program();
-        if (!errors.isEmpty()) throw new IOException(errors.get(0));
+        if (!errors.isEmpty()) throw errors.getFirst();
         return tree;
+    }
+
+    private static int lineAt(String text, int offset) {
+        int line = 1;
+        for (int index = 0; index < offset; index++) if (text.charAt(index) == '\n') line++;
+        return line;
+    }
+
+    private void parseConflict(Path path, int line, String detail) {
+        conflicts.add(new Conflict("parse", new Site(path, line, "", ""), "", "", "", detail, List.of()));
     }
 
     private void index(FileSource file) {
@@ -114,12 +244,15 @@ public final class ParticipantMigration {
             var role = unit.role();
             if (entity != null || role != null) {
                 var name = (entity == null ? role.Identifier() : entity.Identifier()).getSymbol();
-                var names = entity == null ? role.shortNames() : entity.shortNames();
+                var clause = entity == null ? role.shortNames() : entity.shortNames();
                 Type type = new Type(file.domain(), name.getText());
-                var previous = declarations.putIfAbsent(type, new Declaration(file, name, names == null ? null
-                        : new ShortNames(names.Identifier(0).getText(), names.Identifier().size() == 2
-                                ? names.Identifier(1).getText() : null)));
-                if (previous != null) conflicts.add(file.path + " duplicate declaration " + type.type);
+                ShortNames names = clause == null ? null : new ShortNames(clause.Identifier(0).getText(),
+                        clause.Identifier().size() == 2 ? clause.Identifier(1).getText() : null);
+                var previous = declarations.putIfAbsent(type, new Declaration(file, name, names, clause));
+                if (previous != null) {
+                    conflicts.add(new Conflict("name-conflict", new Site(file.path, lineAt(file.text, file.sourceStart(name)),
+                            "", file.domain()), type.type, "", "", "Duplicate type declaration", List.of()));
+                }
             }
             var definition = ParticipantNames.definition(unit);
             if (definition != null) services.add(new Service(file, definition,
@@ -127,36 +260,74 @@ public final class ParticipantMigration {
         }
     }
 
-    private void chooseNames(boolean useDeclaredNames) {
-        Map<Slot, Map<String, List<String>>> occurrences = new LinkedHashMap<>();
-        for (Service service : services) for (var parameter : ParticipantNames.parameters(service.definition)) {
-            if (parameter.Identifier() == null) continue;
-            Slot slot = slot(service, parameter);
-            occurrences.computeIfAbsent(slot, unused -> new LinkedHashMap<>())
-                    .computeIfAbsent(parameter.Identifier().getText(), unused -> new ArrayList<>()).add(service.location());
+    private void chooseNames(boolean useDeclaredNames, Map<String, String> mapping) {
+        Map<Slot, Map<String, List<Site>>> occurrences = new LinkedHashMap<>();
+        Map<Slot, Site> firstUse = new LinkedHashMap<>();
+        for (Service service : services) {
+            Site site = service.site();
+            for (var parameter : ParticipantNames.parameters(service.definition)) {
+                Slot slot = slot(service, parameter);
+                firstUse.putIfAbsent(slot, site);
+                if (parameter.Identifier() == null) continue;
+                occurrences.computeIfAbsent(slot, unused -> new LinkedHashMap<>())
+                        .computeIfAbsent(parameter.Identifier().getText(), unused -> new ArrayList<>()).add(site);
+            }
         }
-        declarations.forEach((type, declaration) -> {
-            if (declaration.shortNames != null) selected.put(type, declaration.shortNames);
-        });
-        if (useDeclaredNames) return;
         for (var entry : occurrences.entrySet()) {
             Slot slot = entry.getKey();
-            if (entry.getValue().size() <= 1) continue;
+            boolean mapped = slot.type.mapped(mapping, slot.dimensions == 0 ? "" : "[]") != null
+                    || (slot.dimensions > 0 && slot.type.mapped(mapping, "") != null);
+            if (useDeclaredNames || mapped || entry.getValue().size() <= 1) continue;
             blocked.add(slot);
-            conflicts.add(slot.type.domain + "." + slot.type.type + "[]".repeat(slot.dimensions)
-                    + " uses conflicting names " + entry.getValue());
+            reportAliases(slot, entry.getValue());
         }
         for (var entry : declarations.entrySet()) {
             Type type = entry.getKey();
-            if (entry.getValue().shortNames != null) continue;
-            ShortNames defaults = ParticipantNames.defaults(type.type, false);
-            String scalar = consistent(occurrences, new Slot(type, 0, false), defaults.scalar());
-            String array = consistent(occurrences, new Slot(type, 1, false), scalar + "s");
-            selected.put(type, new ShortNames(scalar, array.equals(scalar + "s") ? null : array));
+            ShortNames declared = entry.getValue().names;
+            String scalar = type.mapped(mapping, "");
+            String array = type.mapped(mapping, "[]");
+            if (scalar == null) {
+                scalar = declared == null ? ParticipantNames.defaults(type.type, false).scalar() : declared.scalar();
+                if (declared == null && !useDeclaredNames)
+                    scalar = consistent(occurrences, new Slot(type, 0, false), scalar);
+            }
+            if (array == null) {
+                array = declared == null ? null : declared.array();
+                if (declared == null && !useDeclaredNames && type.mapped(mapping, "") == null)
+                    array = consistent(occurrences, new Slot(type, 1, false), null);
+            }
+            selected.put(type, new ShortNames(scalar, Objects.equals(array, scalar + "s") ? null : array));
+        }
+        for (var entry : firstUse.entrySet()) {
+            Slot slot = entry.getKey();
+            if (declarations.containsKey(slot.type)) continue;
+            String mapped = slot.type.mapped(mapping, slot.dimensions == 0 ? "" : "[]");
+            String scalar = slot.type.mapped(mapping, "");
+            if (slot.dimensions > 0 && mapped == null && scalar != null) mapped = scalar + "s";
+            if (mapped == null) continue;
+            if (slot.dimensions > 1) mapped += "s".repeat(slot.dimensions - 1);
+            if (mapped.equals(slot.defaultName())) continue;
+            blocked.add(slot);
+            Site site = entry.getValue();
+            conflicts.add(new Conflict("name-conflict", site, slot.spelling(), mapped, slot.defaultName(),
+                    "Custom short names require a type declaration in the migration scope", List.of()));
         }
     }
 
-    private String consistent(Map<Slot, Map<String, List<String>>> names, Slot slot, String fallback) {
+    private void reportAliases(Slot slot, Map<String, List<Site>> names) {
+        var ranking = names.entrySet().stream().sorted(
+                Comparator.<Map.Entry<String, List<Site>>>comparingInt(entry -> entry.getValue().size()).reversed()
+                        .thenComparing(Map.Entry::getKey)).toList();
+        String suggestion = ranking.get(0).getValue().size() == ranking.get(1).getValue().size()
+                ? slot.defaultName() : ranking.getFirst().getKey();
+        var counts = new StringJoiner(", ");
+        ranking.forEach(entry -> counts.add(entry.getKey() + "=" + entry.getValue().size()));
+        var usages = names.values().stream().flatMap(List::stream).distinct().toList();
+        conflicts.add(new Conflict("name-conflict", usages.getFirst(), slot.spelling(), counts.toString(),
+                suggestion, "", usages));
+    }
+
+    private static String consistent(Map<Slot, Map<String, List<Site>>> names, Slot slot, String fallback) {
         var found = names.getOrDefault(slot, Map.of());
         return found.size() == 1 ? found.keySet().iterator().next() : fallback;
     }
@@ -167,56 +338,86 @@ public final class ParticipantMigration {
     }
 
     private void rewrite(Service service) {
-        Map<String, String> aliases = new HashMap<>();
-        Set<String> names = new HashSet<>();
-        Set<Type> types = new HashSet<>();
+        Map<String, Binding> aliases = new LinkedHashMap<>();
+        Map<String, Binding> typeAliases = new LinkedHashMap<>();
+        Map<String, List<Slot>> shortNames = new LinkedHashMap<>();
+        Map<Slot, List<String>> parameters = new LinkedHashMap<>();
         List<Edit> changes = new ArrayList<>();
         boolean valid = true;
+        Site site = service.site();
         for (var parameter : ParticipantNames.parameters(service.definition)) {
             Slot slot = slot(service, parameter);
-            Shape shape = ParticipantNames.shape(parameter);
-            String shortName = selected.getOrDefault(slot.type, ParticipantNames.defaults(shape.type(), shape.value()))
-                    .forShape(shape.dimensions());
-            if (!names.add(shortName)) {
-                conflicts.add(service.location() + " short-name collision: " + shortName);
+            String shortName = selected.getOrDefault(slot.type, ParticipantNames.defaults(slot.type.type, slot.value))
+                    .forShape(slot.dimensions);
+            var explicit = parameter.Identifier();
+            Declaration declaration = declarations.get(slot.type);
+            ShortNames previous = declaration == null ? null : declaration.names;
+            String old = explicit != null ? explicit.getText()
+                    : previous == null ? slot.defaultName() : previous.forShape(slot.dimensions);
+            parameters.computeIfAbsent(slot, unused -> new ArrayList<>()).add(old);
+            shortNames.computeIfAbsent(shortName, unused -> new ArrayList<>()).add(slot);
+            var binding = new Binding(slot, shortName, false);
+            if (explicit != null && blocked.contains(slot)) valid = false;
+            if (aliases.putIfAbsent(old, binding) != null && explicit != null) {
+                conflicts.add(new Conflict("name-conflict", site, slot.spelling(), old, shortName,
+                        "Duplicate original parameter name", List.of()));
                 valid = false;
             }
-            var explicit = parameter.Identifier();
-            if (explicit != null && blocked.contains(slot)) valid = false;
-            types.add(slot.type);
-            if (explicit != null) {
-                if (aliases.putIfAbsent(explicit.getText(), shortName) != null) {
-                    conflicts.add(service.location() + " duplicate original parameter name: " + explicit.getText());
-                    valid = false;
-                }
-                Token token = explicit.getSymbol();
-                Token typeEnd = (parameter.type() == null ? parameter.roletype() : parameter.type()).getStop();
-                int start = service.file.offset(typeEnd.getStopIndex() + 1);
-                int nameStart = service.file.offset(token.getStartIndex());
-                if (!service.file.text.substring(start, nameStart).isBlank()) start = nameStart;
-                changes.add(new Edit(start, service.file.offset(token.getStopIndex() + 1), ""));
-            } else if (!shape.value()) {
-                aliases.putIfAbsent(shape.type() + "[]".repeat(shape.dimensions()), shortName);
-                aliases.putIfAbsent(ParticipantNames.defaults(shape.type(), false).forShape(shape.dimensions()), shortName);
+            if (explicit == null) {
+                if (!slot.value) typeAliases.put(slot.spelling(), new Binding(slot, shortName, true));
+                continue;
             }
+            Token token = explicit.getSymbol();
+            Token typeEnd = (parameter.type() == null ? parameter.roletype() : parameter.type()).getStop();
+            int start = service.file.sourceEnd(typeEnd);
+            int nameStart = service.file.sourceStart(token);
+            if (!service.file.text.substring(start, nameStart).isBlank()) start = nameStart;
+            changes.add(new Edit(start, service.file.sourceEnd(token), ""));
+        }
+        for (var entry : parameters.entrySet()) {
+            Slot slot = entry.getKey();
+            if (entry.getValue().size() <= 1) continue;
+            conflicts.add(new Conflict("duplicate-type", site, slot.spelling(), String.join(", ", entry.getValue()),
+                    "", "Choose a distinct role type for each participant", List.of()));
+            valid = false;
+        }
+        for (var entry : shortNames.entrySet()) {
+            var types = entry.getValue().stream().distinct().toList();
+            if (types.size() < 2) continue;
+            conflicts.add(new Conflict("name-conflict", site,
+                    String.join(", ", types.stream().map(Slot::spelling).toList()),
+                    entry.getKey() + "=" + entry.getValue().size(),
+                    String.join(", ", types.stream().map(Slot::defaultName).toList()),
+                    "Short name shared by different parameter types in this signature", List.of()));
+            valid = false;
         }
         if (!valid) return;
-        boolean[] captured = {false};
+        typeAliases.forEach(aliases::putIfAbsent);
+        int conflictsBefore = conflicts.size();
         ParticipantNames.references(service.body, (path, root, brackets) -> {
             String old = root.getText() + "[]".repeat(brackets.size() / 2);
-            String replacement = aliases.get(old);
-            if (replacement == null || old.equals(replacement) || ParticipantNames.shadowed(path, root.getText())) return;
-            if (ParticipantNames.shadowed(path, replacement)) {
-                conflicts.add(service.location() + " short name '" + replacement + "' is shadowed at line " + root.getLine());
-                captured[0] = true;
+            Binding binding = aliases.get(old);
+            if (binding == null || old.equals(binding.name) || ParticipantNames.shadowed(path, root.getText())) return;
+            int offset = service.file.offset(root);
+            int line = lineAt(service.file.text, service.file.view.sourceOffset(offset));
+            String problem = null;
+            if (service.file.view.generated(offset)) {
+                if (binding.typeSpelling && !shortNames.containsKey(old)) return;
+                problem = "Update the statement include binding or fragment at line " + line;
+            }
+            else if (ParticipantNames.shadowed(path, binding.name)) problem = "Short name is shadowed at line " + line;
+            if (problem != null) {
+                var conflict = new Conflict("name-conflict", site, binding.slot.spelling(), old, binding.name, problem, List.of());
+                if (!conflicts.contains(conflict)) conflicts.add(conflict);
                 return;
             }
-            changes.add(new Edit(service.file.offset(root.getStartIndex()), service.file.offset(root.getStopIndex() + 1), replacement));
+            changes.add(new Edit(service.file.sourceStart(root), service.file.sourceEnd(root), binding.name));
             for (Token bracket : brackets)
-                changes.add(new Edit(service.file.offset(bracket.getStartIndex()), service.file.offset(bracket.getStopIndex() + 1), ""));
+                changes.add(new Edit(service.file.sourceStart(bracket), service.file.sourceEnd(bracket), ""));
         });
-        if (captured[0] || changes.isEmpty()) return;
-        used.addAll(types);
+        if (conflicts.size() != conflictsBefore) return;
+        for (Slot slot : parameters.keySet()) used.add(slot.type);
+        if (changes.isEmpty()) return;
         changes.forEach(change -> edit(service.file, change));
         rewritten++;
     }
