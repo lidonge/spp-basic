@@ -79,7 +79,10 @@ public final class ParticipantMigration {
         String spelling() { return type.type + "[]".repeat(dimensions); }
         String defaultName() { return ParticipantNames.defaults(type.type, value).forShape(dimensions); }
     }
-    private record Declaration(FileSource file, Token name, ShortNames names, ShortNamesContext clause) { }
+    private record Declaration(FileSource file, Token name, ShortNames names, ShortNamesContext clause, String kind) { }
+    private static final Set<String> GENERIC_NAMES = Set.of("selection", "selector", "result", "results",
+            "match", "matches", "key", "keys", "row", "rows", "record", "records", "item", "items",
+            "entry", "entries", "value", "values", "data", "input", "output", "response", "found");
     private record Service(FileSource file, ServiceDefinitionContext definition, ParseTree body) {
         Site site() { return new Site(file.path, lineAt(file.text, file.sourceStart(definition.getStart())),
                 definition.Identifier().getText(), file.domain()); }
@@ -248,7 +251,7 @@ public final class ParticipantMigration {
                 Type type = new Type(file.domain(), name.getText());
                 ShortNames names = clause == null ? null : new ShortNames(clause.Identifier(0).getText(),
                         clause.Identifier().size() == 2 ? clause.Identifier(1).getText() : null);
-                var previous = declarations.putIfAbsent(type, new Declaration(file, name, names, clause));
+                var previous = declarations.putIfAbsent(type, new Declaration(file, name, names, clause, unit.getStart().getText()));
                 if (previous != null) {
                     conflicts.add(new Conflict("name-conflict", new Site(file.path, lineAt(file.text, file.sourceStart(name)),
                             "", file.domain()), type.type, "", "", "Duplicate type declaration", List.of()));
@@ -262,12 +265,16 @@ public final class ParticipantMigration {
 
     private void chooseNames(boolean useDeclaredNames, Map<String, String> mapping) {
         Map<Slot, Map<String, List<Site>>> occurrences = new LinkedHashMap<>();
+        Set<Type> nonRequestTypes = new HashSet<>();
         Map<Slot, Site> firstUse = new LinkedHashMap<>();
         for (Service service : services) {
             Site site = service.site();
             for (var parameter : ParticipantNames.parameters(service.definition)) {
                 Slot slot = slot(service, parameter);
                 firstUse.putIfAbsent(slot, site);
+                if (!(service.body instanceof ScenarioDeclarationContext) || slot.dimensions != 0
+                        || !isContract(slot.type))
+                    nonRequestTypes.add(slot.type);
                 if (parameter.Identifier() == null) continue;
                 occurrences.computeIfAbsent(slot, unused -> new LinkedHashMap<>())
                         .computeIfAbsent(parameter.Identifier().getText(), unused -> new ArrayList<>()).add(site);
@@ -277,7 +284,7 @@ public final class ParticipantMigration {
             Slot slot = entry.getKey();
             boolean mapped = slot.type.mapped(mapping, slot.dimensions == 0 ? "" : "[]") != null
                     || (slot.dimensions > 0 && slot.type.mapped(mapping, "") != null);
-            if (useDeclaredNames || mapped || entry.getValue().size() <= 1) continue;
+            if (useDeclaredNames || mapped || !canInferShort(slot.type) || entry.getValue().size() <= 1) continue;
             blocked.add(slot);
             reportAliases(slot, entry.getValue());
         }
@@ -286,16 +293,20 @@ public final class ParticipantMigration {
             ShortNames declared = entry.getValue().names;
             String scalar = type.mapped(mapping, "");
             String array = type.mapped(mapping, "[]");
+            boolean infer = declared == null && !useDeclaredNames && canInferShort(type);
             if (scalar == null) {
                 scalar = declared == null ? ParticipantNames.defaults(type.type, false).scalar() : declared.scalar();
-                if (declared == null && !useDeclaredNames)
+                if (infer)
                     scalar = consistent(occurrences, new Slot(type, 0, false), scalar);
             }
             if (array == null) {
                 array = declared == null ? null : declared.array();
-                if (declared == null && !useDeclaredNames && type.mapped(mapping, "") == null)
+                if (infer && type.mapped(mapping, "") == null)
                     array = consistent(occurrences, new Slot(type, 1, false), null);
             }
+            var defaults = declared == null ? ParticipantNames.defaults(type.type, false) : declared;
+            scalar = rejectGeneric(type, 0, scalar, defaults.scalar(), !nonRequestTypes.contains(type), firstUse);
+            array = rejectGeneric(type, 1, array, defaults.array(), false, firstUse);
             selected.put(type, new ShortNames(scalar, Objects.equals(array, scalar + "s") ? null : array));
         }
         for (var entry : firstUse.entrySet()) {
@@ -312,6 +323,30 @@ public final class ParticipantMigration {
             conflicts.add(new Conflict("name-conflict", site, slot.spelling(), mapped, slot.defaultName(),
                     "Custom short names require a type declaration in the migration scope", List.of()));
         }
+    }
+
+    private boolean isContract(Type type) {
+        var declaration = declarations.get(type);
+        return declaration != null && declaration.kind.equals("Contract");
+    }
+
+    private boolean canInferShort(Type type) {
+        var declaration = declarations.get(type);
+        return declaration == null || !Set.of("Contract", "Reference").contains(declaration.kind);
+    }
+
+    private String rejectGeneric(Type type, int dimensions, String candidate, String fallback, boolean request,
+                                 Map<Slot, Site> firstUse) {
+        if (candidate == null || candidate.equals(fallback)
+                || !GENERIC_NAMES.contains(candidate) && (!candidate.equals("request") || request)) return candidate;
+        Slot slot = new Slot(type, dimensions, false);
+        var declaration = declarations.get(type);
+        Site site = firstUse.getOrDefault(slot, new Site(declaration.file.path,
+                lineAt(declaration.file.text, declaration.file.sourceStart(declaration.name)), "", type.domain));
+        conflicts.add(new Conflict("name-conflict", site, slot.spelling(), candidate, slot.defaultName(),
+                "Generic short name requires a specific replacement", List.of()));
+        blocked.add(slot);
+        return fallback;
     }
 
     private void reportAliases(Slot slot, Map<String, List<Site>> names) {
@@ -363,10 +398,8 @@ public final class ParticipantMigration {
                         "Duplicate original parameter name", List.of()));
                 valid = false;
             }
-            if (explicit == null) {
-                if (!slot.value) typeAliases.put(slot.spelling(), new Binding(slot, shortName, true));
-                continue;
-            }
+            if (!slot.value) typeAliases.put(slot.spelling(), new Binding(slot, shortName, true));
+            if (explicit == null) continue;
             Token token = explicit.getSymbol();
             Token typeEnd = (parameter.type() == null ? parameter.roletype() : parameter.type()).getStop();
             int start = service.file.sourceEnd(typeEnd);

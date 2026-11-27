@@ -17,9 +17,9 @@ public class ParticipantMigrationTest {
         var services = folder.newFile("services.spp").toPath();
         Files.writeString(services, """
                 domain example;
-                atomic calculate total(ExternalLoss loss, ExternalLoss[] records) {
+                atomic calculate total(ExternalLoss loss, ExternalLoss[] losses) {
                     // loss and records are former parameter names.
-                    for (ExternalLoss record : records) { loss.amount += record.amount; }
+                    for (ExternalLoss record : losses) { loss.amount += record.amount; }
                     { int loss = 0; loss += 1; }
                 }
                 """);
@@ -27,7 +27,7 @@ public class ParticipantMigrationTest {
         var result = new ParticipantMigration().migrate(paths, false);
         assertEquals(List.of(), result.conflicts());
         assertEquals(1, result.servicesRewritten());
-        assertTrue(result.changed().get(types).contains("ExternalLoss short loss, records"));
+        assertTrue(result.changed().get(types).contains("ExternalLoss short loss, losses"));
         assertTrue(result.changed().get(services).contains("total(ExternalLoss, ExternalLoss[])"));
         assertTrue(result.changed().get(services).contains("{ int loss = 0; loss += 1; }"));
         for (var edit : result.changed().entrySet()) Files.writeString(edit.getKey(), edit.getValue());
@@ -94,10 +94,49 @@ public class ParticipantMigrationTest {
         assertTrue(changed.contains("include valid(subject=chosen);"));
         assertTrue(changed.contains("include nonexistent;"));
 
-        var renamed = new ParticipantMigration().migrate(paths, false, Map.of("LedgerEntry", "item"));
+        var renamed = new ParticipantMigration().migrate(paths, false, Map.of("LedgerEntry", "destination"));
         assertEquals(0, renamed.servicesRewritten());
         assertEquals(3, renamed.conflicts().size());
         assertTrue(renamed.conflicts().stream().anyMatch(conflict -> conflict.detail().contains("include binding")));
+    }
+
+    @Test public void rewritesTypeReadOperandsOnTheFirstPass() throws Exception {
+        var source = folder.newFile("services.spp").toPath();
+        Files.writeString(source, """
+                domain example;
+                Entity Stock { int id; }
+                Scenario lookup(Stock selectedStock) { findStock(selectedStock) by Stock; }
+                """);
+        var paths = List.of(source);
+        var result = new ParticipantMigration().migrate(paths, false);
+        assertEquals(List.of(), result.conflicts());
+        assertTrue(result.changed().get(source).contains("findStock(selectedStock) by selectedStock"));
+        Files.writeString(source, result.changed().get(source));
+        assertTrue(new ParticipantMigration().migrate(paths, false).changed().isEmpty());
+    }
+
+    @Test public void reportsGenericShortsAndRequiresMappingsForContractsAndReferences() throws Exception {
+        var source = folder.newFile("services.spp").toPath();
+        Files.writeString(source, """
+                domain example;
+                Entity Stock { int id; }
+                Contract LookupInput { int id; }
+                Reference CatalogLink { int id; }
+                atomic calculate checkStock(Stock result) {}
+                Scenario lookup(LookupInput request, CatalogLink catalog) {}
+                """);
+        var paths = List.of(source);
+        var inferred = new ParticipantMigration().migrate(paths, false);
+        assertEquals(List.of("result"), inferred.conflicts().stream().map(ParticipantMigration.Conflict::names).toList());
+        assertTrue(inferred.changed().get(source).contains("Scenario lookup(LookupInput, CatalogLink)"));
+        assertFalse(inferred.changed().get(source).contains(" short "));
+        var mapped = new ParticipantMigration().migrate(paths, false,
+                Map.of("Stock", "stockItem", "LookupInput", "request", "CatalogLink", "catalog"));
+        assertEquals(List.of(), mapped.conflicts());
+        assertTrue(mapped.changed().get(source).contains("LookupInput short request"));
+        assertTrue(mapped.changed().get(source).contains("CatalogLink short catalog"));
+        var generic = new ParticipantMigration().migrate(paths, true, Map.of("Stock", "request"));
+        assertEquals(List.of("request"), generic.conflicts().stream().map(ParticipantMigration.Conflict::names).toList());
     }
 
     @Test public void reportsBrokenExpansionAtTheIncludeLine() throws Exception {
@@ -136,16 +175,16 @@ public class ParticipantMigrationTest {
         assertEquals("old=2, alternate=1", report.conflicts().getFirst().names());
         assertEquals("old", report.conflicts().getFirst().suggestion());
         var map = folder.newFile("names.tsv").toPath();
-        Files.writeString(map, "# selected aliases\nLedgerEntry\tglobal\nexample.LedgerEntry\tentry\n"
-                + "example.LedgerEntry[]\trows\n");
+        Files.writeString(map, "# selected aliases\nLedgerEntry\tglobal\nexample.LedgerEntry\tposting\n"
+                + "example.LedgerEntry[]\tpostings\n");
         var mapping = ParticipantMigration.readMapping(map);
         var result = new ParticipantMigration().migrate(paths, false, mapping);
         assertEquals(List.of(), result.conflicts());
         assertEquals(4, result.servicesRewritten());
         String changed = result.changed().get(source);
-        assertTrue(changed.contains("LedgerEntry short entry /* keep */, rows"));
-        assertTrue(changed.contains("calculate third(LedgerEntry) { entry.amount = 3; }"));
-        assertTrue(changed.contains("for (LedgerEntry row : rows) { entry.amount += row.amount; }"));
+        assertTrue(changed.contains("LedgerEntry short posting /* keep */, postings"));
+        assertTrue(changed.contains("calculate third(LedgerEntry) { posting.amount = 3; }"));
+        assertTrue(changed.contains("for (LedgerEntry row : postings) { posting.amount += row.amount; }"));
         Files.writeString(source, changed);
         assertTrue(new ParticipantMigration().migrate(paths, false, mapping).changed().isEmpty());
     }
