@@ -7882,12 +7882,16 @@ public class SppDomain {
             }
         }
         var identities = DeploymentEnvironmentPlanner.quantumIdentities(this, attributeId);
-        if (identities.size() == 1 && !ownsQuantumAttribute(attributeId)) {
+        if (identities.size() == 1) {
             String identity = identities.iterator().next();
-            String[] parts = identity.split("\\.", 2);
-            var owner = getProject() == null ? null : getProject().getDomain(parts[0]);
-            if (owner != null) for (AppQuantumStore store : owner.getRuleBlock().getAppQuantumStores())
-                if (store.getAttributeIds().contains(parts[1])) return store.getName();
+            String local = getName() + ".";
+            // Remote store names are domain-local aliases. The deployment planner
+            // checks the actual adapters and physical store for cross-domain endpoints.
+            if (identity.startsWith(local) && !identity.equals(local + attributeId)) {
+                String playerAttribute = identity.substring(local.length());
+                for (AppQuantumStore store : ruleBlock.getAppQuantumStores())
+                    if (store.getAttributeIds().contains(playerAttribute)) return store.getName();
+            }
         }
         return null;
     }
