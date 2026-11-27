@@ -5179,8 +5179,10 @@ public class SppDomain {
         var attributes = new java.util.LinkedHashSet<String>();
         for (var unit : mapsOfClass.values()) if (unit instanceof SppClass type && type.isReal()
                 && type.getReferenceSource() == null && !(type instanceof SppService))
-            for (var field : type.getSppFieldList()) if (field.isQuantum() && !DeploymentEnvironmentPlanner.isAppPlayedRole(this, type))
-                attributes.add(type.getName() + "." + field.getName());
+            for (var field : type.getSppFieldList()) {
+                String attribute = type.getName() + "." + field.getName();
+                if (field.isQuantum() && ownsQuantumAttribute(attribute)) attributes.add(attribute);
+            }
         String storeName = ruleBlock.getDeploymentQuantumResource();
         if (storeName == null && ruleBlock.getAppQuantumStoreAdapters().size() == 1)
             storeName = ruleBlock.getAppQuantumStoreAdapters().get(0).getName();
@@ -7670,7 +7672,9 @@ public class SppDomain {
                 // A shared deployment resource hosts independent inferred conservation groups.
                 // Only an explicit resource attribute contract fixes one conserved set.
                 if (scopeItem.isQuantumResourceInferred()) continue;
-                Set<String> attributes = new TreeSet<>(scopeItem.getQuantumConservationAttributeIds());
+                Set<String> attributes = new TreeSet<>();
+                for (String attribute : scopeItem.getQuantumConservationAttributeIds())
+                    attributes.addAll(DeploymentEnvironmentPlanner.quantumIdentities(this, attribute));
                 Set<String> previousAttributes = quantumResourceAttributes.putIfAbsent(resourceId, attributes);
                 if (previousAttributes != null && !previousAttributes.equals(attributes)) {
                     errors.add("Quantum resource " + resourceId + " uses multiple conserved attribute sets: "
@@ -7815,8 +7819,7 @@ public class SppDomain {
             for (SppField field : sppClass.getSppFieldList()) {
                 if (field.isQuantum()) {
                     String attributeId = sppClass.getName() + "." + field.getName();
-                    if (!DeploymentEnvironmentPlanner.isAppPlayedRole(this, sppClass)
-                            && !storeByAttribute.containsKey(attributeId)) {
+                    if (ownsQuantumAttribute(attributeId) && !storeByAttribute.containsKey(attributeId)) {
                         errors.add("Quantum field " + attributeId
                                 + " must be assigned to an APP quantum store.");
                     }
@@ -7844,13 +7847,12 @@ public class SppDomain {
         return false;
     }
 
+    private boolean ownsQuantumAttribute(String attribute) {
+        return DeploymentEnvironmentPlanner.quantumIdentities(this, attribute).equals(Set.of(getName() + "." + attribute));
+    }
+
     private boolean isDeclaredInQuantumStore(String attributeId) {
-        for (AppQuantumStore store : ruleBlock.getAppQuantumStores()) {
-            if (store.getAttributeIds().contains(attributeId)) {
-                return true;
-            }
-        }
-        return false;
+        return quantumStoreNameForAttribute(attributeId) != null;
     }
 
     private void validateQuantumResourceStoreOwnership(SppService service, List<String> declaredAttributes,
@@ -7880,6 +7882,14 @@ public class SppDomain {
                 return store.getName();
             }
         }
+        var identities = DeploymentEnvironmentPlanner.quantumIdentities(this, attributeId);
+        if (identities.size() == 1 && !ownsQuantumAttribute(attributeId)) {
+            String identity = identities.iterator().next();
+            String[] parts = identity.split("\\.", 2);
+            var owner = getProject() == null ? null : getProject().getDomain(parts[0]);
+            if (owner != null) for (AppQuantumStore store : owner.getRuleBlock().getAppQuantumStores())
+                if (store.getAttributeIds().contains(parts[1])) return store.getName();
+        }
         return null;
     }
 
@@ -7891,10 +7901,11 @@ public class SppDomain {
         }
         Set<String> directions = new LinkedHashSet<>();
         for (String attributeId : declaredAttributes) {
-            Set<String> attributeDirections = assignedDirections.get(attributeId);
-            if (attributeDirections != null) {
-                directions.addAll(attributeDirections);
-            }
+            var identity = DeploymentEnvironmentPlanner.quantumIdentities(this, attributeId);
+            assignedDirections.forEach((written, movement) -> {
+                if (identity.equals(DeploymentEnvironmentPlanner.quantumIdentities(this, written)))
+                    directions.addAll(movement);
+            });
         }
         if (!directions.isEmpty() && (!directions.contains("increase") || !directions.contains("decrease"))) {
             errors.add("Quantum service " + service.getFuncName()
@@ -7906,10 +7917,12 @@ public class SppDomain {
     private String validateQuantumAttributeServiceParameter(SppService service, String attributeId) {
         String attributeOwnerType = objectType(attributeId);
         for (SppLocalVar parameter : service.getServiceBody().getSppLocalVarList()) {
-            if (parameter.getType() != null
-                    && attributeOwnerType.equals(parameter.getType().getName())
-                    && parameter.getArrayDimension() <= 1) {
-                return null;
+            if (!(parameter.getType() instanceof SppClass type) || parameter.getArrayDimension() > 1) continue;
+            if (attributeOwnerType.equals(type.getName())) return null;
+            var identity = DeploymentEnvironmentPlanner.quantumIdentities(this, attributeId);
+            for (SppField field : type.getSppFieldList()) {
+                if (field.isQuantum() && identity.equals(DeploymentEnvironmentPlanner.quantumIdentities(this,
+                        type.getName() + "." + field.getName()))) return null;
             }
         }
         return "service parameters do not include a scalar or one-dimensional " + attributeOwnerType + " object";

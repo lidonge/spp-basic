@@ -163,8 +163,8 @@ public final class BusinessCalculationValidator {
         var scope = service.getScopeItem();
         if (scope != null && ("$state".equals(scope.getResourceId())
                 || scope.hasQuantumConservationAttributes() && source != null && destination != null
-                && !(scope.getQuantumConservationAttributeIds().contains(source)
-                     && scope.getQuantumConservationAttributeIds().contains(destination)))) {
+                && !(service.conservesQuantumAttribute(source)
+                     && service.conservesQuantumAttribute(destination)))) {
             error("Both quantum transfer endpoints must belong to the service's conserved group.");
         }
     }

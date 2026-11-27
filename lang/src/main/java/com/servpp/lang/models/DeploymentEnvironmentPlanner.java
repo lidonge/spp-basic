@@ -147,11 +147,8 @@ public final class DeploymentEnvironmentPlanner {
             if (parts.length == 2 && argument != null && argument.getType() instanceof SppClass type)
                 attributes.add(type.getName() + "." + parts[1]);
         }
-        if (attributes.stream().noneMatch(attribute -> {
-            var type = domain.getSppClass(attribute.split("\\.")[0]);
-            return type instanceof SppClass participant
-                    && (participant.getReferenceSource() != null || !plays(domain, participant).isEmpty());
-        })) return;
+        if (attributes.stream().allMatch(attribute -> quantumIdentities(domain, attribute)
+                .equals(Set.of(domain.getName() + "." + attribute)))) return;
         attributes.addAll(service.getAssignedQuantumAttributeIds());
         if (service.getScopeItem() != null) attributes.addAll(service.getScopeItem().getQuantumConservationAttributeIds());
 
@@ -179,6 +176,11 @@ public final class DeploymentEnvironmentPlanner {
             }
             positions.put(attribute, candidates);
         }
+        if (positions.values().stream().flatMap(List::stream).allMatch(position -> position.owner() == domain)) {
+            registerQuantumEndpoints(service, positions);
+            return;
+        }
+
         var environments = quantumEnvironments(project, domain);
         if (stores.size() != 1 || !"LOCAL".equals(domain.getRuleBlock().getDeploymentTransactionMode())
                 || environments.isEmpty() || environments.stream().anyMatch(environment ->
@@ -217,6 +219,10 @@ public final class DeploymentEnvironmentPlanner {
                 }
             }
         }
+        registerQuantumEndpoints(service, positions);
+    }
+
+    private static void registerQuantumEndpoints(SppService service, Map<String, List<QuantumPosition>> positions) {
         Map<String, List<SppService.QuantumEndpoint>> bindings = new LinkedHashMap<>();
         positions.forEach((logical, candidates) -> {
             if (!candidates.get(0).keys().isEmpty())
@@ -321,11 +327,9 @@ public final class DeploymentEnvironmentPlanner {
         List<String> errors = new ArrayList<>();
         for (var domain : project.getSppDomainMap().values()) {
             if (!storesReady) for (var unit : domain.getMapsOfClass().values()) {
-                if (!(unit instanceof SppRoleMapper mapper)) continue;
-                if (mapper.isAppPlay()) continue;
-                boolean crossDomain = mapper.getRole().getReferenceSource() != null
-                        || mapper.getDeclaredPerformers().stream().anyMatch(performer -> performer.getReferenceSource() != null);
-                if (crossDomain && mapper.getRole().getSppFieldList().stream().anyMatch(SppField::isQuantum))
+                if (unit instanceof SppRoleMapper mapper && !mapper.isAppPlay()
+                        && mapper.getRole().getReferenceSource() != null
+                        && mapper.getRole().getSppFieldList().stream().anyMatch(SppField::isQuantum))
                     errors.add(domain.getName() + ": cross-domain quantum roles require APP play: " + mapper.getRole().getName());
             }
             for (var play : domain.getRuleBlock().getRolePlays()) {
@@ -431,11 +435,56 @@ public final class DeploymentEnvironmentPlanner {
         return paths;
     }
 
+    /** A role's logical name does not create a second conserved storage attribute. */
+    static Set<String> quantumIdentities(SppDomain domain, String attribute) {
+        String[] parts = attribute.split("\\.", 2);
+        if (parts.length != 2 || !(domain.getSppClass(parts[0]) instanceof SppClass role))
+            return Set.of(domain.getName() + "." + attribute);
+        var bindings = plays(domain, role);
+        if (!bindings.isEmpty()) {
+            var identities = new TreeSet<String>();
+            for (var play : bindings) {
+                String field = play.fields().get(parts[1]);
+                if (field != null) identities.add(play.providerDomain() + "." + play.providerType() + "." + field);
+            }
+            if (!identities.isEmpty()) return identities;
+        }
+        var player = takeQuantumPlayer(domain, role);
+        var binding = SharedPlayerBinding.resolve(domain, player, role);
+        String field = binding == null ? null : binding.fields().get(parts[1]);
+        if (field == null) return Set.of(domain.getName() + "." + attribute);
+        String playerName = player.getReferenceSource() == null
+                ? domain.getName() + "." + player.getName() : player.getReferenceSource();
+        return Set.of(playerName + "." + field);
+    }
+
+    private static SppClass takeQuantumPlayer(SppDomain domain, SppClass role) {
+        boolean stored = domain.getRuleBlock().getAppTables().stream()
+                .flatMap(group -> group.getAppTableList().stream()).anyMatch(table -> table.getEntity() == role);
+        return stored ? role : SharedPlayerBinding.player(domain, role);
+    }
+
     private static List<QuantumPosition> quantumPositions(SppProject project, SppDomain domain, SppClass type, String field) {
         if (type.getField(field) == null || !type.getField(field).isQuantum() || type.getReferenceSource() != null)
             return List.of();
         var plays = plays(domain, type);
-        if (plays.isEmpty()) return List.of(new QuantumPosition(domain, type.getName() + "." + field, List.of(), Map.of()));
+        if (plays.isEmpty()) {
+            var player = takeQuantumPlayer(domain, type);
+            if (player == type) return List.of(new QuantumPosition(domain, type.getName() + "." + field, List.of(), Map.of()));
+            var fromPlayer = SharedPlayerBinding.resolve(domain, player, type);
+            var toPlayer = SharedPlayerBinding.resolve(domain, type, player);
+            if (fromPlayer == null || toPlayer == null) return List.of();
+            String playerField = fromPlayer.fields().get(field);
+            var keys = ParticipantRoleBindings.primaryKeys(domain, player).stream()
+                    .map(key -> SharedPlayerBinding.sourcePath(toPlayer.fields(), key)).toList();
+            if (playerField == null || keys.isEmpty() || keys.contains(null) || keys.stream().anyMatch(key -> key.startsWith("@")))
+                return List.of();
+            if (player.getReferenceSource() == null)
+                return List.of(new QuantumPosition(domain, player.getName() + "." + playerField, keys, Map.of()));
+            String[] external = player.getReferenceSource().split("\\.", 2);
+            var owner = project.getDomain(external[0]);
+            return owner == null ? List.of() : List.of(new QuantumPosition(owner, external[1] + "." + playerField, keys, Map.of()));
+        }
         List<QuantumPosition> positions = new ArrayList<>();
         for (var play : plays) {
             var owner = project.getDomain(play.providerDomain());

@@ -2442,7 +2442,7 @@ public class SppService extends SppClass{
                 for (SppField field : sppClass.getSppFieldList()) {
                     if (field.isQuantum()) {
                         String attributeId = sppClass.getName() + "." + field.getName();
-                        boolean conserved = isExplicitQuantumConservationAttribute(attributeId);
+                        boolean conserved = conservesQuantumAttribute(attributeId);
                         var argumentIndices = writers.get(attributeId);
                         if (argumentIndices == null && !conserved) continue;
                         if (!transferPaths.isEmpty() && argumentIndices != null && !argumentIndices.contains(i)) continue;
@@ -2595,9 +2595,12 @@ public class SppService extends SppClass{
         return getFuncName();
     }
 
-    private boolean isExplicitQuantumConservationAttribute(String attributeId) {
+    public boolean conservesQuantumAttribute(String attributeId) {
         return scopeItem == null || !scopeItem.hasQuantumConservationAttributes()
-                || scopeItem.getQuantumConservationAttributeIds().contains(attributeId);
+                || scopeItem.getQuantumConservationAttributeIds().contains(attributeId)
+                || declaringDomain != null && scopeItem.getQuantumConservationAttributeIds().stream().anyMatch(declared ->
+                        DeploymentEnvironmentPlanner.quantumIdentities(declaringDomain, declared)
+                                .equals(DeploymentEnvironmentPlanner.quantumIdentities(declaringDomain, attributeId)));
     }
 
     private AppHeader getOutHeader() {
