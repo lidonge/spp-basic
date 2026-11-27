@@ -1112,6 +1112,14 @@ public class SppService extends SppClass{
             indent(java, indent + 8).append("return new Object[]{ ")
                     .append(joinScenarioArguments(serviceCall)).append(" };\n");
             indent(java, indent + 4).append("}\n\n");
+            if (!serviceCall.getSharedPlayerBindings().isEmpty()) {
+                indent(java, indent + 4).append("@Override\n");
+                indent(java, indent + 4).append("public com.servpp.service.runtime.LocalDomainServices.RoleArgument[] getRoleArguments() {\n");
+                indent(java, indent + 8).append("return ").append(SharedPlayerBinding.roleArguments(
+                        serviceCall.getCallee().getServiceBody().getSppLocalVarList(),
+                        serviceCall.getSharedPlayerBindings())).append(";\n");
+                indent(java, indent + 4).append("}\n\n");
+            }
             indent(java, indent + 4).append("@Override\n");
             if (!serviceCall.getQuantumBounds().isEmpty()) {
                 indent(java, indent + 4).append("public java.util.List<com.servpp.service.transaction.QuantumInvocationBounds.Bound> getQuantumBounds() {\n");

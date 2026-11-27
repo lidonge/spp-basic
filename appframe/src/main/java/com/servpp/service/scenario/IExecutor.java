@@ -17,6 +17,11 @@ public interface IExecutor {
         return new Object[0];
     }
 
+    /** Per argument: how a role is passed where its player is expected, or null. */
+    default com.servpp.service.runtime.LocalDomainServices.RoleArgument[] getRoleArguments() {
+        return null;
+    }
+
     default java.util.List<com.servpp.service.transaction.QuantumInvocationBounds.Bound> getQuantumBounds() {
         return com.servpp.service.transaction.QuantumInvocationBounds.current();
     }

@@ -31,6 +31,8 @@ public class QuantumConservationParticipant extends ObjectSnapshotTransactionPar
     private int scalarAttributeCount;
     private List<QuantumValue> beforeValues = List.of();
     private Object[] arguments = new Object[0];
+    private com.servpp.service.runtime.LocalDomainServices.RoleArgument[] roleBindings =
+            new com.servpp.service.runtime.LocalDomainServices.RoleArgument[0];
     private RepositoryHydratingServiceProxy.RoleIdentityResolver roleIdentityResolver =
             RepositoryHydratingServiceProxy.RoleIdentityResolver.none();
     private ObjectIdentityResolver objectIdentityResolver = ObjectIdentityResolver.none();
@@ -60,7 +62,8 @@ public class QuantumConservationParticipant extends ObjectSnapshotTransactionPar
 
     public QuantumConservationParticipant conserveArgument(int argumentIndex, String groupId, String attributeId,
                                                            String propertyName) {
-        attributes.add(new QuantumAttribute(groupId, attributeId, () -> readNumberProperty(argumentIndex, propertyName),
+        attributes.add(new QuantumAttribute(groupId, attributeId,
+                () -> readNumberProperty(argumentIndex, actualProperty(argumentIndex, propertyName)),
                 argumentIndex, propertyName, null));
         scalarAttributeCount++;
         return this;
@@ -110,6 +113,19 @@ public class QuantumConservationParticipant extends ObjectSnapshotTransactionPar
     public void setArguments(Object[] arguments) {
         super.setArguments(arguments);
         this.arguments = arguments == null ? new Object[0] : arguments;
+        var bindings = com.servpp.service.runtime.RoleArgumentBindings.current();
+        this.roleBindings = bindings == null ? new com.servpp.service.runtime.LocalDomainServices.RoleArgument[0] : bindings;
+    }
+
+    /** The call passes a role where the service expects its player: facts are read and written through the role. */
+    private com.servpp.service.runtime.LocalDomainServices.RoleArgument roleBinding(int argumentIndex) {
+        return argumentIndex >= 0 && argumentIndex < roleBindings.length ? roleBindings[argumentIndex] : null;
+    }
+
+    private String actualProperty(int argumentIndex, String property) {
+        var binding = roleBinding(argumentIndex);
+        String actual = binding == null ? null : binding.fields().get(property);
+        return actual == null ? property : actual;
     }
 
     @Override
@@ -137,14 +153,15 @@ public class QuantumConservationParticipant extends ObjectSnapshotTransactionPar
             BigDecimal after = afterValues.get(i).value();
             Object participant = attribute.collectionMember() != null ? attribute.collectionMember()
                     : attribute.isArgumentProperty() ? arguments[attribute.argumentIndex()] : null;
-            var bound = QuantumInvocationBounds.find(participant, attribute.propertyName());
+            String actualProperty = actualProperty(attribute.argumentIndex(), attribute.propertyName());
+            var bound = QuantumInvocationBounds.find(participant, actualProperty);
             QuantumConservationRecord record = ledger.add(attribute.groupId(), attribute.attributeId(),
                     objectId(attribute), before, after,
                     attribute.collectionMember() != null && !sharedGroups.contains(attribute.groupId()),
                     bound == null ? null : QuantumInvocationBounds.decimal(bound.minimum()),
                     bound == null ? null : QuantumInvocationBounds.decimal(bound.maximum()));
-            QuantumParticipantResults.register(context, participant, attribute.propertyName(), attribute.attributeId(), objectId(attribute),
-                    value -> writeNumberProperty(participant, attribute.propertyName(), value));
+            QuantumParticipantResults.register(context, participant, actualProperty, attribute.attributeId(), objectId(attribute),
+                    value -> writeNumberProperty(participant, actualProperty, value));
             QuantumEntanglementBoundary boundary = context.getQuantumEntanglementBoundary();
             if (boundary != null) {
                 boundary.addRecord(record);
@@ -195,8 +212,11 @@ public class QuantumConservationParticipant extends ObjectSnapshotTransactionPar
     }
 
     private QuantumAttribute endpoint(Object instance, String property) {
+        // A role passed where its player is expected reaches the body as a projected copy of the tracked participant.
+        Object tracked = com.servpp.service.runtime.RoleArgumentAliases.original(instance);
         return attributes.stream().filter(attribute -> attribute.isArgumentProperty()
-                && participant(attribute) == instance && attribute.propertyName().equals(property)).findFirst()
+                && (participant(attribute) == instance || participant(attribute) == tracked)
+                && attribute.propertyName().equals(property)).findFirst()
                 .orElseThrow(() -> new IllegalStateException("QUANTUM_TRANSFER_ENDPOINT_UNBOUND: " + property));
     }
 
@@ -259,9 +279,11 @@ public class QuantumConservationParticipant extends ObjectSnapshotTransactionPar
             Optional<BigDecimal> currentValue = pendingValue(context, attribute.attributeId(), identity);
             if (currentValue.isEmpty()) currentValue = store.findCurrentValueForUpdate(attribute.attributeId(), identity);
             if (bookedObjectIds.containsKey(attribute)) {
-                writeNumberProperty(participant(attribute), attribute.propertyName(), currentValue.orElse(BigDecimal.ZERO));
+                writeNumberProperty(participant(attribute), actualProperty(attribute.argumentIndex(), attribute.propertyName()),
+                        currentValue.orElse(BigDecimal.ZERO));
             } else {
-                currentValue.ifPresent(value -> writeNumberProperty(participant(attribute), attribute.propertyName(), value));
+                currentValue.ifPresent(value -> writeNumberProperty(participant(attribute),
+                        actualProperty(attribute.argumentIndex(), attribute.propertyName()), value));
             }
         }
     }
@@ -309,6 +331,10 @@ public class QuantumConservationParticipant extends ObjectSnapshotTransactionPar
             // Keep positional rule indices and supporting facts, but isolate this endpoint from its peers.
             identityArguments = arguments.clone();
             Object instance = participant(attribute);
+            var binding = roleBinding(attribute.argumentIndex());
+            // The identity is the player's: a role passed for its player is resolved as that player.
+            if (instance != null && binding != null)
+                instance = com.servpp.service.runtime.LocalDomainServices.roleFacts(instance, binding);
             identityArguments[attribute.argumentIndex()] = instance;
             for (int i = 0; i < identityArguments.length; i++) {
                 Object peer = identityArguments[i];

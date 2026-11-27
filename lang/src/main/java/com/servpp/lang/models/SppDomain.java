@@ -10150,6 +10150,25 @@ public class SppDomain {
         return errors;
     }
 
+    /** A role taken from a role whose facts arrive later (an APP play) takes over those facts. */
+    public void inheritTakeRoleFacts(SppClass changed) {
+        for (var unit : new ArrayList<>(mapsOfClass.values())) {
+            if (!(unit instanceof SppRoleMapper mapper) || mapper.isFollower() || mapper.getRole() == changed
+                    || !mapper.getRole().isRoleFieldsFromTake() || mapper.getDeclaredPerformers().size() != 1
+                    || mapper.getDeclaredPerformers().get(0) != changed) continue;
+            var role = mapper.getRole();
+            Map<String, String> entityToRole = new HashMap<>();
+            for (var field : mapper.getSppFieldList())
+                if (field instanceof SppRoleField mapping) entityToRole.put(mapping.getEntityName(), mapping.getName());
+            for (var field : changed.getSppFieldList()) {
+                if (field.isSyntheticRolePerformer()) continue;
+                String name = entityToRole.getOrDefault(field.getName(), field.getName());
+                if (role.getField(name) == null) role.addField(field.inheritedAs(name));
+            }
+            inheritTakeRoleFacts(role);
+        }
+    }
+
     public void dealEntityToRoleMaps() {
         var mappers = mapsOfClass.values().stream().filter(SppRoleMapper.class::isInstance)
                 .map(SppRoleMapper.class::cast)

@@ -46,7 +46,8 @@ public final class LocalDomainServices {
                 actual[index] = members;
             } else actual[index] = projectArgument(arguments[index], role, original);
         }
-        com.servpp.service.repository.TransactionQueryReads.project(arguments, actual, () -> call.accept(actual));
+        com.servpp.service.repository.TransactionQueryReads.project(arguments, actual,
+                () -> RoleArgumentAliases.run(original, () -> call.accept(actual)));
         for (int index = 0; index < actual.length; index++) {
             var role = roles[index];
             if (role == null || actual[index] == null) continue;
@@ -63,6 +64,12 @@ public final class LocalDomainServices {
         Object target = projectRole(source, role.type(), role.fields());
         originals.put(target, source);
         return target;
+    }
+
+    /** The facts of a role as an instance of its player type, without call-site bookkeeping. */
+    public static <T> T roleFacts(Object source, RoleArgument role) {
+        @SuppressWarnings("unchecked") Class<T> type = (Class<T>) role.type();
+        return projectRoleFacts(source, type, role.fields());
     }
 
     public static <T> T projectRole(Object source, Class<T> type, Map<String, String> fields) {

@@ -59,6 +59,10 @@ public record SharedPlayerBinding(SppClass source, Map<String, String> fields) {
     }
 
     private static View view(SppDomain domain, SppClass role) {
+        return view(domain, role, 0);
+    }
+
+    private static View view(SppDomain domain, SppClass role, int depth) {
         if (role.getReferenceSource() != null && domain.getProject() != null) {
             String[] provider = role.getReferenceSource().split("\\.", 2);
             var owner = domain.getProject().getDomain(provider[0]);
@@ -89,6 +93,18 @@ public record SharedPlayerBinding(SppClass source, Map<String, String> fields) {
         for (var field : take.getSppFieldList())
             if (field instanceof SppRoleField mapping && player.getField(mapping.getEntityName()) != null)
                 fields.put(mapping.getName(), mapping.getEntityName());
+        // A role taken from another role is played by that role's player.
+        if (player != role && player.getType() == CompilationUnitType.role && depth < 8) {
+            var inner = view(domain, player, depth + 1);
+            if (inner != null && inner.player != player) {
+                Map<String, String> composed = new LinkedHashMap<>();
+                fields.forEach((roleField, middle) -> {
+                    String original = inner.fields.get(middle);
+                    if (original != null) composed.put(roleField, original);
+                });
+                return new View(inner.player, composed);
+            }
+        }
         return new View(player, fields);
     }
 
@@ -110,6 +126,25 @@ public record SharedPlayerBinding(SppClass source, Map<String, String> fields) {
                 + target.getPackageName() + "." + target.getName() + ".class, " + javaFields() + ")";
     }
 
+    private static String javaType(SppLocalVar formal) {
+        return (formal.getType().getType() == null ? "" : formal.getType().getPackageName() + ".") + formal.getJavaType();
+    }
+
+    private String roleArgument(String type) {
+        return "new com.servpp.service.runtime.LocalDomainServices.RoleArgument(" + type
+                + ".class, " + source.getPackageName() + "." + source.getName() + ".class, " + javaFields() + ")";
+    }
+
+    /** The call-site view of each argument, for the participants that book the call; null where passed as is. */
+    public static String roleArguments(List<SppLocalVar> formals, Map<Integer, SharedPlayerBinding> bindings) {
+        var plans = new ArrayList<String>();
+        for (int index = 0; index < formals.size(); index++) {
+            var binding = bindings.get(index);
+            plans.add(binding == null ? "null" : binding.roleArgument(javaType(formals.get(index))));
+        }
+        return "new com.servpp.service.runtime.LocalDomainServices.RoleArgument[]{" + String.join(",", plans) + "}";
+    }
+
     public static String invocation(String receiver, List<String> values, List<SppLocalVar> formals,
                                     Map<Integer, SharedPlayerBinding> bindings) {
         if (bindings.isEmpty()) return receiver + "(" + String.join(",", values) + ")";
@@ -118,14 +153,8 @@ public record SharedPlayerBinding(SppClass source, Map<String, String> fields) {
         for (int index = 0; index < values.size(); index++) {
             var formal = formals.get(index);
             var binding = bindings.get(index);
-            String type = (formal.getType().getType() == null ? "" : formal.getType().getPackageName() + ".")
-                    + formal.getJavaType();
-            if (binding == null) plans.add("null");
-            else {
-                plans.add("new com.servpp.service.runtime.LocalDomainServices.RoleArgument(" + type
-                        + ".class, " + binding.source.getPackageName() + "." + binding.source.getName()
-                        + ".class, " + binding.javaFields() + ")");
-            }
+            String type = javaType(formal);
+            plans.add(binding == null ? "null" : binding.roleArgument(type));
             String cast = formal.isParticipantCollection() ? "java.util.List<" + type + ">" : type + formal.getArrayString();
             arguments.add("(" + cast + ") $sppRoleArgs[" + index + "]");
         }

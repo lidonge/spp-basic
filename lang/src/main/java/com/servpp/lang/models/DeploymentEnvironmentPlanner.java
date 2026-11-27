@@ -31,6 +31,7 @@ public final class DeploymentEnvironmentPlanner {
             var field = player.getField(source);
             if (field != null) role.addField(field.inheritedAs(target));
         });
+        domain.inheritTakeRoleFacts(role);
         return new RolePlay(play.role(), play.providerDomain(), play.providerType(),
                 mappings, play.codeTables());
     }

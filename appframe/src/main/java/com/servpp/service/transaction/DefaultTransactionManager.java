@@ -310,7 +310,10 @@ public class DefaultTransactionManager {
                                     remoteCompensationRuleProvider.getRemoteCompensationServiceNames()));
                 }
                 if (participant instanceof ArgumentAwareTransactionParticipant argumentAware) {
-                    argumentAware.setArguments(transactionArguments(service, executor));
+                    var transactionArguments = transactionArguments(service, executor);
+                    com.servpp.service.runtime.RoleArgumentBindings.during(
+                            executor == null ? null : executor.getRoleArguments(),
+                            () -> argumentAware.setArguments(transactionArguments));
                 }
                 entries.add(new TransactionEntry(executor, transactional.getTransactionResourceId(),
                         transactional.getTransactionMode(), participant));
