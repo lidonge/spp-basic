@@ -22,7 +22,7 @@ public class XbodOriginalAgreementIntegrityTest {
                 var store=new JdbcObjectSnapshotStore(new DriverManagerJdbcDataSource("org.h2.Driver",url,null,null),value->demo.mapper.valueToTree(value).toString(),"xbod_cash_record");
                 int changed=0;
                 for(var row:store.findAll()) {
-                    if(!row.objectType().equals("cashDepositAgreement"))continue;
+                    if(!row.objectType().equals("CashDepositAgreement"))continue;
                     var payload=(ObjectNode)demo.mapper.readTree(row.payloadJson());
                     if(!number.equals(payload.path("depositNumber").asText()))continue;
                     if(mode==1)payload.put("amount",999);else ((ObjectNode)payload.path("account")).put("accountNumber","ACCOUNT-002");

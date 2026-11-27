@@ -149,9 +149,9 @@ public class XbodRepaymentTest {
                     new DriverManagerJdbcDataSource("org.h2.Driver", System.getProperty("spp.xbod.datasource-url"), null, null),
                     value -> demo.mapper.valueToTree(value).toString(), "xbod_cash_record");
             var ordinaryFixture = Map.of(
-                    "depositAccount", Map.of("loanState", state),
-                    "accountEligibility", Map.of("detailCount", 10, "lastTransactionDate", 20261006),
-                    "depositAccrualState", Map.of("lastProductDate", 20261006));
+                    "DepositAccount", Map.of("loanState", state),
+                    "AccountEligibility", Map.of("detailCount", 10, "lastTransactionDate", 20261006),
+                    "DepositAccrualState", Map.of("lastProductDate", 20261006));
             for (var entry : ordinaryFixture.entrySet()) {
                 var saved = snapshots.findAll().stream().filter(row -> row.objectType().equals(entry.getKey())
                         || row.objectType().endsWith("." + entry.getKey())).findFirst().orElseThrow();

@@ -79,7 +79,7 @@ public class XbodStaleReversalTest {
             value->demo.mapper.valueToTree(value).toString(),"xbod_cash_record");
         int changed=0;
         for (var row:store.findAll()) {
-            if (!row.objectType().equals("cashDepositAgreement")) continue;
+            if (!row.objectType().equals("CashDepositAgreement")) continue;
             var payload=(com.fasterxml.jackson.databind.node.ObjectNode)demo.mapper.readTree(row.payloadJson());
             if (!number.equals(payload.path("depositNumber").asText())) continue;
             payload.put("fee",fee);store.save(row.objectType(),row.objectId(),payload);changed++;

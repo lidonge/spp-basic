@@ -17,7 +17,7 @@ public class XbodCurrentEligibilityTest {
             var snapshots=new JdbcObjectSnapshotStore(new DriverManagerJdbcDataSource("org.h2.Driver",url,null,null),
                     value->demo.mapper.valueToTree(value).toString(),"xbod_cash_record");
             int changed=0;
-            for (var row:snapshots.findAll()) if (row.objectType().equals("accountEligibility")) {
+            for (var row:snapshots.findAll()) if (row.objectType().equals("AccountEligibility")) {
                 var payload=(ObjectNode)demo.mapper.readTree(row.payloadJson());
                 if (payload.path("accountNumber").asText().equals("ACCOUNT-001")) {
                     payload.put("status","FROZEN");snapshots.save(row.objectType(),row.objectId(),payload);changed++;

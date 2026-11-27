@@ -30,7 +30,7 @@ public class XbodOriginalPostingIntegrityTest {
                     value -> demo.mapper.valueToTree(value).toString(), "xbod_cash_record");
             int damaged = 0;
             for (var snapshot : snapshots.findAll()) {
-                if (!snapshot.objectType().equals("depositPostingLine") && !snapshot.objectType().endsWith(".DepositPostingLine")) continue;
+                if (!snapshot.objectType().equals("DepositPostingLine") && !snapshot.objectType().endsWith(".DepositPostingLine")) continue;
                 var payload = (ObjectNode) demo.mapper.readTree(snapshot.payloadJson());
                 if (payload.path("slot").asInt() != 1) continue;
                 assertEquals(number, payload.path("deposit").path("depositNumber").asText());
