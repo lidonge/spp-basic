@@ -152,4 +152,74 @@ public class RoleGapsDTest {
         assertTrue(model, model.contains("funds"));
         assertFalse(model, model.contains("pendingFunds"));
     }
+
+    @Test public void d2FindARoleByAnotherRoleThroughItsPlayerAndTakeMappings() throws Exception {
+        var java = generate("""
+                domain d;
+                Entity Relation { String branch; String relatedBranch; }
+                Entity Office { String officeCode; String officeName; }
+                Role RegionLink short regionLink;
+                Role RegionOffice short region;
+                take Relation as RegionLink;
+                take RegionLink as RegionOffice { String officeCode = relatedBranch; }
+                Scenario locate(RegionLink, RegionOffice) { findRegionOffice by regionLink; }
+                """, """
+                domain d;
+                play RegionOffice by d.Office { officeCode = officeCode; }
+                tables entities {
+                    table RELATIONS(Relation) { primarykey(Relation.branch); }
+                    table OFFICES(Office) { primarykey(Office.officeCode); }
+                }
+                scope { local {} }
+                """, "d2a");
+        String find = Files.readString(java.resolve("generated/d/service/SimpleLocate.java"));
+        assertTrue(find, find.contains("getRelatedBranch"));
+        String model = schema("RegionOffice");
+        assertTrue(model, model.contains("officeName"));
+        assertFalse(model, model.contains("branch"));
+    }
+
+    @Test public void d2FindATakeRoleByAnotherRoleOfDifferentPlayers() throws Exception {
+        var java = generate("""
+                domain d;
+                Entity Relation { String branch; String relatedBranch; }
+                Entity Office { String officeCode; String officeName; }
+                Role RegionLink short regionLink;
+                Role RegionOffice short region;
+                take Relation as RegionLink;
+                take Office as RegionOffice;
+                take RegionLink as RegionOffice { String officeCode = relatedBranch; }
+                Scenario locate(RegionLink, RegionOffice) { findRegionOffice by regionLink; }
+                """, """
+                domain d;
+                tables entities {
+                    table RELATIONS(Relation) { primarykey(Relation.branch); }
+                    table OFFICES(Office) { primarykey(Office.officeCode); }
+                }
+                scope { local {} }
+                """, "d2b");
+        String find = Files.readString(java.resolve("generated/d/service/SimpleLocate.java"));
+        assertTrue(find, find.contains("getRelatedBranch"));
+    }
+
+    @Test public void d2FindAnEntityByARoleOverTheEntityThatItIsTakenFrom() throws Exception {
+        var java = generate("""
+                domain d;
+                Entity Relation { String branch; String relatedBranch; }
+                Entity Office { String officeCode; String officeName; }
+                take Relation as Office { String officeCode = relatedBranch; }
+                Role RegionLink short regionLink;
+                take Relation as RegionLink { String linkedBranch = relatedBranch; }
+                Scenario locate(RegionLink, Office) { findOffice by regionLink; }
+                """, """
+                domain d;
+                tables entities {
+                    table RELATIONS(Relation) { primarykey(Relation.branch); }
+                    table OFFICES(Office) { primarykey(Office.officeCode); }
+                }
+                scope { local {} }
+                """, "d2c");
+        String scenario = Files.readString(java.resolve("generated/d/service/SimpleLocate.java"));
+        assertTrue(scenario, scenario.contains("regionLink.getLinkedBranch()"));
+    }
 }

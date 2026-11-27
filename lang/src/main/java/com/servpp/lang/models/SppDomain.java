@@ -10163,7 +10163,11 @@ public class SppDomain {
         for (var mapper : mappers) {
             var role = mapper.getRole();
             if (!seen.add(role)) {
-                if (inheriting.contains(role)) followers.add(mapper);
+                if (inheriting.contains(role)) {
+                    followers.add(mapper);
+                    mapper.setFollower(true);
+                    if (mapper.getSppFieldList().isEmpty() && !mapper.isTakeAll()) mapper.setMapSame(true);
+                }
             } else if (role.isReal() && role.getSppFieldList().isEmpty()
                     && mapper.getDeclaredPerformers().size() == 1) {
                 fieldless.add(mapper);

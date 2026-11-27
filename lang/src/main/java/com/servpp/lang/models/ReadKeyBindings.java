@@ -189,6 +189,21 @@ final class ReadKeyBindings {
                 : List.<List<TakeStep>>of();
         var shared = SharedPlayerBinding.resolve(domain, performer, target);
         if (target == performer) chains = List.of(List.of());
+        // A source role that has no relation of its own is read through its player and the player's take mappings.
+        Map<String, String> playerToRole = null;
+        SppClass origin = performer;
+        if (chains.isEmpty() && reverse.isEmpty() && shared == null) {
+            var player = SharedPlayerBinding.player(domain, performer);
+            var view = player == performer ? null : SharedPlayerBinding.resolve(domain, performer, player);
+            if (view != null) {
+                chains = target == player ? List.of(List.of()) : takeChains(domain, target, player, new HashSet<>());
+                reverse = unique && chains.isEmpty() ? takeChains(domain, player, target, new HashSet<>())
+                        : List.<List<TakeStep>>of();
+                shared = SharedPlayerBinding.resolve(domain, player, target);
+                playerToRole = view.fields();
+                origin = player;
+            }
+        }
         if (chains.isEmpty() && reverse.isEmpty() && shared == null) {
             errors.add(label + " participant " + qualifier + " has no take relation to " + target.getName());
             return;
@@ -198,20 +213,25 @@ final class ReadKeyBindings {
             Set<String> fields = new LinkedHashSet<>();
             for (var chain : chains) {
                 String field = mappedPath(chain, key, unique);
-                if (field != null && scalarField(performer, field) != null
+                if (field != null && scalarField(origin, field) != null
                         && (!constant || field.equals(parts[1]))) fields.add(field);
             }
             if (shared != null && chains.isEmpty()) {
                 String source = SharedPlayerBinding.sourcePath(shared.fields(), key);
-                if (source != null && scalarField(performer, source) != null
+                if (source != null && scalarField(origin, source) != null
                         && (!constant || source.equals(parts[1]))) fields.add(source);
             }
             for (var chain : reverse) {
-                for (var roleField : performer.getSppFieldList()) {
+                for (var roleField : origin.getSppFieldList()) {
                     String field = roleField.getName();
                     if (constant && !field.equals(parts[1])) continue;
                     if (key.equals(mappedPath(chain, field, true))) fields.add(roleField.getName());
                 }
+            }
+            if (playerToRole != null) {
+                var viaRole = new LinkedHashSet<String>();
+                for (String field : fields) if (playerToRole.get(field) != null) viaRole.add(playerToRole.get(field));
+                fields = viaRole;
             }
             for (String field : fields) {
                 mapped = true;

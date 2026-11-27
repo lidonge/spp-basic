@@ -21,6 +21,10 @@ public class SppRoleMapper extends SppService{
     private List<List<SppClass>> alternatives = List.of();
     public List<List<SppClass>> getAlternatives() { return alternatives; }
     public void setAlternatives(List<List<SppClass>> value) { alternatives = value; }
+    private boolean follower;
+    /** A further take of a role whose facts are its player's: it maps its source and is not hydrated. */
+    public boolean isFollower() { return follower; }
+    void setFollower(boolean value) { follower = value; }
     boolean isMapSame;
     boolean isTakeAll;
     private RolePlay appPlay;

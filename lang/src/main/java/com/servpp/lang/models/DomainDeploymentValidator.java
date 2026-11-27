@@ -530,7 +530,7 @@ public final class DomainDeploymentValidator {
             service.getRoleHydrations().clear(); service.getOwnedRoleWrites().clear();
             if (domain.getRuleBlock().getLocalServiceBindings().stream().anyMatch(binding -> binding.getServiceName().equals(service.getFuncName()))) continue;
             for (var mapperUnit : domain.getMapsOfClass().values()) {
-                if (!(mapperUnit instanceof SppRoleMapper mapper) || mapper.getEntities() == null
+                if (!(mapperUnit instanceof SppRoleMapper mapper) || mapper.getEntities() == null || mapper.isFollower()
                         || mapper.getRole().getType() == IConstance.CompilationUnitType.entity
                         || mapper.getRole().getReferenceSourceKind() == IConstance.CompilationUnitType.entity) continue;
                 var inputs = service.getServiceBody().getSppLocalVarList();
