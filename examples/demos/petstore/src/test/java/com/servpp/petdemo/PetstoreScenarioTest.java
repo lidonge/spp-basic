@@ -602,13 +602,13 @@ public class PetstoreScenarioTest {
 
     @Test public void quantumPaymentDoesNotChangeBuyersOrdinaryRevision() throws Exception {
         Session session = order("SEPARATE-FACTS", "2", false);
-        String before = ordinaryRevision("buyer", session.customerId);
+        String before = ordinaryRevision("Buyer", session.customerId);
         pay(session);
-        assertEquals(before, ordinaryRevision("buyer", session.customerId));
+        assertEquals(before, ordinaryRevision("Buyer", session.customerId));
         amount(shop.customer(session).path("wallet"), "4932.20");
         try (var connection = DriverManager.getConnection(shop.jdbcUrl);
              var statement = connection.prepareStatement("select payload_json from petstore_records where object_type=? and object_id=?")) {
-            statement.setString(1, "buyer"); statement.setString(2, session.customerId);
+            statement.setString(1, "Buyer"); statement.setString(2, session.customerId);
             try (var rows = statement.executeQuery()) {
                 assertTrue(rows.next()); assertFalse(shop.mapper.readTree(rows.getString(1)).has("wallet"));
             }

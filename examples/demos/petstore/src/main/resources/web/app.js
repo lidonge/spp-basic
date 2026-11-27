@@ -80,7 +80,8 @@ async function invoke(service, participants) {
     failure.participants = data.participants;
     throw failure;
   }
-  for (const [alias,name] of Object.entries(names)) if (Object.hasOwn(data.participants,name)) data.participants[alias]=data.participants[name];
+  const facts = {...data.participants};
+  for (const [alias,name] of Object.entries(names)) if (Object.hasOwn(facts,name)) data.participants[alias]=facts[name];
   transportReplays.set(data.participants, Boolean(data.replayed));
   return data.participants;
 }

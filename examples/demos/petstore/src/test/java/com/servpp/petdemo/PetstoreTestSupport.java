@@ -34,10 +34,7 @@ final class PetstoreTestSupport implements AutoCloseable {
     void callProvider(String domain, String service, Map<String, ?> participants) {
         try {
             Class<?> type = Class.forName("com.servpp.petdemo.generated." + domain + ".model." + Character.toUpperCase(service.charAt(0)) + service.substring(1) + "Request");
-            Map<String,Object> values = new LinkedHashMap<>(participants);
-            participantNames(service).fields().forEachRemaining(entry -> {
-                if (values.containsKey(entry.getKey())) values.put(entry.getValue().asText(), values.remove(entry.getKey()));
-            });
+            Map<String, Object> values = requestParticipants(service, participants);
             values.put("AppHeader", Map.of("globalSerialNumber", UUID.randomUUID().toString()));
             runtime.executeGeneratedService(domain + "." + service, mapper.convertValue(values, type));
         } catch (ClassNotFoundException failure) { throw new IllegalStateException(failure); }
@@ -50,16 +47,19 @@ final class PetstoreTestSupport implements AutoCloseable {
         } catch (java.io.IOException failure) { throw new IllegalStateException(failure); }
     }
 
+    private Map<String, Object> requestParticipants(String service, Map<String, ?> participants) {
+        var names = participantNames(service);
+        Map<String, Object> values = new LinkedHashMap<>();
+        participants.forEach((name, value) -> values.put(names.path(name).asText(name), value));
+        return values;
+    }
+
     Object request(String service, Map<String, ?> participants) {
         try {
             Class<?> type = Class.forName(MODELS + Character.toUpperCase(service.charAt(0)) + service.substring(1) + "Request");
-            Map<String, Object> arguments = new LinkedHashMap<>(participants);
-            var names = participantNames(service);
-            names.fields().forEachRemaining(entry -> {
-                if (arguments.containsKey(entry.getKey())) arguments.put(entry.getValue().asText(), arguments.remove(entry.getKey()));
-            });
+            Map<String, Object> arguments = requestParticipants(service, participants);
             arguments.putIfAbsent("AppHeader", Map.of("globalSerialNumber", UUID.randomUUID().toString()));
-            // Metadata retains exact default Role names and explicit aliases used in JSON.
+            // Metadata names are the generated request properties.
             var metadata = (com.servpp.service.runtime.ScopeMetadataProvider) DefaultServiceContainer.getInstance().getService("petshop", service);
             for (String name : metadata.getServiceParameterNames()) {
                 boolean collection = java.util.Arrays.stream(type.getMethods()).anyMatch(method -> method.getName().equalsIgnoreCase("get" + name)
@@ -86,9 +86,10 @@ final class PetstoreTestSupport implements AutoCloseable {
         }
         var checked = com.servpp.service.runtime.BusinessChecks.scenarioResult();
         if (!checked.passed()) throw new IllegalStateException(checked.code());
-        var result = (com.fasterxml.jackson.databind.node.ObjectNode) mapper.valueToTree(request);
+        var facts = (com.fasterxml.jackson.databind.node.ObjectNode) mapper.valueToTree(request);
+        var result = facts.deepCopy();
         participantNames(service).fields().forEachRemaining(entry -> {
-            if (result.has(entry.getValue().asText())) result.set(entry.getKey(), result.get(entry.getValue().asText()));
+            if (facts.has(entry.getValue().asText())) result.set(entry.getKey(), facts.get(entry.getValue().asText()));
         });
         return result;
     }
