@@ -931,7 +931,17 @@ public interface IScopeHandler extends IApplicationHandler {
 
     default String inferRepositoryResponseMethodName(AppParser.ScopeItemIdentifierContext ctx,
                                                     SppService service, RepositoryHydrationRule rule) {
-        if (!rule.appDdlInferred()) return rule.responseMethodName();
+        if (!rule.appDdlInferred()) {
+            String destination = rule.responseMethodName();
+            if (service.getServiceBody().getQualifieField(destination) != null) return destination;
+            int dot = destination.indexOf('.');
+            String root = dot < 0 ? destination : destination.substring(0, dot);
+            String suffix = dot < 0 ? "" : destination.substring(dot);
+            return service.getServiceBody().getSppLocalVarList().stream()
+                    .filter(parameter -> parameter.getParticipantWireName().equals(root))
+                    .map(parameter -> parameter.getName() + suffix)
+                    .findFirst().orElse(destination);
+        }
         var stored = getSppDomian().getSppClass(rule.getObjectType());
         var candidates = service.getServiceBody().getSppLocalVarList().stream()
                 .filter(parameter -> parameter.getType() == stored
