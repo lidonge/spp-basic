@@ -748,20 +748,55 @@ The compiler reports distributed deployments as
 The `play ... by` spelling is provisional. Same-domain SPP `take` continues to
 define local role composition.
 
+### Type-only service parameters
+
+Declare `Entity ExternalLoss short loss, losses { ... }`, or put the same
+`short` clause on a Role, Contract or Reference. Write
+`atomic calculate register(ExternalLoss, ExternalLoss[])` and use `loss` and
+`losses` in the body. The default scalar uses lower camel case, such as
+`externalLoss`. An array appends `s` for each dimension, starting with the
+optional array name for the first dimension. An unambiguous type spelling
+(`ExternalLoss` or `ExternalLoss[]`) is still accepted in a body. Short names
+take precedence. Argument-free calls prefer exact types and use a shared
+player when a unique compatible participant is available.
+
+Run `spp-basic explain SPP_EXPLICIT_PARAMETER_NAME` or
+`spp-basic explain SPP_PARAMETER_SHORT_NAME_COLLISION` for signature errors.
+`SPP_DUPLICATE_PARTICIPANT_TYPE` still applies to repeated participant types
+of the same shape.
+
+### Migrate existing SPP sources
+
+Build the Basic SDK compiler, then run the migrator over one source project.
+
+```sh
+mvn -pl sdk-tools/compiler -am -DskipTests package
+sdk-tools/migrate-participants /path/to/project --conflicts /tmp/spp-conflicts.txt
+sdk-tools/migrate-participants /path/to/project --apply --verify "mvn -B -o test"
+```
+
+The default prints a unified diff and leaves the input tree untouched.
+`--summary` prints counts without the diff. Use `--manifest` to select source
+files relative to the root. Review conflicts such as differing explicit aliases,
+short-name collisions, local-variable capture and unsupported syntax. After
+choosing names, `--use-declared-names` migrates to the declared names and uses
+the defaults for the remaining types. `--apply` requires a successful build in
+a temporary copy and a conflict-free plan. Run it again to confirm zero edits.
+
 ### Same-domain role over an entity
 
-A scenario or atomic service may not declare two participants of one type
-(`T a, T b` or `T[] a, T[] b`); the compiler reports
-`SPP_DUPLICATE_PARTICIPANT_TYPE`. A single object may accompany an array of its
-type, and primitive types, enums and calculation locals are exempt. Declare one
-Role per participant.
+A role can reuse its player's facts. For example, declare
+`Role LossRegisteringOperator short registrar;` in SPP and select its player
+in APP. Provide the key mapping and any field renames. Unmapped player fields
+retain their names. A role with explicit fields can still project a subset of
+the player.
 
 When the roles are records of an entity of the same domain, write the `play` with
 the consumer's own domain as the provider:
 
 ```app
 play LossRegisteringOperator by cashvoucher.Operator { operatorNumber = operatorNumber; }
-play LossReleasingOperator by cashvoucher.Operator { operatorNumber = operatorNumber; operatorName = operatorName; }
+play LossReleasingOperator by cashvoucher.Operator { operatorNumber = operatorNumber; }
 ```
 
 The mapping rules are those of a cross-domain play: field types, code tables and
@@ -773,6 +808,13 @@ apply. A role cannot be played by its own type. Two roles that map the same
 quantum field of the entity book the same position, so they can be the two ends of
 one transfer. A role used for plain facts keeps working with `take` and its own
 table as before; `play` is the table-free form.
+
+A fieldless role can also declare its player in SPP with
+`take Period as PeriodEnd;`. Calculation calls and scenario bindings can pass
+a role to the player's type or to another role of the same player. The mapping
+must provide the formal participant's facts. Shared-player binding supports
+scalar and one-dimensional array arguments with matching dimensions. Changes
+flow back to the caller's participant by the declared field mapping.
 
 ### Invoking a local atomic service in a test
 

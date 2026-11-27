@@ -282,44 +282,54 @@ including from inside a nested bare block.
 
 ### One participant per role
 
-Two participants of one type in one signature imply the same participant, so S++
-does not allow them. A scenario or atomic service (`check`, `calculate`, `query`,
-`update`, `insert`, `delete`) that declares `T a, T b` or `T[] a, T[] b` is a compile
-error, `SPP_DUPLICATE_PARTICIPANT_TYPE`; run `explain SPP_DUPLICATE_PARTICIPANT_TYPE`
-for the page. These are not reported: a single object together with an array of its
-type (`T selector, T[] rows`, the query selector and result list), primitive and
-value types, and enums including error enums. Locals declared inside a calculation
-are not participants.
-
-Give each participant its own Role. When both roles stand for records of one
-entity in the same domain, declare the roles in SPP and bind each to the entity in
-APP with a same-domain `play`:
+A service signature lists types. In the body, refer to each participant by its
+short name. The default is the type name in lower camel case. Declare a shared
+short name on the type when it reads better in business rules.
 
 ```spp
-Entity Operator { String operatorNumber; String operatorName; }
-Role LossRegisteringOperator { String operatorNumber; }
-Role LossReleasingOperator { String operatorNumber; String operatorName; }
+domain sampledomain;
 
-Scenario serial readLossOperators(LossRegisteringOperator registrar, LossReleasingOperator releaser) {
-    findLossRegisteringOperator by LossRegisteringOperator.operatorNumber = REGISTRAR_NUMBER;
-    findLossReleasingOperator by LossReleasingOperator.operatorNumber = RELEASER_NUMBER;
+Entity ExternalLoss short loss, losses {
+    String registrationNumber;
+}
+
+Entity Operator {
+    String operatorNumber;
+    String operatorName;
+}
+
+Role LossRegisteringOperator short registrar;
+Role LossReleasingOperator short releaser;
+
+Scenario serial readLossOperators(LossRegisteringOperator, LossReleasingOperator) {
+    findLossRegisteringOperator by registrar.operatorNumber = "R1";
+    findLossReleasingOperator by releaser.operatorNumber = "R2";
 }
 ```
 
+The optional second name in `short loss, losses` names an array parameter.
+Without it, `ExternalLoss[]` adds `s` to the scalar short name. An explicit
+parameter name causes `SPP_EXPLICIT_PARAMETER_NAME`. A reused short name in the
+same signature causes `SPP_PARAMETER_SHORT_NAME_COLLISION`. Calculation locals
+still declare their own names. A type-name reference such as
+`ExternalLoss.registrationNumber` remains available when it resolves
+unambiguously. Use short names in new source.
+
+A participant type can appear once per shape in a service signature.
+`(ExternalLoss, ExternalLoss[])` can express a selector and a result collection.
+Two scalar records of the same entity need two roles. If the entity plays each
+role, you can omit the role's fields and map its key in APP.
+
 ```app
 play LossRegisteringOperator by sampledomain.Operator { operatorNumber = operatorNumber; }
-play LossReleasingOperator by sampledomain.Operator { operatorNumber = operatorNumber; operatorName = operatorName; }
+play LossReleasingOperator by sampledomain.Operator { operatorNumber = operatorNumber; }
 ```
 
-The provider domain is the consumer's own domain. The form is the cross-domain
-`play` with the provider in the same domain, so one `play` per role maps the
-role's facts to the entity and the role is hydrated by the entity's primary-key
-query. The role needs no table of its own. A role may map fewer facts than the
-entity. Each role keeps its own business meaning, and a scenario can use
-both at once. A same-domain play runs in the consumer's own transaction, so it
-needs no application environment, and a quantum fact is booked on the entity's own
-position. Two roles can therefore transfer between positions of one entity; see
-`ledger-quantum.spp` in the custom services sample.
+For an SPP `take`, use `Role PeriodEnd;` and `take Period as PeriodEnd;` to
+reuse the fields of `Period`. A calculation expecting `Period` can receive
+`PeriodEnd`. It can also receive another compatible role played by `Period` when
+the formal parameter names `PeriodEnd`. The caller's participant receives the
+changed facts. The types still identify distinct participants in a signature.
 
 ### Declare decimal rounding
 
