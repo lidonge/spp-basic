@@ -139,6 +139,24 @@ public class ParticipantMigrationTest {
         assertEquals(List.of("request"), generic.conflicts().stream().map(ParticipantMigration.Conflict::names).toList());
     }
 
+    @Test public void requestIsAShortOfAScenarioInputContractEvenWhenServicesShareIt() throws Exception {
+        var source = folder.newFile("input.spp").toPath();
+        Files.writeString(source, """
+                domain example;
+                Contract LookupInput { int id; }
+                Entity Stock { int id; }
+                atomic check checkInput(LookupInput) {}
+                atomic calculate describe(LookupInput, Stock) {}
+                Scenario lookup(LookupInput, Stock) { checkInput(lookupInput); describe(lookupInput, stock); }
+                """);
+        var paths = List.of(source);
+        var accepted = new ParticipantMigration().migrate(paths, false, Map.of("LookupInput", "request"));
+        assertEquals(List.of(), accepted.conflicts());
+        assertTrue(accepted.changed().get(source).contains("LookupInput short request"));
+        var refused = new ParticipantMigration().migrate(paths, false, Map.of("Stock", "request", "LookupInput", "request"));
+        assertEquals(List.of("request"), refused.conflicts().stream().map(ParticipantMigration.Conflict::names).toList());
+    }
+
     @Test public void reportsBrokenExpansionAtTheIncludeLine() throws Exception {
         var root = folder.getRoot().toPath();
         var fragments = Files.createDirectories(root.resolve("src/main/spp/statements"));

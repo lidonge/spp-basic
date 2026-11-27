@@ -788,7 +788,10 @@ types. The TSV also identifies names that collide or would be captured by locals
 Supply a headerless, tab-separated `type<TAB>short` file with `--short-names`.
 Prefix a type with its S++ domain, as in `ledger.ExternalLoss`, to override an
 unqualified mapping. Use `Type[]` for an explicit array short name. The type
-declaration must be in scope to install a custom name. `--use-declared-names`
+declaration must be in scope to install a custom name. The migrator refuses
+generic words as short names, with one exception: `request` is accepted for a
+Contract that a scenario takes as input, even when atomic services share it.
+`--use-declared-names`
 resolves the remaining aliases using declared names or compiler defaults.
 
 For projects with statement templates, the migrator expands `include fragment;`

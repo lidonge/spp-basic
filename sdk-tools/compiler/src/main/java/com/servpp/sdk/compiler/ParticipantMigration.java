@@ -265,16 +265,16 @@ public final class ParticipantMigration {
 
     private void chooseNames(boolean useDeclaredNames, Map<String, String> mapping) {
         Map<Slot, Map<String, List<Site>>> occurrences = new LinkedHashMap<>();
-        Set<Type> nonRequestTypes = new HashSet<>();
+        // request is a fair short for the Contract a scenario takes as input, wherever else the Contract is used.
+        Set<Type> requestTypes = new HashSet<>();
         Map<Slot, Site> firstUse = new LinkedHashMap<>();
         for (Service service : services) {
             Site site = service.site();
             for (var parameter : ParticipantNames.parameters(service.definition)) {
                 Slot slot = slot(service, parameter);
                 firstUse.putIfAbsent(slot, site);
-                if (!(service.body instanceof ScenarioDeclarationContext) || slot.dimensions != 0
-                        || !isContract(slot.type))
-                    nonRequestTypes.add(slot.type);
+                if (service.body instanceof ScenarioDeclarationContext && slot.dimensions == 0 && isContract(slot.type))
+                    requestTypes.add(slot.type);
                 if (parameter.Identifier() == null) continue;
                 occurrences.computeIfAbsent(slot, unused -> new LinkedHashMap<>())
                         .computeIfAbsent(parameter.Identifier().getText(), unused -> new ArrayList<>()).add(site);
@@ -305,7 +305,7 @@ public final class ParticipantMigration {
                     array = consistent(occurrences, new Slot(type, 1, false), null);
             }
             var defaults = declared == null ? ParticipantNames.defaults(type.type, false) : declared;
-            scalar = rejectGeneric(type, 0, scalar, defaults.scalar(), !nonRequestTypes.contains(type), firstUse);
+            scalar = rejectGeneric(type, 0, scalar, defaults.scalar(), requestTypes.contains(type), firstUse);
             array = rejectGeneric(type, 1, array, defaults.array(), false, firstUse);
             selected.put(type, new ShortNames(scalar, Objects.equals(array, scalar + "s") ? null : array));
         }
