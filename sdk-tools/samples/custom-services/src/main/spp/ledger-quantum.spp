@@ -2,6 +2,7 @@ domain ledger;
 
 Role Funds {
     String wallet;
+    String owner;
     quantum decimal amount;
 }
 
@@ -63,10 +64,26 @@ take Funds as LocalWallet {
     quantum decimal amount;
 }
 
-quantum update moveWallet(LocalWallet origin, LocalWallet destination, TransferInput transfer) {
+Role OriginWallet {
+    String wallet;
+    String owner;
+    quantum decimal amount;
+}
+Role DestinationWallet {
+    String wallet;
+    String owner;
+    quantum decimal amount;
+}
+
+quantum update moveWallet(OriginWallet origin, DestinationWallet destination, TransferInput transfer) {
     origin.amount -> destination.amount : transfer.amount;
 }
 
-Scenario serial transferWallet(LocalWallet origin, LocalWallet destination, TransferInput transfer) {
+Scenario serial transferWallet(OriginWallet origin, DestinationWallet destination, TransferInput transfer) {
     transaction { moveWallet(origin, destination, transfer) bounds { origin.amount: [0, null]; destination.amount: [null, 10]; }; }
+}
+
+readonly Scenario serial readWalletRoles(OriginWallet origin, DestinationWallet destination) {
+    findOriginWallet;
+    findDestinationWallet;
 }

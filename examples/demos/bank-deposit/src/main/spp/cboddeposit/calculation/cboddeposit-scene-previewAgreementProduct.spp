@@ -2,7 +2,7 @@ domain cboddeposit;
 
 Scenario serial previewAgreementProduct(
     InterestPeriod normal,
-    InterestPeriod overlap,
+    OverlapPeriod overlap,
     AgreementPolicy,
     AgreementBand[],
     AgreementProduct

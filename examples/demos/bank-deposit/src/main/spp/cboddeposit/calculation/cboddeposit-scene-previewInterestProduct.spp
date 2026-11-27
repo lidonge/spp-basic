@@ -2,15 +2,15 @@ domain cboddeposit;
 
 Scenario serial previewInterestProduct(
     BankDate start,
-    BankDate end,
+    PeriodEnd end,
     InterestCalendar,
     InterestPeriod,
     InterestProduct
 ) {
     checkBankDate(start);
-    checkBankDate(end);
+    checkPeriodEnd(end);
     decodeBankDate(start);
-    decodeBankDate(end);
+    decodePeriodEnd(end);
     checkBankDays(start, end, InterestCalendar);
     calculateBankDays(start, end, InterestCalendar, InterestPeriod);
     checkInterestPeriod;

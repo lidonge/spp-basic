@@ -26,3 +26,15 @@ play SettlementPosition by positions.Position {
     unit = currency { LOCAL_UNIT: "UNIT"; };
     claim = outstanding;
 }
+
+play OriginWallet by ledger.LocalWallet {
+    wallet = wallet;
+    owner = owner;
+    amount = amount;
+}
+
+play DestinationWallet by ledger.LocalWallet {
+    wallet = wallet;
+    owner = owner;
+    amount = amount;
+}

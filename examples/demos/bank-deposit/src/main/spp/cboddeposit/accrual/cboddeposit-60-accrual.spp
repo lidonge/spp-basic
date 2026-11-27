@@ -20,7 +20,7 @@ atomic check checkAccrualPolicy(DepositAccount, DepositInterestPolicy) {
     require(DepositAccount.overdraftPrincipal <= 0 && DepositAccount.overdraftInterest <= 0 && DepositAccount.collectionInterest <= 0, RejectionCode.E1155);
 }
 
-atomic calculate prepareAccrualDates(DepositAccrualState, BusinessDay, BankDate start, BankDate end) {
+atomic calculate prepareAccrualDates(DepositAccrualState, BusinessDay, BankDate start, PeriodEnd end) {
     start.encoded = DepositAccrualState.lastProductDate;
     end.encoded = BusinessDay.date;
 }
@@ -41,7 +41,7 @@ atomic calculate calculateAccrual(
     InterestPeriod,
     InterestProduct,
     BankDate start,
-    BankDate end,
+    PeriodEnd end,
     DepositAccrualPlan
 ) {
     DepositAccrualPlan.endDate = end.encoded;
@@ -114,16 +114,16 @@ atomic calculate calculateDepositAccrual(
     DepositAccrualPlan
 ) {
     BankDate start = new BankDate();
-    BankDate end = new BankDate();
-    BankDate clippedStart = new BankDate();
-    BankDate clippedEnd = new BankDate();
+    PeriodEnd end = new PeriodEnd();
+    OverlapStart clippedStart = new OverlapStart();
+    OverlapEnd clippedEnd = new OverlapEnd();
     InterestPeriod normal = new InterestPeriod();
-    InterestPeriod overlap = new InterestPeriod();
+    OverlapPeriod overlap = new OverlapPeriod();
     InterestProduct normalProduct = new InterestProduct();
     AgreementProduct products = new AgreementProduct();
     prepareAccrualDates(DepositAccrualState, BusinessDay, start, end);
     decodeBankDate(start);
-    decodeBankDate(end);
+    decodePeriodEnd(end);
     prepareNormalAccrualPeriod(DepositAccount, DepositInterestPolicy, normal);
     calculateBankDays(start, end, InterestCalendar, normal);
     AgreementPolicy.enabled = DepositInterestPolicy.normalEnabled && AgreementPolicy.enabled;
@@ -137,9 +137,9 @@ atomic calculate calculateDepositAccrual(
         overlap,
         AgreementPolicy
     );
-    decodeBankDate(clippedStart);
-    decodeBankDate(clippedEnd);
-    calculateBankDays(clippedStart, clippedEnd, InterestCalendar, overlap);
+    decodeOverlapStart(clippedStart);
+    decodeOverlapEnd(clippedEnd);
+    calculateOverlapDays(clippedStart, clippedEnd, InterestCalendar, overlap);
     calculateAgreementProduct(normal, overlap, AgreementPolicy, AgreementBand[], products);
     calculateInterestProduct(normal, normalProduct);
     calculateAccrual(

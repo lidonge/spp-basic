@@ -6,19 +6,32 @@ Role CollectionInterestIncomeAccount;
 
 Role PrincipalRecoveryAccount;
 
-take BankAccount as InterestIncomeAccount {
+take InterestSubject as InterestIncomeAccount {
     takeall;
     quantum BigDecimal(19, 2) balance;
 }
 
-take BankAccount as CollectionInterestIncomeAccount {
+take CollectionSubject as CollectionInterestIncomeAccount {
     takeall;
     quantum BigDecimal(19, 2) balance;
 }
 
-take BankAccount as PrincipalRecoveryAccount {
+take PrincipalSubject as PrincipalRecoveryAccount {
     takeall;
     quantum BigDecimal(19, 2) balance;
+}
+
+// The three internal accounts are opened together, so each subject is its own role with its own table.
+Role InterestSubject {
+    String accountNumber;
+}
+
+Role CollectionSubject {
+    String accountNumber;
+}
+
+Role PrincipalSubject {
+    String accountNumber;
 }
 
 Contract InternalAccountOpeningAgreement {
@@ -28,9 +41,9 @@ Contract InternalAccountOpeningAgreement {
 }
 
 atomic check checkInternalAccountNumbers(
-    BankAccount interestSubject,
-    BankAccount collectionSubject,
-    BankAccount principalSubject
+    InterestSubject interestSubject,
+    CollectionSubject collectionSubject,
+    PrincipalSubject principalSubject
 ) {
     require(
         interestSubject.accountNumber != BLANK
@@ -47,9 +60,9 @@ atomic check checkInternalAccountNumbers(
 }
 
 atomic calculate prepareInternalAccounts(
-    BankAccount interestSubject,
-    BankAccount collectionSubject,
-    BankAccount principalSubject,
+    InterestSubject interestSubject,
+    CollectionSubject collectionSubject,
+    PrincipalSubject principalSubject,
     InterestIncomeAccount,
     CollectionInterestIncomeAccount,
     PrincipalRecoveryAccount,

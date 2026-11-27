@@ -26,7 +26,13 @@ atomic check checkBankDate(BankDate) {
     require(isGregorianDate(BankDate.encoded), RejectionCode.EE374);
 }
 
-atomic check checkBankDays(BankDate start, BankDate end, InterestCalendar) {
+atomic check checkPeriodEnd(PeriodEnd) {
+    require(PeriodEnd.encoded != null && PeriodEnd.encoded != 0, RejectionCode.EEC28);
+    require(PeriodEnd.encoded >= 10000101 && PeriodEnd.encoded <= 99991231, RejectionCode.EE374);
+    require(isGregorianDate(PeriodEnd.encoded), RejectionCode.EE374);
+}
+
+atomic check checkBankDays(BankDate start, PeriodEnd end, InterestCalendar) {
     require(start.epochDay <= end.epochDay, RejectionCode.E1175);
     require(
         InterestCalendar.convention == "ACT"
@@ -55,6 +61,15 @@ Role BankDate {
     int epochDay;
 }
 
+// The end of a period is a distinct participant from its start, so it is a role over BankDate.
+Role PeriodEnd {
+    int encoded;
+    int year;
+    int month;
+    int day;
+    int epochDay;
+}
+
 Role InterestCalendar {
     String convention;
 }
@@ -66,7 +81,14 @@ atomic calculate decodeBankDate(BankDate) {
     BankDate.epochDay = dateEpochDay(BankDate.encoded);
 }
 
-atomic calculate calculateBankDays(BankDate start, BankDate end, InterestCalendar, InterestPeriod) {
+atomic calculate decodePeriodEnd(PeriodEnd) {
+    PeriodEnd.year = dateYear(PeriodEnd.encoded);
+    PeriodEnd.month = dateMonth(PeriodEnd.encoded);
+    PeriodEnd.day = dateDay(PeriodEnd.encoded);
+    PeriodEnd.epochDay = dateEpochDay(PeriodEnd.encoded);
+}
+
+atomic calculate calculateBankDays(BankDate start, PeriodEnd end, InterestCalendar, InterestPeriod) {
     if (InterestCalendar.convention == "ACT") {
         InterestPeriod.days = end.epochDay - start.epochDay;
     } else {

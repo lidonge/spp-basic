@@ -42,6 +42,15 @@ tables entities {
 }
 
 tables roles {
+    table INTEREST_SUBJECTS(InterestSubject) {
+        primarykey(InterestSubject.accountNumber);
+    }
+    table COLLECTION_SUBJECTS(CollectionSubject) {
+        primarykey(CollectionSubject.accountNumber);
+    }
+    table PRINCIPAL_SUBJECTS(PrincipalSubject) {
+        primarykey(PrincipalSubject.accountNumber);
+    }
     table INTEREST_INCOME_ACCOUNTS(InterestIncomeAccount) {
         primarykey(InterestIncomeAccount.accountNumber);
     }

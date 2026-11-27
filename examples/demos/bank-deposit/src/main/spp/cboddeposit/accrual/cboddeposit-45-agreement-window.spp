@@ -7,14 +7,67 @@ Role AgreementTerm {
     int cancelDate;
 }
 
+// The clipped window and the overlap period are second participants of the BankDate and
+// InterestPeriod types, so each is a distinct role over its base type.
+Role OverlapStart {
+    int encoded;
+    int year;
+    int month;
+    int day;
+    int epochDay;
+}
+
+Role OverlapEnd {
+    int encoded;
+    int year;
+    int month;
+    int day;
+    int epochDay;
+}
+
+Role OverlapPeriod {
+    BigDecimal(19, 2) amount;
+    BigDecimal(19, 2) unit;
+    int days;
+}
+
+atomic calculate decodeOverlapStart(OverlapStart) {
+    OverlapStart.year = dateYear(OverlapStart.encoded);
+    OverlapStart.month = dateMonth(OverlapStart.encoded);
+    OverlapStart.day = dateDay(OverlapStart.encoded);
+    OverlapStart.epochDay = dateEpochDay(OverlapStart.encoded);
+}
+
+atomic calculate decodeOverlapEnd(OverlapEnd) {
+    OverlapEnd.year = dateYear(OverlapEnd.encoded);
+    OverlapEnd.month = dateMonth(OverlapEnd.encoded);
+    OverlapEnd.day = dateDay(OverlapEnd.encoded);
+    OverlapEnd.epochDay = dateEpochDay(OverlapEnd.encoded);
+}
+
+atomic calculate calculateOverlapDays(OverlapStart start, OverlapEnd end, InterestCalendar, OverlapPeriod) {
+    if (InterestCalendar.convention == "ACT") {
+        OverlapPeriod.days = end.epochDay - start.epochDay;
+    } else {
+        OverlapPeriod.days = 360
+            * (end.year
+            - start.year)
+            + 30
+            * (end.month
+            - start.month)
+            + min(end.day, 30)
+            - min(start.day, 30);
+    }
+}
+
 atomic calculate prepareAgreementWindow(
     BankDate normalStart,
-    BankDate normalEnd,
+    PeriodEnd normalEnd,
     AgreementTerm,
-    BankDate clippedStart,
-    BankDate clippedEnd,
+    OverlapStart clippedStart,
+    OverlapEnd clippedEnd,
     InterestPeriod normal,
-    InterestPeriod overlap,
+    OverlapPeriod overlap,
     AgreementPolicy
 ) {
     clippedStart.encoded = normalStart.encoded;

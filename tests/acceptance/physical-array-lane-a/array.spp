@@ -1,15 +1,18 @@
 domain physicalarray;
 Entity Entry { String itemCode; String sector; }
-Role Result { int observed; }
+Role ExternalCount { int observed; }
+Role TransactionalCount { int observed; }
 atomic query listEntries(Entry selection, Entry[] rows);
-atomic calculate countEntries(Entry[] rows, Result result) { result.observed = rows.length; }
-Scenario serial compareReads(Entry selection, Entry[] externalRows, Entry[] transactionalRows, Result before, Result inside) {
-    listEntries(selection, externalRows);
-    countEntries(externalRows, before);
+atomic calculate countExternalEntries(Entry[] rows, ExternalCount before) { before.observed = rows.length; }
+atomic calculate countTransactionalEntries(Entry[] rows, TransactionalCount inside) { inside.observed = rows.length; }
+// Each read refills the same participant, so a stale first result cannot satisfy the second count.
+Scenario serial compareReads(Entry selection, Entry[] rows, ExternalCount before, TransactionalCount inside) {
+    listEntries(selection, rows);
+    countExternalEntries(rows, before);
     transaction {
         serial {
-            listEntries(selection, transactionalRows);
-            countEntries(transactionalRows, inside);
+            listEntries(selection, rows);
+            countTransactionalEntries(rows, inside);
         }
     }
 }

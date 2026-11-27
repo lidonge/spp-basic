@@ -18,9 +18,11 @@ public class ArrayReadTest {
         }
         var request=new CompareReadsRequest();
         var selection=new Entry();selection.setSector("A");request.setSelection(selection);
-        request.setExternalRows(new java.util.ArrayList<>());
-        request.setTransactionalRows(new java.util.ArrayList<>());
-        request.setBefore(new Result());request.setInside(new Result());
+        // Stale rows must be replaced by each read, not counted.
+        var stale=new java.util.ArrayList<Entry>();
+        for(int index=0;index<2;index++){var row=new Entry();row.setItemCode("stale"+index);stale.add(row);}
+        request.setRows(stale);
+        request.setBefore(new ExternalCount());request.setInside(new TransactionalCount());
         runtime.executeGeneratedService("physicalarray.compareReads",request);
         assertEquals(Integer.valueOf(1),request.getBefore().getObserved());
         assertEquals(Integer.valueOf(1),request.getInside().getObserved());
