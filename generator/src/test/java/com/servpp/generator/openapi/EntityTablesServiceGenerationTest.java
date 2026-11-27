@@ -25,7 +25,7 @@ public class EntityTablesServiceGenerationTest {
         Files.writeString(source.resolve("shop.spp"), """
                 domain shop;
 
-                Entity Item{
+                Entity Item short chosen, chosenItems {
                     String code;
                     String name;
                 }
@@ -41,7 +41,7 @@ public class EntityTablesServiceGenerationTest {
 
         String get = Files.readString(root.resolve("java/example/shop/service/SimpleGetItem.java"));
         assertFalse(get, get.matches("(?s).*void getItem\\(Item item\\)\\{[^}]*ret\\.set.*"));
-        assertTrue(get, get.contains("ret.setItem(  mapperItem.getItem(arg.getItem()) );"));
+        assertTrue(get, get.contains("ret.setChosen(  mapperItem.getItem(arg.getChosen()) );"));
 
         Path models = root.resolve("java/example/shop/model");
         Files.createDirectories(models);
@@ -52,7 +52,7 @@ public class EntityTablesServiceGenerationTest {
                     public class %sItemRequest {
                         private final Item item;
                         public %sItemRequest(Item item) { this.item = item; }
-                        public Item getItem() { return item; }
+                        public Item getChosen() { return item; }
                     }
                     """.formatted(name, name));
         }
@@ -60,16 +60,16 @@ public class EntityTablesServiceGenerationTest {
                 package example.shop.model;
                 public class GetItemResponse {
                     private Item item;
-                    public Item getItem() { return item; }
-                    public void setItem(Item item) { this.item = item; }
+                    public Item getChosen() { return item; }
+                    public void setChosen(Item item) { this.item = item; }
                 }
                 """);
         Files.writeString(models.resolve("SearchItemResponse.java"), """
                 package example.shop.model;
                 public class SearchItemResponse {
                     private java.util.List<Item> item;
-                    public java.util.List<Item> getItem() { return item; }
-                    public void setItem(java.util.List<Item> item) { this.item = item; }
+                    public java.util.List<Item> getChosenItems() { return item; }
+                    public void setChosenItems(java.util.List<Item> item) { this.item = item; }
                 }
                 """);
         for (String name : List.of("Create", "Update", "Find")) {
@@ -104,7 +104,7 @@ public class EntityTablesServiceGenerationTest {
                 Object request = loader.loadClass("example.shop.model." + name + "ItemRequest")
                         .getConstructor(item).newInstance(item.getConstructor().newInstance());
                 Object response = invokeAtomic(service, request);
-                Object delivered = response.getClass().getMethod("getItem").invoke(response);
+                Object delivered = response.getClass().getMethod(name.equals("Get") ? "getChosen" : "getChosenItems").invoke(response);
                 if (name.equals("Get")) {
                     assertSame(stored, delivered);
                 } else {

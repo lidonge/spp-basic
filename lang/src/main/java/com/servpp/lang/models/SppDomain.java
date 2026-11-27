@@ -4976,8 +4976,7 @@ public class SppDomain {
         if (!operation.equals("find")) service.setPersistenceOperation(operation);
         var argument = new SppLocalVar(actual, actual.getName());
         argument.setArrayDimension(dimension);
-        argument.setParticipantWireName(participantNames.name(getName(),
-                new com.servpp.lang.ParticipantNames.Shape(actual.getName(), dimension, false)));
+        setParticipantWireName(argument);
         service.addLocalVar(argument);
         mapsOfClass.put(name, service);
         return service;
@@ -10184,6 +10183,11 @@ public class SppDomain {
         prepareRoleCompositions();
     }
 
+    private void setParticipantWireName(SppLocalVar participant) {
+        participant.setParticipantWireName(participantNames.name(getName(), new com.servpp.lang.ParticipantNames.Shape(
+                participant.getType().getName(), participant.getArrayDimension(), false)));
+    }
+
     public void generateDefaultServices(ILogable logger){
         Map<String, SppCompilationUnit> sppClassMap = getMapsOfClass();
         for (SppCompilationUnit sppCompilationUnit : sppClassMap.values().toArray(new SppCompilationUnit[sppClassMap.size()])) {
@@ -10203,14 +10207,18 @@ public class SppDomain {
                 //Get
                 sppService =genDefaultService(logger, sppClass, sppClassMap,"Get", IConstance.ServiceType.query);
                 sppDefaultService.addService(sppService);
-                if (sppService != null)
-                    sppService.getReturns().addLocalVar(new SppLocalVar(sppClass,NameUtil.firstToLowerCase(sppClass.getName(),true)));
+                if (sppService != null) {
+                    var result = new SppLocalVar(sppClass, NameUtil.firstToLowerCase(sppClass.getName(), true));
+                    setParticipantWireName(result);
+                    sppService.getReturns().addLocalVar(result);
+                }
 
                 //Search
                 sppService =genDefaultService(logger, sppClass, sppClassMap,"Search", IConstance.ServiceType.query);
                 sppDefaultService.addService(sppService);
                 SppLocalVar sppLocalVar = new SppLocalVar(sppClass, NameUtil.firstToLowerCase(sppClass.getName(), true));
                 sppLocalVar.setArrayDimension(1);
+                setParticipantWireName(sppLocalVar);
                 if (sppService != null) sppService.getReturns().addLocalVar(sppLocalVar);
 
                 //Quantum
@@ -10262,7 +10270,9 @@ public class SppDomain {
             scopeItem.setScopeDefine(scopeDefine);
             scopeItem.setService(sppService);
             sppService.setServiceType(serviceType);
-            sppService.addLocalVar(new SppLocalVar(sppClass,NameUtil.firstToLowerCase(sppClass.getName(),true)));
+            var participant = new SppLocalVar(sppClass, NameUtil.firstToLowerCase(sppClass.getName(), true));
+            setParticipantWireName(participant);
+            sppService.addLocalVar(participant);
             return sppService;
         }else{
             logger.getLogger().error("The unit {} conflict with default service of entity {}.", serviceName, sppClass.getName());

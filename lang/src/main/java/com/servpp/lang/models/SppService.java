@@ -1873,7 +1873,8 @@ public class SppService extends SppClass{
                 .map(SppLocalVar::getRequestArgumentCall)
                 .collect(Collectors.joining(","));
         SppLocalVar returnValue = returns.getSppLocalVarList().get(0);
-        return "        ret.set" + returnValue.getType().getName() + "(  mapper" + defaultClass.getName() + "."
+        return "        ret.set" + NameUtil.firstToLowerCase(returnValue.getParticipantWireName(), false)
+                + "(  mapper" + defaultClass.getName() + "."
                 + funcName + "(" + arguments + ") );";
     }
 
