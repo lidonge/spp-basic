@@ -18,13 +18,13 @@ Scenario serial readDepositAccount(
         findCollectionInterestIncomeAccount;
         findPrincipalRecoveryAccount;
     }
-    identify(DepositAccount);
-    identify(AccountEligibility);
-    identify(DepositAccrualState);
-    identify(CashSettlementAccount);
-    identify(InterestIncomeAccount);
-    identify(CollectionInterestIncomeAccount);
-    identify(PrincipalRecoveryAccount);
+    identify(depositAccount);
+    identify(accountEligibility);
+    identify(depositAccrualState);
+    identify(cashSettlementAccount);
+    identify(interestIncomeAccount);
+    identify(collectionInterestIncomeAccount);
+    identify(principalRecoveryAccount);
     checkAccountParticipants;
     deriveOverdraftExposure;
     describeAccountBalance;

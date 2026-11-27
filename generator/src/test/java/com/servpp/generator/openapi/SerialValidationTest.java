@@ -30,9 +30,9 @@ public class SerialValidationTest {
 
     private static final String SPP = """
             domain ledger;
-            Contract Voucher { String voucherCode; String branch; String reference; int seqNo; boolean rejected; long total; }
-            atomic update storeVoucher(Voucher voucher);
-            Scenario serial record(Voucher voucher) { transaction { storeVoucher; } }
+            Contract Voucher short voucher { String voucherCode; String branch; String reference; int seqNo; boolean rejected; long total; }
+            atomic update storeVoucher(Voucher);
+            Scenario serial record(Voucher) { transaction { storeVoucher; } }
             """;
 
     /** Declarations go before the tables block; the table body holds the auto declarations. */
@@ -87,7 +87,7 @@ public class SerialValidationTest {
                 "scope field nowhere is not a field of Voucher");
     }
     @Test public void sppMustNotAssignAnAutoField() throws Exception {
-        String spp = SPP.replace("atomic update", "atomic calculate stamp(Voucher voucher) { voucher.reference = \"X\"; }\natomic update");
+        String spp = SPP.replace("atomic update", "atomic calculate stamp(Voucher) { Voucher.reference = \"X\"; }\natomic update");
         assertRejected(compile(serial(ENGINE, "serial s using engine { format \"{seq}\"; }", ""), "auto Voucher.reference serial s;", spp),
                 "assigns Voucher.reference, which a technical service fills on insert");
     }
@@ -130,7 +130,7 @@ public class SerialValidationTest {
         assertRejected(compile(intercept(ValueOnly.class.getName(), "before: stamper -> reference;"), "", SPP), "does not take '-> field'");
         assertRejected(compile(intercept(ValueOnly.class.getName(), "insert: stamper -> reference;").replace("intercept Voucher", "intercept Nowhere"), "", SPP),
                 "Unknown interception entity Nowhere");
-        String spp = SPP.replace("atomic update", "atomic calculate stamp(Voucher voucher) { voucher.reference = \"X\"; }\natomic update");
+        String spp = SPP.replace("atomic update", "atomic calculate stamp(Voucher) { Voucher.reference = \"X\"; }\natomic update");
         assertRejected(compile(intercept(ValueOnly.class.getName(), "insert: stamper -> reference;"), "", spp), "SPP must not assign it");
         assertRejected(compile(intercept(ValueOnly.class.getName(), "insert: stamper -> reference;"), "auto Voucher.reference context auditLogNumber;", SPP),
                 "filled by more than one technical declaration");

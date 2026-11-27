@@ -1,18 +1,18 @@
 domain petshop;
 
 atomic calculate prepareReturnRefund(ShopOrder, ReturnRefundAgreement) {
-    ReturnRefundAgreement.refundAmount = ShopOrder.total;
+    returnRefundAgreement.refundAmount = shopOrder.total;
 }
 
 atomic calculate prepareReturnRequest(ReturnRequestAgreement, ShopOrder) {
-    ShopOrder.status = OrderStatus.RETURN_REQUESTED;
-    ShopOrder.reason = ReturnRequestAgreement.reason;
+    shopOrder.status = OrderStatus.RETURN_REQUESTED;
+    shopOrder.reason = returnRequestAgreement.reason;
 }
 
 atomic calculate prepareReturnApproval(ShopOrder, ReturnRefundAgreement) {
-    ReturnRefundAgreement.returnedQuantity = 0;
-    for (OrderLine line : ShopOrder.lines) {
-        ReturnRefundAgreement.returnedQuantity += line.quantity;
+    returnRefundAgreement.returnedQuantity = 0;
+    for (OrderLine line : shopOrder.lines) {
+        returnRefundAgreement.returnedQuantity += line.quantity;
     }
-    ShopOrder.status = OrderStatus.RETURNED;
+    shopOrder.status = OrderStatus.RETURNED;
 }

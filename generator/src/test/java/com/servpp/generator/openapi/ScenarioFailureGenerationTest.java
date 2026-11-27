@@ -11,9 +11,9 @@ public class ScenarioFailureGenerationTest {
         Path root=Files.createTempDirectory("scenario-failure-java");Path source=root.resolve("rules.spp");
         Files.writeString(source,"""
             domain rules;
-            Contract Values { int amount; }
-            atomic update write(Values values);
-            Scenario serial run(Values values) {
+            Contract Values short values { int amount; }
+            atomic update write(Values);
+            Scenario serial run(Values) {
                 transaction { write(values); }
             }
             """);

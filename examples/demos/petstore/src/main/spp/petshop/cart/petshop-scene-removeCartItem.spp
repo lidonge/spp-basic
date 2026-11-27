@@ -5,18 +5,18 @@ Scenario serial removeCartItem(Buyer, Cart, Goods, CartRemovalAgreement, CartLin
     checkGoodsCredential;
     initializeCartRemovalAgreement;
     findBuyer;
-    identify(Buyer);
+    identify(buyer);
     locateBuyerCart;
     prepareCartRemovalAgreementReceipt;
     findCart;
-    identify(Cart);
+    identify(cart);
     checkCart;
     captureCartLines;
     removeCartProduct;
     transaction {
         deleteCartLine;
-        insertCartLine(Cart.lines);
+        insertCartLine(cart.lines);
         updateCart;
-        insertReceipt(CartRemovalAgreement.receipt);
+        insertReceipt(cartRemovalAgreement.receipt);
     }
 }

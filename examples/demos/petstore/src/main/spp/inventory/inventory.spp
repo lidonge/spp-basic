@@ -114,27 +114,27 @@ Contract InventoryOpeningAgreement {
 }
 
 atomic calculate initializeInventory(Goods[], StockLine[], StockSupply[]) {
-    StockLine[] = new StockLine[] {
+    stockLines = new StockLine[] {
     };
-    StockSupply[] = new StockSupply[] {
+    stockSupplys = new StockSupply[] {
     };
-    for (Goods product : Goods[]) {
+    for (Goods product : goodss) {
         StockLine stock = new StockLine();
         stock.goods = product;
 
 
 
-        StockLine[] = append(StockLine[], stock);
+        stockLines = append(stockLines, stock);
         StockSupply source = new StockSupply();
         source.goods = product;
 
-        StockSupply[] = append(StockSupply[], source);
+        stockSupplys = append(stockSupplys, source);
     }
 }
 
 quantum update reserveInventory(StockLine[], ShopOrder) {
-    for (StockLine stock : StockLine[]) {
-        for (OrderLine line : ShopOrder.lines) {
+    for (StockLine stock : stockLines) {
+        for (OrderLine line : shopOrder.lines) {
             if (stock.goods.sku == line.goods.sku) {
                 stock.available -> stock.reserved : line.quantity;
             }
@@ -143,8 +143,8 @@ quantum update reserveInventory(StockLine[], ShopOrder) {
 }
 
 quantum update shipInventory(StockLine[], ShipmentAgreement) {
-    for (StockLine stock : StockLine[]) {
-        for (OrderLine line : ShipmentAgreement.order.lines) {
+    for (StockLine stock : stockLines) {
+        for (OrderLine line : shipmentAgreement.order.lines) {
             if (stock.goods.sku == line.goods.sku) {
                 stock.reserved -> stock.sold : line.quantity;
             }
@@ -153,8 +153,8 @@ quantum update shipInventory(StockLine[], ShipmentAgreement) {
 }
 
 quantum update releaseUnpaidInventory(StockLine[], UnpaidCancellationAgreement) {
-    for (StockLine stock : StockLine[]) {
-        for (OrderLine line : UnpaidCancellationAgreement.order.lines) {
+    for (StockLine stock : stockLines) {
+        for (OrderLine line : unpaidCancellationAgreement.order.lines) {
             if (stock.goods.sku == line.goods.sku) {
                 stock.reserved -> stock.available : line.quantity;
             }
@@ -163,8 +163,8 @@ quantum update releaseUnpaidInventory(StockLine[], UnpaidCancellationAgreement) 
 }
 
 quantum update releasePaidInventory(StockLine[], PaidCancellationAgreement) {
-    for (StockLine stock : StockLine[]) {
-        for (OrderLine line : PaidCancellationAgreement.order.lines) {
+    for (StockLine stock : stockLines) {
+        for (OrderLine line : paidCancellationAgreement.order.lines) {
             if (stock.goods.sku == line.goods.sku) {
                 stock.reserved -> stock.available : line.quantity;
             }
@@ -173,8 +173,8 @@ quantum update releasePaidInventory(StockLine[], PaidCancellationAgreement) {
 }
 
 quantum update returnInventory(StockLine[], ReturnRefundAgreement) {
-    for (StockLine stock : StockLine[]) {
-        for (OrderLine line : ReturnRefundAgreement.order.lines) {
+    for (StockLine stock : stockLines) {
+        for (OrderLine line : returnRefundAgreement.order.lines) {
             if (stock.goods.sku == line.goods.sku) {
                 stock.sold -> stock.available : line.quantity;
             }
@@ -183,8 +183,8 @@ quantum update returnInventory(StockLine[], ReturnRefundAgreement) {
 }
 
 atomic calculate prepareInventoryOpening(Goods[], StockLine[], InventoryOpeningAgreement) {
-    InventoryOpeningAgreement.goods = Goods[];
-    InventoryOpeningAgreement.inventory = StockLine[];
+    inventoryOpeningAgreement.goods = goodss;
+    inventoryOpeningAgreement.inventory = stockLines;
 }
 
 Scenario serial openInventory(Goods[], StockLine[], StockSupply[], InventoryOpeningAgreement) {
@@ -202,9 +202,9 @@ Reference PetReservationAgreement from petshop.PetReservationAgreement {
 }
 
 quantum update reserveRequestedInventory(StockLine[], PetReservationAgreement) {
-    for (StockLine item : StockLine[]) {
-        if (item.goods.sku == PetReservationAgreement.goods.sku) {
-            item.available -> item.reserved : PetReservationAgreement.quantity;
+    for (StockLine item : stockLines) {
+        if (item.goods.sku == petReservationAgreement.goods.sku) {
+            item.available -> item.reserved : petReservationAgreement.quantity;
         }
     }
 }
@@ -217,5 +217,5 @@ Reference StockReceiptAgreement from petshop.StockReceiptAgreement {
 }
 
 quantum update receiveInventory(StockLine, StockSupply, StockReceiptAgreement) {
-    StockSupply.balance -> StockLine.available : StockReceiptAgreement.quantity;
+    stockSupply.balance -> stockLine.available : stockReceiptAgreement.quantity;
 }

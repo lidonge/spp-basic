@@ -4,18 +4,18 @@ Scenario serial clearShopCart(Buyer, Cart, CartClearingAgreement, CartLine[]) {
     checkBuyerCredential;
     initializeCartClearingAgreement;
     findBuyer;
-    identify(Buyer);
+    identify(buyer);
     locateBuyerCart;
     prepareCartClearingAgreementReceipt;
     findCart;
-    identify(Cart);
+    identify(cart);
     checkCart;
     captureCartLines;
     clearCartProducts;
     transaction {
         deleteCartLine;
-        insertCartLine(Cart.lines);
+        insertCartLine(cart.lines);
         updateCart;
-        insertReceipt(CartClearingAgreement.Receipt);
+        insertReceipt(cartClearingAgreement.Receipt);
     }
 }

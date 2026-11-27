@@ -37,24 +37,24 @@ Scenario serial readRegisteredSubject(RegisteredSubject) {
 }
 
 atomic check checkSubjectFacts(Person) {
-    require(Person.name != BLANK, RejectionCode.SUBJECT_NAME_REQUIRED);
-    require(Person.email != BLANK, RejectionCode.SUBJECT_EMAIL_REQUIRED);
-    require(Person.address != BLANK, RejectionCode.SUBJECT_ADDRESS_REQUIRED);
+    require(person.name != BLANK, RejectionCode.SUBJECT_NAME_REQUIRED);
+    require(person.email != BLANK, RejectionCode.SUBJECT_EMAIL_REQUIRED);
+    require(person.address != BLANK, RejectionCode.SUBJECT_ADDRESS_REQUIRED);
 }
 
 atomic check checkSubjectAbsent(Person) {
-    require(!Person, RejectionCode.SUBJECT_EXISTS);
+    require(!person, RejectionCode.SUBJECT_EXISTS);
 }
 
 atomic calculate prepareSubjectRegistration(Person, SubjectRegistrationAgreement) {
-    SubjectRegistrationAgreement.subject = Person;
+    subjectRegistrationAgreement.subject = person;
 }
 
 atomic calculate applySubjectProfile(Person, SubjectProfileAgreement) {
-    Person.name = SubjectProfileAgreement.name;
-    Person.email = SubjectProfileAgreement.email;
-    Person.address = SubjectProfileAgreement.address;
-    SubjectProfileAgreement.subject = Person;
+    person.name = subjectProfileAgreement.name;
+    person.email = subjectProfileAgreement.email;
+    person.address = subjectProfileAgreement.address;
+    subjectProfileAgreement.subject = person;
 }
 
 Scenario serial registerSubject(Person, SubjectRegistrationAgreement) {
@@ -69,7 +69,7 @@ Scenario serial registerSubject(Person, SubjectRegistrationAgreement) {
 
 Scenario serial updateSubjectProfile(Person, SubjectProfileAgreement) {
     findPerson;
-    identify(Person);
+    identify(person);
     applySubjectProfile;
     checkSubjectFacts;
     transaction {
@@ -78,17 +78,17 @@ Scenario serial updateSubjectProfile(Person, SubjectProfileAgreement) {
 }
 
 atomic calculate configureMerchantSubject(Person) {
-    Person.customerNumber = "MERCHANT-001";
-    Person.name = "Pet shop merchant";
-    Person.email = "merchant@example.test";
-    Person.address = "Pet Lane shop, Demo City";
+    person.customerNumber = "MERCHANT-001";
+    person.name = "Pet shop merchant";
+    person.email = "merchant@example.test";
+    person.address = "Pet Lane shop, Demo City";
 }
 
 Scenario serial initializeCustomerDomain(Person, SubjectRegistrationAgreement) {
     configureMerchantSubject;
     prepareSubjectRegistration;
     findPerson;
-    if (!Person) {
+    if (!person) {
         checkSubjectFacts;
         transaction {
             insertPerson;

@@ -7,26 +7,26 @@ Scenario serial placeShopOrder(Buyer, Cart, StockLine[], ShopOrder, Goods, Goods
         findBuyer;
         listProducts;
     }
-    identify(Buyer);
+    identify(buyer);
     locateBuyerCart;
     findCart;
-    identify(Cart);
+    identify(cart);
     checkCart;
     checkQuotationInput;
     quoteOrder;
     prepareOrderInventory;
     findStockLine;
-    identify(StockLine[]);
+    identify(stockLines);
     checkOrderReservation;
     captureCartLines;
     reserveOrder;
     transaction {
         deleteCartLine;
-        insertOrderLine(ShopOrder.lines);
+        insertOrderLine(shopOrder.lines);
         insertShopOrder;
         reserveInventory bounds {
-            StockLine[].available: [0, null];
-            StockLine[].reserved: [0, null];
+            stockLines.available: [0, null];
+            stockLines.reserved: [0, null];
         };
         updateCart;
 

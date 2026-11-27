@@ -24,7 +24,7 @@ public class OrderingComparisonGenerationTest {
                 domain ordering;
                 Enum Priority { LOW:"Z", HIGH:"A" }
                 Enum State { FIRST:"ZZ", UNKNOWN:other, LAST:"AA" }
-                Role Row {
+                Role Row short row {
                     String code;
                     String missing;
                     State state;
@@ -32,7 +32,7 @@ public class OrderingComparisonGenerationTest {
                     boolean serviceOrder;
                     boolean scenarioOrder;
                 }
-                atomic calculate classify(Row row) {
+                atomic calculate classify(Row) {
                     row.serviceOrder = "1" < "A";
                     row.ordered = "AB" <= "AB " && "AB" >= "AB " && "AB" != "AB "
                         && "01" < "02" && row.code > BLANK && (BLANK) <= row.missing
@@ -40,8 +40,8 @@ public class OrderingComparisonGenerationTest {
                         && State.FIRST < row.state && row.state <= State.LAST
                         && "🌱" > "�" && "🌱" > "9" && "�" > "9";
                 }
-                atomic calculate mark(Row row) { row.scenarioOrder = true; }
-                readonly Scenario serial run(Row row) {
+                atomic calculate mark(Row) { row.scenarioOrder = true; }
+                readonly Scenario serial run(Row) {
                     classify(row);
                     if ("1" < "A") { mark(row); }
                 }

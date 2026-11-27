@@ -21,15 +21,15 @@ public class BlankPersistenceTest {
         Path source = Files.createDirectory(root.resolve("source"));
         Files.writeString(source.resolve("blanks.spp"), """
                 domain blanks;
-                Contract Receipt { String receiptNumber; String(8) note; boolean accepted; }
-                Role Label { String(4) labelCode; String category; String description; }
-                Scenario serial readLabel(Label label) { findLabel by Label.labelCode = BLANK, Label.category = "X"; }
-                atomic calculate classify(Receipt receipt) {
+                Contract Receipt short receipt { String receiptNumber; String(8) note; boolean accepted; }
+                Role Label short label { String(4) labelCode; String category; String description; }
+                Scenario serial readLabel(Label) { findLabel by Label.labelCode = BLANK, Label.category = "X"; }
+                atomic calculate classify(Receipt) {
                     receipt.accepted = receipt.note == BLANK;
                     receipt.note = BLANK;
                 }
-                atomic update storeReceipt(Receipt receipt);
-                Scenario serial record(Receipt receipt) {
+                atomic update storeReceipt(Receipt);
+                Scenario serial record(Receipt) {
                     classify;
                     transaction { storeReceipt; }
                 }

@@ -65,17 +65,17 @@ public class BasicCompilerTest {
                 Enum CardRejection { LIMIT_EXCEEDED:"EC012","LIMIT", PRODUCT_CLOSED:"EC031", UNKNOWN:other, MISSING:null }
                 Enum StrictRejection { LIMIT_EXCEEDED:"EC012" }
                 Enum LegacyRejection { LIMIT_EXCEEDED:"EC012", OTHER }
-                Role ProviderResult { String(5) code; CardRejection reason; boolean unknown; boolean closed; }
-                atomic check checkProvider(ProviderResult result) {
+                Role ProviderResult short result { String(5) code; CardRejection reason; boolean unknown; boolean closed; }
+                atomic check checkProvider(ProviderResult) {
                     require(result.code == "", CardRejection(result.code));
                 }
-                atomic check checkStrict(ProviderResult result) {
+                atomic check checkStrict(ProviderResult) {
                     require(result.code == "", StrictRejection(result.code));
                 }
-                atomic check checkLegacy(ProviderResult result) {
+                atomic check checkLegacy(ProviderResult) {
                     require(result.code == "", LegacyRejection(result.code));
                 }
-                atomic calculate classify(ProviderResult result) {
+                atomic calculate classify(ProviderResult) {
                     result.reason = CardRejection(result.code);
                     result.closed = CardRejection(result.code) == CardRejection(CLOSED_CODE);
                     switch (CardRejection(result.code)) {
@@ -83,12 +83,12 @@ public class BasicCompilerTest {
                         default: result.unknown = false;
                     }
                 }
-                readonly Scenario serial readProvider(ProviderResult result) {
+                readonly Scenario serial readProvider(ProviderResult) {
                     classify(result);
                     checkProvider(result);
                 }
-                readonly Scenario serial readStrict(ProviderResult result) { checkStrict(result); }
-                readonly Scenario serial readLegacy(ProviderResult result) { checkLegacy(result); }
+                readonly Scenario serial readStrict(ProviderResult) { checkStrict(result); }
+                readonly Scenario serial readLegacy(ProviderResult) { checkLegacy(result); }
                 """);
         Path output = temporary.getRoot().toPath().resolve("provider-probe");
         Main.run(new String[]{"generate", "--source", source.toString(), "--output", output.toString()});
@@ -170,17 +170,17 @@ public class BasicCompilerTest {
                 Enum MemberNamedKind { Kind, OTHER:other }
                 Role Facts { Route route; StrictRoute strictRoute; Completion completion; NullOnly nullOnly; OtherOnly otherOnly; boolean unknown; int selected; }
                 atomic calculate choose(Facts) {
-                    Facts.unknown = Facts.route == Route.OTHER;
-                    switch (Facts.route) {
-                        case DIRECT: Facts.selected = 1; break;
-                        case OTHER: Facts.selected = 2; break;
+                    facts.unknown = facts.route == Route.OTHER;
+                    switch (facts.route) {
+                        case DIRECT: facts.selected = 1; break;
+                        case OTHER: facts.selected = 2; break;
                     }
-                    switch (Facts.completion) {
-                        case NULL_VALUE: Facts.selected = 3; break;
-                        case COMPLETE: Facts.selected = 4; break;
+                    switch (facts.completion) {
+                        case NULL_VALUE: facts.selected = 3; break;
+                        case COMPLETE: facts.selected = 4; break;
                     }
-                    switch (Facts.otherOnly) {
-                        case PUBLIC: Facts.selected = 5; break;
+                    switch (facts.otherOnly) {
+                        case PUBLIC: facts.selected = 5; break;
                     }
                 }
                 Scenario serial determine(Facts) { choose; }
@@ -341,7 +341,7 @@ public class BasicCompilerTest {
 
     private Path source()throws Exception {
         Path source=temporary.newFolder().toPath();
-        var text=new StringBuilder("domain ledger; Role Facts { int amount; } atomic calculate twice(Facts) { Facts.amount *= 2; }\n");
+        var text=new StringBuilder("domain ledger; Role Facts { int amount; } atomic calculate twice(Facts) { facts.amount *= 2; }\n");
         for(int i=0;i<40;i++)text.append("Scenario serial preview").append(i).append("(Facts) { twice; }\n");
         Files.writeString(source.resolve("ledger.spp"),text);return source;
     }
@@ -378,9 +378,9 @@ public class BasicCompilerTest {
         Path source = temporary.newFolder().toPath();
         Files.writeString(source.resolve("catalog.spp"), """
                 domain catalog;
-                Entity Record { String category; String code; int regionNumber; }
-                atomic query lookup(Record selection, Record[] matches);
-                Scenario serial search(Record selection, Record[] matches) { lookup; }
+                Entity Record short selection, matches { String category; String code; int regionNumber; }
+                atomic query lookup(Record, Record[]);
+                Scenario serial search(Record, Record[]) { lookup; }
                 """);
         Path app = source.resolve("catalog.app");
         String binding = """
@@ -432,9 +432,9 @@ public class BasicCompilerTest {
                     String(6) postalCode;
                     String(4) areaCode;
                 }
-                Role TextValue { String(3) value; }
-                atomic calculate appendText(TextValue text) { text.value = text.value + "long"; }
-                Scenario serial preview(TextValue text) { appendText(text); }
+                Role TextValue short text { String(3) value; }
+                atomic calculate appendText(TextValue) { text.value = text.value + "long"; }
+                Scenario serial preview(TextValue) { appendText(text); }
                 """);
         Files.writeString(source.resolve("widths.app"), """
                 domain widths;

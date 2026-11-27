@@ -2,7 +2,7 @@ domain cboddeposit;
 
 // Business interest-unit quantization, CSAPRD2 5300; dates supplied by shared calendar service.
 
-Role InterestPeriod {
+Role InterestPeriod short normal {
     BigDecimal(19, 2) amount;
     BigDecimal(19, 2) unit;
     int days;
@@ -15,45 +15,39 @@ Role InterestProduct {
 
 atomic check checkInterestPeriod(InterestPeriod) {
     require(
-        InterestPeriod.amount >= 0 && InterestPeriod.unit > 0 && InterestPeriod.days >= 0,
+        normal.amount >= 0 && normal.unit > 0 && normal.days >= 0,
         RejectionCode.INVALID_INTEREST_PERIOD
     );
 }
 
 atomic check checkBankDate(BankDate) {
-    require(BankDate.encoded != null && BankDate.encoded != 0, RejectionCode.EEC28);
-    require(BankDate.encoded >= 10000101 && BankDate.encoded <= 99991231, RejectionCode.EE374);
-    require(isGregorianDate(BankDate.encoded), RejectionCode.EE374);
+    require(start.encoded != null && start.encoded != 0, RejectionCode.EEC28);
+    require(start.encoded >= 10000101 && start.encoded <= 99991231, RejectionCode.EE374);
+    require(isGregorianDate(start.encoded), RejectionCode.EE374);
 }
 
-atomic check checkPeriodEnd(PeriodEnd) {
-    require(PeriodEnd.encoded != null && PeriodEnd.encoded != 0, RejectionCode.EEC28);
-    require(PeriodEnd.encoded >= 10000101 && PeriodEnd.encoded <= 99991231, RejectionCode.EE374);
-    require(isGregorianDate(PeriodEnd.encoded), RejectionCode.EE374);
-}
-
-atomic check checkBankDays(BankDate start, PeriodEnd end, InterestCalendar) {
+atomic check checkBankDays(BankDate, PeriodEnd, InterestCalendar) {
     require(start.epochDay <= end.epochDay, RejectionCode.E1175);
     require(
-        InterestCalendar.convention == "ACT"
-            || InterestCalendar.convention == "360365"
-            || InterestCalendar.convention == "360360",
+        interestCalendar.convention == "ACT"
+            || interestCalendar.convention == "360365"
+            || interestCalendar.convention == "360360",
         RejectionCode.EEC28
     );
 }
 
 atomic calculate calculateInterestProduct(InterestPeriod, InterestProduct) {
-    InterestProduct.qualifiedAmount = roundDown(
-        InterestPeriod.amount / InterestPeriod.unit,
+    interestProduct.qualifiedAmount = roundDown(
+        normal.amount / normal.unit,
         0
-    ) * InterestPeriod.unit;
-    InterestProduct.product = InterestProduct.qualifiedAmount * InterestPeriod.days;
+    ) * normal.unit;
+    interestProduct.product = interestProduct.qualifiedAmount * normal.days;
 }
 
 // CSAPRD2/CCMDAT1 function O: start included, end excluded.
 // The shared Gregorian functions decode representation; business selects ACT or deposit 360-day policy.
 
-Role BankDate {
+Role BankDate short start {
     int encoded;
     int year;
     int month;
@@ -62,37 +56,25 @@ Role BankDate {
 }
 
 // The end of a period is a distinct participant from its start, so it is a role over BankDate.
-Role PeriodEnd {
-    int encoded;
-    int year;
-    int month;
-    int day;
-    int epochDay;
-}
+Role PeriodEnd short end;
+take BankDate as PeriodEnd;
 
 Role InterestCalendar {
     String convention;
 }
 
 atomic calculate decodeBankDate(BankDate) {
-    BankDate.year = dateYear(BankDate.encoded);
-    BankDate.month = dateMonth(BankDate.encoded);
-    BankDate.day = dateDay(BankDate.encoded);
-    BankDate.epochDay = dateEpochDay(BankDate.encoded);
+    start.year = dateYear(start.encoded);
+    start.month = dateMonth(start.encoded);
+    start.day = dateDay(start.encoded);
+    start.epochDay = dateEpochDay(start.encoded);
 }
 
-atomic calculate decodePeriodEnd(PeriodEnd) {
-    PeriodEnd.year = dateYear(PeriodEnd.encoded);
-    PeriodEnd.month = dateMonth(PeriodEnd.encoded);
-    PeriodEnd.day = dateDay(PeriodEnd.encoded);
-    PeriodEnd.epochDay = dateEpochDay(PeriodEnd.encoded);
-}
-
-atomic calculate calculateBankDays(BankDate start, PeriodEnd end, InterestCalendar, InterestPeriod) {
-    if (InterestCalendar.convention == "ACT") {
-        InterestPeriod.days = end.epochDay - start.epochDay;
+atomic calculate calculateBankDays(BankDate, PeriodEnd, InterestCalendar, InterestPeriod) {
+    if (interestCalendar.convention == "ACT") {
+        normal.days = end.epochDay - start.epochDay;
     } else {
-        InterestPeriod.days = 360
+        normal.days = 360
             * (end.year
             - start.year)
             + 30

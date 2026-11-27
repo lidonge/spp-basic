@@ -7,16 +7,16 @@ Contract OverdraftCharge {
 }
 
 atomic check checkOverdraftCharge(OverdraftCharge) {
-    require(OverdraftCharge.interest >= 0 && OverdraftCharge.collection >= 0
-        && OverdraftCharge.principal >= 0, RejectionCode.E1155);
+    require(overdraftCharge.interest >= 0 && overdraftCharge.collection >= 0
+        && overdraftCharge.principal >= 0, RejectionCode.E1155);
 }
 
 quantum update originateClaims(
     OverdraftCharge, DepositAccount, InterestIncomeAccount, CollectionInterestIncomeAccount, CashSettlementAccount
 ) {
-    DepositAccount.overdraftInterest -> InterestIncomeAccount.balance : OverdraftCharge.interest;
-    DepositAccount.collectionInterest -> CollectionInterestIncomeAccount.balance : OverdraftCharge.collection;
-    DepositAccount.overdraftPrincipal -> CashSettlementAccount.balance : OverdraftCharge.principal;
+    depositAccount.overdraftInterest -> interestIncomeAccount.balance : overdraftCharge.interest;
+    depositAccount.collectionInterest -> collectionInterestIncomeAccount.balance : overdraftCharge.collection;
+    depositAccount.overdraftPrincipal -> cashSettlementAccount.balance : overdraftCharge.principal;
 }
 
 Scenario serial bookOverdraftClaims(
@@ -28,18 +28,18 @@ Scenario serial bookOverdraftClaims(
         findCollectionInterestIncomeAccount;
         findCashSettlementAccount;
     }
-    identify(DepositAccount);
-    identify(InterestIncomeAccount);
-    identify(CollectionInterestIncomeAccount);
-    identify(CashSettlementAccount);
+    identify(depositAccount);
+    identify(interestIncomeAccount);
+    identify(collectionInterestIncomeAccount);
+    identify(cashSettlementAccount);
     checkOverdraftCharge;
     transaction {
         originateClaims bounds {
-            DepositAccount.overdraftInterest: [null, 0];
-            DepositAccount.collectionInterest: [null, 0];
-            DepositAccount.overdraftPrincipal: [null, 0];
-            InterestIncomeAccount.balance: [0, null];
-            CollectionInterestIncomeAccount.balance: [0, null];
+            depositAccount.overdraftInterest: [null, 0];
+            depositAccount.collectionInterest: [null, 0];
+            depositAccount.overdraftPrincipal: [null, 0];
+            interestIncomeAccount.balance: [0, null];
+            collectionInterestIncomeAccount.balance: [0, null];
         };
         deriveOverdraftExposure;
     }

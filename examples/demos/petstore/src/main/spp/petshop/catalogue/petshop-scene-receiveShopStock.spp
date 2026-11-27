@@ -1,15 +1,15 @@
 domain petshop;
 
 atomic check checkStockReceiptQuantity(StockReceiptAgreement) {
-    require(StockReceiptAgreement.quantity > 0, RejectionCode.INVALID_QUANTITY);
+    require(stockReceiptAgreement.quantity > 0, RejectionCode.INVALID_QUANTITY);
 }
 
 atomic calculate prepareStockReceipt(Goods, StockLine, StockSupply, StockReceiptAgreement) {
-    StockLine.goods = Goods;
-    StockSupply.goods = Goods;
-    StockReceiptAgreement.goods = Goods;
-    StockReceiptAgreement.stock = StockLine;
-    StockReceiptAgreement.source = StockSupply;
+    stockLine.goods = goods;
+    stockSupply.goods = goods;
+    stockReceiptAgreement.goods = goods;
+    stockReceiptAgreement.stock = stockLine;
+    stockReceiptAgreement.source = stockSupply;
 }
 
 atomic update receiveInventory(StockLine, StockSupply, StockReceiptAgreement);
@@ -18,17 +18,17 @@ Scenario serial receiveShopStock(Goods, StockLine, StockSupply, StockReceiptAgre
     checkGoodsCredential;
     checkStockReceiptQuantity;
     findGoods;
-    identify(Goods);
+    identify(goods);
     prepareStockReceipt;
     parallel {
         findStockLine;
         findStockSupply;
     }
-    identify(StockLine);
-    identify(StockSupply);
+    identify(stockLine);
+    identify(stockSupply);
     transaction {
         receiveInventory bounds {
-            StockLine.available: [0, null];
+            stockLine.available: [0, null];
         };
     }
 }

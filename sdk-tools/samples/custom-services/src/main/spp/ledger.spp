@@ -16,7 +16,7 @@ Contract Revision {
 }
 
 atomic calculate twice(Facts) {
-    Facts.amount *= 2;
+    facts.amount *= 2;
 }
 
 readonly Scenario serial preview(Facts) {
@@ -24,8 +24,8 @@ readonly Scenario serial preview(Facts) {
 }
 
 atomic calculate applyRevision(Entry, Revision) {
-    Entry.note = Revision.note;
-    Entry.amount = Revision.amount;
+    entry.note = revision.note;
+    entry.amount = revision.amount;
 }
 
 Scenario serial createRecord(Entry, Revision) {
@@ -40,12 +40,12 @@ Scenario serial readRecord(Entry) {
 }
 
 atomic calculate projectAmount(Entry, Facts) {
-    Facts.amount = Entry.amount * 2;
+    facts.amount = entry.amount * 2;
 }
 
 readonly Scenario serial previewRecord(Entry, Facts) {
     findEntry;
-    identify(Entry);
+    identify(entry);
     projectAmount;
 }
 
@@ -66,5 +66,5 @@ take Lookup as Entry {
 }
 
 readonly Scenario serial readSelectedRecord(Entry, Lookup) {
-    findEntry by Lookup;
+    findEntry by lookup;
 }

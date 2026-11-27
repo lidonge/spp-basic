@@ -1,34 +1,34 @@
 domain petshop;
 
 atomic check checkCustomerProfile(Buyer) {
-    require(Buyer.name != BLANK, RejectionCode.NAME_REQUIRED);
-    require(Buyer.email != BLANK, RejectionCode.EMAIL_REQUIRED);
-    require(Buyer.address != BLANK, RejectionCode.ADDRESS_REQUIRED);
-    require(Buyer.tier == MemberTier.NORMAL || Buyer.tier == MemberTier.VIP, RejectionCode.INVALID_MEMBER_TIER);
+    require(buyer.name != BLANK, RejectionCode.NAME_REQUIRED);
+    require(buyer.email != BLANK, RejectionCode.EMAIL_REQUIRED);
+    require(buyer.address != BLANK, RejectionCode.ADDRESS_REQUIRED);
+    require(buyer.tier == MemberTier.NORMAL || buyer.tier == MemberTier.VIP, RejectionCode.INVALID_MEMBER_TIER);
 }
 
 atomic calculate registerCustomer(Buyer, Cart) {
 
-    Cart.buyer = Buyer;
-    Cart.lines = new CartLine[] {
+    cart.buyer = buyer;
+    cart.lines = new CartLine[] {
     };
 }
 
 atomic calculate updateProfile(ProfileAgreement, Buyer) {
-    Buyer.name = ProfileAgreement.newName;
-    Buyer.email = ProfileAgreement.newEmail;
-    Buyer.address = ProfileAgreement.newAddress;
-    Buyer.tier = ProfileAgreement.newTier;
+    buyer.name = profileAgreement.newName;
+    buyer.email = profileAgreement.newEmail;
+    buyer.address = profileAgreement.newAddress;
+    buyer.tier = profileAgreement.newTier;
 }
 
 atomic check checkNewCustomer(Buyer) {
-    require(!Buyer, RejectionCode.CUSTOMER_EXISTS);
+    require(!buyer, RejectionCode.CUSTOMER_EXISTS);
 }
 
 atomic check checkBuyerCredential(Buyer) {
-    require(Buyer.membershipNumber != BLANK, RejectionCode.MEMBERSHIP_NUMBER_REQUIRED);
+    require(buyer.membershipNumber != BLANK, RejectionCode.MEMBERSHIP_NUMBER_REQUIRED);
 }
 
 atomic calculate locateBuyerCart(Buyer, Cart) {
-    Cart.buyer = Buyer;
+    cart.buyer = buyer;
 }

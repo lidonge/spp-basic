@@ -1,9 +1,9 @@
 domain cboddeposit;
 
 Scenario serial openBankRepaymentAccounts(
-    InterestSubject interestSubject,
-    CollectionSubject collectionSubject,
-    PrincipalSubject principalSubject,
+    InterestSubject,
+    CollectionSubject,
+    PrincipalSubject,
     InterestIncomeAccount,
     CollectionInterestIncomeAccount,
     PrincipalRecoveryAccount,
@@ -14,10 +14,10 @@ Scenario serial openBankRepaymentAccounts(
         interestSubject,
         collectionSubject,
         principalSubject,
-        InterestIncomeAccount,
-        CollectionInterestIncomeAccount,
-        PrincipalRecoveryAccount,
-        InternalAccountOpeningAgreement
+        interestIncomeAccount,
+        collectionInterestIncomeAccount,
+        principalRecoveryAccount,
+        internalAccountOpeningAgreement
     );
     transaction {
         insertInterestSubject(interestSubject);

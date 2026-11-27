@@ -17,7 +17,7 @@ public class IndependentRoleContactQueryGenerationTest {
                 Role AccountHolder { String email; String name; boolean active; }
                 take Person as AccountHolder { mapsame; }
                 atomic query lookupByEmail(AccountHolder);
-                Scenario serial readAccount(AccountHolder) { lookupByEmail; identify(AccountHolder); findAccountHolder; }
+                Scenario serial readAccount(AccountHolder) { lookupByEmail; identify(accountHolder); findAccountHolder; }
                 """);
         Files.writeString(source.resolve("accounts.app"),"""
                 domain accounts;

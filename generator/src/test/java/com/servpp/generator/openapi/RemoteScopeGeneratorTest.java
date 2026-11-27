@@ -19,12 +19,12 @@ public class RemoteScopeGeneratorTest {
         Files.writeString(sourceDir.resolve("commerce.spp"), """
                 domain commerce;
 
-                Entity Customer{
+                Entity Customer short customer{
                     String membershipNumber;
                 }
 
-                atomic query queryCustomer(Customer customer);
-                atomic query helperCustomer(Customer customer);
+                atomic query queryCustomer(Customer);
+                atomic query helperCustomer(Customer);
                 """);
         Files.writeString(sourceDir.resolve("commerce.app"), """
                 domain commerce;
@@ -72,20 +72,20 @@ public class RemoteScopeGeneratorTest {
         Files.writeString(sourceDir.resolve("pricing.spp"), """
                 domain pricing;
 
-                Entity Product{
+                Entity Product short product{
                     String productCode;
                 }
 
-                Entity PriceQuote{
+                Entity PriceQuote short quote{
                     String quoteNumber;
                     double amount;
                 }
 
-                atomic query queryPricing(Product product, PriceQuote quote);
-                atomic query searchPricing(Product product, PriceQuote[] quotes);
-                atomic update updatePricing(Product product);
-                atomic update releasePricing(Product product);
-                Scenario serial quotePricing(Product product, PriceQuote quote){
+                atomic query queryPricing(Product, PriceQuote);
+                atomic query searchPricing(Product, PriceQuote[]);
+                atomic update updatePricing(Product);
+                atomic update releasePricing(Product);
+                Scenario serial quotePricing(Product, PriceQuote){
                     queryPricing(product, quote);
                 }
                 """);

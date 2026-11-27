@@ -9,20 +9,20 @@ Scenario serial setCartQuantity(Buyer, Cart, Goods, CartQuantityAgreement, CartL
         findBuyer;
         findGoods;
     }
-    identify(Buyer);
-    identify(Goods);
+    identify(buyer);
+    identify(goods);
     checkGoodsSale;
     locateBuyerCart;
     prepareCartQuantityAgreementReceipt;
     findCart;
-    identify(Cart);
+    identify(cart);
     checkCart;
     captureCartLines;
     setCartProductQuantity;
     transaction {
         deleteCartLine;
-        insertCartLine(Cart.lines);
+        insertCartLine(cart.lines);
         updateCart;
-        insertReceipt(CartQuantityAgreement.receipt);
+        insertReceipt(cartQuantityAgreement.receipt);
     }
 }

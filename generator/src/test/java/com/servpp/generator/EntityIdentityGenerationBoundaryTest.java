@@ -24,7 +24,7 @@ public class EntityIdentityGenerationBoundaryTest {
                 }
                 atomic query lookupPerson(Person);
                 atomic calculate prepareRegistration(Person, RegistrationAgreement) {
-                    RegistrationAgreement.applicant = Person;
+                    registrationAgreement.applicant = person;
                 }
                 Scenario serial refresh(Person) { findPerson; }
                 Scenario serial revise(Person, RegistrationAgreement) {

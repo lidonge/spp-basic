@@ -53,14 +53,14 @@ public class XbodCalculationTest {
     }
     @Test public void calendarUsesStartIncludedAndEndExcluded() throws Exception {
         try (var demo = new XbodTestSupport()) {
-            var result = demo.call("previewInterestProduct", Map.of("start", Map.of("encoded", 20260228), "end", Map.of("encoded", 20260302), "InterestCalendar", Map.of("convention", "ACT"), "InterestPeriod", Map.of("amount", 123.45, "unit", 10)));
-            assertEquals(2, result.path("InterestPeriod").path("days").asInt());
+            var result = demo.call("previewInterestProduct", Map.of("start", Map.of("encoded", 20260228), "end", Map.of("encoded", 20260302), "InterestCalendar", Map.of("convention", "ACT"), "normal", Map.of("amount", 123.45, "unit", 10)));
+            assertEquals(2, result.path("normal").path("days").asInt());
             assertEquals(0, result.path("InterestProduct").path("product").decimalValue().compareTo(new java.math.BigDecimal("240")));
         }
     }
     @Test public void invalidCalendarIsBusinessCheck() throws Exception {
         try (var demo = new XbodTestSupport()) {
-            var failure = assertThrows(IllegalStateException.class, () -> demo.call("previewInterestProduct", Map.of("start", Map.of("encoded", 20260230), "end", Map.of("encoded", 20260302), "InterestCalendar", Map.of("convention", "ACT"), "InterestPeriod", Map.of("amount", 10, "unit", 1))));
+            var failure = assertThrows(IllegalStateException.class, () -> demo.call("previewInterestProduct", Map.of("start", Map.of("encoded", 20260230), "end", Map.of("encoded", 20260302), "InterestCalendar", Map.of("convention", "ACT"), "normal", Map.of("amount", 10, "unit", 1))));
             assertEquals("EE374", failure.getMessage());
         }
     }

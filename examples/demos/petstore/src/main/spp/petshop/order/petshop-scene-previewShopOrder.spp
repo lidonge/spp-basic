@@ -4,10 +4,10 @@ Scenario serial previewShopOrder(Buyer, Cart, ShopOrder, Goods, Goods[]) {
     checkBuyerCredential;
     prepareProductSelection;
     findBuyer;
-    identify(Buyer);
+    identify(buyer);
     locateBuyerCart;
     findCart;
-    identify(Cart);
+    identify(cart);
     checkCart;
     listProducts;
     checkQuotationInput;

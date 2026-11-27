@@ -1,5 +1,5 @@
 domain petshop;
 
 quantum update payOrderFunds(Buyer, Merchant, PaymentAgreement) {
-    Buyer.wallet -> Merchant.cash : PaymentAgreement.paymentAmount;
+    buyer.wallet -> merchant.cash : paymentAgreement.paymentAmount;
 }

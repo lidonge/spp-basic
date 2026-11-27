@@ -1,32 +1,32 @@
 domain petshop;
 
 atomic calculate initializeReturnRequestAgreement(Buyer, ShopOrder, ReturnRequestAgreement) {
-    ReturnRequestAgreement.Buyer = Buyer;
-    ReturnRequestAgreement.ShopOrder = ShopOrder;
+    returnRequestAgreement.Buyer = buyer;
+    returnRequestAgreement.ShopOrder = shopOrder;
 }
 
 atomic calculate prepareReturnRequestReceipt(ShopOrder, ReturnRequestAgreement) {
-    ReturnRequestAgreement.Receipt = new Receipt();
-    ReturnRequestAgreement.Receipt.order = ShopOrder;
-    ReturnRequestAgreement.Receipt.buyer = ShopOrder.buyer;
-    ReturnRequestAgreement.Receipt.status = ReceiptStatus.COMPLETED;
-    ReturnRequestAgreement.Receipt.orderStatus = ShopOrder.status;
+    returnRequestAgreement.Receipt = new Receipt();
+    returnRequestAgreement.Receipt.order = shopOrder;
+    returnRequestAgreement.Receipt.buyer = shopOrder.buyer;
+    returnRequestAgreement.Receipt.status = ReceiptStatus.COMPLETED;
+    returnRequestAgreement.Receipt.orderStatus = shopOrder.status;
 }
 
 atomic calculate initializeReturnRefundAgreement(Buyer, Merchant, ShopOrder, ReturnRefundAgreement) {
-    ReturnRefundAgreement.buyer = Buyer;
-    ReturnRefundAgreement.order = ShopOrder;
-    ReturnRefundAgreement.seller = Merchant;
+    returnRefundAgreement.buyer = buyer;
+    returnRefundAgreement.order = shopOrder;
+    returnRefundAgreement.seller = merchant;
 
-    ReturnRefundAgreement.returnedQuantity = 0;
-    ReturnRefundAgreement.refundAmount = 0;
+    returnRefundAgreement.returnedQuantity = 0;
+    returnRefundAgreement.refundAmount = 0;
 }
 
 atomic calculate prepareReturnRefundAgreementReceipt(ShopOrder, ReturnRefundAgreement) {
-    ReturnRefundAgreement.order = ShopOrder;
-    ReturnRefundAgreement.receipt = new Receipt();
-    ReturnRefundAgreement.receipt.order = ShopOrder;
-    ReturnRefundAgreement.receipt.buyer = ShopOrder.buyer;
-    ReturnRefundAgreement.receipt.status = ReceiptStatus.COMPLETED;
-    ReturnRefundAgreement.receipt.orderStatus = ShopOrder.status;
+    returnRefundAgreement.order = shopOrder;
+    returnRefundAgreement.receipt = new Receipt();
+    returnRefundAgreement.receipt.order = shopOrder;
+    returnRefundAgreement.receipt.buyer = shopOrder.buyer;
+    returnRefundAgreement.receipt.status = ReceiptStatus.COMPLETED;
+    returnRefundAgreement.receipt.orderStatus = shopOrder.status;
 }

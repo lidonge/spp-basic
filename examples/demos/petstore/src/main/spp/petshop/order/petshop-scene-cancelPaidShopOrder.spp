@@ -11,13 +11,13 @@ Scenario serial cancelPaidShopOrder(Buyer, Merchant, StockLine[], ShopOrder, Pai
         findMerchant;
         findShopOrder;
     }
-    identify(Buyer);
-    identify(Merchant);
-    identify(ShopOrder);
+    identify(buyer);
+    identify(merchant);
+    identify(shopOrder);
     checkOrderOwner;
     prepareOrderInventory;
     findStockLine;
-    identify(StockLine[]);
+    identify(stockLines);
     checkPaidCancellation;
     checkReservedInventory;
     preparePaidCancellation;
@@ -25,15 +25,15 @@ Scenario serial cancelPaidShopOrder(Buyer, Merchant, StockLine[], ShopOrder, Pai
     preparePaidCancellationAgreementReceipt;
     transaction {
         releasePaidInventory bounds {
-            StockLine[].available: [0, null];
-            StockLine[].reserved: [0, null];
+            stockLines.available: [0, null];
+            stockLines.reserved: [0, null];
         };
         refundCancellationFunds bounds {
-            Buyer.wallet: [0, null];
-            Merchant.cash: [0, null];
+            buyer.wallet: [0, null];
+            merchant.cash: [0, null];
         };
         updateShopOrder;
 
-        insertReceipt(PaidCancellationAgreement.receipt);
+        insertReceipt(paidCancellationAgreement.receipt);
     }
 }

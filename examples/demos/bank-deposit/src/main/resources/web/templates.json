@@ -847,7 +847,7 @@
     }
   },
   "previewUnitInterest": {
-    "InterestPeriod": {
+    "normal": {
       "amount": 0,
       "unit": 0,
       "days": 0
@@ -875,7 +875,7 @@
     "InterestCalendar": {
       "convention": ""
     },
-    "InterestPeriod": {
+    "normal": {
       "amount": 0,
       "unit": 0,
       "days": 0

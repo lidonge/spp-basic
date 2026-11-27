@@ -28,18 +28,18 @@ public class CheckRollbackSemanticsTest {
         Path source = Files.createDirectory(root.resolve("source"));
         Files.writeString(source.resolve("ledger.spp"), """
                 domain ledger;
-                Contract Voucher { String voucherCode; boolean rejected; }
-                Contract Marker { String markerCode; }
+                Contract Voucher short voucher { String voucherCode; boolean rejected; }
+                Contract Marker short marker { String markerCode; }
                 Enum Fault { REJECTED }
-                atomic check guard(Voucher) { require(Voucher.rejected == false, Fault.REJECTED); }
-                atomic update storeVoucher(Voucher voucher);
-                atomic update storeMarker(Marker marker);
-                Scenario serial recordDirect(Voucher voucher) { transaction { storeVoucher; guard; } }
-                Scenario serial recordIf(Voucher voucher) { transaction { storeVoucher; if (voucher.rejected) { guard; } } }
-                Scenario serial recordNested(Voucher voucher, Marker marker) { transaction { storeVoucher; serial { guard; } storeMarker; } }
-                Scenario serial recordNestedBreak(Voucher voucher, Marker marker) { transaction { storeVoucher; serial { guard,breakTransaction; } storeMarker; } }
-                Scenario serial recordOutside(Voucher voucher) { guard; }
-                Scenario serial recordThenFail(Voucher voucher, Marker marker) { transaction { storeVoucher; storeMarker; } }
+                atomic check guard(Voucher) { require(voucher.rejected == false, Fault.REJECTED); }
+                atomic update storeVoucher(Voucher);
+                atomic update storeMarker(Marker);
+                Scenario serial recordDirect(Voucher) { transaction { storeVoucher; guard; } }
+                Scenario serial recordIf(Voucher) { transaction { storeVoucher; if (voucher.rejected) { guard; } } }
+                Scenario serial recordNested(Voucher, Marker) { transaction { storeVoucher; serial { guard; } storeMarker; } }
+                Scenario serial recordNestedBreak(Voucher, Marker) { transaction { storeVoucher; serial { guard,breakTransaction; } storeMarker; } }
+                Scenario serial recordOutside(Voucher) { guard; }
+                Scenario serial recordThenFail(Voucher, Marker) { transaction { storeVoucher; storeMarker; } }
                 """);
         Files.writeString(source.resolve("ledger.app"), """
                 domain ledger;

@@ -22,13 +22,13 @@ public class SystemServicesGenerationTest {
         Path root = Files.createTempDirectory("system-services-generation"), source = Files.createDirectory(root.resolve("source"));
         Files.writeString(source.resolve("rules.spp"), """
                 domain rules;
-                Contract Facts { int value; }
-                atomic query readFacts(Facts input);
-                Enum Fault { NEGATIVE } atomic check checkFacts(Facts input) { require(input.value >= 0, Fault.NEGATIVE); }
-                atomic calculate calculateFacts(Facts input) { input.value *= 2; }
-                atomic update changeFacts(Facts input);
-                Scenario serial preview(Facts input) { checkFacts(input); }
-                Scenario serial changeFlow(Facts input) { changeFacts(input); }
+                Contract Facts short input { int value; }
+                atomic query readFacts(Facts);
+                Enum Fault { NEGATIVE } atomic check checkFacts(Facts) { require(input.value >= 0, Fault.NEGATIVE); }
+                atomic calculate calculateFacts(Facts) { input.value *= 2; }
+                atomic update changeFacts(Facts);
+                Scenario serial preview(Facts) { checkFacts(input); }
+                Scenario serial changeFlow(Facts) { changeFacts(input); }
                 """);
         Files.writeString(source.resolve("rules.app"), "domain rules; "
                 + (idempotency == null ? "" : "system services { idempotency: " + idempotency

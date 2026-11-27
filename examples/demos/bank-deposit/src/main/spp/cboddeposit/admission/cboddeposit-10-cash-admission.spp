@@ -27,42 +27,42 @@ Role DepositProduct {
 }
 
 atomic check checkCashInput(DepositRequest, BusinessDay) {
-    require(DepositRequest.amount > 0, RejectionCode.E1155);
-    require(DepositRequest.valueDate <= BusinessDay.date, RejectionCode.E1044);
-    require(DepositRequest.valueDate >= BusinessDay.date, RejectionCode.E1043);
+    require(depositRequest.amount > 0, RejectionCode.E1155);
+    require(depositRequest.valueDate <= businessDay.date, RejectionCode.E1044);
+    require(depositRequest.valueDate >= businessDay.date, RejectionCode.E1043);
 }
 
 atomic check checkDepositEligibility(DepositRequest, AccountEligibility, DepositProduct, BusinessDay) {
     require(
-        !AccountEligibility.temporary
-            || AccountEligibility.expiresOn >= BusinessDay.date
-            || AccountEligibility.temporaryOpen,
+        !accountEligibility.temporary
+            || accountEligibility.expiresOn >= businessDay.date
+            || accountEligibility.temporaryOpen,
         RejectionCode.EDF19
     );
-    require(AccountEligibility.status != AccountStatus.CLOSED, RejectionCode.EO082);
-    boolean opening = AccountEligibility.detailCount == 0
-        || (AccountEligibility.detailCount > 0
-        && AccountEligibility.detailCount < 10
-        && AccountEligibility.accountBalance == 0
-        && AccountEligibility.lastTransactionDate == AccountEligibility.openedOn
-        && AccountEligibility.cashDepositedToday == 0
-        && AccountEligibility.transferredToday == 0);
+    require(accountEligibility.status != AccountStatus.CLOSED, RejectionCode.EO082);
+    boolean opening = accountEligibility.detailCount == 0
+        || (accountEligibility.detailCount > 0
+        && accountEligibility.detailCount < 10
+        && accountEligibility.accountBalance == 0
+        && accountEligibility.lastTransactionDate == accountEligibility.openedOn
+        && accountEligibility.cashDepositedToday == 0
+        && accountEligibility.transferredToday == 0);
     if (opening) {
         require(
-            DepositProduct.minimumOpeningAmount <= 0
-                || DepositRequest.amount >= DepositProduct.minimumOpeningAmount,
+            depositProduct.minimumOpeningAmount <= 0
+                || depositRequest.amount >= depositProduct.minimumOpeningAmount,
             RejectionCode.EN173
         );
         require(
-            DepositProduct.maximumOpeningAmount <= 0
-                || DepositRequest.amount <= DepositProduct.maximumOpeningAmount,
+            depositProduct.maximumOpeningAmount <= 0
+                || depositRequest.amount <= depositProduct.maximumOpeningAmount,
             RejectionCode.EN174
         );
     }
     require(
-        DepositProduct.maximumBalance <= 0
-            || DepositRequest.amount
-            + AccountEligibility.accountBalance <= DepositProduct.maximumBalance,
+        depositProduct.maximumBalance <= 0
+            || depositRequest.amount
+            + accountEligibility.accountBalance <= depositProduct.maximumBalance,
         RejectionCode.EN175
     );
 }
@@ -107,69 +107,69 @@ atomic calculate assessCashAdmission(
     AuthorizationEvidence,
     AdmissionDecision
 ) {
-    AdmissionDecision.warningCode = BLANK;
-    AdmissionDecision.authorizationCode = BLANK;
-    AdmissionDecision.requiredLevel = AuthorizationLevel.NONE;
-    AdmissionDecision.dayCashTotal = DepositRequest.amount;
-    if (AccountEligibility.lastTransactionDate == BusinessDay.date) {
-        AdmissionDecision.dayCashTotal += AccountEligibility.cashDepositedToday;
+    admissionDecision.warningCode = BLANK;
+    admissionDecision.authorizationCode = BLANK;
+    admissionDecision.requiredLevel = AuthorizationLevel.NONE;
+    admissionDecision.dayCashTotal = depositRequest.amount;
+    if (accountEligibility.lastTransactionDate == businessDay.date) {
+        admissionDecision.dayCashTotal += accountEligibility.cashDepositedToday;
     }
-    boolean applies = CashChannel.teller
-        && CashChannel.channel != "AGS"
-        && CashChannel.transactionId != "FL0658000"
-        && CashChannel.transactionId != "FL0655400"
-        && CashChannel.transactionId != "FL0659302"
-        && CashChannel.transactionId != "FL0659304"
-        && CashChannel.transactionId != "FL0659306"
-        && CashChannel.transactionId != "FL0659308";
+    boolean applies = cashChannel.teller
+        && cashChannel.channel != "AGS"
+        && cashChannel.transactionId != "FL0658000"
+        && cashChannel.transactionId != "FL0655400"
+        && cashChannel.transactionId != "FL0659302"
+        && cashChannel.transactionId != "FL0659304"
+        && cashChannel.transactionId != "FL0659306"
+        && cashChannel.transactionId != "FL0659308";
     if (applies) {
-        boolean warningBusiness = CashChannel.businessCode == "SA0"
-            || CashChannel.businessCode == "TD0"
-            || CashChannel.businessCode == "CR0"
-            || CashChannel.businessCode == "FS0";
+        boolean warningBusiness = cashChannel.businessCode == "SA0"
+            || cashChannel.businessCode == "TD0"
+            || cashChannel.businessCode == "CR0"
+            || cashChannel.businessCode == "FS0";
         if (warningBusiness
-            && CashAuthorizationPolicy.warningThreshold > 0
-            && AdmissionDecision.dayCashTotal > CashAuthorizationPolicy.warningThreshold) {
-            AdmissionDecision.warningCode = "F0554";
+            && cashAuthorizationPolicy.warningThreshold > 0
+            && admissionDecision.dayCashTotal > cashAuthorizationPolicy.warningThreshold) {
+            admissionDecision.warningCode = "F0554";
         }
-        if (DepositRequest.amount > CashAuthorizationPolicy.tellerLimit) {
-            if (CashChannel.transactionFamily == "XT01821" && DepositRequest.currency == "USD") {
-                if (DepositRequest.amount > CashAuthorizationPolicy.specialUsdLevelB) {
-                    if (DepositRequest.amount > CashAuthorizationPolicy.specialUsdLevelA) {
-                        AdmissionDecision.requiredLevel = AuthorizationLevel.A;
-                        AdmissionDecision.authorizationCode = "A8147";
+        if (depositRequest.amount > cashAuthorizationPolicy.tellerLimit) {
+            if (cashChannel.transactionFamily == "XT01821" && depositRequest.currency == "USD") {
+                if (depositRequest.amount > cashAuthorizationPolicy.specialUsdLevelB) {
+                    if (depositRequest.amount > cashAuthorizationPolicy.specialUsdLevelA) {
+                        admissionDecision.requiredLevel = AuthorizationLevel.A;
+                        admissionDecision.authorizationCode = "A8147";
                     } else {
-                        AdmissionDecision.requiredLevel = AuthorizationLevel.B;
-                        AdmissionDecision.authorizationCode = "B7006";
+                        admissionDecision.requiredLevel = AuthorizationLevel.B;
+                        admissionDecision.authorizationCode = "B7006";
                     }
                 }
             } else {
-                if (DepositRequest.amount > CashAuthorizationPolicy.levelAMultiplier
-                    * CashAuthorizationPolicy.tellerLimit) {
-                    AdmissionDecision.requiredLevel = AuthorizationLevel.A;
-                    AdmissionDecision.authorizationCode = "A8147";
+                if (depositRequest.amount > cashAuthorizationPolicy.levelAMultiplier
+                    * cashAuthorizationPolicy.tellerLimit) {
+                    admissionDecision.requiredLevel = AuthorizationLevel.A;
+                    admissionDecision.authorizationCode = "A8147";
                 } else {
-                    AdmissionDecision.requiredLevel = AuthorizationLevel.B;
-                    AdmissionDecision.authorizationCode = "B7000";
+                    admissionDecision.requiredLevel = AuthorizationLevel.B;
+                    admissionDecision.authorizationCode = "B7000";
                 }
             }
         }
     }
-    AdmissionDecision.executable = AdmissionDecision.requiredLevel == AuthorizationLevel.NONE
-        || AuthorizationEvidence.grantedLevel == AuthorizationLevel.A
-        || (AdmissionDecision.requiredLevel == AuthorizationLevel.B
-        && AuthorizationEvidence.grantedLevel == AuthorizationLevel.B);
-    if (!AdmissionDecision.executable) {
-        AdmissionDecision.status = AdmissionStatus.PENDING_AUTHORIZATION;
+    admissionDecision.executable = admissionDecision.requiredLevel == AuthorizationLevel.NONE
+        || authorizationEvidence.grantedLevel == AuthorizationLevel.A
+        || (admissionDecision.requiredLevel == AuthorizationLevel.B
+        && authorizationEvidence.grantedLevel == AuthorizationLevel.B);
+    if (!admissionDecision.executable) {
+        admissionDecision.status = AdmissionStatus.PENDING_AUTHORIZATION;
     } else {
-        if (AdmissionDecision.warningCode != BLANK) {
-            AdmissionDecision.status = AdmissionStatus.WARNING;
+        if (admissionDecision.warningCode != BLANK) {
+            admissionDecision.status = AdmissionStatus.WARNING;
         } else {
-            AdmissionDecision.status = AdmissionStatus.READY;
+            admissionDecision.status = AdmissionStatus.READY;
         }
     }
 }
 
 atomic check checkCashAuthorization(AdmissionDecision) {
-    require(AdmissionDecision.executable, RejectionCode.PENDING_AUTHORIZATION);
+    require(admissionDecision.executable, RejectionCode.PENDING_AUTHORIZATION);
 }

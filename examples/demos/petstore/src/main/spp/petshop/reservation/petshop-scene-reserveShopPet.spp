@@ -8,8 +8,8 @@ Scenario serial reserveShopPet(Buyer, Goods, StockLine[], PetReservationAgreemen
         findBuyer;
         findGoods;
     }
-    identify(Buyer);
-    identify(Goods);
+    identify(buyer);
+    identify(goods);
     checkGoodsSale;
     preparePetReservation;
     transaction {
@@ -17,11 +17,11 @@ Scenario serial reserveShopPet(Buyer, Goods, StockLine[], PetReservationAgreemen
     }
     prepareReservationInventory;
     findStockLine;
-    identify(StockLine[]);
+    identify(stockLines);
     transaction {
         reserveRequestedInventory bounds {
-            StockLine[].available: [0, null];
-            StockLine[].reserved: [0, null];
+            stockLines.available: [0, null];
+            stockLines.reserved: [0, null];
         };
         confirmPetReservation;
         updatePetReservationAgreement;
@@ -29,7 +29,7 @@ Scenario serial reserveShopPet(Buyer, Goods, StockLine[], PetReservationAgreemen
         if (ResultInfo.failure.recoveryStatus == "ROLLED_BACK"
             || ResultInfo.failure.recoveryStatus == "REVERSED") {
             findStockLine;
-            identify(StockLine[]);
+            identify(stockLines);
             rejectPetReservation;
             transaction {
                 updatePetReservationAgreement;
@@ -40,5 +40,5 @@ Scenario serial reserveShopPet(Buyer, Goods, StockLine[], PetReservationAgreemen
 
 Scenario serial readShopReservation(PetReservationAgreement) {
     findPetReservationAgreement;
-    identify(PetReservationAgreement);
+    identify(petReservationAgreement);
 }

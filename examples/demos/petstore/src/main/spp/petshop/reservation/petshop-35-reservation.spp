@@ -10,36 +10,36 @@ Contract PetReservationAgreement {
 }
 
 atomic check checkReservationQuantity(PetReservationAgreement) {
-    require(PetReservationAgreement.quantity > 0, RejectionCode.INVALID_QUANTITY);
+    require(petReservationAgreement.quantity > 0, RejectionCode.INVALID_QUANTITY);
 }
 
 atomic calculate preparePetReservation(Buyer, Goods, PetReservationAgreement) {
-    PetReservationAgreement.buyer = Buyer;
-    PetReservationAgreement.goods = Goods;
-    PetReservationAgreement.status = ReservationStatus.ACCEPTED;
-    PetReservationAgreement.rejectionReason = null;
+    petReservationAgreement.buyer = buyer;
+    petReservationAgreement.goods = goods;
+    petReservationAgreement.status = ReservationStatus.ACCEPTED;
+    petReservationAgreement.rejectionReason = null;
 }
 
 atomic calculate prepareReservationInventory(Goods, StockLine[]) {
-    StockLine[] = new StockLine[] {
+    stockLines = new StockLine[] {
         new StockLine()
     };
-    for (StockLine item : StockLine[]) {
-        item.goods = Goods;
+    for (StockLine item : stockLines) {
+        item.goods = goods;
     }
 }
 
 atomic calculate confirmPetReservation(PetReservationAgreement) {
-    PetReservationAgreement.status = ReservationStatus.RESERVED;
+    petReservationAgreement.status = ReservationStatus.RESERVED;
 }
 
 atomic calculate rejectPetReservation(StockLine[], PetReservationAgreement) {
-    PetReservationAgreement.status = ReservationStatus.REJECTED;
-    PetReservationAgreement.rejectionReason = ReservationRejectionReason.RESERVATION_NOT_COMPLETED;
-    for (StockLine item : StockLine[]) {
-        if (item.goods.sku == PetReservationAgreement.goods.sku
-            && item.available < PetReservationAgreement.quantity) {
-            PetReservationAgreement.rejectionReason = ReservationRejectionReason.INSUFFICIENT_STOCK;
+    petReservationAgreement.status = ReservationStatus.REJECTED;
+    petReservationAgreement.rejectionReason = ReservationRejectionReason.RESERVATION_NOT_COMPLETED;
+    for (StockLine item : stockLines) {
+        if (item.goods.sku == petReservationAgreement.goods.sku
+            && item.available < petReservationAgreement.quantity) {
+            petReservationAgreement.rejectionReason = ReservationRejectionReason.INSUFFICIENT_STOCK;
         }
     }
 }

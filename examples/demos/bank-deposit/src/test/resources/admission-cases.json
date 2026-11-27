@@ -2476,7 +2476,7 @@
   {
     "name": "44",
     "input": {
-      "InterestPeriod": {
+      "normal": {
         "amount": 200,
         "unit": 100,
         "days": 0
@@ -2489,7 +2489,7 @@
   {
     "name": "45",
     "input": {
-      "InterestPeriod": {
+      "normal": {
         "amount": 1,
         "unit": 0,
         "days": 3

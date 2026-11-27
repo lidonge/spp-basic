@@ -27,7 +27,7 @@ public class OptionalEnhancementsGenerationTest {
         Files.writeString(source.resolve("demo.spp"), """
                 domain demo;
                 Contract Facts { int value; }
-                atomic calculate compute(Facts) { Facts.value += 1; }
+                atomic calculate compute(Facts) { facts.value += 1; }
                 Scenario serial preview(Facts) { compute; }
                 """);
         Files.writeString(source.resolve("demo.app"), "domain demo; " + switches + """

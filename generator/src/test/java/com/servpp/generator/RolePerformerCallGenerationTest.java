@@ -55,10 +55,10 @@ public class RolePerformerCallGenerationTest {
             Path app=source.resolve("people.app");
             Files.writeString(app,Files.readString(app).replace("tables roles", "tables entities { table OTHERS(Other) { primarykey(Other.email); } } tables roles"));
         }
-        if (call.equals("insertPerson(Holders);")) {
+        if (call.equals("insertPerson(Holder[]);")) {
             Path spp=source.resolve("enroll.spp");
             Files.writeString(spp,Files.readString(spp).replace("Scenario serial register(Holder, Registration)",
-                    "Scenario serial register(Holder, Holder[] Holders, Registration)"));
+                    "Scenario serial register(Holder, Holder[], Registration)"));
         }
         GeneratorUtil.execute(source.toFile(),output.resolve("yaml").toFile(),output.resolve("java").toFile(),"example");
         return output;
@@ -76,7 +76,7 @@ public class RolePerformerCallGenerationTest {
         assertTrue(failure.getMessage(),failure.getMessage().contains("requires one unambiguous Person"));
     }
     @Test public void reverseCollectionsRequireExplicitIdentityMatchingSupport()throws Exception {
-        Exception failure=assertThrows(Exception.class,()->generate("take Person as Holder { mapsame; }", "insertPerson(Holders);"));
+        Exception failure=assertThrows(Exception.class,()->generate("take Person as Holder { mapsame; }", "insertPerson(Holder[]);"));
         assertTrue(failure.getMessage(),failure.getMessage().contains("reverse performer calls currently require a scalar role"));
     }
     private void verify(Path output)throws Exception {

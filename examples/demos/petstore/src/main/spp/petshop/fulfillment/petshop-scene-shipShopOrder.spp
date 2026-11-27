@@ -9,23 +9,23 @@ Scenario serial shipShopOrder(Buyer, StockLine[], ShopOrder, ShipmentAgreement) 
         findBuyer;
         findShopOrder;
     }
-    identify(Buyer);
-    identify(ShopOrder);
+    identify(buyer);
+    identify(shopOrder);
     checkOrderOwner;
     prepareOrderInventory;
     findStockLine;
-    identify(StockLine[]);
+    identify(stockLines);
     checkShipmentEligibility;
     checkReservedInventory;
     prepareShipment;
     prepareShipmentAgreementReceipt;
     transaction {
         shipInventory bounds {
-            StockLine[].reserved: [0, null];
-            StockLine[].sold: [0, null];
+            stockLines.reserved: [0, null];
+            stockLines.sold: [0, null];
         };
         updateShopOrder;
 
-        insertReceipt(ShipmentAgreement.receipt);
+        insertReceipt(shipmentAgreement.receipt);
     }
 }

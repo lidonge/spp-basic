@@ -20,8 +20,8 @@ import static org.junit.Assert.*;
 public class NumericPhysicalGenerationTest {
     private static final String BUSINESS = """
             domain commerce;
-            Role Amount { double a; double b; int c; }
-            atomic calculate calculateAmount(Amount amount);
+            Role Amount short amount { double a; double b; int c; }
+            atomic calculate calculateAmount(Amount);
             """;
 
     @Test
@@ -105,9 +105,9 @@ public class NumericPhysicalGenerationTest {
         String business = """
                 domain commerce;
                 Entity Product { double price; }
-                Role Goods { }
+                Role Goods short amount { }
                 take Product as Goods { takeall; mapsame; }
-                atomic calculate calculateAmount(Goods amount);
+                atomic calculate calculateAmount(Goods);
                 """;
         SppDomain domain = compile(business, "amount.price = amount.price + 5;", "numeric Goods.price as BigDecimal;");
         // Production generation resolves inherited fields before APP parsing.
@@ -144,7 +144,7 @@ public class NumericPhysicalGenerationTest {
     @Test
     public void openApiAndPhysicalCatalogAgreeWithGeneratedServiceRepresentation() throws Exception {
         Path source = Files.createTempDirectory("spp-numeric-generator");
-        Files.writeString(source.resolve("commerce.spp"), BUSINESS + " Scenario serial exercise(Amount amount) { calculateAmount(amount); }");
+        Files.writeString(source.resolve("commerce.spp"), BUSINESS + " Scenario serial exercise(Amount) { calculateAmount(amount); }");
         Files.writeString(source.resolve("commerce.app"), app("amount.a = amount.b * amount.c + 5;").replace("local {", "local { exercise;"));
         Files.writeString(source.resolve("commerce.phy"), "domain commerce; phy { numeric double as BigDecimal; }");
         Path root = Files.createTempDirectory("spp-numeric-artifacts");

@@ -59,15 +59,15 @@ Contract Invoice{
 
 
 
-atomic query queryAccount(Account account);
-atomic calculate calculateAmount(Goods goods, Amount amount);
-atomic update decAccount(Account account, Amount amount);
-atomic update incAccount(Account account, Amount amount);
-atomic update decStock(GoodsStock stock, Amount amount);
-atomic check checkStock(GoodsStock stock);
-atomic update updateStocks(GoodsStock[] stock);
+atomic query queryAccount(Account);
+atomic calculate calculateAmount(Goods, Amount);
+atomic update decAccount(Account, Amount);
+atomic update incAccount(Account, Amount);
+atomic update decStock(GoodsStock, Amount);
+atomic check checkStock(GoodsStock);
+atomic update updateStocks(GoodsStock[]);
 
-Scenario parallel makeInvoice(Invoice invoice){
+Scenario parallel makeInvoice(Invoice){
     queryAccount(invoice.buyer);
     queryAccount(invoice.seller);
     serial{

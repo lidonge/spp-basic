@@ -1,20 +1,20 @@
 domain petshop;
 
 atomic check checkReturnRequest(ShopOrder) {
-    require(ShopOrder.status == OrderStatus.DELIVERED, RejectionCode.ORDER_NOT_RETURNABLE);
+    require(shopOrder.status == OrderStatus.DELIVERED, RejectionCode.ORDER_NOT_RETURNABLE);
 }
 
 atomic check checkReturnApproval(ShopOrder) {
-    require(ShopOrder.status == OrderStatus.RETURN_REQUESTED, RejectionCode.RETURN_NOT_REQUESTED);
+    require(shopOrder.status == OrderStatus.RETURN_REQUESTED, RejectionCode.RETURN_NOT_REQUESTED);
 }
 
 atomic check checkSoldInventory(ShopOrder, StockLine[]) {
-    for (OrderLine line : ShopOrder.lines) {
+    for (OrderLine line : shopOrder.lines) {
         boolean found = false;
-        for (StockLine stock : StockLine[]) {
+        for (StockLine stock : stockLines) {
             if (stock.goods.sku == line.goods.sku) {
                 int needed = 0;
-                for (OrderLine ordered : ShopOrder.lines) {
+                for (OrderLine ordered : shopOrder.lines) {
                     if (ordered.goods.sku == line.goods.sku) {
                         needed += ordered.quantity;
                     }
@@ -28,5 +28,5 @@ atomic check checkSoldInventory(ShopOrder, StockLine[]) {
 }
 
 atomic check checkReturnRequestAgreementInput(ReturnRequestAgreement) {
-    require(ReturnRequestAgreement.reason != BLANK, RejectionCode.REASON_REQUIRED);
+    require(returnRequestAgreement.reason != BLANK, RejectionCode.REASON_REQUIRED);
 }

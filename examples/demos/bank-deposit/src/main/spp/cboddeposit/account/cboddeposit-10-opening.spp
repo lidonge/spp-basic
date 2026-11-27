@@ -8,9 +8,9 @@ Contract AccountOpeningAgreement {
 }
 
 atomic check checkOpeningClaims(DepositAccount) {
-    require((DepositAccount.overdraftPrincipal == null || DepositAccount.overdraftPrincipal == 0)
-        && (DepositAccount.overdraftInterest == null || DepositAccount.overdraftInterest == 0)
-        && (DepositAccount.collectionInterest == null || DepositAccount.collectionInterest == 0),
+    require((depositAccount.overdraftPrincipal == null || depositAccount.overdraftPrincipal == 0)
+        && (depositAccount.overdraftInterest == null || depositAccount.overdraftInterest == 0)
+        && (depositAccount.collectionInterest == null || depositAccount.collectionInterest == 0),
         RejectionCode.E1155);
 }
 
@@ -22,35 +22,35 @@ atomic calculate prepareAccountOpening(
     DepositAccrualState,
     AccountOpeningAgreement
 ) {
-    DepositAccount.accountNumber = BankAccount.accountNumber;
-    AccountEligibility.accountNumber = BankAccount.accountNumber;
-    DepositAccrualState.accountNumber = BankAccount.accountNumber;
-    DepositAccrualState.lastProductDate = AccountEligibility.openedOn;
-    DepositAccount.overdraftExposure = 0;
-    DepositAccount.loanState = LoanState.NORMAL;
-    if (AccountEligibility.temporary == null) {
-        AccountEligibility.temporary = false;
+    depositAccount.accountNumber = bankAccount.accountNumber;
+    accountEligibility.accountNumber = bankAccount.accountNumber;
+    depositAccrualState.accountNumber = bankAccount.accountNumber;
+    depositAccrualState.lastProductDate = accountEligibility.openedOn;
+    depositAccount.overdraftExposure = 0;
+    depositAccount.loanState = LoanState.NORMAL;
+    if (accountEligibility.temporary == null) {
+        accountEligibility.temporary = false;
     }
-    if (AccountEligibility.temporaryOpen == null) {
-        AccountEligibility.temporaryOpen = false;
+    if (accountEligibility.temporaryOpen == null) {
+        accountEligibility.temporaryOpen = false;
     }
-    if (AccountEligibility.expiresOn == null) {
-        AccountEligibility.expiresOn = 0;
+    if (accountEligibility.expiresOn == null) {
+        accountEligibility.expiresOn = 0;
     }
-    AccountEligibility.status = AccountStatus.ACTIVE;
-    AccountEligibility.detailCount = 0;
-    AccountEligibility.lastTransactionDate = AccountEligibility.openedOn;
-    AccountEligibility.cashDepositedToday = 0;
-    AccountEligibility.transferredToday = 0;
-    AccountEligibility.accountBalance = 0;
-    DepositAccrualState.normalProduct = 0;
-    DepositAccrualState.overdraftProduct = 0;
-    DepositAccrualState.overdraftInterestProduct = 0;
-    DepositAccrualState.actualProduct = 0;
-    DepositAccrualState.agreementProduct = 0;
-    DepositAccrualState.overdraftDays = 0;
-    DepositAccrualState.overdraftInterestDays = 0;
-    AccountOpeningAgreement.account = DepositAccount;
-    AccountOpeningAgreement.eligibility = AccountEligibility;
-    AccountOpeningAgreement.settlement = CashSettlementAccount;
+    accountEligibility.status = AccountStatus.ACTIVE;
+    accountEligibility.detailCount = 0;
+    accountEligibility.lastTransactionDate = accountEligibility.openedOn;
+    accountEligibility.cashDepositedToday = 0;
+    accountEligibility.transferredToday = 0;
+    accountEligibility.accountBalance = 0;
+    depositAccrualState.normalProduct = 0;
+    depositAccrualState.overdraftProduct = 0;
+    depositAccrualState.overdraftInterestProduct = 0;
+    depositAccrualState.actualProduct = 0;
+    depositAccrualState.agreementProduct = 0;
+    depositAccrualState.overdraftDays = 0;
+    depositAccrualState.overdraftInterestDays = 0;
+    accountOpeningAgreement.account = depositAccount;
+    accountOpeningAgreement.eligibility = accountEligibility;
+    accountOpeningAgreement.settlement = cashSettlementAccount;
 }

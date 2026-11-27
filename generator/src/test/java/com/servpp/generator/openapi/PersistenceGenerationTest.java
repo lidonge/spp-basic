@@ -15,12 +15,12 @@ public class PersistenceGenerationTest {
         Path source=Files.createTempDirectory("spp-write-source"), root=Files.createTempDirectory("spp-write-generated");
         Files.writeString(source.resolve("rules.spp"),"""
                 domain rules;
-                Contract Stored { String code; long value; }
-                atomic query loadStored(Stored stored);
-                atomic update store(Stored stored);
-                atomic update erase(Stored key);
-                Scenario serial saveRecord(Stored stored) { loadStored(stored); store(stored); store(stored); }
-                Scenario serial eraseRecord(Stored key) { erase(key); }
+                Contract Stored short stored { String code; long value; }
+                atomic query loadStored(Stored);
+                atomic update store(Stored);
+                atomic update erase(Stored);
+                Scenario serial saveRecord(Stored) { loadStored(stored); store(stored); store(stored); }
+                Scenario serial eraseRecord(Stored) { erase(stored); }
                 """);
         Files.writeString(source.resolve("rules.app"),"""
                 domain rules;
@@ -52,9 +52,9 @@ public class PersistenceGenerationTest {
         Files.writeString(models.resolve("EraseRequest.java"), """
                 package example.rules.model;
                 public class EraseRequest {
-                    private final Stored key;
-                    public EraseRequest(Stored key) { this.key=key; }
-                    public Stored getKey() { return key; }
+                    private final Stored stored;
+                    public EraseRequest(Stored key) { this.stored=key; }
+                    public Stored getStored() { return stored; }
                 }
                 """);
         Files.writeString(models.resolve("EraseResponse.java"),"package example.rules.model; public class EraseResponse { }");

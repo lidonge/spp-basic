@@ -1,11 +1,11 @@
 domain petshop;
 
 atomic check checkProfileAgreementInput(ProfileAgreement) {
-    require(ProfileAgreement.newName != BLANK, RejectionCode.NAME_REQUIRED);
-    require(ProfileAgreement.newEmail != BLANK, RejectionCode.EMAIL_REQUIRED);
-    require(ProfileAgreement.newAddress != BLANK, RejectionCode.ADDRESS_REQUIRED);
+    require(profileAgreement.newName != BLANK, RejectionCode.NAME_REQUIRED);
+    require(profileAgreement.newEmail != BLANK, RejectionCode.EMAIL_REQUIRED);
+    require(profileAgreement.newAddress != BLANK, RejectionCode.ADDRESS_REQUIRED);
     require(
-        ProfileAgreement.newTier == MemberTier.NORMAL || ProfileAgreement.newTier == MemberTier.VIP,
+        profileAgreement.newTier == MemberTier.NORMAL || profileAgreement.newTier == MemberTier.VIP,
         RejectionCode.INVALID_MEMBER_TIER
     );
 }

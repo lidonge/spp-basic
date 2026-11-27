@@ -30,14 +30,14 @@ Scenario serial reverseCash(
         findCashDepositAgreement;
         findDepositAccrualState;
     }
-    identify(DepositAccount);
-    identify(CashSettlementAccount);
-    identify(InterestIncomeAccount);
-    identify(CollectionInterestIncomeAccount);
-    identify(PrincipalRecoveryAccount);
-    identify(AccountEligibility);
-    identify(CashDepositAgreement);
-    identify(DepositAccrualState);
+    identify(depositAccount);
+    identify(cashSettlementAccount);
+    identify(interestIncomeAccount);
+    identify(collectionInterestIncomeAccount);
+    identify(principalRecoveryAccount);
+    identify(accountEligibility);
+    identify(cashDepositAgreement);
+    identify(depositAccrualState);
     checkAccountParticipants;
     checkOriginalDepositAccount;
     checkOriginalSettlementAccounts;
@@ -54,10 +54,10 @@ Scenario serial reverseCash(
     checkDepositPostings;
     transaction {
         reverseCashDeposit bounds {
-            DepositAccount.interestBase: [0, null];
-            DepositAccount.overdraftInterest: [null, 0];
-            DepositAccount.collectionInterest: [null, 0];
-            DepositAccount.overdraftPrincipal: [null, 0];
+            depositAccount.interestBase: [0, null];
+            depositAccount.overdraftInterest: [null, 0];
+            depositAccount.collectionInterest: [null, 0];
+            depositAccount.overdraftPrincipal: [null, 0];
         };
         deriveOverdraftExposure;
         completeCashReversal;
@@ -67,7 +67,7 @@ Scenario serial reverseCash(
         insertCashReversalAgreement;
         attachCashReversalPostings;
         insertCashReversalPostingLine;
-    } fail(CashReversalAgreement) {
+    } fail(cashReversalAgreement) {
         recordReversalFailure;
         if (ResultInfo.failure.recoveryStatus == "ROLLED_BACK"
             || ResultInfo.failure.recoveryStatus == "REVERSED") {

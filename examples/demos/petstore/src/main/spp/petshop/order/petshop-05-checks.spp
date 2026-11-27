@@ -1,12 +1,12 @@
 domain petshop;
 
 atomic check checkQuotationInput(Cart, Goods[]) {
-    require(Cart.lines != null, RejectionCode.EMPTY_CART);
+    require(cart.lines != null, RejectionCode.EMPTY_CART);
     int count = 0;
-    for (CartLine line : Cart.lines) {
+    for (CartLine line : cart.lines) {
         require(line != null && line.quantity != null && line.quantity > 0, RejectionCode.INVALID_QUANTITY);
         boolean found = false;
-        for (Goods product : Goods[]) {
+        for (Goods product : goodss) {
             if (product.sku == line.goods.sku) {
                 found = true;
             }
@@ -19,33 +19,33 @@ atomic check checkQuotationInput(Cart, Goods[]) {
 
 atomic check checkUnpaidCancellationAgreementInput(UnpaidCancellationAgreement) {
     require(
-        UnpaidCancellationAgreement.reason != BLANK,
+        unpaidCancellationAgreement.reason != BLANK,
         RejectionCode.REASON_REQUIRED
     );
 }
 
 atomic check checkUnpaidCancellation(ShopOrder) {
-    require(ShopOrder.status == OrderStatus.UNPAID, RejectionCode.ORDER_NOT_CANCELLABLE);
+    require(shopOrder.status == OrderStatus.UNPAID, RejectionCode.ORDER_NOT_CANCELLABLE);
 }
 
 atomic check checkPaidCancellationAgreementInput(PaidCancellationAgreement) {
     require(
-        PaidCancellationAgreement.reason != BLANK,
+        paidCancellationAgreement.reason != BLANK,
         RejectionCode.REASON_REQUIRED
     );
 }
 
 atomic check checkPaidCancellation(ShopOrder) {
-    require(ShopOrder.status == OrderStatus.PAID, RejectionCode.ORDER_NOT_CANCELLABLE);
+    require(shopOrder.status == OrderStatus.PAID, RejectionCode.ORDER_NOT_CANCELLABLE);
 }
 
 atomic check checkOrderReservation(ShopOrder, StockLine[]) {
-    for (OrderLine line : ShopOrder.lines) {
+    for (OrderLine line : shopOrder.lines) {
         boolean found = false;
-        for (StockLine stock : StockLine[]) {
+        for (StockLine stock : stockLines) {
             if (stock.goods.sku == line.goods.sku) {
                 int needed = 0;
-                for (OrderLine ordered : ShopOrder.lines) {
+                for (OrderLine ordered : shopOrder.lines) {
                     if (ordered.goods.sku == line.goods.sku) {
                         needed += ordered.quantity;
                     }

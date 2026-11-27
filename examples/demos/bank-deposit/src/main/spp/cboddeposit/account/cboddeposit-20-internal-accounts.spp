@@ -22,15 +22,15 @@ take PrincipalSubject as PrincipalRecoveryAccount {
 }
 
 // The three internal accounts are opened together, so each subject is its own role with its own table.
-Role InterestSubject {
+Role InterestSubject short interestSubject {
     String accountNumber;
 }
 
-Role CollectionSubject {
+Role CollectionSubject short collectionSubject {
     String accountNumber;
 }
 
-Role PrincipalSubject {
+Role PrincipalSubject short principalSubject {
     String accountNumber;
 }
 
@@ -41,9 +41,9 @@ Contract InternalAccountOpeningAgreement {
 }
 
 atomic check checkInternalAccountNumbers(
-    InterestSubject interestSubject,
-    CollectionSubject collectionSubject,
-    PrincipalSubject principalSubject
+    InterestSubject,
+    CollectionSubject,
+    PrincipalSubject
 ) {
     require(
         interestSubject.accountNumber != BLANK
@@ -60,18 +60,18 @@ atomic check checkInternalAccountNumbers(
 }
 
 atomic calculate prepareInternalAccounts(
-    InterestSubject interestSubject,
-    CollectionSubject collectionSubject,
-    PrincipalSubject principalSubject,
+    InterestSubject,
+    CollectionSubject,
+    PrincipalSubject,
     InterestIncomeAccount,
     CollectionInterestIncomeAccount,
     PrincipalRecoveryAccount,
     InternalAccountOpeningAgreement
 ) {
-    InterestIncomeAccount.accountNumber = interestSubject.accountNumber;
-    CollectionInterestIncomeAccount.accountNumber = collectionSubject.accountNumber;
-    PrincipalRecoveryAccount.accountNumber = principalSubject.accountNumber;
-    InternalAccountOpeningAgreement.interestIncome = InterestIncomeAccount;
-    InternalAccountOpeningAgreement.collectionIncome = CollectionInterestIncomeAccount;
-    InternalAccountOpeningAgreement.principalRecovery = PrincipalRecoveryAccount;
+    interestIncomeAccount.accountNumber = interestSubject.accountNumber;
+    collectionInterestIncomeAccount.accountNumber = collectionSubject.accountNumber;
+    principalRecoveryAccount.accountNumber = principalSubject.accountNumber;
+    internalAccountOpeningAgreement.interestIncome = interestIncomeAccount;
+    internalAccountOpeningAgreement.collectionIncome = collectionInterestIncomeAccount;
+    internalAccountOpeningAgreement.principalRecovery = principalRecoveryAccount;
 }

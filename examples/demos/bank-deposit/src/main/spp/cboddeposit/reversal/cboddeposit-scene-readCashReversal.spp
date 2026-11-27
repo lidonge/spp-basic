@@ -2,6 +2,6 @@ domain cboddeposit;
 
 Scenario serial readCashReversal(CashReversalAgreement, CashReversalPostingLine[]) {
     findCashReversalAgreement;
-    identify(CashReversalAgreement);
+    identify(cashReversalAgreement);
     listCashReversalPostings;
 }

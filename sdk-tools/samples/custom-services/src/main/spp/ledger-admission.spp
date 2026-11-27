@@ -9,13 +9,13 @@ Enum RejectionCode {
 }
 
 Enum ProviderOutcome { NOT_FOUND:"E1214","OLD", SUCCESS:"", UNRECOGNIZED:other }
-Role ProviderResult { String(28) accountNumber; ProviderOutcome code; }
+Role ProviderResult short result { String(28) accountNumber; ProviderOutcome code; }
 
-atomic check checkProvider(ProviderResult result) {
+atomic check checkProvider(ProviderResult) {
     require(result.code == ProviderOutcome.SUCCESS, result.code);
 }
 
-Scenario serial verifyAdmission(ProviderResult result) {
+Scenario serial verifyAdmission(ProviderResult) {
     findProviderResult;
     identify(result);
     checkProvider(result);
@@ -23,8 +23,8 @@ Scenario serial verifyAdmission(ProviderResult result) {
 
 Enum AccountCode { FIRST:"A1", UNLISTED:other }
 Enum StrictOutcome { NOT_FOUND:"E1214", OTHER:"OTHER" }
-Role AdmissionLookup { AccountCode keyCode; StrictOutcome code; }
-Scenario serial readAdmission(AdmissionLookup lookup) {
+Role AdmissionLookup short lookup { AccountCode keyCode; StrictOutcome code; }
+Scenario serial readAdmission(AdmissionLookup) {
     findAdmissionLookup;
     identify(lookup);
 }
@@ -35,45 +35,45 @@ Reference Admission from positions.Admission {
 }
 Role StoredResult { String receipt; String accountNumber; ProviderOutcome code; }
 
-Role AdmissionText { String accountNumber; String text; }
-atomic check checkAdmissionText(AdmissionText result) {
+Role AdmissionText short result { String accountNumber; String text; }
+atomic check checkAdmissionText(AdmissionText) {
     require(result.text == BLANK, RejectionCode.TEXT_PRESENT);
     require(result.text == "   ", RejectionCode.ORIGINAL_TEXT_CHANGED);
 }
-Scenario serial verifyAdmissionText(AdmissionText result) {
+Scenario serial verifyAdmissionText(AdmissionText) {
     findAdmissionText;
     identify(result);
     checkAdmissionText(result);
 }
 
-Scenario serial verifyBlankAccount(AdmissionText result) {
-    findAdmissionText by AdmissionText.accountNumber = BLANK;
+Scenario serial verifyBlankAccount(AdmissionText) {
+    findAdmissionText by result.accountNumber = BLANK;
     identify(result);
     checkAdmissionText(result);
 }
 
-Role CodedAdmission { String accountNumber; ProviderOutcome code; }
-atomic check checkBlankAdmission(CodedAdmission result) {
+Role CodedAdmission short result { String accountNumber; ProviderOutcome code; }
+atomic check checkBlankAdmission(CodedAdmission) {
     require(result.accountNumber == BLANK, RejectionCode.ACCOUNT_PRESENT);
     require(result.code == ProviderOutcome.NOT_FOUND, RejectionCode.WRONG_CODE);
 }
-Scenario serial readBlankAdmission(CodedAdmission result) {
-    findCodedAdmission by CodedAdmission.accountNumber = BLANK;
+Scenario serial readBlankAdmission(CodedAdmission) {
+    findCodedAdmission by result.accountNumber = BLANK;
     identify(result);
     checkBlankAdmission(result);
 }
 
-Role AdmissionTicket { String receipt; String(4) batch; String note; }
+Role AdmissionTicket short ticket { String receipt; String(4) batch; String note; }
 Enum AdmissionError { DUPLICATE:"A02" }
-atomic check checkTicket(AdmissionTicket ticket) {
+atomic check checkTicket(AdmissionTicket) {
     require(ticket.note == BLANK, RejectionCode.NOTE_PRESENT);
 }
-Scenario serial readUniqueAdmission(CodedAdmission result, AdmissionTicket ticket) {
-    unique findCodedAdmission by CodedAdmission.accountNumber = BLANK;
+Scenario serial readUniqueAdmission(CodedAdmission, AdmissionTicket) {
+    unique findCodedAdmission by result.accountNumber = BLANK;
     identify(result);
     checkBlankAdmission(result);
     transaction {
-        unique findAdmissionTicket by AdmissionTicket.batch = BLANK else AdmissionError.DUPLICATE;
+        unique findAdmissionTicket by ticket.batch = BLANK else AdmissionError.DUPLICATE;
         checkTicket(ticket),breakTransaction;
     }
 }

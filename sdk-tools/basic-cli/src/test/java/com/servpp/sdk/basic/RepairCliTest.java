@@ -26,9 +26,9 @@ public class RepairCliTest {
         Path file = root.resolve("entry.spp");
         String initial = """
                 domain shop;
-                Role Item { String note; }
-                atomic calculate clear(Item item) { /*😀*/ item.note = ""; }
-                Scenario serial preview(Item item) { clear(item); }
+                Role Item short item { String note; }
+                atomic calculate clear(Item) { /*😀*/ item.note = ""; }
+                Scenario serial preview(Item) { clear(item); }
                 """;
         Files.writeString(file, initial);
         Files.writeString(root.resolve("entry.app"), """
@@ -83,9 +83,9 @@ public class RepairCliTest {
         Files.writeString(root.resolve("entry.spp"), """
                 domain shop;
                 Enum Priority { LOW:"Z", HIGH:"A" }
-                Role Item { boolean ordered; }
-                atomic calculate rank(Item item) { item.ordered = Priority.LOW < Priority.HIGH; }
-                readonly Scenario serial preview(Item item) { rank(item); }
+                Role Item short item { boolean ordered; }
+                atomic calculate rank(Item) { item.ordered = Priority.LOW < Priority.HIGH; }
+                readonly Scenario serial preview(Item) { rank(item); }
                 """);
         var result = cli("check", "--source", root.toString(), "--format", "json");
         assertEquals(result.stdout, 0, result.status);

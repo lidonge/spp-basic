@@ -1,42 +1,42 @@
 domain petshop;
 
 atomic calculate initializeUnpaidCancellationAgreement(Buyer, ShopOrder, UnpaidCancellationAgreement) {
-    UnpaidCancellationAgreement.buyer = Buyer;
-    UnpaidCancellationAgreement.order = ShopOrder;
+    unpaidCancellationAgreement.buyer = buyer;
+    unpaidCancellationAgreement.order = shopOrder;
 
-    UnpaidCancellationAgreement.releasedQuantity = 0;
+    unpaidCancellationAgreement.releasedQuantity = 0;
 }
 
 atomic calculate initializePaidCancellationAgreement(Buyer, Merchant, ShopOrder, PaidCancellationAgreement) {
-    PaidCancellationAgreement.buyer = Buyer;
-    PaidCancellationAgreement.order = ShopOrder;
-    PaidCancellationAgreement.seller = Merchant;
+    paidCancellationAgreement.buyer = buyer;
+    paidCancellationAgreement.order = shopOrder;
+    paidCancellationAgreement.seller = merchant;
 
-    PaidCancellationAgreement.releasedQuantity = 0;
-    PaidCancellationAgreement.refundAmount = 0;
+    paidCancellationAgreement.releasedQuantity = 0;
+    paidCancellationAgreement.refundAmount = 0;
 }
 
 atomic calculate prepareUnpaidCancellationAgreementReceipt(ShopOrder, UnpaidCancellationAgreement) {
-    UnpaidCancellationAgreement.order = ShopOrder;
-    UnpaidCancellationAgreement.receipt = new Receipt();
-    UnpaidCancellationAgreement.receipt.order = ShopOrder;
-    UnpaidCancellationAgreement.receipt.buyer = ShopOrder.buyer;
-    UnpaidCancellationAgreement.receipt.status = ReceiptStatus.COMPLETED;
-    UnpaidCancellationAgreement.receipt.orderStatus = ShopOrder.status;
+    unpaidCancellationAgreement.order = shopOrder;
+    unpaidCancellationAgreement.receipt = new Receipt();
+    unpaidCancellationAgreement.receipt.order = shopOrder;
+    unpaidCancellationAgreement.receipt.buyer = shopOrder.buyer;
+    unpaidCancellationAgreement.receipt.status = ReceiptStatus.COMPLETED;
+    unpaidCancellationAgreement.receipt.orderStatus = shopOrder.status;
 }
 
 atomic calculate preparePaidCancellationAgreementReceipt(ShopOrder, PaidCancellationAgreement) {
-    PaidCancellationAgreement.order = ShopOrder;
-    PaidCancellationAgreement.receipt = new Receipt();
-    PaidCancellationAgreement.receipt.order = ShopOrder;
-    PaidCancellationAgreement.receipt.buyer = ShopOrder.buyer;
-    PaidCancellationAgreement.receipt.status = ReceiptStatus.COMPLETED;
-    PaidCancellationAgreement.receipt.orderStatus = ShopOrder.status;
+    paidCancellationAgreement.order = shopOrder;
+    paidCancellationAgreement.receipt = new Receipt();
+    paidCancellationAgreement.receipt.order = shopOrder;
+    paidCancellationAgreement.receipt.buyer = shopOrder.buyer;
+    paidCancellationAgreement.receipt.status = ReceiptStatus.COMPLETED;
+    paidCancellationAgreement.receipt.orderStatus = shopOrder.status;
 }
 
 atomic calculate preparePurchaseReceipt(ShopOrder, Receipt) {
-    Receipt.buyer = ShopOrder.buyer;
-    Receipt.order = ShopOrder;
-    Receipt.status = ReceiptStatus.COMPLETED;
-    Receipt.orderStatus = ShopOrder.status;
+    receipt.buyer = shopOrder.buyer;
+    receipt.order = shopOrder;
+    receipt.status = ReceiptStatus.COMPLETED;
+    receipt.orderStatus = shopOrder.status;
 }

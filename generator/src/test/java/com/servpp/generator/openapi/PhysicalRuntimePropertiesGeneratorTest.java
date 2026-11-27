@@ -24,14 +24,14 @@ public class PhysicalRuntimePropertiesGeneratorTest {
         SppDomain domain = compileDomain("""
                 domain commerce;
 
-                Contract SalesOrder{
+                Contract SalesOrder short order{
                     String orderNo;
                     quantum double amount;
                 }
 
-                atomic query queryCustomer(SalesOrder order);
-                atomic update openSalesOrder(SalesOrder order);
-                Scenario serial submitOrder(SalesOrder order){
+                atomic query queryCustomer(SalesOrder);
+                atomic update openSalesOrder(SalesOrder);
+                Scenario serial submitOrder(SalesOrder){
                     transaction{ openSalesOrder(order); }
                 }
                 """, """
@@ -183,9 +183,9 @@ public class PhysicalRuntimePropertiesGeneratorTest {
         SppDomain domain = compileDomain("""
                 domain commerce;
 
-                Entity CreditAccount{ quantum double availableCredit; }
-                Role OrderAmount{ quantum double occupiedAmount; }
-                atomic update reserveCredit(CreditAccount account, OrderAmount amount);
+                Entity CreditAccount short account{ quantum double availableCredit; }
+                Role OrderAmount short amount{ quantum double occupiedAmount; }
+                atomic update reserveCredit(CreditAccount, OrderAmount);
                 """, """
                 domain commerce;
 
@@ -330,9 +330,9 @@ public class PhysicalRuntimePropertiesGeneratorTest {
         SppDomain domain = compileDomain("""
                 domain commerce;
 
-                Contract SalesOrder{ String orderNo; String status; }
-                atomic update openSalesOrder(SalesOrder order);
-                Scenario serial submitOrder(SalesOrder order){
+                Contract SalesOrder short order{ String orderNo; String status; }
+                atomic update openSalesOrder(SalesOrder);
+                Scenario serial submitOrder(SalesOrder){
                     transaction{ openSalesOrder(order); }
                 }
                 """, """
@@ -377,9 +377,9 @@ public class PhysicalRuntimePropertiesGeneratorTest {
         SppDomain domain = compileDomain("""
                 domain commerce;
 
-                Entity CreditAccount{ quantum double availableCredit; }
-                Role OrderAmount{ quantum double occupiedAmount; }
-                atomic update reserveCredit(CreditAccount account, OrderAmount amount);
+                Entity CreditAccount short account{ quantum double availableCredit; }
+                Role OrderAmount short amount{ quantum double occupiedAmount; }
+                atomic update reserveCredit(CreditAccount, OrderAmount);
                 """, """
                 domain commerce;
 
@@ -444,8 +444,8 @@ public class PhysicalRuntimePropertiesGeneratorTest {
         SppDomain domain = compileDomain("""
                 domain commerce;
 
-                Contract SalesOrder{ String orderNo; }
-                atomic query queryOrder(SalesOrder order);
+                Contract SalesOrder short order{ String orderNo; }
+                atomic query queryOrder(SalesOrder);
                 """, """
                 domain commerce;
 

@@ -56,7 +56,7 @@ public class BusinessCalculationGenerationTest {
 
     private static final String ROLE = """
             domain rules;
-            Role Values {
+            Role Values short v {
                 double a; double b; double c; double total;
                 boolean allowed; boolean exempt; String label;
             }
@@ -286,7 +286,7 @@ public class BusinessCalculationGenerationTest {
                 v.a = v.b / v.c; v.allowed = v.a * v.c == v.b;
                 if (v.allowed) { v.total = v.a; } else { v.total = 0; }
                 v.label = v.allowed ? "yes" : "no";
-                """).replace("double total;", "BigDecimal(15,2,HALF_UP) total;") + " Scenario serial exercise(Values v) { decide(v); }");
+                """).replace("double total;", "BigDecimal(15,2,HALF_UP) total;") + " Scenario serial exercise(Values) { decide(v); }");
         Files.writeString(source.resolve("rules.app"), "domain rules; scope { local { decide; exercise; } }");
         Files.writeString(source.resolve("rules.phy"), "domain rules; phy { " + customBinding()
                 + " numeric Values.total as " + FRACTION + " using " + ADAPTER + "; }");
@@ -332,7 +332,7 @@ public class BusinessCalculationGenerationTest {
     }
 
     private static String customBinding() { return "numeric double as " + FRACTION + " using " + ADAPTER + ";"; }
-    private static String business(String body) { return ROLE + "atomic calculate decide(Values v) { " + body + " }"; }
+    private static String business(String body) { return ROLE + "atomic calculate decide(Values) { " + body + " }"; }
     private SppDomain compile(String body, String binding) throws Exception {
         return compile(body, binding, "double");
     }

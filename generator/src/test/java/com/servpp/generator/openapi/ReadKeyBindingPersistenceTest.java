@@ -23,25 +23,25 @@ public class ReadKeyBindingPersistenceTest {
         Path source = Files.createDirectory(root.resolve("source"));
         Files.writeString(source.resolve("reads.spp"), """
                 domain reads;
-                Role Item { String code; int edition; String title; }
-                Role Selection { String wanted; }
+                Role Item short item, matches { String code; int edition; String title; }
+                Role Selection short selection { String wanted; }
                 Role Release { int edition; }
                 take Selection, Release as Item { String code = wanted; mapsame; }
-                Entity Stock { String code; int edition; String title; }
-                Role Lookup { String wanted; }
+                Entity Stock short item { String code; int edition; String title; }
+                Role Lookup short selection { String wanted; }
                 take Stock as Lookup { String wanted = code; }
                 Enum ReadError { DUPLICATE:"D02", MISSING:"M00" }
-                Contract Marker { String receipt; }
-                atomic check checkItem(Stock item) { require(item, ReadError.MISSING); }
-                Scenario serial readUnique(Stock item, Lookup selection, Marker marker) {
+                Contract Marker short marker { String receipt; }
+                atomic check checkItem(Stock) { require(item, ReadError.MISSING); }
+                Scenario serial readUnique(Stock, Lookup, Marker) {
                     transaction {
                         unique findStock by selection;
                         checkItem,breakTransaction;
                         insertMarker;
                     }
                 }
-                atomic check checkRole(Item item) { require(item, ReadError.MISSING); }
-                Scenario serial readUniqueNamed(Item item, Selection selection, Marker marker) {
+                atomic check checkRole(Item) { require(item, ReadError.MISSING); }
+                Scenario serial readUniqueNamed(Item, Selection, Marker) {
                     transaction {
                         unique findItem by selection else ReadError.DUPLICATE;
                         checkRole,breakTransaction;
@@ -49,15 +49,15 @@ public class ReadKeyBindingPersistenceTest {
                     }
                 }
                 const int CURRENT = 3;
-                atomic query listItems(key Item item, Item[] matches);
+                atomic query listItems(key Item, Item[]);
                 Scenario serial readSelected(Item, Selection, Release) {
                     findItem by Selection, Release;
                 }
                 Scenario serial readDefault(Item) {
-                    findItem by Selection.wanted = "A", Item.edition = CURRENT;
+                    findItem by Selection.wanted = "A", item.edition = CURRENT;
                 }
-                Scenario serial readList(Item, Item[] matches) {
-                    listItems(Item, matches) by Selection.wanted = "A", Item.edition = CURRENT;
+                Scenario serial readList(Item, Item[]) {
+                    listItems(item, matches) by Selection.wanted = "A", item.edition = CURRENT;
                 }
                 """);
         Files.writeString(source.resolve("reads.app"), """
@@ -99,19 +99,19 @@ public class ReadKeyBindingPersistenceTest {
                 assertEquals(2, statement.executeUpdate("INSERT INTO RELEASES (edition) VALUES (3), (4)"));
             }
             var stale = Map.of("code", "B", "edition", 4);
-            var selected = execute(runtime, mapper, "ReadSelected", Map.of("Item", stale,
-                    "Selection", Map.of("wanted", "A"), "Release", Map.of("edition", 3))).get("Item");
+            var selected = execute(runtime, mapper, "ReadSelected", Map.of("item", stale,
+                    "selection", Map.of("wanted", "A"), "Release", Map.of("edition", 3))).get("item");
             assertEquals(Map.of("code", "A", "edition", 3, "title", "selected"),
                     mapper.convertValue(selected, Map.class));
-            var defaults = execute(runtime, mapper, "ReadDefault", Map.of("Item", stale)).get("Item");
+            var defaults = execute(runtime, mapper, "ReadDefault", Map.of("item", stale)).get("item");
             assertEquals(selected, defaults);
-            var missing = execute(runtime, mapper, "ReadSelected", Map.of("Item", stale,
-                    "Selection", Map.of("wanted", "missing"), "Release", Map.of("edition", 3))).get("Item");
+            var missing = execute(runtime, mapper, "ReadSelected", Map.of("item", stale,
+                    "selection", Map.of("wanted", "missing"), "Release", Map.of("edition", 3))).get("item");
             assertEquals("missing", missing.get("code").asText());
             assertEquals(3, missing.get("edition").asInt());
-            var list = execute(runtime, mapper, "ReadList", Map.of("Item", stale, "matches", List.of()));
-            assertEquals("A", list.get("Item").get("code").asText());
-            assertEquals(3, list.get("Item").get("edition").asInt());
+            var list = execute(runtime, mapper, "ReadList", Map.of("item", stale, "matches", List.of()));
+            assertEquals("A", list.get("item").get("code").asText());
+            assertEquals(3, list.get("item").get("edition").asInt());
             assertEquals(1, list.get("matches").size());
             assertEquals(selected, list.get("matches").get(0));
             try (var connection = dataSource.getConnection(); var statement = connection.createStatement()) {

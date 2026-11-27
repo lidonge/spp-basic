@@ -33,68 +33,68 @@ Role DepositFeePlan {
 
 atomic check checkFeeAccount(DepositFeeParty, DepositFeeContext) {
     require(
-        DepositFeeContext.channel != "Teller" || DepositFeeParty.accountKind == "NormalSavings",
+        depositFeeContext.channel != "Teller" || depositFeeParty.accountKind == "NormalSavings",
         RejectionCode.UNSUPPORTED_DEPOSIT_FEE_ACCOUNT
     );
 }
 
 atomic calculate classifyDepositFee(DepositFeeParty, DepositFeeContext, DepositFeePlan) {
-    DepositFeePlan.range = 0;
-    DepositFeePlan.tariff = BLANK;
-    DepositFeePlan.applicable = false;
-    DepositFeePlan.variableAmount = 0;
-    DepositFeePlan.fee = 0;
-    if (DepositFeeContext.channel == "Teller") {
-        if (DepositFeeParty.regionCode != DepositFeeContext.regionCode) {
-            DepositFeePlan.range = 2;
-            DepositFeePlan.tariff = "SAP00001";
+    depositFeePlan.range = 0;
+    depositFeePlan.tariff = BLANK;
+    depositFeePlan.applicable = false;
+    depositFeePlan.variableAmount = 0;
+    depositFeePlan.fee = 0;
+    if (depositFeeContext.channel == "Teller") {
+        if (depositFeeParty.regionCode != depositFeeContext.regionCode) {
+            depositFeePlan.range = 2;
+            depositFeePlan.tariff = "SAP00001";
         } else {
-            if (DepositFeeParty.branchNumber != DepositFeeContext.branchNumber) {
-                DepositFeePlan.range = 1;
-                DepositFeePlan.tariff = "SAC00001";
+            if (depositFeeParty.branchNumber != depositFeeContext.branchNumber) {
+                depositFeePlan.range = 1;
+                depositFeePlan.tariff = "SAC00001";
             }
         }
-        DepositFeePlan.applicable = DepositFeePlan.range > 0;
+        depositFeePlan.applicable = depositFeePlan.range > 0;
     }
 }
 
 atomic calculate prepareFeeLookup(DepositFeeParty, DepositFeePlan, DepositFeeRate) {
-    DepositFeeRate.customerNumber = DepositFeeParty.customerNumber;
-    DepositFeeRate.tariff = DepositFeePlan.tariff;
+    depositFeeRate.customerNumber = depositFeeParty.customerNumber;
+    depositFeeRate.tariff = depositFeePlan.tariff;
 }
 
 atomic check checkFeeRate(DepositFeePlan, DepositFeeRate) {
     require(
-        !DepositFeePlan.applicable || DepositFeeRate.tariff == DepositFeePlan.tariff,
+        !depositFeePlan.applicable || depositFeeRate.tariff == depositFeePlan.tariff,
         RejectionCode.DEPOSIT_FEE_TARIFF_MISMATCH
     );
     require(
-        !DepositFeePlan.applicable
-            || (DepositFeeRate.rate >= 0
-            && DepositFeeRate.discount >= 0
-            && DepositFeeRate.minimum >= 0
-            && DepositFeeRate.maximum >= DepositFeeRate.minimum),
+        !depositFeePlan.applicable
+            || (depositFeeRate.rate >= 0
+            && depositFeeRate.discount >= 0
+            && depositFeeRate.minimum >= 0
+            && depositFeeRate.maximum >= depositFeeRate.minimum),
         RejectionCode.INVALID_DEPOSIT_FEE_RATE
     );
 }
 
 atomic calculate calculateDepositFee(DepositRequest, DepositFeeRate, DepositFeePlan) {
-    if (DepositFeePlan.applicable) {
-        DepositFeePlan.variableAmount = roundHalfUp(
-            DepositRequest.amount * DepositFeeRate.rate * DepositFeeRate.discount,
+    if (depositFeePlan.applicable) {
+        depositFeePlan.variableAmount = roundHalfUp(
+            depositRequest.amount * depositFeeRate.rate * depositFeeRate.discount,
             2
         );
-        DepositFeePlan.fee = DepositFeePlan.variableAmount + DepositFeeRate.fixedAmount;
-        if (DepositFeePlan.fee > DepositFeeRate.maximum) {
-            DepositFeePlan.fee = DepositFeeRate.maximum;
+        depositFeePlan.fee = depositFeePlan.variableAmount + depositFeeRate.fixedAmount;
+        if (depositFeePlan.fee > depositFeeRate.maximum) {
+            depositFeePlan.fee = depositFeeRate.maximum;
         } else {
-            if (DepositFeePlan.fee < DepositFeeRate.minimum) {
-                DepositFeePlan.fee = DepositFeeRate.minimum;
+            if (depositFeePlan.fee < depositFeeRate.minimum) {
+                depositFeePlan.fee = depositFeeRate.minimum;
             }
         }
     }
 }
 
 atomic check checkRequiredFeeIdentified(DepositFeePlan, DepositFeeRate) {
-    require(!DepositFeePlan.applicable || DepositFeeRate, RejectionCode.DEPOSIT_FEE_RATE_NOT_FOUND);
+    require(!depositFeePlan.applicable || depositFeeRate, RejectionCode.DEPOSIT_FEE_RATE_NOT_FOUND);
 }

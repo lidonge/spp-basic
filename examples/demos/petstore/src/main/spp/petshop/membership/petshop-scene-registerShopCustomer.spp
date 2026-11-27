@@ -9,9 +9,9 @@ Scenario serial registerShopCustomer(Buyer, Cart, RegistrationAgreement) {
     registerCustomer;
     prepareRegistrationAgreementReceipt;
     transaction {
-        insertPerson(Buyer);
+        insertPerson(buyer);
         insertBuyer;
         insertCart;
-        insertReceipt(RegistrationAgreement.receipt);
+        insertReceipt(registrationAgreement.receipt);
     }
 }

@@ -8,7 +8,7 @@ atomic calculate initializeCatalog(
     SettlementAccount,
     StoreOpeningAgreement
 ) {
-    for (Goods product : Goods[]) {
+    for (Goods product : goodss) {
         product.active = true;
         switch (product.sku) {
             case "CAT-001":
@@ -26,10 +26,10 @@ atomic calculate initializeCatalog(
         }
     }
     initializeInventory;
-    Merchant.tradingName = StoreOpeningAgreement.tradingName;
-    Merchant.shopName = StoreOpeningAgreement.shopName;
+    merchant.tradingName = storeOpeningAgreement.tradingName;
+    merchant.shopName = storeOpeningAgreement.shopName;
 
-    SettlementAccount.accountNumber = "EXTERNAL-SETTLEMENT";
+    settlementAccount.accountNumber = "EXTERNAL-SETTLEMENT";
 
 }
 
@@ -45,14 +45,14 @@ Scenario serial initializeStore(
     configureStoreOpening;
     configureMerchantLookup;
     findMerchant;
-    if (!Merchant) {
-        findPerson(Merchant);
-        identify(Merchant);
+    if (!merchant) {
+        findPerson(merchant);
+        identify(merchant);
         prepareProductSelection;
         importCatalogue;
         initializeCatalog;
         transaction {
-            insertGoods(Goods[]);
+            insertGoods(goodss);
             insertStockLine;
             insertStockSupply;
             insertMerchant;
@@ -62,14 +62,14 @@ Scenario serial initializeStore(
 }
 
 atomic calculate configureStoreOpening(StoreOpeningAgreement) {
-    if (StoreOpeningAgreement.tradingName == BLANK) {
-        StoreOpeningAgreement.tradingName = MERCHANT_NAME;
+    if (storeOpeningAgreement.tradingName == BLANK) {
+        storeOpeningAgreement.tradingName = MERCHANT_NAME;
     }
-    if (StoreOpeningAgreement.shopName == BLANK) {
-        StoreOpeningAgreement.shopName = SHOP_NAME;
+    if (storeOpeningAgreement.shopName == BLANK) {
+        storeOpeningAgreement.shopName = SHOP_NAME;
     }
 }
 
 atomic calculate configureMerchantLookup(Merchant) {
-    Merchant.customerNumber = "MERCHANT-001";
+    merchant.customerNumber = "MERCHANT-001";
 }

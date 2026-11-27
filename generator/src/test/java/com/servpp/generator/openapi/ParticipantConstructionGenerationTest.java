@@ -14,8 +14,8 @@ public class ParticipantConstructionGenerationTest {
         Files.writeString(source,"""
                 domain rules;
                 Role DateValue { int encoded; int year; int month; int day; int epoch; boolean valid; }
-                Role Holder { DateValue value; DateValue[] dates; }
-                atomic calculate construct(Holder h) {
+                Role Holder short h { DateValue value; DateValue[] dates; }
+                atomic calculate construct(Holder) {
                     h.value = new DateValue();
                     h.dates = new DateValue[] { new DateValue(), null };
                     DateValue[] copiedDates = copy(h.dates);

@@ -16,52 +16,52 @@ Role CashReversalMetadataPlan {
 
 atomic check checkOriginalCashMovement(CashDepositAgreement) {
     require(
-        CashDepositAgreement.amount >= 0
-            && CashDepositAgreement.interestPaid >= 0
-            && CashDepositAgreement.collectionPaid >= 0
-            && CashDepositAgreement.principalPaid >= 0,
+        cashDepositAgreement.amount >= 0
+            && cashDepositAgreement.interestPaid >= 0
+            && cashDepositAgreement.collectionPaid >= 0
+            && cashDepositAgreement.principalPaid >= 0,
         RejectionCode.INVALID_ORIGINAL_DEPOSIT_MOVEMENT
     );
     require(
-        CashDepositAgreement.amount == CashDepositAgreement.interestBaseDelta
-            + CashDepositAgreement.interestPaid
-            + CashDepositAgreement.collectionPaid
-            + CashDepositAgreement.principalPaid,
+        cashDepositAgreement.amount == cashDepositAgreement.interestBaseDelta
+            + cashDepositAgreement.interestPaid
+            + cashDepositAgreement.collectionPaid
+            + cashDepositAgreement.principalPaid,
         RejectionCode.ORIGINAL_DEPOSIT_MOVEMENT_NOT_BALANCED
     );
-    require(!CashDepositAgreement.reversed, RejectionCode.DEPOSIT_ALREADY_REVERSED);
-    require(CashDepositAgreement.fee >= 0, RejectionCode.INVALID_ORIGINAL_DEPOSIT_FEE);
+    require(!cashDepositAgreement.reversed, RejectionCode.DEPOSIT_ALREADY_REVERSED);
+    require(cashDepositAgreement.fee >= 0, RejectionCode.INVALID_ORIGINAL_DEPOSIT_FEE);
 }
 
 atomic check checkCashReversalCapacity(DepositAccount, CashDepositAgreement, DepositReversalCapacity) {
     BigDecimal available = max(
         0,
-        DepositAccount.interestBase - DepositAccount.frozenAmount - DepositAccount.authorizedAmount
+        depositAccount.interestBase - depositAccount.frozenAmount - depositAccount.authorizedAmount
     );
     require(
-        CashDepositAgreement.amount <= available
-            || (DepositReversalCapacity.overdraftPermitted
-            && DepositReversalCapacity.overdraftLimit >= CashDepositAgreement.amount
+        cashDepositAgreement.amount <= available
+            || (depositReversalCapacity.overdraftPermitted
+            && depositReversalCapacity.overdraftLimit >= cashDepositAgreement.amount
             - available),
         RejectionCode.ES020
     );
-    BigDecimal interestBase = DepositAccount.interestBase - CashDepositAgreement.interestBaseDelta;
+    BigDecimal interestBase = depositAccount.interestBase - cashDepositAgreement.interestBaseDelta;
     require(interestBase >= 0, RejectionCode.EN249);
     require(
         !(interestBase > 0
-            && DepositAccount.overdraftPrincipal
-            - CashDepositAgreement.principalPaid < 0
-            && interestBase > DepositAccount.frozenAmount),
+            && depositAccount.overdraftPrincipal
+            - cashDepositAgreement.principalPaid < 0
+            && interestBase > depositAccount.frozenAmount),
         RejectionCode.EN177
     );
 }
 
 atomic check checkCashReversalFacts(CashDepositAgreement, CashReversalAgreement, DepositAccrualState) {
     require(
-        CashReversalAgreement.newDetailItems > 0 && CashDepositAgreement.addedBackdatedProduct >= 0,
+        cashReversalAgreement.newDetailItems > 0 && cashDepositAgreement.addedBackdatedProduct >= 0,
         RejectionCode.INVALID_CASH_REVERSAL_FACTS
     );
-    require(DepositAccrualState.normalProduct >= CashDepositAgreement.addedBackdatedProduct, RejectionCode.EN097);
+    require(depositAccrualState.normalProduct >= cashDepositAgreement.addedBackdatedProduct, RejectionCode.EN097);
 }
 
 atomic calculate calculateXbodCashReversalMetadata(
@@ -71,26 +71,26 @@ atomic calculate calculateXbodCashReversalMetadata(
     DepositAccrualState,
     CashReversalMetadataPlan
 ) {
-    CashReversalMetadataPlan.normalProduct = DepositAccrualState.normalProduct
-        - CashDepositAgreement.addedBackdatedProduct;
-    CashReversalMetadataPlan.actualProduct = CashReversalMetadataPlan.normalProduct
-        - DepositAccrualState.overdraftProduct;
-    CashReversalMetadataPlan.detailCount = AccountEligibility.detailCount
-        + CashReversalAgreement.newDetailItems;
-    if (AccountEligibility.detailCount == CashDepositAgreement.settledDetailCount) {
-        CashReversalMetadataPlan.lastTransactionDate = CashDepositAgreement.previousTransactionDate;
+    cashReversalMetadataPlan.normalProduct = depositAccrualState.normalProduct
+        - cashDepositAgreement.addedBackdatedProduct;
+    cashReversalMetadataPlan.actualProduct = cashReversalMetadataPlan.normalProduct
+        - depositAccrualState.overdraftProduct;
+    cashReversalMetadataPlan.detailCount = accountEligibility.detailCount
+        + cashReversalAgreement.newDetailItems;
+    if (accountEligibility.detailCount == cashDepositAgreement.settledDetailCount) {
+        cashReversalMetadataPlan.lastTransactionDate = cashDepositAgreement.previousTransactionDate;
     } else {
-        CashReversalMetadataPlan.lastTransactionDate = CashReversalAgreement.businessDate;
+        cashReversalMetadataPlan.lastTransactionDate = cashReversalAgreement.businessDate;
     }
-    if (CashReversalAgreement.overnightMode2) {
-        CashReversalMetadataPlan.lastTransactionDate = CashReversalAgreement.businessDate;
+    if (cashReversalAgreement.overnightMode2) {
+        cashReversalMetadataPlan.lastTransactionDate = cashReversalAgreement.businessDate;
     }
-    CashReversalMetadataPlan.cashDepositedToday = max(
+    cashReversalMetadataPlan.cashDepositedToday = max(
         0,
-        AccountEligibility.cashDepositedToday - CashDepositAgreement.amount
+        accountEligibility.cashDepositedToday - cashDepositAgreement.amount
     );
-    CashReversalMetadataPlan.reverseInstitutionLimit = CashDepositAgreement.transactionDate == CashReversalAgreement.businessDate
-        && AccountEligibility.detailCount == CashDepositAgreement.settledDetailCount;
+    cashReversalMetadataPlan.reverseInstitutionLimit = cashDepositAgreement.transactionDate == cashReversalAgreement.businessDate
+        && accountEligibility.detailCount == cashDepositAgreement.settledDetailCount;
 }
 
 atomic calculate prepareCashReversalAgreement(
@@ -98,9 +98,9 @@ atomic calculate prepareCashReversalAgreement(
     CashReversalAgreement,
     CashReversalMetadataPlan
 ) {
-    CashReversalAgreement.original = CashDepositAgreement;
-    CashReversalAgreement.refundAmount = CashDepositAgreement.fee;
-    CashReversalAgreement.reverseInstitutionLimit = CashReversalMetadataPlan.reverseInstitutionLimit;
+    cashReversalAgreement.original = cashDepositAgreement;
+    cashReversalAgreement.refundAmount = cashDepositAgreement.fee;
+    cashReversalAgreement.reverseInstitutionLimit = cashReversalMetadataPlan.reverseInstitutionLimit;
 }
 
 quantum update reverseCashDeposit(
@@ -110,14 +110,14 @@ quantum update reverseCashDeposit(
     CollectionInterestIncomeAccount,
     CashDepositAgreement
 ) {
-    if (CashDepositAgreement.interestBaseDelta >= 0) {
-        DepositAccount.interestBase -> CashSettlementAccount.balance : CashDepositAgreement.interestBaseDelta;
+    if (cashDepositAgreement.interestBaseDelta >= 0) {
+        depositAccount.interestBase -> cashSettlementAccount.balance : cashDepositAgreement.interestBaseDelta;
     } else {
-        CashSettlementAccount.balance -> DepositAccount.interestBase : -CashDepositAgreement.interestBaseDelta;
+        cashSettlementAccount.balance -> depositAccount.interestBase : -cashDepositAgreement.interestBaseDelta;
     }
-    DepositAccount.overdraftInterest -> CashSettlementAccount.balance : CashDepositAgreement.interestPaid;
-    DepositAccount.collectionInterest -> CashSettlementAccount.balance : CashDepositAgreement.collectionPaid;
-    DepositAccount.overdraftPrincipal -> CashSettlementAccount.balance : CashDepositAgreement.principalPaid;
+    depositAccount.overdraftInterest -> cashSettlementAccount.balance : cashDepositAgreement.interestPaid;
+    depositAccount.collectionInterest -> cashSettlementAccount.balance : cashDepositAgreement.collectionPaid;
+    depositAccount.overdraftPrincipal -> cashSettlementAccount.balance : cashDepositAgreement.principalPaid;
 }
 
 atomic calculate completeCashReversal(
@@ -127,32 +127,32 @@ atomic calculate completeCashReversal(
     AccountEligibility,
     DepositAccrualState
 ) {
-    AccountEligibility.accountBalance = DepositAccount.interestBase
-        + DepositAccount.overdraftInterest
-        + DepositAccount.collectionInterest
-        + DepositAccount.overdraftPrincipal;
-    AccountEligibility.cashDepositedToday = CashReversalMetadataPlan.cashDepositedToday;
-    CashDepositAgreement.reversed = true;
-    AccountEligibility.detailCount = CashReversalMetadataPlan.detailCount;
-    AccountEligibility.lastTransactionDate = CashReversalMetadataPlan.lastTransactionDate;
-    DepositAccrualState.normalProduct = CashReversalMetadataPlan.normalProduct;
-    DepositAccrualState.actualProduct = CashReversalMetadataPlan.actualProduct;
+    accountEligibility.accountBalance = depositAccount.interestBase
+        + depositAccount.overdraftInterest
+        + depositAccount.collectionInterest
+        + depositAccount.overdraftPrincipal;
+    accountEligibility.cashDepositedToday = cashReversalMetadataPlan.cashDepositedToday;
+    cashDepositAgreement.reversed = true;
+    accountEligibility.detailCount = cashReversalMetadataPlan.detailCount;
+    accountEligibility.lastTransactionDate = cashReversalMetadataPlan.lastTransactionDate;
+    depositAccrualState.normalProduct = cashReversalMetadataPlan.normalProduct;
+    depositAccrualState.actualProduct = cashReversalMetadataPlan.actualProduct;
 }
 
 atomic check checkXbodCashReversalPath(DepositOperatorFacts, CashChannel) {
     require(
-        CashChannel.teller
-            && CashChannel.channel == "Teller"
-            && CashChannel.transactionId == "GSA01102"
-            && DepositOperatorFacts.operationCode == "1102"
-            && DepositOperatorFacts.transactionPrefix == "SA01102",
+        cashChannel.teller
+            && cashChannel.channel == "Teller"
+            && cashChannel.transactionId == "GSA01102"
+            && depositOperatorFacts.operationCode == "1102"
+            && depositOperatorFacts.transactionPrefix == "SA01102",
         RejectionCode.UNSUPPORTED_CASH_REVERSAL_PATH
     );
 }
 
 atomic check checkOriginalDepositAccount(DepositAccount, CashDepositAgreement) {
     require(
-        CashDepositAgreement.account.accountNumber == DepositAccount.accountNumber,
+        cashDepositAgreement.account.accountNumber == depositAccount.accountNumber,
         RejectionCode.ORIGINAL_DEPOSIT_ACCOUNT_MISMATCH
     );
 }
@@ -165,10 +165,10 @@ atomic check checkOriginalSettlementAccounts(
     PrincipalRecoveryAccount
 ) {
     require(
-        CashDepositAgreement.settlement.accountNumber == CashSettlementAccount.accountNumber
-            && CashDepositAgreement.interestIncome.accountNumber == InterestIncomeAccount.accountNumber
-            && CashDepositAgreement.collectionIncome.accountNumber == CollectionInterestIncomeAccount.accountNumber
-            && CashDepositAgreement.principalRecovery.accountNumber == PrincipalRecoveryAccount.accountNumber,
+        cashDepositAgreement.settlement.accountNumber == cashSettlementAccount.accountNumber
+            && cashDepositAgreement.interestIncome.accountNumber == interestIncomeAccount.accountNumber
+            && cashDepositAgreement.collectionIncome.accountNumber == collectionInterestIncomeAccount.accountNumber
+            && cashDepositAgreement.principalRecovery.accountNumber == principalRecoveryAccount.accountNumber,
         RejectionCode.ORIGINAL_SETTLEMENT_ACCOUNTS_MISMATCH
     );
 }

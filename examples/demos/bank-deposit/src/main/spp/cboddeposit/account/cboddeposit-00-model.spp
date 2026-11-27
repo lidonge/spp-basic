@@ -39,31 +39,31 @@ Role DepositDetailPolicy {
 }
 
 atomic check checkCashControl(CashAccountControl, AccountEligibility) {
-    require(CashAccountControl.controllingInstitution == BLANK, RejectionCode.EN432);
+    require(cashAccountControl.controllingInstitution == BLANK, RejectionCode.EN432);
     require(
-        CashAccountControl.controlStatus != "PayNoReceive" && CashAccountControl.controlStatus != "Locked",
+        cashAccountControl.controlStatus != "PayNoReceive" && cashAccountControl.controlStatus != "Locked",
         RejectionCode.EN432
     );
-    require(AccountEligibility.status != AccountStatus.FROZEN, RejectionCode.EG877);
-    require(CashAccountControl.cancelledOn == 0, RejectionCode.EN113);
-    require(CashAccountControl.productKind != "RealEstate", RejectionCode.EI090);
+    require(accountEligibility.status != AccountStatus.FROZEN, RejectionCode.EG877);
+    require(cashAccountControl.cancelledOn == 0, RejectionCode.EN113);
+    require(cashAccountControl.productKind != "RealEstate", RejectionCode.EI090);
 }
 
 atomic calculate describeAccountBalance(DepositAccount, AccountEligibility) {
-    AccountEligibility.accountBalance = DepositAccount.interestBase
-        + DepositAccount.overdraftInterest
-        + DepositAccount.collectionInterest
-        + DepositAccount.overdraftPrincipal;
+    accountEligibility.accountBalance = depositAccount.interestBase
+        + depositAccount.overdraftInterest
+        + depositAccount.collectionInterest
+        + depositAccount.overdraftPrincipal;
 }
 
 atomic check checkAccountParticipants(DepositAccount, AccountEligibility, DepositAccrualState) {
     require(
-        DepositAccount.accountNumber == AccountEligibility.accountNumber
-            && DepositAccount.accountNumber == DepositAccrualState.accountNumber,
+        depositAccount.accountNumber == accountEligibility.accountNumber
+            && depositAccount.accountNumber == depositAccrualState.accountNumber,
         RejectionCode.ACCOUNT_PARTICIPANTS_MISMATCH
     );
 }
 
 atomic calculate deriveOverdraftExposure(DepositAccount) {
-    DepositAccount.overdraftExposure = -DepositAccount.overdraftPrincipal;
+    depositAccount.overdraftExposure = -depositAccount.overdraftPrincipal;
 }

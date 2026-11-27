@@ -50,7 +50,7 @@ const String DOG_NAME = "Corgi puppy";
 const String DOG_DESCRIPTION = "Shop handover; limited demo stock";
 
 atomic calculate localizeProductLabels(CatalogProduct[]) {
-    for (CatalogProduct product : CatalogProduct[]) {
+    for (CatalogProduct product : catalogProducts) {
         switch (product.sku) {
             case "CAT-001":
                 product.category = CAT_CATEGORY;
@@ -77,18 +77,18 @@ atomic calculate localizeProductLabels(CatalogProduct[]) {
 }
 
 atomic calculate configureCatalogueSelection(CatalogProduct) {
-    CatalogProduct.active = true;
+    catalogProduct.active = true;
 }
 
 atomic calculate initializeProductCatalogue(CatalogProduct[], Product[], ProductCatalogueOpeningAgreement) {
-    CatalogProduct[] = new CatalogProduct[] {
+    catalogProducts = new CatalogProduct[] {
         new CatalogProduct(),
         new CatalogProduct(),
         new CatalogProduct(),
         new CatalogProduct()
     };
     int index = 0;
-    for (CatalogProduct product : CatalogProduct[]) {
+    for (CatalogProduct product : catalogProducts) {
         product.active = true;
         switch (index) {
             case 0:
@@ -121,7 +121,7 @@ atomic calculate initializeProductCatalogue(CatalogProduct[], Product[], Product
         }
         index++;
     }
-    Product[] = new Product[] {
+    products = new Product[] {
         new Product(),
         new Product(),
         new Product(),
@@ -129,7 +129,7 @@ atomic calculate initializeProductCatalogue(CatalogProduct[], Product[], Product
     };
 
     index = 0;
-    for (Product root : Product[]) {
+    for (Product root : products) {
         switch (index) {
             case 0:
                 root.productCode = "CAT-001";
@@ -143,7 +143,7 @@ atomic calculate initializeProductCatalogue(CatalogProduct[], Product[], Product
             default:
                 root.productCode = "DOG-001";
         }
-        for (CatalogProduct product : CatalogProduct[]) {
+        for (CatalogProduct product : catalogProducts) {
             if (product.sku == root.productCode) {
                 root.name = product.name;
                 root.category = product.category;
@@ -153,7 +153,7 @@ atomic calculate initializeProductCatalogue(CatalogProduct[], Product[], Product
         }
         index++;
     }
-    ProductCatalogueOpeningAgreement.products = CatalogProduct[];
+    productCatalogueOpeningAgreement.products = catalogProducts;
 }
 
 Scenario serial initializeProductDomain(
@@ -164,31 +164,31 @@ Scenario serial initializeProductDomain(
 ) {
     configureCatalogueSelection;
     listCatalogue;
-    if (CatalogProduct[].length == 0) {
+    if (catalogProducts.length == 0) {
         initializeProductCatalogue;
         transaction {
             insertProduct;
-            insertCatalogProduct(CatalogProduct[]);
+            insertCatalogProduct(catalogProducts);
         }
     }
 }
 
 atomic calculate applyProductRevision(Product, ProductRevisionAgreement) {
-    Product.name = ProductRevisionAgreement.name;
-    Product.category = ProductRevisionAgreement.category;
-    Product.description = ProductRevisionAgreement.description;
-    Product.cost = ProductRevisionAgreement.cost;
-    ProductRevisionAgreement.product = Product;
+    product.name = productRevisionAgreement.name;
+    product.category = productRevisionAgreement.category;
+    product.description = productRevisionAgreement.description;
+    product.cost = productRevisionAgreement.cost;
+    productRevisionAgreement.product = product;
 }
 
 atomic check checkProductFacts(Product) {
-    require(Product.cost >= 0, RejectionCode.INVALID_PRODUCT_COST);
-    require(Product.name != BLANK, RejectionCode.PRODUCT_NAME_REQUIRED);
+    require(product.cost >= 0, RejectionCode.INVALID_PRODUCT_COST);
+    require(product.name != BLANK, RejectionCode.PRODUCT_NAME_REQUIRED);
 }
 
 Scenario serial reviseProduct(Product, ProductRevisionAgreement) {
     findProduct;
-    identify(Product);
+    identify(product);
     applyProductRevision;
     checkProductFacts;
     transaction {

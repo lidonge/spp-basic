@@ -11,20 +11,20 @@ Scenario serial addCartItem(Buyer, Cart, Goods, CartAdditionAgreement, CartLine[
         findGoods;
     }
 
-    identify(Buyer);
-    identify(Goods);
+    identify(buyer);
+    identify(goods);
     checkGoodsSale;
     locateBuyerCart;
     prepareCartAdditionAgreementReceipt;
     findCart;
-    identify(Cart);
+    identify(cart);
     checkCart;
     captureCartLines;
     addCartProduct;
     transaction {
         deleteCartLine;
-        insertCartLine(Cart.lines);
+        insertCartLine(cart.lines);
         updateCart;
-        insertReceipt(CartAdditionAgreement.receipt);
+        insertReceipt(cartAdditionAgreement.receipt);
     }
 }

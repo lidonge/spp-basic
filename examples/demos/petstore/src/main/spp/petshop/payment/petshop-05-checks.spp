@@ -1,6 +1,6 @@
 domain petshop;
 
 atomic check checkPaymentEligibility(Buyer, ShopOrder) {
-    require(ShopOrder.status == OrderStatus.UNPAID, RejectionCode.ORDER_NOT_PAYABLE);
-    require(Buyer.wallet >= ShopOrder.total, RejectionCode.INSUFFICIENT_FUNDS);
+    require(shopOrder.status == OrderStatus.UNPAID, RejectionCode.ORDER_NOT_PAYABLE);
+    require(buyer.wallet >= shopOrder.total, RejectionCode.INSUFFICIENT_FUNDS);
 }

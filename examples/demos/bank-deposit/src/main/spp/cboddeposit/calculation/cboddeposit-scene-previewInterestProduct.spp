@@ -1,18 +1,18 @@
 domain cboddeposit;
 
 Scenario serial previewInterestProduct(
-    BankDate start,
-    PeriodEnd end,
+    BankDate,
+    PeriodEnd,
     InterestCalendar,
     InterestPeriod,
     InterestProduct
 ) {
     checkBankDate(start);
-    checkPeriodEnd(end);
+    checkBankDate(end);
     decodeBankDate(start);
-    decodePeriodEnd(end);
-    checkBankDays(start, end, InterestCalendar);
-    calculateBankDays(start, end, InterestCalendar, InterestPeriod);
+    decodeBankDate(end);
+    checkBankDays(start, end, interestCalendar);
+    calculateBankDays(start, end, interestCalendar, normal);
     checkInterestPeriod;
     calculateInterestProduct;
 }

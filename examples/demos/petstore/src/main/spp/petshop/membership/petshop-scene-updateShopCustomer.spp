@@ -6,11 +6,11 @@ Scenario serial updateShopCustomer(Buyer, ProfileAgreement) {
     initializeProfileAgreement;
     prepareProfileAgreementReceipt;
     findBuyer;
-    identify(Buyer);
+    identify(buyer);
     updateProfile;
     transaction {
-        updatePerson(Buyer);
+        updatePerson(buyer);
         updateBuyer;
-        insertReceipt(ProfileAgreement.receipt);
+        insertReceipt(profileAgreement.receipt);
     }
 }

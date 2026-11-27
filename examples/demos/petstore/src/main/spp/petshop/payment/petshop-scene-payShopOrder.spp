@@ -8,10 +8,10 @@ Scenario serial payShopOrder(Buyer, Merchant, ShopOrder, PaymentAgreement) {
         findBuyer;
         findMerchant;
     }
-    identify(Buyer);
-    identify(Merchant);
+    identify(buyer);
+    identify(merchant);
     findShopOrder;
-    identify(ShopOrder);
+    identify(shopOrder);
     checkOrderOwner;
     checkPaymentEligibility;
     preparePayment;
@@ -19,11 +19,11 @@ Scenario serial payShopOrder(Buyer, Merchant, ShopOrder, PaymentAgreement) {
     transaction {
         transaction REQUIRED {
             payOrderFunds bounds {
-                Buyer.wallet: [0, null];
-                Merchant.cash: [0, null];
+                buyer.wallet: [0, null];
+                merchant.cash: [0, null];
             };
         }
         updateShopOrder;
-        insertReceipt(PaymentAgreement.receipt);
+        insertReceipt(paymentAgreement.receipt);
     }
 }

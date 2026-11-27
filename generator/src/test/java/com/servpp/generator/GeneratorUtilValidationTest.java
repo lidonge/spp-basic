@@ -25,7 +25,7 @@ public class GeneratorUtilValidationTest {
         Files.writeString(source.resolve("ledger.spp"), """
                 domain ledger;
                 Role Facts { int amount; }
-                atomic calculate twice(Facts) { Facts.amount *= 2; }
+                atomic calculate twice(Facts) { facts.amount *= 2; }
                 readonly Scenario serial preview(Facts) { twice; }
                 """);
         Files.writeString(source.resolve("ledger.app"), """
@@ -46,7 +46,7 @@ public class GeneratorUtilValidationTest {
     }
 
     @Test public void projectInspectionRunsBeforeWritingArtifacts()throws Exception {
-        Path source=Files.createTempDirectory("inspection-source"),output=Files.createTempDirectory("inspection-output");Files.writeString(source.resolve("ledger.spp"),"domain ledger; Role Facts { int amount; } atomic calculate same(Facts facts) { facts.amount = facts.amount; } Scenario serial preview(Facts facts) { same(facts); }");
+        Path source=Files.createTempDirectory("inspection-source"),output=Files.createTempDirectory("inspection-output");Files.writeString(source.resolve("ledger.spp"),"domain ledger; Role Facts short facts { int amount; } atomic calculate same(Facts) { facts.amount = facts.amount; } Scenario serial preview(Facts) { same(facts); }");
         try{GeneratorUtil.execute(source.toFile(),output.resolve("yaml").toFile(),output.resolve("java").toFile(),"com.servpp.test",null,project->{assertEquals(1,project.getSppDomainMap().size());throw new IllegalStateException("SYNTHETIC_INSPECTION_REJECTION");});fail("Inspection must reject");}
         catch(IllegalStateException expected){assertEquals("SYNTHETIC_INSPECTION_REJECTION",expected.getMessage());}
         assertFalse(Files.exists(output.resolve("yaml")));assertFalse(Files.exists(output.resolve("java")));
@@ -113,11 +113,11 @@ public class GeneratorUtilValidationTest {
         Files.writeString(sourceDir.resolve("commerce.spp"), """
                 domain commerce;
 
-                Entity Customer{
+                Entity Customer short customer{
                     String membershipNumber;
                 }
 
-                atomic query queryCustomer(Customer customer);
+                atomic query queryCustomer(Customer);
                 """);
         Files.writeString(sourceDir.resolve("commerce.app"), """
                 domain commerce;
@@ -159,7 +159,7 @@ public class GeneratorUtilValidationTest {
         Files.writeString(sourceDir.resolve("commerce.spp"), """
                 domain commerce;
 
-                Entity CreditAccount{
+                Entity CreditAccount short account{
                     String accountNo;
                     quantum double availableCredit;
                     double usedCredit;
@@ -171,7 +171,7 @@ public class GeneratorUtilValidationTest {
                     double payableAmount;
                 }
 
-                atomic query queryCredit(CreditAccount account);
+                atomic query queryCredit(CreditAccount);
                 """);
         Files.writeString(sourceDir.resolve("commerce.app"), """
                 domain commerce;
@@ -235,28 +235,28 @@ public class GeneratorUtilValidationTest {
 
                 Reference Customer{ String membershipNumber; }
 
-                Entity CreditAccount{
+                Entity CreditAccount short account{
                     Customer customer;
                     quantum double availableCredit;
                     double usedCredit;
                 }
 
-                Role OrderAmount{
+                Role OrderAmount short amount{
                     quantum double occupiedAmount;
                     double payableAmount;
                 }
 
-                Contract SalesOrder{
+                Contract SalesOrder short order{
                     String orderNo;
                     CreditAccount account;
                     OrderAmount amount;
                 }
 
-                atomic query queryCreditAccount(CreditAccount account);
-                quantum update reserveCredit(CreditAccount account, OrderAmount amount) {
+                atomic query queryCreditAccount(CreditAccount);
+                quantum update reserveCredit(CreditAccount, OrderAmount) {
                     account.availableCredit -> amount.occupiedAmount : amount.payableAmount;
                 }
-                atomic update openSalesOrder(SalesOrder order);
+                atomic update openSalesOrder(SalesOrder);
                 """);
         Files.writeString(sourceDir.resolve("commerce.app"), """
                 domain commerce;
@@ -344,11 +344,11 @@ public class GeneratorUtilValidationTest {
         Files.writeString(sourceDir.resolve("commerce.spp"), """
                 domain commerce;
 
-                Reference Customer{
+                Reference Customer short customer{
                     String membershipNumber;
                 }
 
-                Entity Product{
+                Entity Product short product{
                     String productCode;
                     String name;
                 }
@@ -358,8 +358,8 @@ public class GeneratorUtilValidationTest {
                 }
                 take Product as Goods;
 
-                atomic query queryCustomer(Customer customer);
-                atomic query queryProduct(Product product);
+                atomic query queryCustomer(Customer);
+                atomic query queryProduct(Product);
                 """);
         Files.writeString(sourceDir.resolve("commerce.app"), """
                 domain commerce;
@@ -469,12 +469,12 @@ public class GeneratorUtilValidationTest {
         Files.writeString(sourceDir.resolve("commerce.spp"), """
                 domain commerce;
 
-                Role Inventory{
+                Role Inventory short inventory{
                     int availableQty;
                     int requestedQty;
                 }
 
-                atomic update reserveInventory(Inventory inventory);
+                atomic update reserveInventory(Inventory);
                 """);
         Files.writeString(sourceDir.resolve("commerce.app"), """
                 domain commerce;
@@ -516,12 +516,12 @@ public class GeneratorUtilValidationTest {
         Files.writeString(sourceDir.resolve("commerce.spp"), """
                 domain commerce;
 
-                Entity SalesOrder{
+                Entity SalesOrder short order{
                     String orderNo;
                     String status;
                 }
 
-                atomic update openSalesOrder(SalesOrder order);
+                atomic update openSalesOrder(SalesOrder);
                 """);
         Files.writeString(sourceDir.resolve("commerce.app"), """
                 domain commerce;
@@ -560,12 +560,12 @@ public class GeneratorUtilValidationTest {
         Files.writeString(sourceDir.resolve("commerce.spp"), """
                 domain commerce;
 
-                Role Inventory{
+                Role Inventory short inventory{
                     String sku;
                     int availableQty;
                 }
 
-                atomic query queryInventory(Inventory inventory);
+                atomic query queryInventory(Inventory);
                 """);
         Files.writeString(sourceDir.resolve("commerce.app"), """
                 domain commerce;
@@ -604,12 +604,12 @@ public class GeneratorUtilValidationTest {
         Files.writeString(sourceDir.resolve("commerce.spp"), """
                 domain commerce;
 
-                Role Inventory{
+                Role Inventory short inventory{
                     int availableQty;
                     int requestedQty;
                 }
 
-                atomic check checkInventory(Inventory inventory);
+                atomic check checkInventory(Inventory);
                 """);
         Files.writeString(sourceDir.resolve("commerce.app"), """
                 domain commerce;
@@ -648,11 +648,11 @@ public class GeneratorUtilValidationTest {
         Files.writeString(sourceDir.resolve("commerce.spp"), """
                 domain commerce;
 
-                Entity OrderAmount{
+                Entity OrderAmount short amount{
                     double payableAmount;
                 }
 
-                atomic update calculateAmount(OrderAmount amount);
+                atomic update calculateAmount(OrderAmount);
                 """);
         Files.writeString(sourceDir.resolve("commerce.app"), """
                 domain commerce;
@@ -1094,11 +1094,11 @@ public class GeneratorUtilValidationTest {
         Files.writeString(sourceDir.resolve("commerce.spp"), """
                 domain commerce;
 
-                Entity SalesOrder{
+                Entity SalesOrder short order{
                     String orderNo;
                 }
 
-                atomic query queryRemoteOrder(SalesOrder order);
+                atomic query queryRemoteOrder(SalesOrder);
                 """);
         Files.writeString(sourceDir.resolve("commerce.app"), """
                 domain commerce;
@@ -1140,11 +1140,11 @@ public class GeneratorUtilValidationTest {
         Files.writeString(sourceDir.resolve("commerce.spp"), """
                 domain commerce;
 
-                Entity SalesOrder{
+                Entity SalesOrder short order{
                     String orderNo;
                 }
 
-                atomic query queryOrder(SalesOrder order);
+                atomic query queryOrder(SalesOrder);
                 """);
         Files.writeString(sourceDir.resolve("commerce.app"), """
                 domain commerce;
@@ -1184,12 +1184,12 @@ public class GeneratorUtilValidationTest {
         Files.writeString(sourceDir.resolve("commerce.spp"), """
                 domain commerce;
 
-                Entity SalesOrder{
+                Entity SalesOrder short order{
                     String orderNo;
                     String status;
                 }
 
-                atomic update openSalesOrder(SalesOrder order);
+                atomic update openSalesOrder(SalesOrder);
                 """);
         Files.writeString(sourceDir.resolve("commerce.app"), """
                 domain commerce;
@@ -1233,11 +1233,11 @@ public class GeneratorUtilValidationTest {
         Files.writeString(sourceDir.resolve("commerce.spp"), """
                 domain commerce;
 
-                Entity CreditAccount{
+                Entity CreditAccount short account{
                     quantum double availableCredit;
                 }
 
-                atomic query queryCredit(CreditAccount account);
+                atomic query queryCredit(CreditAccount);
                 """);
         Files.writeString(sourceDir.resolve("commerce.app"), """
                 domain commerce;
@@ -1275,11 +1275,11 @@ public class GeneratorUtilValidationTest {
         Files.writeString(sourceDir.resolve("commerce.spp"), """
                 domain commerce;
 
-                Entity CreditAccount{
+                Entity CreditAccount short account{
                     quantum double availableCredit;
                 }
 
-                atomic query queryCredit(CreditAccount account);
+                atomic query queryCredit(CreditAccount);
                 """);
         Files.writeString(sourceDir.resolve("commerce.app"), """
                 domain commerce;
@@ -1337,11 +1337,11 @@ public class GeneratorUtilValidationTest {
         Files.writeString(sourceDir.resolve("commerce.spp"), """
                 domain commerce;
 
-                Entity CreditAccount{
+                Entity CreditAccount short account{
                     quantum double availableCredit;
                 }
 
-                atomic query queryCredit(CreditAccount account);
+                atomic query queryCredit(CreditAccount);
                 """);
         Files.writeString(sourceDir.resolve("commerce.app"), """
                 domain commerce;
@@ -1402,7 +1402,7 @@ public class GeneratorUtilValidationTest {
         Files.writeString(sourceDir.resolve("commerce.spp"), """
                 domain commerce;
 
-                Entity CreditAccount{
+                Entity CreditAccount short account{
                     quantum double availableCredit;
                 }
 
@@ -1410,7 +1410,7 @@ public class GeneratorUtilValidationTest {
                     quantum double availableQty;
                 }
 
-                atomic query queryCredit(CreditAccount account);
+                atomic query queryCredit(CreditAccount);
                 """);
         Files.writeString(sourceDir.resolve("commerce.app"), """
                 domain commerce;
@@ -1466,11 +1466,11 @@ public class GeneratorUtilValidationTest {
         Files.writeString(sourceDir.resolve("commerce.spp"), """
                 domain commerce;
 
-                Entity CreditAccount{
+                Entity CreditAccount short account{
                     quantum double availableCredit;
                 }
 
-                atomic query checkCredit(CreditAccount account);
+                atomic query checkCredit(CreditAccount);
                 """);
         Files.writeString(sourceDir.resolve("commerce.app"), """
                 domain commerce;

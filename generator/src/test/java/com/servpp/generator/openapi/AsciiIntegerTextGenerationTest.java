@@ -13,8 +13,8 @@ public class AsciiIntegerTextGenerationTest {
         Path source = Files.createTempFile("spp-text-integer", ".spp");
         Files.writeString(source, """
                 domain rules;
-                Role Text { String digits; int value; boolean valid; }
-                atomic calculate decode(Text text) {
+                Role Text short text { String digits; int value; boolean valid; }
+                atomic calculate decode(Text) {
                     text.valid = isAsciiDigits(text.digits);
                     if (text.valid) { text.value = parseUnsignedInteger(text.digits); }
                 }

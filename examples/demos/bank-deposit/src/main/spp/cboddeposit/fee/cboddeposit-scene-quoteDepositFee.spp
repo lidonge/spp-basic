@@ -10,7 +10,7 @@ Scenario serial quoteDepositFee(
     checkFeeAmount;
     checkFeeAccount;
     classifyDepositFee;
-    if (DepositFeePlan.applicable) {
+    if (depositFeePlan.applicable) {
         prepareFeeLookup;
         findDepositFeeRate;
     }

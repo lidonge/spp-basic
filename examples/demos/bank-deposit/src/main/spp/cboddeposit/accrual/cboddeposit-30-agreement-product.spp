@@ -24,39 +24,39 @@ Role AgreementProduct {
 }
 
 atomic calculate calculateAgreementProduct(
-    InterestPeriod normal,
-    OverlapPeriod overlap,
+    InterestPeriod,
+    OverlapPeriod,
     AgreementPolicy,
     AgreementBand[],
     AgreementProduct
 ) {
-    AgreementProduct.normalProduct = roundDown(normal.amount / normal.unit, 0) * normal.unit * normal.days;
-    AgreementProduct.bandProduct = 0;
-    AgreementProduct.remainingAmount = normal.amount;
-    AgreementProduct.selectedSlot = 0;
-    AgreementProduct.appliedMode = AgreementPolicy.mode;
-    if (AgreementPolicy.mode != "1" && AgreementPolicy.mode != "2") {
-        if (AgreementPolicy.currency == "CNY") {
-            AgreementProduct.appliedMode = "2";
+    agreementProduct.normalProduct = roundDown(normal.amount / normal.unit, 0) * normal.unit * normal.days;
+    agreementProduct.bandProduct = 0;
+    agreementProduct.remainingAmount = normal.amount;
+    agreementProduct.selectedSlot = 0;
+    agreementProduct.appliedMode = agreementPolicy.mode;
+    if (agreementPolicy.mode != "1" && agreementPolicy.mode != "2") {
+        if (agreementPolicy.currency == "CNY") {
+            agreementProduct.appliedMode = "2";
         } else {
-            AgreementProduct.appliedMode = "1";
+            agreementProduct.appliedMode = "1";
         }
     }
-    for (AgreementBand band : AgreementBand[]) {
+    for (AgreementBand band : agreementBands) {
         band.product = 0;
     }
-    if (AgreementPolicy.enabled && overlap.days > 0) {
-        for (AgreementBand band : AgreementBand[]) {
-            if (AgreementProduct.appliedMode == "2") {
-                if (AgreementProduct.remainingAmount > band.threshold) {
+    if (agreementPolicy.enabled && overlap.days > 0) {
+        for (AgreementBand band : agreementBands) {
+            if (agreementProduct.appliedMode == "2") {
+                if (agreementProduct.remainingAmount > band.threshold) {
                     band.product = roundDown(
-                        (AgreementProduct.remainingAmount - band.threshold) / normal.unit,
+                        (agreementProduct.remainingAmount - band.threshold) / normal.unit,
                         0
                     ) * normal.unit * overlap.days;
-                    AgreementProduct.bandProduct += band.product;
-                    AgreementProduct.remainingAmount = band.threshold;
+                    agreementProduct.bandProduct += band.product;
+                    agreementProduct.remainingAmount = band.threshold;
                     if (band.slot == 1) {
-                        AgreementProduct.normalProduct -= roundDown(
+                        agreementProduct.normalProduct -= roundDown(
                             (normal.amount - band.threshold) / normal.unit,
                             0
                         ) * normal.unit * overlap.days;
@@ -65,9 +65,9 @@ atomic calculate calculateAgreementProduct(
             } else {
                 if (normal.amount >= band.threshold) {
                     band.product = roundDown(normal.amount / normal.unit, 0) * normal.unit * overlap.days;
-                    AgreementProduct.bandProduct = band.product;
-                    AgreementProduct.normalProduct -= band.product;
-                    AgreementProduct.selectedSlot = band.slot;
+                    agreementProduct.bandProduct = band.product;
+                    agreementProduct.normalProduct -= band.product;
+                    agreementProduct.selectedSlot = band.slot;
                     break;
                 }
             }
@@ -75,7 +75,7 @@ atomic calculate calculateAgreementProduct(
     }
 }
 
-atomic check checkAgreementProductInput(InterestPeriod normal, OverlapPeriod overlap, AgreementBand[]) {
+atomic check checkAgreementProductInput(InterestPeriod, OverlapPeriod, AgreementBand[]) {
     require(normal.amount >= 0 && normal.unit > 0 && normal.days >= 0, RejectionCode.INVALID_INTEREST_PERIOD);
     require(
         overlap.amount == normal.amount
@@ -85,7 +85,7 @@ atomic check checkAgreementProductInput(InterestPeriod normal, OverlapPeriod ove
         RejectionCode.INVALID_AGREEMENT_PERIOD
     );
     int expectedSlot = 5;
-    for (AgreementBand band : AgreementBand[]) {
+    for (AgreementBand band : agreementBands) {
         require(band.slot == expectedSlot && band.threshold >= 0, RejectionCode.INVALID_AGREEMENT_BANDS);
         expectedSlot--;
     }
@@ -93,8 +93,8 @@ atomic check checkAgreementProductInput(InterestPeriod normal, OverlapPeriod ove
 }
 
 readonly Scenario serial previewAgreementWindow(
-    BankDate normalStart, PeriodEnd normalEnd, AgreementTerm, OverlapStart clippedStart, OverlapEnd clippedEnd,
-    InterestPeriod normal, OverlapPeriod overlap, AgreementPolicy
+    BankDate, PeriodEnd, AgreementTerm, OverlapStart, OverlapEnd,
+    InterestPeriod, OverlapPeriod, AgreementPolicy
 ) {
-    prepareAgreementWindow(normalStart, normalEnd, AgreementTerm, clippedStart, clippedEnd, normal, overlap, AgreementPolicy);
+    prepareAgreementWindow(start, end, agreementTerm, clippedStart, clippedEnd, normal, overlap, agreementPolicy);
 }

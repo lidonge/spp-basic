@@ -14,11 +14,11 @@ public class ScenarioConditionGenerationTest {
         Path root = Files.createTempDirectory("spp-scenario-compiled");
         Files.writeString(root.resolve("rules.spp"), """
                 domain rules;
-                Contract Values { boolean allowed; double amount; boolean fail; }
-                atomic update write(Values v);
-                atomic calculate pending(Values v) { }
-                atomic calculate rejected(Values v) { }
-                Scenario serial save(Values v) {
+                Contract Values short v { boolean allowed; double amount; boolean fail; }
+                atomic update write(Values);
+                atomic calculate pending(Values) { }
+                atomic calculate rejected(Values) { }
+                Scenario serial save(Values) {
                     if (v.allowed && v.amount > 0) {
                         transaction { write(v); }
                     } else if (!v.allowed) { pending(v); }

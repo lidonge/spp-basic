@@ -109,8 +109,8 @@ public class SameFieldTransferTest {
             }
             var observer = new JdbcQuantumJournalStore(source, "transfer_journal", "transfer_values");
             java.util.function.BiConsumer<String, Integer> move = (destination, amount) -> {
-                var input = Map.of("origin", played ? Map.of("accountCode", "A", "currency", "UNIT") : Map.of("wallet", "A"),
-                        "destination", played ? Map.of("accountCode", destination, "unit", "LOCAL_UNIT") : Map.of("wallet", destination),
+                var input = Map.of(played ? "played" : "origin", played ? Map.of("accountCode", "A", "currency", "UNIT") : Map.of("wallet", "A"),
+                        played ? "position" : "destination", played ? Map.of("accountCode", destination, "unit", "LOCAL_UNIT") : Map.of("wallet", destination),
                         "transfer", Map.of("amount", amount));
                 if (played) runtime.executeGeneratedService("ledger.transferPosition", mapper.convertValue(input, TransferPositionRequest.class));
                 else runtime.executeGeneratedService("ledger.transferWallet", mapper.convertValue(input, TransferWalletRequest.class));

@@ -1,14 +1,14 @@
 domain petshop;
 
 atomic calculate prepareShipment(ShopOrder, ShipmentAgreement) {
-    ShipmentAgreement.shippedQuantity = 0;
-    for (OrderLine line : ShopOrder.lines) {
-        ShipmentAgreement.shippedQuantity += line.quantity;
+    shipmentAgreement.shippedQuantity = 0;
+    for (OrderLine line : shopOrder.lines) {
+        shipmentAgreement.shippedQuantity += line.quantity;
     }
-    ShopOrder.status = OrderStatus.SHIPPED;
-    ShopOrder.tracking = ShipmentAgreement.tracking;
+    shopOrder.status = OrderStatus.SHIPPED;
+    shopOrder.tracking = shipmentAgreement.tracking;
 }
 
 atomic calculate prepareDelivery(ShopOrder) {
-    ShopOrder.status = OrderStatus.DELIVERED;
+    shopOrder.status = OrderStatus.DELIVERED;
 }

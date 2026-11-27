@@ -29,14 +29,14 @@ Scenario serial previewCashReversal(
         findCashDepositAgreement;
         findDepositAccrualState;
     }
-    identify(DepositAccount);
-    identify(CashSettlementAccount);
-    identify(InterestIncomeAccount);
-    identify(CollectionInterestIncomeAccount);
-    identify(PrincipalRecoveryAccount);
-    identify(AccountEligibility);
-    identify(CashDepositAgreement);
-    identify(DepositAccrualState);
+    identify(depositAccount);
+    identify(cashSettlementAccount);
+    identify(interestIncomeAccount);
+    identify(collectionInterestIncomeAccount);
+    identify(principalRecoveryAccount);
+    identify(accountEligibility);
+    identify(cashDepositAgreement);
+    identify(depositAccrualState);
     checkAccountParticipants;
     checkOriginalDepositAccount;
     checkOriginalSettlementAccounts;

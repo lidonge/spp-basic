@@ -14,40 +14,40 @@ Role DepositAccounting {
 }
 
 atomic calculate classifyDepositAccounting(DepositRequest, DepositPlan, DepositAccounting) {
-    DepositAccounting.transactionAmount = DepositRequest.amount;
-    DepositAccounting.depositIncrease = DepositPlan.interestBaseIncrease;
-    DepositAccounting.depositDecrease = DepositPlan.interestBaseDecrease;
-    DepositAccounting.principalPaid = DepositPlan.principalPaid;
-    DepositAccounting.interestPaid = DepositPlan.interestPaid;
-    DepositAccounting.collectionPaid = DepositPlan.collectionInterestPaid;
-    DepositAccounting.fundingTotal = DepositAccounting.transactionAmount + DepositAccounting.depositDecrease;
-    DepositAccounting.allocationTotal = DepositAccounting.depositIncrease
-        + DepositAccounting.principalPaid
-        + DepositAccounting.interestPaid
-        + DepositAccounting.collectionPaid;
+    depositAccounting.transactionAmount = depositRequest.amount;
+    depositAccounting.depositIncrease = depositPlan.interestBaseIncrease;
+    depositAccounting.depositDecrease = depositPlan.interestBaseDecrease;
+    depositAccounting.principalPaid = depositPlan.principalPaid;
+    depositAccounting.interestPaid = depositPlan.interestPaid;
+    depositAccounting.collectionPaid = depositPlan.collectionInterestPaid;
+    depositAccounting.fundingTotal = depositAccounting.transactionAmount + depositAccounting.depositDecrease;
+    depositAccounting.allocationTotal = depositAccounting.depositIncrease
+        + depositAccounting.principalPaid
+        + depositAccounting.interestPaid
+        + depositAccounting.collectionPaid;
 }
 
 atomic check checkDepositAccounting(DepositAccounting) {
     require(
-        DepositAccounting.transactionAmount >= 0
-            && DepositAccounting.depositIncrease >= 0
-            && DepositAccounting.depositDecrease >= 0
-            && DepositAccounting.principalPaid >= 0
-            && DepositAccounting.interestPaid >= 0
-            && DepositAccounting.collectionPaid >= 0,
+        depositAccounting.transactionAmount >= 0
+            && depositAccounting.depositIncrease >= 0
+            && depositAccounting.depositDecrease >= 0
+            && depositAccounting.principalPaid >= 0
+            && depositAccounting.interestPaid >= 0
+            && depositAccounting.collectionPaid >= 0,
         RejectionCode.NEGATIVE_DEPOSIT_ACCOUNTING_AMOUNT
     );
     require(
-        DepositAccounting.fundingTotal == DepositAccounting.transactionAmount
-            + DepositAccounting.depositDecrease
-            && DepositAccounting.allocationTotal == DepositAccounting.depositIncrease
-            + DepositAccounting.principalPaid
-            + DepositAccounting.interestPaid
-            + DepositAccounting.collectionPaid,
+        depositAccounting.fundingTotal == depositAccounting.transactionAmount
+            + depositAccounting.depositDecrease
+            && depositAccounting.allocationTotal == depositAccounting.depositIncrease
+            + depositAccounting.principalPaid
+            + depositAccounting.interestPaid
+            + depositAccounting.collectionPaid,
         RejectionCode.DEPOSIT_ACCOUNTING_TOTAL_MISMATCH
     );
     require(
-        DepositAccounting.fundingTotal == DepositAccounting.allocationTotal,
+        depositAccounting.fundingTotal == depositAccounting.allocationTotal,
         RejectionCode.DEPOSIT_ACCOUNTING_NOT_BALANCED
     );
 }
@@ -74,51 +74,51 @@ atomic calculate calculateDepositPostings(
     DepositPostingLine[],
     DepositPostingTotals
 ) {
-    DepositPostingTotals.debit = 0;
-    DepositPostingTotals.credit = 0;
-    DepositPostingTotals.fee = DepositFeePlan.fee;
-    for (DepositPostingLine line : DepositPostingLine[]) {
+    depositPostingTotals.debit = 0;
+    depositPostingTotals.credit = 0;
+    depositPostingTotals.fee = depositFeePlan.fee;
+    for (DepositPostingLine line : depositPostingLines) {
         switch (line.slot) {
             case 1:
-                line.amount = DepositAccounting.transactionAmount;
+                line.amount = depositAccounting.transactionAmount;
                 break;
             case 2:
-                line.amount = DepositAccounting.depositDecrease;
+                line.amount = depositAccounting.depositDecrease;
                 break;
             case 3:
-                line.amount = DepositAccounting.depositIncrease;
+                line.amount = depositAccounting.depositIncrease;
                 break;
             case 4:
-                line.amount = DepositAccounting.principalPaid;
+                line.amount = depositAccounting.principalPaid;
                 break;
             case 5:
-                line.amount = DepositAccounting.interestPaid;
+                line.amount = depositAccounting.interestPaid;
                 break;
             case 6:
-                line.amount = DepositAccounting.collectionPaid;
+                line.amount = depositAccounting.collectionPaid;
                 break;
             case 7:
-                line.amount = DepositFeePlan.fee;
+                line.amount = depositFeePlan.fee;
                 break;
             case 8:
-                line.amount = DepositFeePlan.fee;
+                line.amount = depositFeePlan.fee;
                 break;
         }
         if (line.side == "Debit") {
-            DepositPostingTotals.debit += line.amount;
+            depositPostingTotals.debit += line.amount;
         } else {
-            DepositPostingTotals.credit += line.amount;
+            depositPostingTotals.credit += line.amount;
         }
     }
 }
 
 atomic check checkDepositPostings(DepositPostingTotals) {
-    require(DepositPostingTotals.debit == DepositPostingTotals.credit, RejectionCode.DEPOSIT_POSTINGS_NOT_BALANCED);
+    require(depositPostingTotals.debit == depositPostingTotals.credit, RejectionCode.DEPOSIT_POSTINGS_NOT_BALANCED);
 }
 
 atomic check checkPostingRules(DepositPostingLine[], DepositFeePlan) {
     int expected = 1;
-    for (DepositPostingLine line : DepositPostingLine[]) {
+    for (DepositPostingLine line : depositPostingLines) {
         require(
             line.slot == expected && line.subject != BLANK,
             RejectionCode.INVALID_DEPOSIT_POSTING_RULES
@@ -130,25 +130,25 @@ atomic check checkPostingRules(DepositPostingLine[], DepositFeePlan) {
         }
         expected++;
     }
-    require(expected == 9 && DepositFeePlan.fee >= 0, RejectionCode.INVALID_DEPOSIT_POSTING_RULES);
+    require(expected == 9 && depositFeePlan.fee >= 0, RejectionCode.INVALID_DEPOSIT_POSTING_RULES);
 }
 
 atomic calculate attachDepositPostings(CashDepositAgreement, DepositPostingLine[]) {
-    for (DepositPostingLine line : DepositPostingLine[]) {
-        line.deposit = CashDepositAgreement;
+    for (DepositPostingLine line : depositPostingLines) {
+        line.deposit = cashDepositAgreement;
     }
 }
 
 atomic calculate preserveDepositPostingEvidence(CashDepositAgreement, DepositPostingLine[]) {
-    CashDepositAgreement.postingEvidence = new DepositPostingLine[] {
+    cashDepositAgreement.postingEvidence = new DepositPostingLine[] {
     };
-    for (DepositPostingLine line : DepositPostingLine[]) {
+    for (DepositPostingLine line : depositPostingLines) {
         DepositPostingLine evidence = new DepositPostingLine();
         evidence.slot = line.slot;
         evidence.subject = line.subject;
         evidence.side = line.side;
         evidence.amount = line.amount;
-        CashDepositAgreement.postingEvidence = append(CashDepositAgreement.postingEvidence, evidence);
+        cashDepositAgreement.postingEvidence = append(cashDepositAgreement.postingEvidence, evidence);
     }
 }
 

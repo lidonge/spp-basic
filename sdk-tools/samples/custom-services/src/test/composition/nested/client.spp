@@ -2,27 +2,27 @@ domain client;
 Role Handover { String receiptNumber; quantum decimal cash; }
 Reference Intake from provider.CustodyHandover { String receiptNumber; quantum decimal cash; }
 atomic update insertIntake(Intake);
-atomic calculate prepareIntake(Receipt, Intake) { Intake.receiptNumber = Receipt.receiptNumber; }
+atomic calculate prepareIntake(Receipt, Intake) { intake.receiptNumber = receipt.receiptNumber; }
 Role Till { String receiptNumber; quantum decimal cash; }
 Contract Receipt { String receiptNumber; decimal amount; decimal funding; }
 take Receipt as Handover { mapsame; }
 take Receipt as Till { mapsame; }
 atomic calculate prepare(Receipt, Handover) {
-    Handover.receiptNumber = Receipt.receiptNumber;
+    handover.receiptNumber = receipt.receiptNumber;
 }
-quantum update receive(Receipt, Handover, Till) { Handover.cash -> Till.cash : Receipt.amount; }
+quantum update receive(Receipt, Handover, Till) { handover.cash -> till.cash : receipt.amount; }
 Scenario serial confirm(Receipt, Handover, Till, Intake, Accepted) {
-    findTill by Receipt;
-    identify(Till);
+    findTill by receipt;
+    identify(till);
     prepareIntake;
     prepare;
     stageAccepted;
     transaction {
         transaction REQUIRED {
             insertIntake;
-            receive bounds { Handover.cash: [0, 0]; Till.cash: [0, null]; };
+            receive bounds { handover.cash: [0, 0]; till.cash: [0, null]; };
         }
-        findHandover by Receipt;
+        findHandover by receipt;
         checkSettled,breakTransaction;
         stageBalance;
         insertAccepted;
@@ -30,9 +30,9 @@ Scenario serial confirm(Receipt, Handover, Till, Intake, Accepted) {
 }
 Entity Accepted { String receiptNumber; quantum decimal funds; decimal balance; }
 atomic update insertAccepted(Accepted);
-atomic calculate stageAccepted(Receipt, Accepted) { Accepted.receiptNumber = Receipt.receiptNumber; }
+atomic calculate stageAccepted(Receipt, Accepted) { accepted.receiptNumber = receipt.receiptNumber; }
 
 Enum SettlementCode { STILL_UNSETTLED }
-atomic check checkSettled(Handover) { require(Handover.cash <= 0.00, SettlementCode.STILL_UNSETTLED); }
+atomic check checkSettled(Handover) { require(handover.cash <= 0.00, SettlementCode.STILL_UNSETTLED); }
 
-atomic calculate stageBalance(Till, Accepted) { Accepted.balance = Till.cash; }
+atomic calculate stageBalance(Till, Accepted) { accepted.balance = till.cash; }

@@ -1,61 +1,61 @@
 domain ledger;
 
-Role Funds {
+Role Funds short consumerFunds {
     String wallet;
     String owner;
     quantum decimal amount;
 }
 
-Role ProviderPlayedRole {
+Role ProviderPlayedRole short played {
     String accountCode;
     String currency;
     quantum decimal claim;
 }
 
-Contract TransferInput {
+Contract TransferInput short transfer {
     decimal amount;
 }
 
-quantum update moveFunds(Funds consumerFunds, ProviderPlayedRole played, TransferInput transfer) {
+quantum update moveFunds(Funds, ProviderPlayedRole, TransferInput) {
     consumerFunds.amount -> played.claim : transfer.amount;
 }
 
-Scenario serial transferFunds(Funds consumerFunds, ProviderPlayedRole played, TransferInput transfer) {
+Scenario serial transferFunds(Funds, ProviderPlayedRole, TransferInput) {
     transaction {
         moveFunds bounds { played.claim: [null, 0]; };
     }
 }
 
-Scenario serial readClaim(ProviderPlayedRole played) {
+Scenario serial readClaim(ProviderPlayedRole) {
     findProviderPlayedRole;
 }
 
-Scenario serial readClaimBy(ProviderPlayedRole played) {
-    findProviderPlayedRole by ProviderPlayedRole.accountCode = "P-1",
-        ProviderPlayedRole.currency = "UNIT";
+Scenario serial readClaimBy(ProviderPlayedRole) {
+    findProviderPlayedRole by played.accountCode = "P-1",
+        played.currency = "UNIT";
 }
 
 Enum SettlementUnit { LOCAL_UNIT, UNLISTED }
-Role SettlementPosition {
+Role SettlementPosition short position {
     String accountCode;
     SettlementUnit unit;
     quantum decimal claim;
 }
 
-quantum update settleFunds(Funds consumerFunds, SettlementPosition position, TransferInput transfer) {
+quantum update settleFunds(Funds, SettlementPosition, TransferInput) {
     consumerFunds.amount -> position.claim : transfer.amount;
 }
 
-Scenario serial settlePosition(Funds consumerFunds, SettlementPosition position, TransferInput transfer) {
+Scenario serial settlePosition(Funds, SettlementPosition, TransferInput) {
     transaction { settleFunds bounds { position.claim: [null, 0]; }; }
 }
 
-quantum update movePosition(ProviderPlayedRole origin, SettlementPosition destination, TransferInput transfer) {
-    origin.claim -> destination.claim : transfer.amount;
+quantum update movePosition(ProviderPlayedRole, SettlementPosition, TransferInput) {
+    played.claim -> position.claim : transfer.amount;
 }
 
-Scenario serial transferPosition(ProviderPlayedRole origin, SettlementPosition destination, TransferInput transfer) {
-    transaction { movePosition bounds { origin.claim: [0, null]; destination.claim: [null, 10]; }; }
+Scenario serial transferPosition(ProviderPlayedRole, SettlementPosition, TransferInput) {
+    transaction { movePosition bounds { played.claim: [0, null]; position.claim: [null, 10]; }; }
 }
 
 Role LocalWallet;
@@ -64,26 +64,18 @@ take Funds as LocalWallet {
     quantum decimal amount;
 }
 
-Role OriginWallet {
-    String wallet;
-    String owner;
-    quantum decimal amount;
-}
-Role DestinationWallet {
-    String wallet;
-    String owner;
-    quantum decimal amount;
-}
+Role OriginWallet short origin;
+Role DestinationWallet short destination;
 
-quantum update moveWallet(OriginWallet origin, DestinationWallet destination, TransferInput transfer) {
+quantum update moveWallet(OriginWallet, DestinationWallet, TransferInput) {
     origin.amount -> destination.amount : transfer.amount;
 }
 
-Scenario serial transferWallet(OriginWallet origin, DestinationWallet destination, TransferInput transfer) {
+Scenario serial transferWallet(OriginWallet, DestinationWallet, TransferInput) {
     transaction { moveWallet(origin, destination, transfer) bounds { origin.amount: [0, null]; destination.amount: [null, 10]; }; }
 }
 
-readonly Scenario serial readWalletRoles(OriginWallet origin, DestinationWallet destination) {
+readonly Scenario serial readWalletRoles(OriginWallet, DestinationWallet) {
     findOriginWallet;
     findDestinationWallet;
 }

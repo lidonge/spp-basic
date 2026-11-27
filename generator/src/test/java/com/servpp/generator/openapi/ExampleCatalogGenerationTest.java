@@ -11,7 +11,7 @@ public class ExampleCatalogGenerationTest {
     @Test public void catalogPreservesDeclaredOrderAndGeneratedRequestNames() throws Exception {
         Path root = Files.createTempDirectory("spp-example-catalog");
         Path spp = root.resolve("sample.spp"), app = root.resolve("sample.app");
-        Files.writeString(spp, "domain sample; Contract Facts { int value; } atomic update save(Facts facts); atomic calculate init(Facts facts) {} Scenario serial first(Facts facts) { init(facts); } Scenario serial second(Facts facts) { init(facts); } Scenario serial setup(Facts facts) { init(facts); } Scenario serial jdbcCase(Facts facts) { save(facts); }");
+        Files.writeString(spp, "domain sample; Contract Facts short facts { int value; } atomic update save(Facts); atomic calculate init(Facts) {} Scenario serial first(Facts) { init(facts); } Scenario serial second(Facts) { init(facts); } Scenario serial setup(Facts) { init(facts); } Scenario serial jdbcCase(Facts) { save(facts); }");
         Files.writeString(app, "domain sample; scope { local { save; init; first; second; setup; jdbcCase; } } web { expose first; start setup; } examples { run second fault after init after save times 2; run first barrier before init 2; run setup restart second using spp.sample.datasource; run jdbcCase jdbcFault commitAfter save; }");
         var project = new SppProject();
         new SppCompiler(spp.toFile(), project).compile();

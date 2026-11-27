@@ -34,56 +34,56 @@ Role DepositPlan {
 }
 
 atomic check checkKernelInput(DepositRequest) {
-    require(DepositRequest.amount >= 0, RejectionCode.E1095);
+    require(depositRequest.amount >= 0, RejectionCode.E1095);
 }
 
 atomic calculate calculateDepositPlan(DepositRequest, DepositAccount, DepositPlan) {
-    boolean principalFirst = DepositAccount.loanState == LoanState.BAD_DEBT
-        || DepositAccount.loanState == LoanState.WRITTEN_OFF;
-    BigDecimal remaining = DepositRequest.amount + DepositAccount.interestBase - DepositAccount.frozenAmount;
-    DepositPlan.interestPaid = 0;
-    DepositPlan.collectionInterestPaid = 0;
-    DepositPlan.principalPaid = 0;
+    boolean principalFirst = depositAccount.loanState == LoanState.BAD_DEBT
+        || depositAccount.loanState == LoanState.WRITTEN_OFF;
+    BigDecimal remaining = depositRequest.amount + depositAccount.interestBase - depositAccount.frozenAmount;
+    depositPlan.interestPaid = 0;
+    depositPlan.collectionInterestPaid = 0;
+    depositPlan.principalPaid = 0;
     if (remaining > 0) {
         if (principalFirst) {
-            DepositPlan.principalPaid = min(remaining, -DepositAccount.overdraftPrincipal);
-            remaining -= DepositPlan.principalPaid;
+            depositPlan.principalPaid = min(remaining, -depositAccount.overdraftPrincipal);
+            remaining -= depositPlan.principalPaid;
         }
-        DepositPlan.interestPaid = min(remaining, -DepositAccount.overdraftInterest);
-        remaining -= DepositPlan.interestPaid;
-        DepositPlan.collectionInterestPaid = min(remaining, -DepositAccount.collectionInterest);
-        remaining -= DepositPlan.collectionInterestPaid;
+        depositPlan.interestPaid = min(remaining, -depositAccount.overdraftInterest);
+        remaining -= depositPlan.interestPaid;
+        depositPlan.collectionInterestPaid = min(remaining, -depositAccount.collectionInterest);
+        remaining -= depositPlan.collectionInterestPaid;
         if (!principalFirst && remaining > 0) {
-            DepositPlan.principalPaid = min(remaining, -DepositAccount.overdraftPrincipal);
-            remaining -= DepositPlan.principalPaid;
+            depositPlan.principalPaid = min(remaining, -depositAccount.overdraftPrincipal);
+            remaining -= depositPlan.principalPaid;
         }
     }
-    DepositPlan.newOverdraftExposure = -DepositAccount.overdraftPrincipal - DepositPlan.principalPaid;
-    DepositPlan.newInterestBase = DepositAccount.interestBase
-        + DepositRequest.amount
-        - DepositPlan.interestPaid
-        - DepositPlan.collectionInterestPaid
-        - DepositPlan.principalPaid;
-    DepositPlan.newAvailableBalance = max(
+    depositPlan.newOverdraftExposure = -depositAccount.overdraftPrincipal - depositPlan.principalPaid;
+    depositPlan.newInterestBase = depositAccount.interestBase
+        + depositRequest.amount
+        - depositPlan.interestPaid
+        - depositPlan.collectionInterestPaid
+        - depositPlan.principalPaid;
+    depositPlan.newAvailableBalance = max(
         0,
-        DepositPlan.newInterestBase - DepositAccount.frozenAmount - DepositAccount.authorizedAmount
+        depositPlan.newInterestBase - depositAccount.frozenAmount - depositAccount.authorizedAmount
     );
-    DepositPlan.newAccountBalance = DepositPlan.newInterestBase
-        + DepositAccount.overdraftInterest + DepositPlan.interestPaid
-        + DepositAccount.collectionInterest + DepositPlan.collectionInterestPaid
-        + DepositAccount.overdraftPrincipal + DepositPlan.principalPaid;
-    DepositPlan.interestBaseIncrease = max(0, DepositPlan.newInterestBase - DepositAccount.interestBase);
-    DepositPlan.interestBaseDecrease = max(0, DepositAccount.interestBase - DepositPlan.newInterestBase);
+    depositPlan.newAccountBalance = depositPlan.newInterestBase
+        + depositAccount.overdraftInterest + depositPlan.interestPaid
+        + depositAccount.collectionInterest + depositPlan.collectionInterestPaid
+        + depositAccount.overdraftPrincipal + depositPlan.principalPaid;
+    depositPlan.interestBaseIncrease = max(0, depositPlan.newInterestBase - depositAccount.interestBase);
+    depositPlan.interestBaseDecrease = max(0, depositAccount.interestBase - depositPlan.newInterestBase);
 }
 
 atomic check checkPlan(DepositRequest, DepositAccount, DepositPlan) {
     // Derived arithmetic invariant, rather than DepositAccount new claim about COBOL checks.
     require(
-        DepositPlan.newAccountBalance == DepositAccount.interestBase
-            + DepositAccount.overdraftInterest
-            + DepositAccount.collectionInterest
-            + DepositAccount.overdraftPrincipal
-            + DepositRequest.amount,
+        depositPlan.newAccountBalance == depositAccount.interestBase
+            + depositAccount.overdraftInterest
+            + depositAccount.collectionInterest
+            + depositAccount.overdraftPrincipal
+            + depositRequest.amount,
         RejectionCode.NET_BALANCE_INVARIANT
     );
 }

@@ -6,17 +6,17 @@ Contract GoodsPriceRevisionAgreement {
 }
 
 atomic check checkGoodsPriceRevision(GoodsPriceRevisionAgreement) {
-    require(GoodsPriceRevisionAgreement.unitPrice >= 0, RejectionCode.INVALID_GOODS_PRICE);
+    require(goodsPriceRevisionAgreement.unitPrice >= 0, RejectionCode.INVALID_GOODS_PRICE);
 }
 
 atomic calculate applyGoodsPriceRevision(Goods, GoodsPriceRevisionAgreement) {
-    Goods.price = GoodsPriceRevisionAgreement.unitPrice;
-    GoodsPriceRevisionAgreement.goods = Goods;
+    goods.price = goodsPriceRevisionAgreement.unitPrice;
+    goodsPriceRevisionAgreement.goods = goods;
 }
 
 Scenario serial reviseShopGoodsPrice(Goods, GoodsPriceRevisionAgreement) {
     findGoods;
-    identify(Goods);
+    identify(goods);
     checkGoodsPriceRevision;
     applyGoodsPriceRevision;
     transaction {

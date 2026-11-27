@@ -9,23 +9,23 @@ Scenario serial cancelUnpaidShopOrder(Buyer, StockLine[], ShopOrder, UnpaidCance
         findBuyer;
         findShopOrder;
     }
-    identify(Buyer);
-    identify(ShopOrder);
+    identify(buyer);
+    identify(shopOrder);
     checkOrderOwner;
     prepareOrderInventory;
     findStockLine;
-    identify(StockLine[]);
+    identify(stockLines);
     checkUnpaidCancellation;
     checkReservedInventory;
     prepareUnpaidCancellation;
     prepareUnpaidCancellationAgreementReceipt;
     transaction {
         releaseUnpaidInventory bounds {
-            StockLine[].available: [0, null];
-            StockLine[].reserved: [0, null];
+            stockLines.available: [0, null];
+            stockLines.reserved: [0, null];
         };
         updateShopOrder;
 
-        insertReceipt(UnpaidCancellationAgreement.receipt);
+        insertReceipt(unpaidCancellationAgreement.receipt);
     }
 }

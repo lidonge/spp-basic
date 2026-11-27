@@ -1,24 +1,24 @@
 domain petshop;
 
 atomic check checkShipmentAgreementInput(ShipmentAgreement) {
-    require(ShipmentAgreement.tracking != BLANK, RejectionCode.TRACKING_REQUIRED);
+    require(shipmentAgreement.tracking != BLANK, RejectionCode.TRACKING_REQUIRED);
 }
 
 atomic check checkShipmentEligibility(ShopOrder) {
-    require(ShopOrder.status == OrderStatus.PAID, RejectionCode.ORDER_NOT_SHIPPABLE);
+    require(shopOrder.status == OrderStatus.PAID, RejectionCode.ORDER_NOT_SHIPPABLE);
 }
 
 atomic check checkDeliveryEligibility(ShopOrder) {
-    require(ShopOrder.status == OrderStatus.SHIPPED, RejectionCode.ORDER_NOT_DELIVERABLE);
+    require(shopOrder.status == OrderStatus.SHIPPED, RejectionCode.ORDER_NOT_DELIVERABLE);
 }
 
 atomic check checkReservedInventory(ShopOrder, StockLine[]) {
-    for (OrderLine line : ShopOrder.lines) {
+    for (OrderLine line : shopOrder.lines) {
         boolean found = false;
-        for (StockLine stock : StockLine[]) {
+        for (StockLine stock : stockLines) {
             if (stock.goods.sku == line.goods.sku) {
                 int needed = 0;
-                for (OrderLine ordered : ShopOrder.lines) {
+                for (OrderLine ordered : shopOrder.lines) {
                     if (ordered.goods.sku == line.goods.sku) {
                         needed += ordered.quantity;
                     }

@@ -20,8 +20,8 @@ public class ReadKeyBindingGenerationTest {
         var source = temporary.newFolder("played-sources").toPath();
         Files.writeString(source.resolve("consumer.spp"), """
                 domain consumer;
-                Role Played { String accountCode; String currency; }
-                Scenario serial readPlayed(Played played) {
+                Role Played short played { String accountCode; String currency; }
+                Scenario serial readPlayed(Played) {
                     findPlayed by Played.accountCode = "sample", Played.currency = "01";
                 }
                 """);
@@ -79,10 +79,10 @@ public class ReadKeyBindingGenerationTest {
         var spp = temporary.newFile("reads.spp");
         Files.writeString(spp.toPath(), """
                 domain reads;
-                Role Item { String code; String region; }
-                Role Selection { String wanted; }
+                Role Item short item { String code; String region; }
+                Role Selection short selection { String wanted; }
                 take Selection as Item { String code = wanted; }
-                Scenario serial read(Item item, Selection selection) {
+                Scenario serial read(Item, Selection) {
                     findItem by Selection, Item.region = "destination";
                 }
                 """);

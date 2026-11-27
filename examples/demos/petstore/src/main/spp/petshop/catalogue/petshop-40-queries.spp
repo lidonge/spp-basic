@@ -5,28 +5,28 @@ Scenario serial readShopInventory(Goods, Goods[], StockLine[]) {
     listProducts;
     prepareInventorySelection;
     findStockLine;
-    identify(StockLine[]);
+    identify(stockLines);
 }
 
 Scenario serial readShopMerchant(Merchant) {
     configureMerchantLookup;
     findMerchant;
-    identify(Merchant);
+    identify(merchant);
 }
 
 atomic calculate prepareProductSelection(Goods) {
-    Goods.active = true;
+    goods.active = true;
 }
 
 atomic calculate filterProducts(Goods, Goods[]) {
     Goods[] filtered = new Goods[] {
     };
-    for (Goods product : Goods[]) {
-        if (Goods.category == BLANK || product.category == Goods.category) {
+    for (Goods product : goodss) {
+        if (goods.category == BLANK || product.category == goods.category) {
             filtered = append(filtered, product);
         }
     }
-    Goods[] = filtered;
+    goodss = filtered;
 }
 
 Scenario serial browseShopProducts(Goods, Goods[]) {

@@ -15,11 +15,11 @@ public class ScenarioCollectionGenerationTest {
         Path source=Files.createTempDirectory("scenario-collection-source"), root=Files.createTempDirectory("scenario-collection-java");
         Files.writeString(source.resolve("rules.spp"), """
                 domain rules;
-                Role Item { int value; }
-                Role Holder { Item[] items; }
-                atomic calculate count(Item[] items, Holder holder) { holder.items = copy(items); }
-                Scenario serial relay(Item[] items, Holder holder) { count(items, holder); }
-                Scenario serial nested(Holder holder) { count(holder.items, holder); }
+                Role Item short item { int value; }
+                Role Holder short holder { Item[] items; }
+                atomic calculate count(Item[], Holder) { holder.items = copy(items); }
+                Scenario serial relay(Item[], Holder) { count(items, holder); }
+                Scenario serial nested(Holder) { count(holder.items, holder); }
                 """);
         Files.writeString(source.resolve("rules.app"),"domain rules; header requestContext { unique String globalSerialNumber; } scope { local(in requestContext, out requestContext) { count; relay; idempotency business nested; } }");
         GeneratorUtil.execute(source.toFile(),root.resolve("yaml").toFile(),root.resolve("java").toFile(),"example");

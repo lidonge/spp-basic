@@ -48,13 +48,13 @@ Scenario serial depositCash(
         findPrincipalRecoveryAccount;
         findDepositAccrualState;
     }
-    identify(DepositAccount);
-    identify(AccountEligibility);
-    identify(CashSettlementAccount);
-    identify(InterestIncomeAccount);
-    identify(CollectionInterestIncomeAccount);
-    identify(PrincipalRecoveryAccount);
-    identify(DepositAccrualState);
+    identify(depositAccount);
+    identify(accountEligibility);
+    identify(cashSettlementAccount);
+    identify(interestIncomeAccount);
+    identify(collectionInterestIncomeAccount);
+    identify(principalRecoveryAccount);
+    identify(depositAccrualState);
     checkAccountParticipants;
     describeAccountBalance;
     checkCashControl;
@@ -67,7 +67,7 @@ Scenario serial depositCash(
     checkCashAuthorization;
     checkFeeAccount;
     classifyDepositFee;
-    if (DepositFeePlan.applicable) {
+    if (depositFeePlan.applicable) {
         prepareFeeLookup;
         findDepositFeeRate;
     }
@@ -89,10 +89,10 @@ Scenario serial depositCash(
     preserveDepositPostingEvidence;
     transaction {
         settleCashDeposit bounds {
-            DepositAccount.interestBase: [0, null];
-            DepositAccount.overdraftInterest: [null, 0];
-            DepositAccount.collectionInterest: [null, 0];
-            DepositAccount.overdraftPrincipal: [null, 0];
+            depositAccount.interestBase: [0, null];
+            depositAccount.overdraftInterest: [null, 0];
+            depositAccount.collectionInterest: [null, 0];
+            depositAccount.overdraftPrincipal: [null, 0];
         };
         deriveOverdraftExposure;
         accumulateAccrual;

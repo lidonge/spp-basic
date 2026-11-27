@@ -63,33 +63,33 @@ atomic calculate prepareDepositAgreement(
     AdmissionDecision,
     CashDepositAgreement
 ) {
-    CashDepositAgreement.notices = DepositNotices;
-    CashDepositAgreement.operator = DepositOperatorFacts;
-    CashDepositAgreement.bankProfile = DepositBankProfile;
-    CashDepositAgreement.admission = AdmissionDecision;
-    CashDepositAgreement.settlement = CashSettlementAccount;
-    CashDepositAgreement.interestIncome = InterestIncomeAccount;
-    CashDepositAgreement.collectionIncome = CollectionInterestIncomeAccount;
-    CashDepositAgreement.principalRecovery = PrincipalRecoveryAccount;
-    CashDepositAgreement.account = DepositAccount;
-    CashDepositAgreement.amount = DepositRequest.amount;
-    CashDepositAgreement.currency = DepositRequest.currency;
-    CashDepositAgreement.valueDate = DepositRequest.valueDate;
-    CashDepositAgreement.interestBaseDelta = DepositPlan.newInterestBase - DepositAccount.interestBase;
-    CashDepositAgreement.interestPaid = DepositPlan.interestPaid;
-    CashDepositAgreement.collectionPaid = DepositPlan.collectionInterestPaid;
-    CashDepositAgreement.principalPaid = DepositPlan.principalPaid;
-    CashDepositAgreement.exposureDelta = -DepositPlan.principalPaid;
-    CashDepositAgreement.fee = DepositFeePlan.fee;
-    CashDepositAgreement.transactionDate = BusinessDay.date;
-    CashDepositAgreement.previousTransactionDate = AccountEligibility.lastTransactionDate;
-    CashDepositAgreement.settledDetailCount = AccountEligibility.detailCount + DepositDetailPolicy.itemCount;
-    CashDepositAgreement.addedBackdatedProduct = 0;
-    CashDepositAgreement.reversed = false;
+    cashDepositAgreement.notices = depositNotices;
+    cashDepositAgreement.operator = depositOperatorFacts;
+    cashDepositAgreement.bankProfile = depositBankProfile;
+    cashDepositAgreement.admission = admissionDecision;
+    cashDepositAgreement.settlement = cashSettlementAccount;
+    cashDepositAgreement.interestIncome = interestIncomeAccount;
+    cashDepositAgreement.collectionIncome = collectionInterestIncomeAccount;
+    cashDepositAgreement.principalRecovery = principalRecoveryAccount;
+    cashDepositAgreement.account = depositAccount;
+    cashDepositAgreement.amount = depositRequest.amount;
+    cashDepositAgreement.currency = depositRequest.currency;
+    cashDepositAgreement.valueDate = depositRequest.valueDate;
+    cashDepositAgreement.interestBaseDelta = depositPlan.newInterestBase - depositAccount.interestBase;
+    cashDepositAgreement.interestPaid = depositPlan.interestPaid;
+    cashDepositAgreement.collectionPaid = depositPlan.collectionInterestPaid;
+    cashDepositAgreement.principalPaid = depositPlan.principalPaid;
+    cashDepositAgreement.exposureDelta = -depositPlan.principalPaid;
+    cashDepositAgreement.fee = depositFeePlan.fee;
+    cashDepositAgreement.transactionDate = businessDay.date;
+    cashDepositAgreement.previousTransactionDate = accountEligibility.lastTransactionDate;
+    cashDepositAgreement.settledDetailCount = accountEligibility.detailCount + depositDetailPolicy.itemCount;
+    cashDepositAgreement.addedBackdatedProduct = 0;
+    cashDepositAgreement.reversed = false;
 }
 
 atomic check checkDetailPolicy(DepositDetailPolicy) {
-    require(DepositDetailPolicy.itemCount > 0, RejectionCode.INVALID_DETAIL_COUNT);
+    require(depositDetailPolicy.itemCount > 0, RejectionCode.INVALID_DETAIL_COUNT);
 }
 
 atomic calculate completeDepositMetadata(
@@ -99,13 +99,13 @@ atomic calculate completeDepositMetadata(
     AdmissionDecision,
     DepositPlan
 ) {
-    AccountEligibility.cashDepositedToday = AdmissionDecision.dayCashTotal;
-    AccountEligibility.accountBalance = DepositPlan.newAccountBalance;
-    if (AccountEligibility.lastTransactionDate != BusinessDay.date) {
-        AccountEligibility.transferredToday = 0;
+    accountEligibility.cashDepositedToday = admissionDecision.dayCashTotal;
+    accountEligibility.accountBalance = depositPlan.newAccountBalance;
+    if (accountEligibility.lastTransactionDate != businessDay.date) {
+        accountEligibility.transferredToday = 0;
     }
-    AccountEligibility.detailCount += DepositDetailPolicy.itemCount;
-    AccountEligibility.lastTransactionDate = BusinessDay.date;
+    accountEligibility.detailCount += depositDetailPolicy.itemCount;
+    accountEligibility.lastTransactionDate = businessDay.date;
 }
 
 quantum update settleCashDeposit(
@@ -115,31 +115,31 @@ quantum update settleCashDeposit(
     CollectionInterestIncomeAccount,
     CashDepositAgreement
 ) {
-    if (CashDepositAgreement.interestBaseDelta >= 0) {
-        CashSettlementAccount.balance -> DepositAccount.interestBase : CashDepositAgreement.interestBaseDelta;
+    if (cashDepositAgreement.interestBaseDelta >= 0) {
+        cashSettlementAccount.balance -> depositAccount.interestBase : cashDepositAgreement.interestBaseDelta;
     } else {
-        DepositAccount.interestBase -> CashSettlementAccount.balance : -CashDepositAgreement.interestBaseDelta;
+        depositAccount.interestBase -> cashSettlementAccount.balance : -cashDepositAgreement.interestBaseDelta;
     }
-    CashSettlementAccount.balance -> DepositAccount.overdraftInterest : CashDepositAgreement.interestPaid;
-    CashSettlementAccount.balance -> DepositAccount.collectionInterest : CashDepositAgreement.collectionPaid;
-    CashSettlementAccount.balance -> DepositAccount.overdraftPrincipal : CashDepositAgreement.principalPaid;
+    cashSettlementAccount.balance -> depositAccount.overdraftInterest : cashDepositAgreement.interestPaid;
+    cashSettlementAccount.balance -> depositAccount.collectionInterest : cashDepositAgreement.collectionPaid;
+    cashSettlementAccount.balance -> depositAccount.overdraftPrincipal : cashDepositAgreement.principalPaid;
 }
 
 atomic calculate recordDepositFailure(CashDepositAgreement, CashFailureRecord) {
-    CashFailureRecord.deposit = CashDepositAgreement;
-    CashFailureRecord.handlingState = CashHandlingState.RECONCILIATION_REQUIRED;
+    cashFailureRecord.deposit = cashDepositAgreement;
+    cashFailureRecord.handlingState = CashHandlingState.RECONCILIATION_REQUIRED;
 }
 
 atomic calculate recordReversalFailure(CashReversalAgreement, CashFailureRecord) {
-    CashFailureRecord.reversal = CashReversalAgreement;
-    CashFailureRecord.handlingState = CashHandlingState.RECONCILIATION_REQUIRED;
+    cashFailureRecord.reversal = cashReversalAgreement;
+    cashFailureRecord.handlingState = CashHandlingState.RECONCILIATION_REQUIRED;
 }
 
 atomic calculate confirmNoCashMovement(CashFailureRecord) {
-    CashFailureRecord.handlingState = CashHandlingState.NOT_COMPLETED;
+    cashFailureRecord.handlingState = CashHandlingState.NOT_COMPLETED;
 }
 
 readonly Scenario serial readCashFailure(CashFailureRecord) {
     findCashFailureRecord;
-    identify(CashFailureRecord);
+    identify(cashFailureRecord);
 }

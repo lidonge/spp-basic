@@ -1,9 +1,9 @@
 domain petshop;
 
 atomic check checkCartAdditionAgreementInput(CartAdditionAgreement) {
-    require(CartAdditionAgreement.quantity != null && CartAdditionAgreement.quantity > 0, RejectionCode.INVALID_QUANTITY);
+    require(cartAdditionAgreement.quantity != null && cartAdditionAgreement.quantity > 0, RejectionCode.INVALID_QUANTITY);
 }
 
 atomic check checkCartQuantityAgreementInput(CartQuantityAgreement) {
-    require(CartQuantityAgreement.quantity != null && CartQuantityAgreement.quantity > 0, RejectionCode.INVALID_QUANTITY);
+    require(cartQuantityAgreement.quantity != null && cartQuantityAgreement.quantity > 0, RejectionCode.INVALID_QUANTITY);
 }

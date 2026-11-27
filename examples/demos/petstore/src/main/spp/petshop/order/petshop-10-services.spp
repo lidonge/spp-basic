@@ -6,15 +6,15 @@ atomic update releaseUnpaidInventory(StockLine[], UnpaidCancellationAgreement);
 
 atomic update releasePaidInventory(StockLine[], PaidCancellationAgreement);
 quantum update refundCancellationFunds(Buyer, Merchant, PaidCancellationAgreement) {
-    Merchant.cash -> Buyer.wallet : PaidCancellationAgreement.refundAmount;
+    merchant.cash -> buyer.wallet : paidCancellationAgreement.refundAmount;
 }
 
 atomic calculate prepareOrderInventory(ShopOrder, StockLine[]) {
-    StockLine[] = new StockLine[] {
+    stockLines = new StockLine[] {
     };
-    for (OrderLine line : ShopOrder.lines) {
+    for (OrderLine line : shopOrder.lines) {
         boolean exists = false;
-        for (StockLine stock : StockLine[]) {
+        for (StockLine stock : stockLines) {
             if (stock.goods.sku == line.goods.sku) {
                 exists = true;
             }
@@ -22,7 +22,7 @@ atomic calculate prepareOrderInventory(ShopOrder, StockLine[]) {
         if (!exists) {
             StockLine stock = new StockLine();
             stock.goods = line.goods;
-            StockLine[] = append(StockLine[], stock);
+            stockLines = append(stockLines, stock);
         }
     }
 }
@@ -31,5 +31,5 @@ atomic update reserveInventory(StockLine[], ShopOrder);
 
 readonly Scenario serial readShopOrderLine(OrderLine) {
     findOrderLine;
-    identify(OrderLine);
+    identify(orderLine);
 }

@@ -2,38 +2,38 @@ domain client;
 Role Handover { String receiptNumber; quantum decimal cash; }
 Reference Intake from provider.CustodyHandover { String receiptNumber; quantum decimal cash; }
 atomic update insertIntake(Intake);
-atomic calculate prepareIntake(Receipt, Intake) { Intake.receiptNumber = Receipt.receiptNumber; }
+atomic calculate prepareIntake(Receipt, Intake) { intake.receiptNumber = receipt.receiptNumber; }
 Role Till { String receiptNumber; quantum decimal cash; }
 Contract Receipt { String receiptNumber; decimal amount; decimal funding; }
 take Receipt as Handover { mapsame; }
 take Receipt as Till { mapsame; }
 atomic calculate prepare(Receipt, Handover) {
-    Handover.receiptNumber = Receipt.receiptNumber;
+    handover.receiptNumber = receipt.receiptNumber;
 }
-quantum update receive(Receipt, Handover, Till) { Handover.cash -> Till.cash : Receipt.amount; }
+quantum update receive(Receipt, Handover, Till) { handover.cash -> till.cash : receipt.amount; }
 Scenario serial confirm(Receipt, Handover, Till, Intake, Accepted) {
-    findTill by Receipt;
-    identify(Till);
+    findTill by receipt;
+    identify(till);
     prepareIntake;
     stageAccepted;
     transaction {
         serial {
             insertIntake;
-            findHandover by Receipt;
-            identify(Handover);
-            receive bounds { Handover.cash: [0, 0]; Till.cash: [0, null]; };
+            findHandover by receipt;
+            identify(handover);
+            receive bounds { handover.cash: [0, 0]; till.cash: [0, null]; };
             insertAccepted;
         }
     }
 }
 Entity Accepted { String receiptNumber; quantum decimal funds; }
 atomic update insertAccepted(Accepted);
-atomic calculate stageAccepted(Receipt, Accepted) { Accepted.receiptNumber = Receipt.receiptNumber; }
+atomic calculate stageAccepted(Receipt, Accepted) { accepted.receiptNumber = receipt.receiptNumber; }
 
-atomic calculate chooseMissingReceipt(Receipt) { Receipt.receiptNumber = "MISSING"; }
+atomic calculate chooseMissingReceipt(Receipt) { receipt.receiptNumber = "MISSING"; }
 Scenario serial confirmAbsent(Receipt, Handover, Till, Intake, Accepted) {
-    findTill by Receipt;
-    identify(Till);
+    findTill by receipt;
+    identify(till);
     prepareIntake;
     stageAccepted;
     transaction {
@@ -45,26 +45,26 @@ Scenario serial confirmAbsent(Receipt, Handover, Till, Intake, Accepted) {
     }
 }
 Scenario serial confirmSkipped(Receipt, Handover, Till, Intake, Accepted) {
-    findTill by Receipt;
-    identify(Till);
+    findTill by receipt;
+    identify(till);
     prepareIntake;
     stageAccepted;
     transaction {
         insertIntake;
         chooseMissingReceipt;
-        findHandover by Receipt;
-        identify(Handover);
+        findHandover by receipt;
+        identify(handover);
         receive;
         insertAccepted;
     }
 }
 
 quantum update skipReceive(Receipt, Handover, Till) {
-    if (Receipt.amount < 0) { Handover.cash -> Till.cash : Receipt.amount; }
+    if (receipt.amount < 0) { handover.cash -> till.cash : receipt.amount; }
 }
 Scenario serial confirmNoMovement(Receipt, Handover, Till, Intake, Accepted) {
-    findTill by Receipt;
-    identify(Till);
+    findTill by receipt;
+    identify(till);
     prepareIntake;
     prepare;
     stageAccepted;

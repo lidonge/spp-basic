@@ -4,15 +4,15 @@ Scenario serial deliverShopOrder(Buyer, ShopOrder, DeliveryAgreement) {
     checkBuyerCredential;
     initializeDeliveryAgreement;
     findBuyer;
-    identify(Buyer);
+    identify(buyer);
     findShopOrder;
-    identify(ShopOrder);
+    identify(shopOrder);
     checkOrderOwner;
     checkDeliveryEligibility;
     prepareDelivery;
     prepareDeliveryAgreementReceipt;
     transaction {
         updateShopOrder;
-        insertReceipt(DeliveryAgreement.receipt);
+        insertReceipt(deliveryAgreement.receipt);
     }
 }

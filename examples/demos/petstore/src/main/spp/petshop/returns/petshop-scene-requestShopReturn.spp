@@ -4,15 +4,15 @@ Scenario serial requestShopReturn(Buyer, ShopOrder, ReturnRequestAgreement) {
     checkReturnRequestAgreementInput;
     initializeReturnRequestAgreement;
     findBuyer;
-    identify(Buyer);
+    identify(buyer);
     findShopOrder;
-    identify(ShopOrder);
+    identify(shopOrder);
     checkOrderOwner;
     checkReturnRequest;
     prepareReturnRequest;
     prepareReturnRequestReceipt;
     transaction {
         updateShopOrder;
-        insertReceipt(ReturnRequestAgreement.Receipt);
+        insertReceipt(returnRequestAgreement.Receipt);
     }
 }

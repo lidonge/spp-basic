@@ -28,14 +28,14 @@ public class SerialServiceGenerationTest {
 
     private static final String SPP = """
             domain ledger;
-            Contract Voucher {
+            Contract Voucher short voucher {
                 String voucherCode; String branch; DateTime businessDate; String reference; int seqNo;
                 String logNumber; String stamp; boolean rejected;
             }
-            atomic update storeVoucher(Voucher voucher);
+            atomic update storeVoucher(Voucher);
             Enum Fault { REJECTED }
-            atomic check guard(Voucher) { require(Voucher.rejected == false, Fault.REJECTED); }
-            Scenario serial record(Voucher voucher) { transaction { storeVoucher; guard; } }
+            atomic check guard(Voucher) { require(voucher.rejected == false, Fault.REJECTED); }
+            Scenario serial record(Voucher) { transaction { storeVoucher; guard; } }
             """;
 
     private static String app(String declarations, String autos, String phyServices, String url) {
