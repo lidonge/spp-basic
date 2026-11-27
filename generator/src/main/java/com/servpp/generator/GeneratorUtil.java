@@ -95,9 +95,13 @@ public class GeneratorUtil {
                 String heading = previousCode + " (" + counts.get(previousCode) + ")";
                 if (strict) log.error(heading); else log.warn(heading);
             }
-            if (strict) log.error(finding.format());
+            if (strict || RedundancyLint.ERROR_CODES.contains(finding.code())) log.error(finding.format());
             else log.warn(finding.format());
         }
+        long hardErrors = findings.stream().filter(finding -> RedundancyLint.ERROR_CODES.contains(finding.code())).count();
+        if (hardErrors > 0)
+            throw new MojoFailureException("S++ participant rules reported " + hardErrors + " error(s); see the "
+                    + String.join(", ", RedundancyLint.ERROR_CODES) + " findings above.");
         if (strict && diagnostics == null && !findings.isEmpty())
             throw new MojoFailureException("Strict redundancy checks reported " + findings.size() + " error(s).");
         List<String> physicalSourceFileNames = physicalSourceFileNames(sppSourceDirectory, physicalProfile);

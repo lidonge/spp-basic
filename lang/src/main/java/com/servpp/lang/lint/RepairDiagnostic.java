@@ -29,7 +29,7 @@ public record RepairDiagnostic(String code, String severity, String file, int li
         }
         String title = code.replaceFirst("^SPP_", "").replace('_', ' ').toLowerCase(Locale.ROOT);
         String cause = DiagnosticPages.rule(code, title);
-        return new RepairDiagnostic(code, strict ? "error" : "warning", finding.path(), token.getLine(),
+        return new RepairDiagnostic(code, strict || RedundancyLint.ERROR_CODES.contains(code) ? "error" : "warning", finding.path(), token.getLine(),
                 token.getCharPositionInLine() + 1, finding.message(), cause, finding.message(),
                 related(domain, edits, finding), edits, !edits.isEmpty());
     }

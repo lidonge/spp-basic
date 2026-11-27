@@ -748,6 +748,32 @@ The compiler reports distributed deployments as
 The `play ... by` spelling is provisional. Same-domain SPP `take` continues to
 define local role composition.
 
+### Same-domain role over an entity
+
+A scenario or atomic service may not declare two participants of one type
+(`T a, T b` or `T[] a, T[] b`); the compiler reports
+`SPP_DUPLICATE_PARTICIPANT_TYPE`. A single object may accompany an array of its
+type, and primitive types, enums and calculation locals are exempt. Declare one
+Role per participant.
+
+When the roles are records of an entity of the same domain, write the `play` with
+the consumer's own domain as the provider:
+
+```app
+play LossRegisteringOperator by cashvoucher.Operator { operatorNumber = operatorNumber; }
+play LossReleasingOperator by cashvoucher.Operator { operatorNumber = operatorNumber; operatorName = operatorName; }
+```
+
+The mapping rules are those of a cross-domain play: field types, code tables and
+quantum scales are checked and the entity's primary key must be fully mapped.
+The roles are hydrated by the entity's default primary-key query, so a role needs no table
+or reference of its own. Because the provider is in the consumer's transaction,
+the deployment-environment agreement required between two domains does not
+apply. A role cannot be played by its own type. Two roles that map the same
+quantum field of the entity book the same position, so they can be the two ends of
+one transfer. A role used for plain facts keeps working with `take` and its own
+table as before; `play` is the table-free form.
+
 ### Invoking a local atomic service in a test
 
 Install the SDK and add the appframe testing artifact to the test module.

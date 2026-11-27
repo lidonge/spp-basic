@@ -280,6 +280,47 @@ only ends its block.
 Use `,breakTransaction` to roll back the whole transaction from any depth,
 including from inside a nested bare block.
 
+### One participant per role
+
+Two participants of one type in one signature imply the same participant, so S++
+does not allow them. A scenario or atomic service (`check`, `calculate`, `query`,
+`update`, `insert`, `delete`) that declares `T a, T b` or `T[] a, T[] b` is a compile
+error, `SPP_DUPLICATE_PARTICIPANT_TYPE`; run `explain SPP_DUPLICATE_PARTICIPANT_TYPE`
+for the page. These are not reported: a single object together with an array of its
+type (`T selector, T[] rows`, the query selector and result list), primitive and
+value types, and enums including error enums. Locals declared inside a calculation
+are not participants.
+
+Give each participant its own Role. When both roles stand for records of one
+entity in the same domain, declare the roles in SPP and bind each to the entity in
+APP with a same-domain `play`:
+
+```spp
+Entity Operator { String operatorNumber; String operatorName; }
+Role LossRegisteringOperator { String operatorNumber; }
+Role LossReleasingOperator { String operatorNumber; String operatorName; }
+
+Scenario serial readLossOperators(LossRegisteringOperator registrar, LossReleasingOperator releaser) {
+    findLossRegisteringOperator by LossRegisteringOperator.operatorNumber = REGISTRAR_NUMBER;
+    findLossReleasingOperator by LossReleasingOperator.operatorNumber = RELEASER_NUMBER;
+}
+```
+
+```app
+play LossRegisteringOperator by sampledomain.Operator { operatorNumber = operatorNumber; }
+play LossReleasingOperator by sampledomain.Operator { operatorNumber = operatorNumber; operatorName = operatorName; }
+```
+
+The provider domain is the consumer's own domain. The form is the cross-domain
+`play` with the provider in the same domain, so one `play` per role maps the
+role's facts to the entity and the role is hydrated by the entity's primary-key
+query. The role needs no table of its own. A role may map fewer facts than the
+entity. Each role keeps its own business meaning, and a scenario can use
+both at once. A same-domain play runs in the consumer's own transaction, so it
+needs no application environment, and a quantum fact is booked on the entity's own
+position. Two roles can therefore transfer between positions of one entity; see
+`ledger-quantum.spp` in the custom services sample.
+
 ### Declare decimal rounding
 
 Declare the precision, scale and rounding mode on the result. Use ordinary

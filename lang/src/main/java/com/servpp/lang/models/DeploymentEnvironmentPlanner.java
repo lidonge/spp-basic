@@ -329,7 +329,7 @@ public final class DeploymentEnvironmentPlanner {
                 }
                 if (!Set.of(CompilationUnitType.entity, CompilationUnitType.contract, CompilationUnitType.role)
                                 .contains(performer.getType()) || performer.getReferenceSource() != null
-                        || owner == domain || !plays(owner, performer).isEmpty()) {
+                        || performer == role || !plays(owner, performer).isEmpty()) {
                     errors.add(prefix + "invalid provider type");
                     continue;
                 }
@@ -360,7 +360,8 @@ public final class DeploymentEnvironmentPlanner {
                         errors.add(prefix + "unmapped consumer quantum field " + field.getName());
                     if (playKeys(owner, performer, play).isEmpty())
                         errors.add(prefix + "unmapped provider primary-key field or missing provider primary key");
-                } else if (!isStoredRolePlay(domain, role, play)) {
+                } else if (!isStoredRolePlay(domain, role, play) && owner != domain) {
+                    // A same-domain play runs in the consumer's own transaction; no cross-domain resource agreement applies.
                     var environments = quantumEnvironments(project, domain);
                     var stores = performer.getSppFieldList().stream()
                             .filter(field -> field.isQuantum() && play.fields().containsValue(field.getName()))

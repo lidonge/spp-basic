@@ -16,6 +16,9 @@ import java.util.Map;
 public final class RedundancyLint {
     private RedundancyLint() { }
 
+    /** Findings that are compile errors regardless of the strict-lint setting. */
+    public static final java.util.Set<String> ERROR_CODES = java.util.Set.of(ParticipantTypeLint.CODE);
+
     public record Source(String path, ParserRuleContext tree) {
         String domain() {
             if (tree instanceof SppParser.ProgramContext spp && spp.servicedomain() != null)
@@ -69,6 +72,7 @@ public final class RedundancyLint {
             DataAccessLint.check(domain, reporter);
             QueryLint.check(domain, reporter);
             ReviewLint.check(domain, reporter);
+            ParticipantTypeLint.check(domain, reporter);
         }
         findings.sort(Comparator.comparing(Finding::code).thenComparing(Finding::path).thenComparingInt(f -> f.token().getTokenIndex()));
         return List.copyOf(findings);
