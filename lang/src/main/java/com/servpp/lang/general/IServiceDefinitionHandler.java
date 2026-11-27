@@ -53,6 +53,7 @@ public interface IServiceDefinitionHandler extends ICompilationUnitHandler {
             checkClass(ctx, shape.type());
             SppLocalVar sppLocalVar = generateLocalVar(shape.type(), shape.dimensions(), ctx.bindingName == null
                     ? ctx.Identifier() == null ? shape.legacy() : ctx.Identifier().getText() : ctx.bindingName);
+            sppLocalVar.setParticipantWireName(ctx.wireName);
             sppLocalVar.setQueryKey(ctx.queryKey() != null);
             Object container = peek();
             if (container instanceof ServiceBody) {

@@ -60,6 +60,7 @@ public class SppCompiler extends AntlrCompiler {
     public SppGeneralHandler compile(SppParser.ProgramContext tree, ParticipantNames names) {
         var listener = new SppGeneralHandler(sppProject);
         listener.setSppFile(antlrFile);
+        sppProject.addDomain(ParticipantNames.domain(tree)).setParticipantNames(names);
         names.bind(tree);
         walkTree(listener, tree);
         return listener;

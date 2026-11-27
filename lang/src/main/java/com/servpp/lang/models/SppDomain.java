@@ -174,6 +174,12 @@ public class SppDomain {
         return sppClass;
     }
 
+    private com.servpp.lang.ParticipantNames participantNames = new com.servpp.lang.ParticipantNames();
+
+    public void setParticipantNames(com.servpp.lang.ParticipantNames names) {
+        participantNames = names;
+    }
+
     public SppCompilationUnit getSppClass(String clsName) {
         return  mapsOfClass.get(clsName);
     }
@@ -4958,6 +4964,8 @@ public class SppDomain {
         if (!operation.equals("find")) service.setPersistenceOperation(operation);
         var argument = new SppLocalVar(actual, actual.getName());
         argument.setArrayDimension(dimension);
+        argument.setParticipantWireName(participantNames.name(getName(),
+                new com.servpp.lang.ParticipantNames.Shape(actual.getName(), dimension, false)));
         service.addLocalVar(argument);
         mapsOfClass.put(name, service);
         return service;

@@ -89,9 +89,19 @@ public class SppParameter {
         return isParticipantCollection() ? "java.util.List<" + getJavaType() + ">" : getJavaType() + getArrayString();
     }
 
+    private String participantWireName;
+
+    public String getParticipantWireName() {
+        return participantWireName == null ? getName() : participantWireName;
+    }
+
+    public void setParticipantWireName(String name) {
+        participantWireName = name;
+    }
+
     public String getRequestArgumentCall() {
-        String getter = "arg.get" + getUpperName() + "()";
-        String value = isParticipantCollection() ? getter : arrayDimension == 1 ? modelCollectionArgument(getter) : getter + getToArrayString();
+        String getter = "arg.get" + NameUtil.firstToLowerCase(getParticipantWireName(), false) + "()";
+        String value = isParticipantCollection() ? getter : arrayDimension == 1 ? modelCollectionArgument(getter) : getter + (arrayDimension == 0 ? "" : ".toArray(new " + getJavaType() + "[" + getter + ".size()])");
         if (getArrayDimension() == 0 && "short".equals(getJavaType())) {
             return "com.servpp.service.numeric.ExactNumbers.decimal(" + value + ").shortValueExact()";
         }

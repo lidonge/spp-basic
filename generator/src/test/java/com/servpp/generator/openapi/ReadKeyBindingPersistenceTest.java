@@ -100,13 +100,13 @@ public class ReadKeyBindingPersistenceTest {
             }
             var stale = Map.of("code", "B", "edition", 4);
             var selected = execute(runtime, mapper, "ReadSelected", Map.of("item", stale,
-                    "selection", Map.of("wanted", "A"), "Release", Map.of("edition", 3))).get("item");
+                    "selection", Map.of("wanted", "A"), "release", Map.of("edition", 3))).get("item");
             assertEquals(Map.of("code", "A", "edition", 3, "title", "selected"),
                     mapper.convertValue(selected, Map.class));
             var defaults = execute(runtime, mapper, "ReadDefault", Map.of("item", stale)).get("item");
             assertEquals(selected, defaults);
             var missing = execute(runtime, mapper, "ReadSelected", Map.of("item", stale,
-                    "selection", Map.of("wanted", "missing"), "Release", Map.of("edition", 3))).get("item");
+                    "selection", Map.of("wanted", "missing"), "release", Map.of("edition", 3))).get("item");
             assertEquals("missing", missing.get("code").asText());
             assertEquals(3, missing.get("edition").asInt());
             var list = execute(runtime, mapper, "ReadList", Map.of("item", stale, "matches", List.of()));

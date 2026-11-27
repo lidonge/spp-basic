@@ -1727,7 +1727,7 @@ public class SppService extends SppClass{
             return "java.util.List.of()";
         }
         return serviceBody.getSppLocalVarList().stream()
-                .map(SppLocalVar::getName)
+                .map(SppLocalVar::getParticipantWireName)
                 .map(name -> "\"" + name + "\"")
                 .collect(Collectors.joining(", ", "java.util.List.of(", ")"));
     }
@@ -1738,7 +1738,7 @@ public class SppService extends SppClass{
         }
         return serviceBody.getSppLocalVarList().stream()
                 .filter(SppLocalVar::isContextParameter)
-                .map(SppLocalVar::getName)
+                .map(SppLocalVar::getParticipantWireName)
                 .map(name -> "\"" + name + "\"")
                 .collect(Collectors.joining(", ", "java.util.List.of(", ")"));
     }

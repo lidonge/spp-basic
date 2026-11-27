@@ -222,7 +222,7 @@ parameterDeclarations
     ;
 
 parameterDeclaration
-    locals [String bindingName]
+    locals [String bindingName, String wireName]
     : queryKey roletype Identifier?
     | type Identifier?
     | roletype Identifier

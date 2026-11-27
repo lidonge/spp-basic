@@ -128,6 +128,7 @@ public final class ParticipantNames {
                         : shape.value() || domains.getOrDefault(domain, Map.of()).containsKey(shape.type())
                                 ? name : shape.legacy();
                 parameter.bindingName = symbol;
+                parameter.wireName = parameter.Identifier() == null ? name : symbol;
                 symbols.add(symbol);
                 bindings.put(parameter.Identifier() == null ? name : symbol, symbol);
             }

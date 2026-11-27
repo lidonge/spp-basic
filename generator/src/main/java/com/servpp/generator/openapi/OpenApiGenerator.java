@@ -1271,7 +1271,7 @@ public class OpenApiGenerator extends BaseClassGenerator implements ILogable {
             }
         }
         for (SppLocalVar field : sppFieldList) {
-            SppField schemaField = (SppField) new SppField(field.getType(), field.getName()).setArrayDimension(field.getArrayDimension());
+            SppField schemaField = (SppField) new SppField(field.getType(), field.getParticipantWireName()).setArrayDimension(field.getArrayDimension());
             schemaField.setPhysicalJavaType(field.getPhysicalJavaType());
             cls.addField(schemaField);
             if (isRequest) {
@@ -1286,7 +1286,7 @@ public class OpenApiGenerator extends BaseClassGenerator implements ILogable {
         if (!(roleVar.getType() instanceof SppClass roleClass)) {
             return;
         }
-        addRoleIdentityMetadataFields(requestClass, roleVar.getName(), roleClass, 0, new LinkedHashSet<>());
+        addRoleIdentityMetadataFields(requestClass, roleVar.getParticipantWireName(), roleClass, 0, new LinkedHashSet<>());
     }
 
     private void addRoleIdentityMetadataFields(SppClass requestClass, String rolePath,
