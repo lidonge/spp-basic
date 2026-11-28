@@ -331,6 +331,15 @@ reuse the fields of `Period`. A calculation expecting `Period` can receive
 the formal parameter names `PeriodEnd`. The caller's participant receives the
 changed facts. The types still identify distinct participants in a signature.
 
+A role carries all facts of its player: the APP `play` when there is one,
+otherwise the first `take` in declaration order. Further takes of the role only
+map their own sources onto those facts. They add no facts, so a quantum fact of
+such a source is not pulled in. `findRegionOffice by regionLink` also works when
+`regionLink` is itself a role: the key is read through the player of
+`regionLink` and its take mappings. A role passed where its player is expected
+books the quantum position of the player, so a transfer between two roles of one
+player moves one conserved attribute between two positions.
+
 ### Declare decimal rounding
 
 Declare the precision, scale and rounding mode on the result. Use ordinary

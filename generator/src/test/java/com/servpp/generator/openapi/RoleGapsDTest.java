@@ -222,4 +222,29 @@ public class RoleGapsDTest {
         String scenario = Files.readString(java.resolve("generated/d/service/SimpleLocate.java"));
         assertTrue(scenario, scenario.contains("regionLink.getLinkedBranch()"));
     }
+
+    @Test public void d2FindARoleByASiblingRoleOfTheRoleThatTheTargetIsTakenFrom() throws Exception {
+        var java = generate("""
+                domain d;
+                Entity Relation { String branch; String relatedBranch; }
+                Entity Office { String officeCode; String officeName; }
+                Role LinkRecord short linkRecord;
+                take Relation as LinkRecord;
+                take LinkRecord as Office { String officeCode = relatedBranch; }
+                Role RegionLink short regionLink;
+                take Relation as RegionLink { String linkedBranch = relatedBranch; }
+                Role RegionOffice short region;
+                take Office as RegionOffice;
+                Scenario locate(RegionLink, RegionOffice) { findRegionOffice by regionLink; }
+                """, """
+                domain d;
+                tables entities {
+                    table RELATIONS(Relation) { primarykey(Relation.branch); }
+                    table OFFICES(Office) { primarykey(Office.officeCode); }
+                }
+                scope { local {} }
+                """, "d2d");
+        String scenario = Files.readString(java.resolve("generated/d/service/SimpleLocate.java"));
+        assertTrue(scenario, scenario.contains("regionLink.getLinkedBranch()"));
+    }
 }
